@@ -1,0 +1,58 @@
+@keyframes slide-up-fade {
+  from { transform: translate(-50%, 20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.maroon-shimmer {
+  background: linear-gradient(90deg, #800020, #b22222, #800020);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+.gold-shimmer {
+  background: linear-gradient(90deg, #d4af37, #ffd700, #d4af37);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position: 200% center; }
+}
+
+@keyframes tracking-breathe {
+  0%, 100% { letter-spacing: 0.2em; opacity: 0.8; }
+  50% { letter-spacing: 0.3em; opacity: 1; }
+}
+
+.animate-tracking-breathe {
+  animation: tracking-breathe 4s ease-in-out infinite;
+}
+
+.App {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.76), rgba(255, 246, 232, 0.92)),
+    var(--bk-section-bg),
+    #fff6e8;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+}
+
+.bk-textured-page {
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.76), rgba(255, 246, 232, 0.92)),
+    var(--bk-section-bg),
+    #fff6e8;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+}

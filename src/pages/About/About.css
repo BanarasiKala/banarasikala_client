@@ -1,0 +1,498 @@
+.about-page {
+  min-height: 100vh;
+  color: #2b1710;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.72), rgba(255, 246, 232, 0.94)),
+    var(--bk-section-bg),
+    #fff6e8;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+}
+
+.about-shell {
+  width: min(100%, var(--bk-page-max, 1500px));
+  margin: 0 auto;
+  padding-inline: var(--bk-page-pad, 80px);
+  box-sizing: border-box;
+}
+
+.about-hero {
+  position: relative;
+  min-height: 430px;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+  background: #4f050d;
+}
+
+.about-hero-image,
+.about-hero-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.about-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+.about-hero-overlay {
+  background:
+    linear-gradient(90deg, rgba(76, 4, 13, 0.98) 0%, rgba(76, 4, 13, 0.86) 38%, rgba(76, 4, 13, 0.22) 100%),
+    radial-gradient(circle at 12% 74%, rgba(128, 0, 32, 0.34), transparent 34%);
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 1;
+  padding-top: 20px;
+  color: #fff3d2;
+}
+
+.about-hero h1 {
+  max-width: 420px;
+  margin: 0;
+  color: #fff7df;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(34px, 4vw, 56px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.about-hero-subtitle {
+  max-width: 390px;
+  margin: 12px 0 0;
+  color: #d4af37;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(16px, 1.8vw, 24px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.about-hero-subtitle span {
+  display: block;
+}
+
+.about-ornament {
+  width: 240px;
+  height: 14px;
+  display: block;
+  margin: 22px 0 18px;
+  background: linear-gradient(180deg, transparent 6px, rgba(212, 175, 55, 0.68) 6px 7px, transparent 7px);
+}
+
+.about-hero-copy {
+  max-width: 390px;
+  margin: 0;
+  color: rgba(255, 246, 232, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.68;
+}
+
+.about-intro-card {
+  position: relative;
+  z-index: 2;
+  margin-top: -44px;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.22fr);
+  gap: 44px;
+  align-items: center;
+  padding-top: 34px;
+  padding-bottom: 34px;
+  background: rgba(255, 250, 241, 0.96);
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 18px 42px rgba(70, 35, 13, 0.13);
+}
+
+.about-intro-image,
+.about-photo-panel,
+.about-founder-photo {
+  overflow: hidden;
+  background: linear-gradient(135deg, #42050c, #d2a044);
+}
+
+.about-intro-image {
+  height: 330px;
+  border-radius: 10px;
+}
+
+.about-intro-image img,
+.about-photo-panel img,
+.about-founder-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.about-intro-copy h2,
+.about-text-panel h2,
+.about-promise h2,
+.about-founder h2 {
+  margin: 0;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.about-intro-copy h2 {
+  margin-bottom: 18px;
+  font-size: clamp(19px, 1.8vw, 27px);
+}
+
+.about-intro-copy p,
+.about-text-panel p,
+.about-founder p {
+  margin: 0;
+  color: #3b251c;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+.about-intro-copy p + p,
+.about-text-panel p + p,
+.about-founder p + p {
+  margin-top: 14px;
+}
+
+.about-editorial-grid {
+  padding-block: 58px 36px;
+  display: grid;
+  grid-template-columns: 0.95fr 1fr 1fr 0.95fr;
+  grid-template-areas:
+    "philosophy loom loom curation"
+    "why-photo why quality quality-photo";
+  gap: 30px 34px;
+  align-items: stretch;
+}
+
+.about-text-panel {
+  position: relative;
+  min-height: 100%;
+  padding: 26px 24px;
+  background: rgba(255, 250, 241, 0.52);
+  border-left: 1px solid rgba(174, 126, 42, 0.42);
+}
+
+.about-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  color: #9b681f;
+  border: 1px solid rgba(155, 104, 31, 0.6);
+  border-radius: 50%;
+  font-size: 22px;
+}
+
+.about-text-panel h2 {
+  margin-bottom: 8px;
+  font-size: 22px;
+}
+
+.about-text-panel h3 {
+  margin: 0 0 14px;
+  color: #5a160f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.about-text-panel ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #3b251c;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.about-text-panel strong {
+  display: block;
+  margin-top: 14px;
+  color: #6c0712;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.about-photo-panel {
+  border-radius: 8px;
+}
+
+.about-philosophy {
+  grid-area: philosophy;
+}
+
+.about-curation {
+  grid-area: curation;
+}
+
+.about-why {
+  grid-area: why;
+}
+
+.about-quality {
+  grid-area: quality;
+}
+
+.about-loom-photo {
+  grid-area: loom;
+  height: 360px;
+}
+
+.about-why-photo {
+  grid-area: why-photo;
+  height: 320px;
+}
+
+.about-quality-photo {
+  grid-area: quality-photo;
+  height: 320px;
+}
+
+.about-promise {
+  margin-block: 20px 36px;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  color: #fff3d2;
+  background: linear-gradient(135deg, #650716, #4f050d);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.about-promise h2 {
+  color: #fff7df;
+  font-size: 24px;
+}
+
+.about-promise p {
+  margin: 8px 0 24px;
+  color: rgba(255, 246, 232, 0.88);
+}
+
+.about-promise-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+}
+
+.about-promise-row span {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  color: #fff3d2;
+  border-left: 1px solid rgba(212, 175, 55, 0.32);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.about-promise-row span:first-child {
+  border-left: 0;
+}
+
+.about-founder {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.42fr) minmax(0, 0.58fr);
+  gap: 54px;
+  align-items: center;
+  margin-bottom: 58px;
+  padding-top: 34px;
+  padding-bottom: 34px;
+  background: rgba(255, 250, 241, 0.9);
+  border: 1px solid rgba(128, 0, 32, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 18px 42px rgba(70, 35, 13, 0.1);
+}
+
+.about-founder-photo {
+  height: 350px;
+  border-radius: 10px;
+}
+
+.about-founder blockquote {
+  position: relative;
+  min-height: 320px;
+  margin: 0;
+  padding: 18px 300px 18px 0;
+}
+
+.about-founder h2 {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+  font-size: clamp(25px, 2.4vw, 40px);
+}
+
+.about-founder blockquote p {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  color: #26170f;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.about-founder blockquote p:nth-of-type(3) {
+  color: #5a160f;
+  font-weight: 900;
+}
+
+.about-founder-quote {
+  position: absolute;
+  z-index: 0;
+  color: rgba(212, 175, 55, 0.28);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.about-founder-quote-start {
+  top: -4px;
+  left: -42px;
+}
+
+.about-founder-quote-end {
+  right: 260px;
+  bottom: -6px;
+}
+
+.about-founder-ghat {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: min(285px, 38%);
+  max-height: 250px;
+  object-fit: contain;
+  opacity: 0.44;
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .about-shell {
+    padding-inline: 24px;
+  }
+
+  .about-intro-card,
+  .about-founder {
+    grid-template-columns: 1fr;
+  }
+
+  .about-editorial-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "philosophy loom"
+      "curation loom"
+      "why-photo why"
+      "quality quality-photo";
+  }
+
+  .about-promise-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-founder blockquote {
+    min-height: auto;
+    padding-right: 0;
+  }
+
+  .about-founder-ghat {
+    width: 240px;
+    opacity: 0.2;
+  }
+
+  .about-founder-quote-end {
+    right: 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  .about-hero {
+    min-height: 380px;
+  }
+
+  .about-hero-content {
+    padding-top: 16px;
+  }
+
+  .about-hero h1 {
+    font-size: 38px;
+  }
+
+  .about-hero-subtitle {
+    font-size: 17px;
+  }
+
+  .about-intro-card {
+    margin-top: 0;
+    border-radius: 0;
+    padding-block: 30px;
+  }
+
+  .about-intro-image,
+  .about-founder-photo,
+  .about-loom-photo,
+  .about-why-photo,
+  .about-quality-photo {
+    height: 260px;
+  }
+
+  .about-editorial-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "philosophy"
+      "loom"
+      "curation"
+      "why-photo"
+      "why"
+      "quality"
+      "quality-photo";
+    padding-block: 30px;
+    gap: 18px;
+  }
+
+  .about-text-panel {
+    padding: 22px 18px;
+  }
+
+  .about-promise {
+    margin-block: 10px 22px;
+    border-radius: 0;
+  }
+
+  .about-promise-row {
+    grid-template-columns: 1fr;
+  }
+
+  .about-founder {
+    margin-bottom: 32px;
+    border-radius: 0;
+  }
+
+  .about-founder blockquote {
+    padding: 6px 0 0;
+  }
+
+  .about-founder-ghat {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-height: 150px;
+    margin-top: 10px;
+  }
+
+  .about-founder-quote {
+    display: none;
+  }
+}

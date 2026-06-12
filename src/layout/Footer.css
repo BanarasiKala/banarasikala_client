@@ -1,0 +1,339 @@
+.bk-footer {
+  width: 100%;
+  color: #351b13;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+    var(--bk-footer-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+  border-top: 4px solid #5b0710;
+  font-family: "Poppins", sans-serif;
+}
+
+.bk-footer-main,
+.bk-footer-info {
+  width: min(100%, 1500px);
+  margin: 0 auto;
+}
+
+.bk-footer-main {
+  padding: 58px 64px 44px;
+  display: grid;
+  grid-template-columns: 1.35fr 0.8fr 0.95fr 0.9fr 1.2fr;
+  gap: 50px;
+  align-items: start;
+}
+
+.bk-footer-brand {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.bk-footer-logo {
+  width: 172px;
+  display: inline-flex;
+}
+
+.bk-footer-logo img {
+  width: 100%;
+  display: block;
+}
+
+.bk-footer-brand p {
+  margin: 18px 0 20px;
+  color: #351b13;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.bk-footer-brand p span {
+  display: block;
+}
+
+.bk-footer-socials {
+  display: flex;
+  gap: 24px;
+}
+
+.bk-footer-socials a {
+  color: #5b0710;
+  font-size: 20px;
+  line-height: 1;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.bk-footer-socials a:hover {
+  color: #a87524;
+  transform: translateY(-2px);
+}
+
+.bk-footer-column h3,
+.bk-footer-updates h3,
+.bk-footer-contact h3,
+.bk-footer-payments h3,
+.bk-footer-marketplaces h3 {
+  margin: 0;
+  color: #4b1a16;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.bk-footer-rule {
+  position: relative;
+  width: 92px;
+  height: 13px;
+  display: block;
+  margin: 10px 0 18px;
+  background: linear-gradient(180deg, transparent 6px, #b9862a 6px 7px, transparent 7px);
+}
+
+.bk-footer-rule::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #b9862a;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow:
+    -13px 13px 0 -2px #b9862a,
+    13px -13px 0 -2px #b9862a;
+}
+
+.bk-footer-column ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 13px;
+}
+
+.bk-footer-column a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2f2118;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.bk-footer-column a:hover {
+  color: #800020;
+  transform: translateX(3px);
+}
+
+.bk-footer-updates p,
+.bk-footer-marketplaces p {
+  margin: 0 0 24px;
+  max-width: 265px;
+  color: #3b251c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.bk-footer-subscribe {
+  width: min(100%, 305px);
+  height: 48px;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  overflow: hidden;
+  border: 1px solid rgba(118, 56, 22, 0.32);
+  border-radius: 7px;
+  background: rgba(255, 250, 240, 0.54);
+}
+
+.bk-footer-subscribe input {
+  min-width: 0;
+  padding: 0 18px;
+  color: #351b13;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+}
+
+.bk-footer-subscribe button {
+  display: grid;
+  place-items: center;
+  color: #d9a849;
+  background: #720916;
+  border: 0;
+  cursor: pointer;
+}
+
+.bk-footer-info {
+  padding: 30px 64px 38px;
+  display: grid;
+  grid-template-columns: 1.35fr 1.25fr 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+.bk-footer-contact p {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: #3a241b;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.bk-footer-contact svg {
+  color: #9d681d;
+  stroke-width: 1.9;
+  flex: 0 0 auto;
+}
+
+.bk-footer-payment-row,
+.bk-footer-market-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.bk-footer-payment-row span {
+  min-width: 72px;
+  height: 40px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(112, 63, 24, 0.1);
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.bk-footer-payment-row svg {
+  font-size: 31px;
+}
+
+.bk-footer-market-row span {
+  min-width: 86px;
+  height: 42px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1c1c1c;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(70, 35, 13, 0.16));
+}
+
+.bk-footer-market-row svg {
+  font-size: 38px;
+}
+
+.bk-footer-market-amazon svg {
+  color: #111111;
+}
+
+.bk-footer-market-flipkart svg {
+  color: #2874f0;
+}
+
+.bk-footer-market-myntra svg {
+  color: #ff3f6c;
+}
+
+.bk-footer-bottom {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 17px 18px;
+  color: #d8a446;
+  background:
+    linear-gradient(rgba(91, 7, 16, 0.96), rgba(91, 7, 16, 0.96)),
+    var(--bk-footer-bg);
+  background-size: cover;
+  background-position: center;
+  border-top: 1px solid rgba(46, 3, 8, 0.6);
+}
+
+.bk-footer-bottom p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.bk-footer-bottom span {
+  width: 280px;
+  height: 12px;
+  background: linear-gradient(180deg, transparent 5px, rgba(212, 175, 55, 0.72) 5px 6px, transparent 6px);
+}
+
+@media (max-width: 1100px) {
+  .bk-footer-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 34px;
+  }
+
+  .bk-footer-brand {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .bk-footer-info {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bk-footer-main {
+    padding: 34px 18px 30px;
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .bk-footer-brand {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .bk-footer-logo {
+    width: 160px;
+  }
+
+  .bk-footer-column h3,
+  .bk-footer-updates h3,
+  .bk-footer-contact h3,
+  .bk-footer-payments h3,
+  .bk-footer-marketplaces h3 {
+    font-size: 15px;
+  }
+
+  .bk-footer-info {
+    padding: 24px 18px 32px;
+  }
+
+  .bk-footer-bottom p {
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .bk-footer-bottom span {
+    width: min(260px, 72vw);
+  }
+}
+

@@ -1,0 +1,242 @@
+.bk-craft-section {
+  width: 100%;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+    var(--bk-section-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+}
+
+.bk-craft-shell {
+  max-width: var(--bk-page-max);
+  margin: 0 auto;
+  padding: 54px var(--bk-page-pad) 46px;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.82fr) minmax(0, 2.18fr);
+  gap: 46px;
+  align-items: center;
+}
+
+.bk-craft-copy {
+  max-width: 430px;
+}
+
+.bk-craft-copy > span {
+  display: block;
+  margin-bottom: 14px;
+  color: #5b2116;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.bk-craft-copy h2 {
+  margin: 0 0 22px;
+  color: #3b1713;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(38px, 3.2vw, 52px);
+  font-weight: 500;
+  line-height: 0.98;
+}
+
+.bk-craft-copy h2 em {
+  display: block;
+  margin-top: 9px;
+  color: #b47a23;
+  font-size: clamp(31px, 2.5vw, 42px);
+  font-style: italic;
+}
+
+.bk-craft-copy p {
+  margin: 0 0 26px;
+  color: #21170f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.58;
+}
+
+.bk-craft-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 26px;
+  color: #fff8ed;
+  background: #4b080d;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.bk-craft-panels {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px;
+}
+
+.bk-craft-panel {
+  overflow: hidden;
+  background: rgba(255, 250, 241, 0.86);
+  border: 1px solid rgba(151, 88, 25, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 18px 36px rgba(75, 40, 10, 0.12);
+}
+
+.bk-craft-panel-head {
+  min-height: 132px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 25px 34px 22px;
+}
+
+.bk-craft-loom-icon,
+.bk-craft-loom-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.bk-craft-loom-icon {
+  display: inline-flex;
+  color: #b07824;
+}
+
+.bk-craft-loom-icon svg {
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.bk-craft-panel h3 {
+  margin: 0 0 8px;
+  color: #3a1712;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.bk-craft-panel p {
+  margin: 0;
+  color: #21170f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.bk-craft-image-wrap {
+  height: 255px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2e160e 0%, #9b6a21 48%, #3b140e 100%);
+}
+
+.bk-craft-image-wrap img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.bk-craft-balance {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  color: #6b3624;
+  background: #fff8ed;
+  border: 2px dashed #b07824;
+  border-radius: 50%;
+  transform: translateX(-50%) rotate(-15deg);
+  z-index: 2;
+}
+
+.bk-craft-balance span,
+.bk-craft-balance strong {
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.bk-craft-balance strong {
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .bk-craft-shell {
+    padding: 26px 12px 24px;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .bk-craft-copy {
+    max-width: 100%;
+    padding: 0 4px;
+  }
+
+  .bk-craft-copy h2 {
+    font-size: 29px;
+  }
+
+  .bk-craft-copy h2 em {
+    font-size: 25px;
+  }
+
+  .bk-craft-copy p {
+    font-size: 12px;
+  }
+
+  .bk-craft-panels {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .bk-craft-panel-head {
+    min-height: 92px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    padding: 14px 15px 12px;
+  }
+
+  .bk-craft-loom-icon,
+  .bk-craft-loom-icon svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .bk-craft-panel h3 {
+    font-size: 16px;
+  }
+
+  .bk-craft-panel p {
+    font-size: 10px;
+  }
+
+  .bk-craft-image-wrap {
+    height: 170px;
+  }
+
+  .bk-craft-balance {
+    width: 76px;
+    height: 76px;
+    bottom: calc(50% - 38px);
+  }
+}
+
+@media (max-width: 420px) {
+  .bk-craft-balance {
+    display: none;
+  }
+}

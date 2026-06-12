@@ -1,0 +1,249 @@
+.bk-occasion-section {
+  width: 100%;
+  padding: 22px 0 30px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.72), rgba(255, 246, 232, 0.72)),
+    var(--bk-section-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+}
+
+.bk-occasion-shell {
+  width: min(100%, var(--bk-page-max));
+  margin: 0 auto;
+  padding: 0 var(--bk-page-pad);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.bk-occasion-heading {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.bk-occasion-heading span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8a4c22;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.bk-occasion-heading h2 {
+  margin: 0;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 3vw, 42px);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.bk-occasion-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.bk-occasion-card {
+  position: relative;
+  height: 285px;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  background: #eadccf;
+  border: 0;
+  border: 1px solid rgba(128, 0, 32, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(88, 39, 13, 0.1);
+  cursor: pointer;
+  animation: bk-occasion-reveal 0.72s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+  animation-delay: var(--bk-occasion-delay, 0ms);
+  transition: transform 0.32s ease, filter 0.32s ease, box-shadow 0.32s ease;
+}
+
+.bk-occasion-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  filter: saturate(1.06);
+  box-shadow: 0 22px 38px rgba(88, 39, 13, 0.16);
+}
+
+.bk-occasion-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.7s ease;
+}
+
+.bk-occasion-card:hover img {
+  transform: scale(1.04);
+}
+
+.bk-occasion-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(23, 13, 8, 0) 42%, rgba(23, 13, 8, 0.58) 100%),
+    radial-gradient(circle at 50% 18%, rgba(255, 235, 188, 0.12), transparent 42%);
+  pointer-events: none;
+}
+
+.bk-occasion-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 241, 211, 0.34) 46%, transparent 68%);
+  opacity: 0;
+  transform: translateX(-120%);
+  transition: transform 0.8s ease, opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.bk-occasion-card:hover::after,
+.bk-occasion-card:focus-visible::after {
+  opacity: 1;
+  transform: translateX(120%);
+}
+
+.bk-occasion-name {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 18px;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 1.35vw, 24px);
+  font-weight: 700;
+  line-height: 1.12;
+  text-align: center;
+  text-transform: none;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.44);
+  transform: translateY(4px);
+  transition: transform 0.32s ease;
+}
+
+.bk-occasion-card:hover .bk-occasion-name {
+  transform: translateY(0);
+}
+
+.bk-occasion-empty {
+  min-height: 250px;
+  display: grid;
+  place-items: center;
+  color: #6a4c3c;
+  font-family: "Poppins", sans-serif;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(128, 0, 32, 0.08);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bk-occasion-skeleton {
+  pointer-events: none;
+  animation: none;
+}
+
+.bk-occasion-skeleton span {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bk-loader-base);
+}
+
+.bk-occasion-skeleton span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bk-loader-sheen);
+  transform: translateX(-100%);
+  animation: bk-occasion-shimmer var(--bk-loader-duration) ease-in-out infinite;
+}
+
+@keyframes bk-occasion-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes bk-occasion-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-occasion-card {
+    animation: none;
+    transition: none;
+  }
+
+  .bk-occasion-card img {
+    transition: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .bk-occasion-shell {
+    padding: 0 18px;
+  }
+
+  .bk-occasion-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .bk-occasion-card {
+    height: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bk-occasion-section {
+    padding: 22px 0 30px;
+  }
+
+  .bk-occasion-shell {
+    padding: 0 8px;
+  }
+
+  .bk-occasion-heading {
+    margin-bottom: 16px;
+    padding: 0 10px;
+  }
+
+  .bk-occasion-heading h2 {
+    font-size: 22px;
+    line-height: 1.08;
+  }
+
+  .bk-occasion-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .bk-occasion-card {
+    height: 196px;
+    border-radius: 12px;
+  }
+
+  .bk-occasion-name {
+    bottom: 14px;
+    font-size: 18px;
+  }
+}

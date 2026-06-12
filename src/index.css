@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  font-family: 'Poppins', sans-serif;
+  --bk-loader-base: #e2ccaa;
+  --bk-loader-gradient: linear-gradient(90deg, #ead3b1 0%, #fffaf2 48%, #dfbd8d 100%);
+  --bk-loader-sheen: linear-gradient(100deg, transparent 0%, rgba(255, 250, 242, 0.86) 48%, transparent 100%);
+  --bk-loader-duration: 1.35s;
+}
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.76), rgba(255, 246, 232, 0.92)),
+    url("./assets/header_backgroung.png"),
+    #fff6e8;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+body :where(*):not(:where(h1, h2, h3, h4, h5, h6, h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
+  font-family: "Poppins", sans-serif !important;
+}
+
+#root {
+  min-height: 100vh;
+  overflow-x: hidden;
+}

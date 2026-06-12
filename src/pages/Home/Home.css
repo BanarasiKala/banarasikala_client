@@ -1,0 +1,232 @@
+:root {
+  --gold: #d4af37;
+  --maroon: #800020;
+  --cream: #f5f1e8;
+  --dark-brown: #3d2817;
+  --bk-page-max: 1500px;
+  --bk-page-pad: 80px;
+}
+
+.home-page {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #f5ecd7;
+}
+
+.bk-home-main {
+  padding-top: 128px;
+}
+
+.home-deferred-section {
+  width: 100%;
+  content-visibility: auto;
+  contain-intrinsic-size: var(--home-deferred-min-height, 420px);
+}
+
+.home-deferred-section.is-loading {
+  min-height: var(--home-deferred-min-height, 360px);
+}
+
+.home-section-loader {
+  min-height: var(--home-deferred-min-height, 360px);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+    var(--bk-section-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+}
+
+.home-section-loader::before,
+.home-section-loader::after {
+  content: "";
+  position: absolute;
+  left: max(18px, calc((100% - var(--bk-page-max)) / 2 + var(--bk-page-pad)));
+  right: max(18px, calc((100% - var(--bk-page-max)) / 2 + var(--bk-page-pad)));
+  border-radius: 10px;
+  background:
+    var(--bk-loader-sheen),
+    var(--bk-loader-base);
+  background-size: 220% 100%;
+  animation: bkHomeDeferredShimmer var(--bk-loader-duration) ease-in-out infinite;
+}
+
+.home-section-loader::before {
+  top: 28px;
+  width: min(360px, calc(100% - 36px));
+  height: 24px;
+}
+
+.home-section-loader::after {
+  top: 74px;
+  bottom: 30px;
+  min-height: 92px;
+}
+
+.home-deferred-section--why {
+  --home-deferred-min-height: 150px;
+}
+
+.home-deferred-section--popular {
+  --home-deferred-min-height: 760px;
+}
+
+.home-deferred-section--browse {
+  --home-deferred-min-height: 300px;
+}
+
+.home-deferred-section--arrivals {
+  --home-deferred-min-height: 430px;
+}
+
+.home-deferred-section--occasion {
+  --home-deferred-min-height: 450px;
+}
+
+.home-deferred-section--reviews {
+  --home-deferred-min-height: 560px;
+}
+
+.home-deferred-section--faq {
+  --home-deferred-min-height: 260px;
+}
+
+.home-page
+  :where(
+    .bk-fabric-strip,
+    .home-deferred-section
+  )
+  :where(*):not(:where(h1, h2, h1 *, h2 *, .bk-occasion-heading, .bk-occasion-heading *)) {
+  font-family: "Poppins", sans-serif !important;
+}
+
+.home-page
+  :where(
+    .bk-fabric-strip,
+    .home-deferred-section
+  )
+  :where(p, span, a, button, small, em):not(:where(h1 *, h2 *, .bk-occasion-heading, .bk-occasion-heading *)) {
+  font-weight: 500 !important;
+}
+
+.home-page
+  :where(
+    .bk-fabric-strip,
+    .home-deferred-section
+  )
+  :where(
+    p,
+    .bk-story-copy p,
+    .bk-review-card p,
+    .bk-faq-answer,
+    .bk-popular-empty p
+  ) {
+  font-weight: 400 !important;
+}
+
+.home-page
+  :where(
+    .bk-fabric-label,
+    .bk-popular-card-body h3,
+    .bk-popular-price,
+    .bk-popular-mrp,
+    .bk-arrival-info h3,
+    .bk-arrival-price,
+    .bk-arrival-mrp,
+    .bk-browse-name,
+    .bk-occasion-name,
+    .bk-faq-question,
+    .bk-story-cta,
+    .bk-popular-view-all,
+    .bk-arrivals-link
+  ) {
+  font-weight: 600 !important;
+}
+
+.home-page
+  :where(
+    .bk-popular-header h2,
+    .bk-browse-header h2,
+    .bk-arrivals-copy h2,
+    .bk-occasion-heading h2,
+    .bk-story-copy h2,
+    .bk-review-heading h2,
+    .bk-faq-shell h2
+  ) {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+@keyframes bkHomeDeferredShimmer {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
+
+@media (max-width: 1190px) {
+  :root {
+    --bk-page-pad: 18px;
+  }
+
+  .bk-home-main {
+    padding-top: 136px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bk-home-main {
+    padding-top: 136px;
+  }
+
+  .home-page
+    :where(
+      .bk-popular-header h2,
+      .bk-browse-header h2,
+      .bk-arrivals-copy h2,
+      .bk-occasion-heading h2,
+      .bk-story-copy h2,
+      .bk-review-heading h2,
+      .bk-faq-shell h2
+    ) {
+    font-size: 15px !important;
+  }
+
+  .home-deferred-section--popular,
+  .home-deferred-section--arrivals {
+    --home-deferred-min-height: 1210px;
+  }
+
+  .home-deferred-section--browse {
+    --home-deferred-min-height: 320px;
+  }
+
+  .home-deferred-section--occasion {
+    --home-deferred-min-height: 585px;
+  }
+
+  .home-deferred-section--reviews {
+    --home-deferred-min-height: 610px;
+  }
+
+  .home-deferred-section--faq {
+    --home-deferred-min-height: 300px;
+  }
+
+  .home-section-loader::before {
+    top: 22px;
+    height: 20px;
+  }
+
+  .home-section-loader::after {
+    top: 58px;
+    bottom: 22px;
+  }
+}
