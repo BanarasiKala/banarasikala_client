@@ -51,6 +51,34 @@ export const AuthProvider = ({ children }) => {
     axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
   };
 
+  const googleLogin = async (credential) => {
+    try {
+      const response = await axios.post(`${API_ENDPOINTS.auth}/google`, { credential });
+      const data = response.data;
+      if (data.requiresPhoneVerification) {
+        return { requiresPhoneVerification: true, pendingToken: data.pendingToken };
+      }
+      const customer = data.customer || data.user;
+      persistAuth({ customer, accessToken: data.accessToken, refreshToken: data.refreshToken, keepLoggedIn: true });
+      return { requiresPhoneVerification: false, customer };
+    } catch (error) {
+      const err = new Error(getApiErrorMessage(error, "Google Sign-In failed. Please try again."));
+      throw err;
+    }
+  };
+
+  const verifyPhoneOtp = async (pendingToken, phone, otp, verificationId) => {
+    try {
+      const response = await axios.post(`${API_ENDPOINTS.auth}/verify-phone-otp`, { pendingToken, phone, otp, verificationId });
+      const customer = response.data.customer || response.data.user;
+      persistAuth({ customer, accessToken: response.data.accessToken, refreshToken: response.data.refreshToken, keepLoggedIn: true });
+      return customer;
+    } catch (error) {
+      const err = new Error(getApiErrorMessage(error, "Phone verification failed. Please try again."));
+      throw err;
+    }
+  };
+
   const login = async (identifier, password, keepLoggedIn) => {
     try {
       const response = await axios.post(`${API_ENDPOINTS.auth}/login`, { identifier, password });
@@ -112,7 +140,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser, googleLogin, verifyPhoneOtp }}>
       {children}
     </AuthContext.Provider>
   );

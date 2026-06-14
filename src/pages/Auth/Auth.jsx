@@ -1,4 +1,5 @@
 import { Icon } from "@iconify/react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
@@ -139,7 +140,14 @@ const Auth = () => {
   const [forgotErrors, setForgotErrors] = useState({});
   const [resetErrors, setResetErrors] = useState({});
 
-  const { login, signup, user } = useAuth();
+  const [pendingGoogleToken, setPendingGoogleToken] = useState("");
+  const [phoneVerifPhone, setPhoneVerifPhone] = useState("");
+  const [phoneVerifId, setPhoneVerifId] = useState("");
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  const { login, signup, googleLogin, verifyPhoneOtp, user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
@@ -195,6 +203,7 @@ const Auth = () => {
     if (activeTab === "signup") return { title: "Create Account", subtitle: "Add your details and verify your email once." };
     if (activeTab === "forgotPassword") return { title: "Reset Password", subtitle: "Enter your registered email to verify ownership." };
     if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Your email is verified. Set a secure new password." };
+    if (activeTab === "phoneVerification") return { title: "One Last Step", subtitle: "Add your mobile number to complete your account." };
     return { title: "Welcome Back", subtitle: "Please enter your details" };
   }, [activeTab]);
 
@@ -210,6 +219,14 @@ const Auth = () => {
     setSignupErrors({});
     setForgotErrors({});
     setResetErrors({});
+    if (mode !== "phoneVerification") {
+      setPendingGoogleToken("");
+      setPhoneVerifPhone("");
+      setPhoneVerifId("");
+      setPhoneOtpSent(false);
+      setPhoneOtp("");
+      setPhoneError("");
+    }
     setAnimationKey((k) => k + 1);
   }
 
@@ -352,6 +369,65 @@ const Auth = () => {
     startEmailOtp(otpStep.action, otpStep.email, signupData.name);
   };
 
+  // ── Google OAuth ───────────────────────────────────────────
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setApiError(""); setLoading(true);
+    try {
+      const result = await googleLogin(credentialResponse.credential);
+      if (result.requiresPhoneVerification) {
+        setPendingGoogleToken(result.pendingToken);
+        switchMode("phoneVerification");
+      } else {
+        showNotification("Signed in with Google successfully!", "success");
+      }
+    } catch (err) {
+      setApiError(err.message || "Google Sign-In failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendPhoneOtp = async () => {
+    const phone = normalizePhone(phoneVerifPhone);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setPhoneError("Please enter a valid 10-digit mobile number (starting with 6–9).");
+      return;
+    }
+    setPhoneError(""); setSuccess(""); setOtpLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/send-phone-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingToken: pendingGoogleToken, phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+      setPhoneVerifId(data.verificationId);
+      setPhoneOtpSent(true);
+      setSuccess("OTP sent to your mobile number.");
+    } catch (err) {
+      setPhoneError(err.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (e) => {
+    e.preventDefault();
+    const phone = normalizePhone(phoneVerifPhone);
+    const code = phoneOtp.replace(/\D/g, "");
+    if (code.length !== 6) { setPhoneError("Please enter the complete 6-digit OTP."); return; }
+    setPhoneError(""); setLoading(true);
+    try {
+      await verifyPhoneOtp(pendingGoogleToken, phone, code, phoneVerifId);
+      showNotification("Account created successfully! Welcome!", "success");
+    } catch (err) {
+      setPhoneError(err.message || "OTP verification failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Handlers ───────────────────────────────────────────────
   const onLogin = async (e) => {
     e.preventDefault();
@@ -362,7 +438,8 @@ const Auth = () => {
       await login(loginData.identifier, loginData.password, loginData.keepLoggedIn);
       showNotification("Login successfully", "success");
     } catch (err) {
-      setApiError(getFriendlyError(err, "Unable to login right now. Please contact support or try again later."));
+      console.error("[Auth:onLogin]", err); 
+      setApiError(getFriendlyError(err, err.message || "Unable to login right now. Please contact support or try again later."));
     } finally {
       setLoading(false);
     }
@@ -484,6 +561,16 @@ const Auth = () => {
               {loading ? "Please wait..." : "Login"}
             </button>
             <div className="auth-divider"><span /><em>or</em><span /></div>
+            <div className="auth-google-wrap">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setApiError("Google Sign-In failed. Please try again.")}
+                width="100%"
+                text="signin_with"
+                shape="rectangular"
+              />
+            </div>
+            <div className="auth-divider"><span /><em>or</em><span /></div>
             <button type="button" className="auth-secondary" onClick={() => switchMode("signup")}>
               <Icon icon="lucide:user-plus" />
               Create New Account
@@ -591,7 +678,77 @@ const Auth = () => {
             <button type="submit" disabled={loading || otpLoading} className="auth-primary">
               {loading ? "Signing up..." : "Sign Up"}
             </button>
+            <div className="auth-divider"><span /><em>or sign up with</em><span /></div>
+            <div className="auth-google-wrap">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setApiError("Google Sign-In failed. Please try again.")}
+                width="100%"
+                text="signup_with"
+                shape="rectangular"
+              />
+            </div>
             <button type="button" className="auth-text-button" onClick={() => switchMode("login")}>Back to Login</button>
+          </form>
+        )}
+
+        {/* ── Phone Verification (Google new users) ── */}
+        {activeTab === "phoneVerification" && (
+          <form className="auth-form" onSubmit={handleVerifyPhoneOtp} noValidate>
+            <div className="auth-phone-verify">
+              <AuthField
+                icon="lucide:phone"
+                label="Mobile Number"
+                name="phone"
+                value={phoneVerifPhone}
+                placeholder="Enter 10 digit mobile number"
+                onChange={(e) => {
+                  setPhoneVerifPhone(normalizePhone(e.target.value));
+                  setPhoneError("");
+                }}
+                inputMode="tel"
+                maxLength={10}
+                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91</span>}
+                error={!phoneOtpSent ? phoneError : undefined}
+              />
+              {!phoneOtpSent && (
+                <button
+                  type="button"
+                  className="auth-verify-link"
+                  onClick={handleSendPhoneOtp}
+                  disabled={otpLoading}
+                >
+                  <Icon icon="lucide:send" />
+                  {otpLoading ? "Sending..." : "Send OTP"}
+                </button>
+              )}
+            </div>
+            {phoneOtpSent && (
+              <>
+                <div style={{ marginTop: "1rem" }}>
+                  <span className="auth-label">Enter OTP sent to +91 {phoneVerifPhone}</span>
+                  <OtpBoxes
+                    value={phoneOtp}
+                    length={6}
+                    disabled={loading}
+                    onChange={(v) => { setPhoneOtp(v.replace(/\D/g, "").slice(0, 6)); setPhoneError(""); }}
+                  />
+                </div>
+                {phoneError && <div className="auth-alert auth-alert-error">{phoneError}</div>}
+                <button type="submit" disabled={loading} className="auth-primary" style={{ marginTop: "1rem" }}>
+                  {loading ? "Verifying..." : "Verify & Complete Signup"}
+                </button>
+                <button
+                  type="button"
+                  className="auth-text-button"
+                  onClick={handleSendPhoneOtp}
+                  disabled={otpLoading}
+                >
+                  Resend OTP
+                </button>
+              </>
+            )}
+            {!phoneOtpSent && phoneError && <div className="auth-alert auth-alert-error">{phoneError}</div>}
           </form>
         )}
 
