@@ -171,7 +171,7 @@ const Auth = () => {
   useEffect(() => {
     if (user) {
       const mode = new URLSearchParams(location.search).get("mode");
-      if (mode === "forgot" || activeTab === "forgotPassword" || activeTab === "resetPassword") return;
+      if (mode === "forgot" || activeTab === "forgotPassword" || activeTab === "resetPassword" || activeTab === "phoneVerification") return;
       navigate(location.state?.from?.pathname || "/", { replace: true });
     }
   }, [user, navigate, location, activeTab]);
