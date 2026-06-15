@@ -1,9 +1,11 @@
 .auth-page {
-  min-height: calc(100vh - 129px);
+  position: relative;
+  min-height: 100vh;
   display: grid;
-  align-items: start;
+  align-content: start;
   justify-items: center;
-  padding: 46px 16px 28px;
+  gap: 0;
+  padding: 18px 16px 32px;
   background:
     linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
     var(--auth-bg, var(--bk-section-bg)),
@@ -14,14 +16,42 @@
   font-family: "Poppins", sans-serif;
 }
 
+.auth-back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #5b0710;
+  background: rgba(255, 252, 247, 0.82);
+  border: none;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.auth-back-btn:hover {
+  background: rgba(255, 252, 247, 0.98);
+  transform: translateX(-2px);
+}
+
+.auth-back-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .auth-panel {
-  width: min(100%, 480px);
-  padding: 34px 42px 32px;
-  background: rgba(255, 252, 247, 0.94);
-  border: 1px solid rgba(189, 145, 85, 0.18);
-  border-top-color: transparent;
-  border-radius: 10px;
-  box-shadow: 0 18px 38px rgba(79, 42, 13, 0.12);
+  width: min(100%, 440px);
+  padding: 28px 38px 32px;
+  background: rgba(255, 252, 247, 0.96);
+  border: 1px solid rgba(189, 145, 85, 0.22);
+  border-radius: 12px;
+  box-shadow: 0 20px 44px rgba(79, 42, 13, 0.13);
   animation: auth-card-in 0.42s ease both;
 }
 
@@ -635,20 +665,32 @@
 
 @media (max-width: 1190px) {
   .auth-page {
-    min-height: calc(100vh - 137px);
+    min-height: 100vh;
   }
 }
 
 @media (max-width: 640px) {
   .auth-page {
-    min-height: calc(100vh - 171px);
-    align-items: start;
-    padding: 26px 12px 18px;
+    min-height: 100vh;
+    padding: 14px 12px 20px;
   }
 
   .auth-panel {
-    padding: 22px 16px 20px;
-    border-radius: 8px;
+    padding: 20px 18px 24px;
+    border-radius: 10px;
+  }
+
+  .auth-signup-logo-img {
+    width: 140px;
+  }
+
+  .auth-pw-reqs {
+    gap: 5px;
+  }
+
+  .auth-pw-req {
+    font-size: 10px;
+    padding: 4px 8px;
   }
 
   .auth-heading {
@@ -709,5 +751,814 @@
     flex-direction: column;
     gap: 10px;
   }
+}
+
+/* ── Signup brand logo (outside card, on page background) ──── */
+.auth-signup-brand {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0 16px 20px;
+}
+
+.auth-signup-logo-img {
+  width: 160px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(79, 42, 13, 0.18));
+}
+
+/* ── Signup heading overrides ───────────────────────────────── */
+.auth-heading-signup {
+  margin-bottom: 16px;
+}
+
+.auth-heading-signup h1 {
+  font-size: clamp(24px, 3.8vw, 32px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Lotus / ornament divider ───────────────────────────────── */
+.auth-lotus-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px auto 6px;
+  width: 80%;
+  color: #c9a248;
+}
+
+.auth-lotus-divider span {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c9a248 40%, #c9a248 60%, transparent);
+}
+
+.auth-lotus-divider svg {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Password requirement chips ─────────────────────────────── */
+.auth-pw-reqs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: -2px;
+}
+
+.auth-pw-req {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  color: #8a7a70;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(91, 55, 28, 0.18);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.auth-pw-req svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: #c8b8ac;
+  transition: color 0.2s ease;
+}
+
+.auth-pw-req.is-met {
+  color: #267042;
+  background: rgba(239, 250, 243, 0.85);
+  border-color: rgba(38, 112, 66, 0.28);
+}
+
+.auth-pw-req.is-met svg {
+  color: #267042;
+}
+
+/* ── Phone country code chevron ─────────────────────────────── */
+.auth-country-chevron {
+  width: 11px !important;
+  height: 11px !important;
+  color: #806f62;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* ── Signup submit button ───────────────────────────────────── */
+.auth-primary-signup {
+  min-height: 48px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  gap: 12px;
+}
+
+.auth-primary-signup svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Email Sent screen ─────────────────────────────────────── */
+.auth-email-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.auth-email-sent-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff5e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.auth-email-sent-icon svg,
+.auth-email-sent-icon [data-icon] {
+  font-size: 34px;
+  color: #800020;
+}
+
+.auth-email-sent-desc {
+  font-size: 14px;
+  color: #3d2817;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.auth-email-sent-note {
+  font-size: 12px;
+  color: #8a7060;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.auth-email-sent .auth-secondary {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* ── Email Sent redesign ────────────────────────────────────── */
+.auth-es-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.auth-es-screen p {
+  margin: 0;
+}
+
+/* envelope icon block */
+.auth-es-envelope-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.auth-es-envelope-icon {
+  font-size: 110px !important;
+  color: #c9a248;
+  opacity: 0.82;
+  display: block;
+}
+
+.auth-es-check-badge {
+  position: absolute;
+  bottom: 6px;
+  right: -4px;
+  width: 34px;
+  height: 34px;
+  background: #760819;
+  border-radius: 50%;
+  border: 3px solid #fffaf2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-es-check-badge svg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+  stroke-width: 3;
+}
+
+/* title row */
+.auth-es-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.auth-es-sparkle {
+  font-size: 16px;
+  color: #c9a248;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.auth-es-title {
+  margin: 0;
+  color: #5b0710;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 3.5vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* body text */
+.auth-es-desc {
+  color: #76695f;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 6px !important;
+}
+
+.auth-es-email {
+  color: #3b2118;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px !important;
+}
+
+/* spam hint box */
+.auth-es-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(250, 243, 230, 0.7);
+  border: 1px solid rgba(189, 145, 85, 0.2);
+  border-radius: 10px;
+  text-align: left;
+  margin: 14px 0 20px;
+}
+
+.auth-es-hint-icon {
+  width: 38px;
+  height: 38px;
+  background: rgba(245, 232, 211, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-es-hint-icon svg {
+  font-size: 18px;
+  color: #c9a248;
+}
+
+.auth-es-hint-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-es-hint-text strong {
+  color: #3b2118;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.auth-es-hint-text span {
+  color: #76695f;
+  font-size: 12px;
+}
+
+/* Gmail button */
+.auth-es-gmail-btn {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 20px;
+  color: #fff;
+  background: #760819;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(75, 6, 13, 0.26);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+  margin-bottom: 10px;
+}
+
+.auth-es-gmail-btn:hover {
+  background: #650716;
+  box-shadow: 0 11px 24px rgba(75, 6, 13, 0.32);
+}
+
+.auth-es-gmail-btn:active {
+  transform: translateY(1px);
+}
+
+.auth-es-gmail-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex-shrink: 0;
+}
+
+/* Change email button */
+.auth-es-change-btn {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  color: #760819;
+  background: transparent;
+  border: 1.5px solid rgba(118, 8, 25, 0.45);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  margin-bottom: 18px;
+}
+
+.auth-es-change-btn:hover {
+  background: rgba(118, 8, 25, 0.05);
+  border-color: rgba(118, 8, 25, 0.7);
+}
+
+/* Resend row */
+.auth-es-resend {
+  color: #76695f;
+  font-size: 13px;
+  margin: 0 !important;
+}
+
+.auth-es-resend-link {
+  color: #3b2118;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.auth-es-resend-link:hover {
+  color: #760819;
+}
+
+.auth-es-resend-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Phone Verification redesign (Google OAuth) ─────────────── */
+.auth-pv-screen {
+  display: grid;
+  gap: 0;
+}
+
+/* icon row */
+.auth-pv-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.auth-pv-sparkle {
+  font-size: 20px;
+  color: #c9a248;
+  line-height: 1;
+}
+
+.auth-pv-circle {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  background: #f5e8d3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-pv-main-icon {
+  font-size: 38px !important;
+  color: #c9a248;
+}
+
+.auth-pv-shield-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  background: #760819;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+.auth-pv-shield-badge svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  stroke-width: 3;
+}
+
+/* title */
+.auth-pv-title {
+  margin: 0;
+  color: #5b0710;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 3.2vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* subtitle */
+.auth-pv-subtitle {
+  margin: 6px 0 18px;
+  color: #76695f;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* custom phone input field */
+.auth-pv-phone-field {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(91, 55, 28, 0.22);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-pv-phone-field:focus-within {
+  border-color: rgba(91, 7, 16, 0.45);
+  box-shadow: 0 0 0 4px rgba(91, 7, 16, 0.07);
+}
+
+.auth-pv-phone-field.has-error {
+  border-color: rgba(173, 51, 36, 0.5);
+}
+
+.auth-pv-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(91, 55, 28, 0.2);
+  flex-shrink: 0;
+  margin: 0 12px;
+}
+
+.auth-pv-phone-input {
+  flex: 1;
+  color: #3b2118;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.auth-pv-phone-input::placeholder {
+  color: rgba(77, 65, 57, 0.55);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* secure note (screen 1) */
+.auth-pv-secure {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 20px;
+  color: #8a7a70;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.auth-pv-secure-icon {
+  width: 14px !important;
+  height: 14px !important;
+  color: #c9a248;
+  flex-shrink: 0;
+}
+
+/* primary button */
+.auth-pv-btn {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+  color: #fff;
+  background: #760819;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 20px rgba(75, 6, 13, 0.26);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+}
+
+.auth-pv-btn:hover {
+  background: #650716;
+  box-shadow: 0 11px 24px rgba(75, 6, 13, 0.32);
+}
+
+.auth-pv-btn:active {
+  transform: translateY(1px);
+}
+
+.auth-pv-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.auth-pv-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* OTP screen — phone display row */
+.auth-pv-phone-display {
+  color: #760819;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.auth-pv-edit-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-pv-edit-btn:hover {
+  color: #5b0710;
+}
+
+/* OTP boxes wrapper — full width 6-col grid */
+.auth-pv-otp-wrap {
+  margin-bottom: 14px;
+}
+
+.auth-pv-otp-wrap .auth-otp-boxes {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+/* success banner */
+.auth-pv-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 250, 243, 0.9);
+  border: 1px solid rgba(38, 112, 66, 0.25);
+  border-radius: 8px;
+  color: #267042;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.auth-pv-success-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* resend section */
+.auth-pv-resend {
+  text-align: center;
+  margin: 4px 0 18px;
+}
+
+.auth-pv-resend-label {
+  margin: 0 0 4px;
+  color: #76695f;
+  font-size: 13px;
+}
+
+.auth-pv-resend-timer {
+  margin: 0;
+  color: #76695f;
+  font-size: 13px;
+}
+
+.auth-pv-resend-timer strong {
+  color: #760819;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.auth-pv-resend-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.auth-pv-resend-btn:hover {
+  color: #5b0710;
+}
+
+.auth-pv-resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* bottom security note */
+.auth-pv-bottom-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: #8a7a70;
+  font-size: 12px;
+}
+
+.auth-pv-bottom-note svg {
+  width: 13px !important;
+  height: 13px !important;
+  color: #c9a248;
+  flex-shrink: 0;
+}
+
+/* ── Phone Verification — Success Screen ────────────────────── */
+.auth-pv-success-icon-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 8px auto 24px;
+}
+
+.auth-pv-success-circle {
+  width: 96px;
+  height: 96px;
+  background: #effaf3;
+  border: 2px solid rgba(38, 112, 66, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-pv-success-circle svg {
+  width: 46px;
+  height: 46px;
+  color: #267042;
+  stroke-width: 2.5;
+}
+
+.auth-pv-success-sparkle {
+  position: absolute;
+  font-size: 15px;
+  color: #c9a248;
+  line-height: 1;
+}
+
+.auth-pv-sp-tl { top: -6px; left: -20px; }
+.auth-pv-sp-tr { top: -6px; right: -20px; }
+.auth-pv-sp-bl { bottom: -6px; left: -20px; }
+.auth-pv-sp-br { bottom: -6px; right: -20px; }
+
+.auth-pv-success-title {
+  margin: 0;
+  color: #5b0710;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 4vw, 30px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.auth-pv-success-subtitle {
+  margin: 4px 0 20px;
+  color: #76695f;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.auth-pv-benefits {
+  background: rgba(255, 248, 237, 0.7);
+  border: 1px solid rgba(189, 145, 85, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.auth-pv-benefit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+}
+
+.auth-pv-benefit + .auth-pv-benefit {
+  border-top: 1px solid rgba(189, 145, 85, 0.15);
+}
+
+.auth-pv-benefit-icon {
+  width: 46px;
+  height: 46px;
+  background: rgba(245, 232, 211, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-pv-benefit-icon svg {
+  width: 22px;
+  height: 22px;
+  color: #c9a248;
+}
+
+.auth-pv-benefit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-pv-benefit-text strong {
+  color: #3b2118;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.auth-pv-benefit-text span {
+  color: #76695f;
+  font-size: 12px;
+  line-height: 1.4;
 }
 

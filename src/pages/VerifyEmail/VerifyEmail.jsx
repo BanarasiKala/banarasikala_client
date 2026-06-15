@@ -1,0 +1,358 @@
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import { Icon } from "@iconify/react";
+import { API_ENDPOINTS } from "../../config/api";
+import { useAuth } from "../../context/AuthContext";
+import verticalLogo from "../../assets/vertical_logo.png";
+import headerBackground from "../../assets/header_backgroung.png";
+import "./VerifyEmail.css";
+
+const STEPS = {
+  VERIFYING: "verifying",
+  EMAIL_VERIFIED: "email_verified",
+  CONFIRM_PHONE: "confirm_phone",
+  PHONE_OTP: "phone_otp",
+  SUCCESS: "success",
+  ERROR: "error",
+};
+
+const formatPhone = (p) => {
+  const d = String(p || "").replace(/\D/g, "").slice(-10);
+  return d.length === 10 ? `${d.slice(0, 5)} ${d.slice(5)}` : d;
+};
+
+const OtpBoxes = ({ value, onChange, disabled }) => {
+  const refs = useRef([]);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] || "");
+
+  const update = (i, raw) => {
+    const digit = raw.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = digit;
+    onChange(next.join(""));
+    if (digit && i < 5) refs.current[i + 1]?.focus();
+  };
+
+  const handleKey = (i, e) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus();
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const p = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    onChange(p);
+    refs.current[Math.min(p.length, 5)]?.focus();
+  };
+
+  return (
+    <div className="ve-otp-boxes" onPaste={handlePaste}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={d}
+          disabled={disabled}
+          onChange={(e) => update(i, e.target.value)}
+          onKeyDown={(e) => handleKey(i, e)}
+          autoComplete={i === 0 ? "one-time-code" : "off"}
+          aria-label={`OTP digit ${i + 1}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+const PhoneIconBlock = () => (
+  <div className="ve-confirm-icon-row">
+    <span className="ve-sparkle">✦</span>
+    <div className="ve-phone-circle">
+      <Icon icon="lucide:smartphone" className="ve-phone-icon" />
+      <div className="ve-shield-badge">
+        <Icon icon="lucide:check" />
+      </div>
+    </div>
+    <span className="ve-sparkle">✦</span>
+  </div>
+);
+
+const LotusDivider = () => (
+  <div className="ve-lotus-divider" aria-hidden="true">
+    <span /><Icon icon="ph:flower-lotus" /><span />
+  </div>
+);
+
+export default function VerifyEmail() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { completeRegistration } = useAuth();
+
+  const [step, setStep] = useState(STEPS.VERIFYING);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [phone, setPhone] = useState("");
+  const [editablePhone, setEditablePhone] = useState("");
+  const [maskedPhone, setMaskedPhone] = useState("");
+  const [registrationToken, setRegistrationToken] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resendSeconds, setResendSeconds] = useState(30);
+  const timerRef = useRef(null);
+
+  const urlToken = searchParams.get("token");
+  const preVerifiedToken = searchParams.get("vt");
+
+  const startResendTimer = () => {
+    clearInterval(timerRef.current);
+    setResendSeconds(30);
+    timerRef.current = setInterval(() => {
+      setResendSeconds((s) => {
+        if (s <= 1) { clearInterval(timerRef.current); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => clearInterval(timerRef.current), []);
+
+  const sendOtp = async (regToken, phoneOverride = null) => {
+    try {
+      const payload = { registrationToken: regToken };
+      if (phoneOverride) payload.phone = phoneOverride;
+      const res = await axios.post(`${API_ENDPOINTS.auth}/send-registration-phone-otp`, payload);
+      if (res.data.maskedPhone) setMaskedPhone(res.data.maskedPhone);
+      setStep(STEPS.PHONE_OTP);
+      startResendTimer();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Could not send OTP. Please try again.";
+      setErrorMsg(msg);
+      setStep(STEPS.ERROR);
+    }
+  };
+
+  useEffect(() => {
+    if (preVerifiedToken) {
+      setRegistrationToken(preVerifiedToken);
+      sendOtp(preVerifiedToken);
+      return;
+    }
+
+    if (!urlToken) {
+      setErrorMsg("No verification token found. Please register again.");
+      setStep(STEPS.ERROR);
+      return;
+    }
+
+    const verify = async () => {
+      try {
+        const res = await axios.get(`${API_ENDPOINTS.auth}/verify-email-link?token=${encodeURIComponent(urlToken)}`);
+        setRegistrationToken(res.data.verifiedToken);
+        if (res.data.phone) {
+          setPhone(res.data.phone);
+          setEditablePhone(String(res.data.phone).replace(/\D/g, "").slice(-10));
+        }
+        if (res.data.maskedPhone) setMaskedPhone(res.data.maskedPhone);
+        setStep(STEPS.EMAIL_VERIFIED);
+      } catch (err) {
+        const msg = err.response?.data?.message || "Email verification failed. The link may be expired or already used.";
+        setErrorMsg(msg);
+        setStep(STEPS.ERROR);
+      }
+    };
+
+    verify();
+  }, [urlToken, preVerifiedToken]);
+
+  const handleSendOtp = async () => {
+    const normalized = editablePhone.replace(/\D/g, "");
+    if (!/^[6-9]\d{9}$/.test(normalized)) {
+      setOtpError("Please enter a valid 10-digit mobile number (starting with 6–9).");
+      return;
+    }
+    setOtpError("");
+    setSendingOtp(true);
+    await sendOtp(registrationToken, normalized);
+    setSendingOtp(false);
+  };
+
+  const handleResend = async () => {
+    if (resendSeconds > 0) return;
+    setOtpError("");
+    await sendOtp(registrationToken);
+  };
+
+  const handleSubmitOtp = async (e) => {
+    e.preventDefault();
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length !== 6) { setOtpError("Please enter the 6-digit OTP."); return; }
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      await completeRegistration(registrationToken, cleanOtp, null, true);
+      setStep(STEPS.SUCCESS);
+      setTimeout(() => navigate("/"), 2500);
+    } catch (err) {
+      setOtpError(err.message || "Invalid or expired OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  return (
+    <main className="ve-page" style={{ "--ve-bg": `url(${headerBackground})` }}>
+      <Link to="/login?mode=signup" className="ve-back-btn" aria-label="Back">
+        <Icon icon="lucide:arrow-left" />
+      </Link>
+
+      <div className="ve-brand">
+        <img src={verticalLogo} className="ve-logo" alt="Banarasi Kala" />
+      </div>
+
+      <div className="ve-card">
+
+        {step === STEPS.VERIFYING && (
+          <div className="ve-center">
+            <div className="ve-spinner" />
+            <p className="ve-subtitle">Verifying your email…</p>
+          </div>
+        )}
+
+        {step === STEPS.EMAIL_VERIFIED && (
+          <div className="ve-confirm ve-ev">
+            <div className="ve-ev-icon-row">
+              <span className="ve-sparkle">✦</span>
+              <div className="ve-ev-circle">
+                <Icon icon="lucide:check" />
+              </div>
+              <span className="ve-sparkle">✦</span>
+            </div>
+            <h1 className="ve-title ve-ev-title">
+              <span className="ve-sparkle ve-ev-inline-sparkle">✦</span>
+              Email Verified
+              <span className="ve-sparkle ve-ev-inline-sparkle">✦</span>
+            </h1>
+            <LotusDivider />
+            <p className="ve-subtitle">Your email has been verified successfully.</p>
+            <p className="ve-subtitle">
+              Let's verify your mobile number<br />to complete your account.
+            </p>
+            <button
+              type="button"
+              className="ve-btn-primary"
+              style={{ marginTop: 20 }}
+              onClick={() => setStep(STEPS.CONFIRM_PHONE)}
+            >
+              <span>Continue to Mobile Verification</span>
+              <Icon icon="lucide:arrow-right" />
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.CONFIRM_PHONE && (
+          <div className="ve-confirm">
+            <PhoneIconBlock />
+            <h1 className="ve-title">Verify Mobile Number</h1>
+            <LotusDivider />
+            <p className="ve-subtitle">
+              We will send you a One Time Password (OTP)<br />to verify your mobile number.
+            </p>
+
+            <p className="ve-field-label">Mobile Number</p>
+            <div className={`ve-phone-display${otpError ? " ve-phone-error" : ""}`}>
+              <span className="ve-phone-country">
+                <span className="ve-flag-india" aria-hidden="true" />
+                +91
+                <Icon icon="lucide:chevron-down" className="ve-chevron" />
+              </span>
+              <span className="ve-phone-sep" />
+              <input
+                type="tel"
+                className="ve-phone-input"
+                inputMode="numeric"
+                maxLength={10}
+                value={editablePhone}
+                placeholder="Enter 10-digit number"
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  if (digits.length > 0 && !/^[6-9]/.test(digits)) return;
+                  setEditablePhone(digits);
+                  if (otpError) setOtpError("");
+                }}
+              />
+            </div>
+            {otpError && <p className="ve-error" style={{ margin: "6px 0 0", textAlign: "left" }}>{otpError}</p>}
+
+            <p className="ve-secure-note">
+              <Icon icon="lucide:lock" className="ve-lock-icon" />
+              Your number is safe and secure with us.
+            </p>
+
+            <button
+              type="button"
+              className="ve-btn-primary"
+              onClick={handleSendOtp}
+              disabled={sendingOtp}
+            >
+              {sendingOtp ? "Sending…" : <><span>Send OTP</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.PHONE_OTP && (
+          <form onSubmit={handleSubmitOtp} className="ve-otp-form" noValidate>
+            <PhoneIconBlock />
+            <h1 className="ve-title">Enter OTP</h1>
+            <LotusDivider />
+            <p className="ve-subtitle">
+              Enter the 6-digit code sent to<br /><strong>{maskedPhone}</strong>
+            </p>
+            <OtpBoxes
+              value={otp}
+              onChange={(v) => { setOtp(v.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
+              disabled={otpLoading}
+            />
+            {otpError && <p className="ve-error">{otpError}</p>}
+            <button type="submit" className="ve-btn-primary" disabled={otpLoading}>
+              {otpLoading ? "Verifying…" : <><span>Create My Account</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+            <p className="ve-resend">
+              {resendSeconds > 0
+                ? `Resend OTP in ${resendSeconds}s`
+                : <button type="button" className="ve-resend-btn" onClick={handleResend}>Resend OTP</button>}
+            </p>
+          </form>
+        )}
+
+        {step === STEPS.SUCCESS && (
+          <div className="ve-center">
+            <div className="ve-status-circle ve-status-success">
+              <Icon icon="lucide:check" />
+            </div>
+            <h1 className="ve-title">Account Created!</h1>
+            <LotusDivider />
+            <p className="ve-subtitle">Welcome to Banarasi Kala. Redirecting you…</p>
+          </div>
+        )}
+
+        {step === STEPS.ERROR && (
+          <div className="ve-center">
+            <div className="ve-status-circle ve-status-error">
+              <Icon icon="lucide:x" />
+            </div>
+            <h1 className="ve-title">Verification Failed</h1>
+            <LotusDivider />
+            <p className="ve-subtitle">{errorMsg}</p>
+            <Link to="/login?mode=signup" className="ve-btn-primary ve-btn-link">
+              <span>Go to Registration</span><Icon icon="lucide:arrow-right" />
+            </Link>
+          </div>
+        )}
+
+      </div>
+    </main>
+  );
+}

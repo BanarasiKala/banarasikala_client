@@ -332,7 +332,7 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="bk-header-shell">
+      {!isAuthPage && <div className="bk-header-shell">
         <button
           ref={mobileMenuButtonRef}
           type="button"
@@ -628,9 +628,9 @@ const Header = () => {
             />
           </form>
         )}
-      </div>
+      </div>}
 
-      {mobileMenuOpen && (
+      {!isAuthPage && mobileMenuOpen && (
         <nav ref={mobilePanelRef} className="bk-mobile-panel" aria-label="Mobile navigation">
           <div className="bk-mobile-panel-head">
             <span>{user ? `Hello ${firstName}` : "Welcome"}</span>
@@ -718,7 +718,7 @@ const Header = () => {
         </nav>
       )}
 
-      {referModalOpen && user && (
+      {!isAuthPage && referModalOpen && user && (
         <div className="bk-refer-modal" role="dialog" aria-modal="true" aria-labelledby="bk-refer-title">
           <div className="bk-refer-card">
             <button

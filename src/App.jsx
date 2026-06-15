@@ -29,6 +29,7 @@ const Contact = lazy(() => import("./pages/Contact/Contact"));
 const Feedback = lazy(() => import("./pages/Feedback/Feedback"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail/VerifyEmail"));
 
 
 
@@ -106,8 +107,9 @@ function App() {
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/feedback" element={<Feedback />} />
                       <Route path="/testimonials" element={<Testimonials />} />
-                      <Route path="/login" element={<Auth />} />
                     </Route>
+                    <Route path="/login" element={<Auth />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

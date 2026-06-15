@@ -3,6 +3,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
+import verticalLogo from "../../assets/vertical_logo.png";
 import { API_ENDPOINTS } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -10,7 +11,6 @@ import { getApiErrorMessage } from "../../utils/error";
 import { numberEnv } from "../../utils/env";
 import "./Auth.css";
 
-const strengthLabels = ["Weak", "Moderate", "Strong", "Very Strong"];
 const SUPPORT_MESSAGE = "Something went wrong. Please contact support or try again later.";
 const OTP_SEND_LIMIT = 3;
 const EMAIL_OTP_DIGIT_COUNT = numberEnv("VITE_EMAIL_OTP_LENGTH");
@@ -30,6 +30,9 @@ const getFriendlyError = (error, fallback = SUPPORT_MESSAGE) => {
   if (lower.includes("exceeded") || lower.includes("blocked") || lower.includes("throttle")) {
     return "OTP attempts exceeded. Please try again after 24 hours or contact support.";
   }
+  if (lower.includes("password must")) return message;
+  if (lower.includes("verify your email") || lower.includes("email not verified")) return message;
+  if (lower.includes("phone number already")) return message;
   return fallback;
 };
 
@@ -123,15 +126,15 @@ const Auth = () => {
   const [otpSendAttempts, setOtpSendAttempts] = useState({});
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState("");
-  const [passwordStrength, setPasswordStrength] = useState(0);
   const [animationKey, setAnimationKey] = useState(0);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetOtpToken, setResetOtpToken] = useState("");
-  const [signupOtpToken, setSignupOtpToken] = useState("");
   const [emailOtpSessionToken, setEmailOtpSessionToken] = useState("");
-  const [signupVerifiedEmail, setSignupVerifiedEmail] = useState("");
+  const [signupStep, setSignupStep] = useState("form");
+  const [registrationToken, setRegistrationToken] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
 
   // Per-field validation errors
@@ -146,8 +149,11 @@ const Auth = () => {
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const [phoneResendSeconds, setPhoneResendSeconds] = useState(0);
+  const phoneTimerRef = useRef(null);
+  const [phoneSuccess, setPhoneSuccess] = useState(false);
 
-  const { login, signup, googleLogin, verifyPhoneOtp, user } = useAuth();
+  const { login, googleLogin, verifyPhoneOtp, user, initiateRegistration } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
@@ -199,13 +205,16 @@ const Auth = () => {
     return () => window.removeEventListener("auth:refresh", handler);
   }, []);
 
+  useEffect(() => () => clearInterval(phoneTimerRef.current), []);
+
   const authCopy = useMemo(() => {
-    if (activeTab === "signup") return { title: "Create Account", subtitle: "Add your details and verify your email once." };
+    if (activeTab === "signup" && signupStep === "emailSent") return { title: "Check Your Inbox", subtitle: "A verification link has been sent to your email." };
+    if (activeTab === "signup") return { title: "Create Account", subtitle: "Fill in your details to create your account." };
     if (activeTab === "forgotPassword") return { title: "Reset Password", subtitle: "Enter your registered email to verify ownership." };
     if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Your email is verified. Set a secure new password." };
     if (activeTab === "phoneVerification") return { title: "One Last Step", subtitle: "Add your mobile number to complete your account." };
     return { title: "Welcome Back", subtitle: "Please enter your details" };
-  }, [activeTab]);
+  }, [activeTab, signupStep]);
 
   function switchMode(mode) {
     setActiveTab(mode);
@@ -215,6 +224,10 @@ const Auth = () => {
     setOtpCode("");
     setOtpError("");
     setOtpLoading(false);
+    setEmailOtpSessionToken("");
+    setSignupStep("form");
+    setRegistrationToken("");
+    setResendLoading(false);
     setLoginErrors({});
     setSignupErrors({});
     setForgotErrors({});
@@ -226,18 +239,12 @@ const Auth = () => {
       setPhoneOtpSent(false);
       setPhoneOtp("");
       setPhoneError("");
+      setPhoneSuccess(false);
+      clearInterval(phoneTimerRef.current);
+      setPhoneResendSeconds(0);
     }
     setAnimationKey((k) => k + 1);
   }
-
-  const updateStrength = (value) => {
-    let s = 0;
-    if (value.length >= 6) s++;
-    if (/[A-Z]/.test(value)) s++;
-    if (/[0-9]/.test(value)) s++;
-    if (/[^A-Za-z0-9]/.test(value)) s++;
-    setPasswordStrength(s);
-  };
 
   const handleLoginChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -247,14 +254,20 @@ const Auth = () => {
 
   const handleSignupChange = (e) => {
     const { name, value } = e.target;
-    const nextValue = name === "phone" ? normalizePhone(value) : value;
+    let nextValue;
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 10);
+      // Block first digit 0–5: keep the previous value so nothing appears in the field
+      if (digits.length > 0 && !/^[6-9]/.test(digits)) {
+        nextValue = signupData.phone;
+      } else {
+        nextValue = digits;
+      }
+    } else {
+      nextValue = value;
+    }
     setSignupData((prev) => ({ ...prev, [name]: nextValue }));
     if (signupErrors[name]) setSignupErrors((prev) => ({ ...prev, [name]: "" }));
-    if (name === "email" && String(nextValue || "").trim().toLowerCase() !== signupVerifiedEmail) {
-      setSignupOtpToken("");
-      setSignupVerifiedEmail("");
-    }
-    if (name === "password") updateStrength(value);
   };
 
   // ── Validation helpers ──────────────────────────────────────
@@ -281,8 +294,14 @@ const Auth = () => {
     }
     if (!signupData.password) {
       errors.password = "Please enter a password.";
-    } else if (signupData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters.";
+    } else if (signupData.password.length < 8) {
+      errors.password = "Password must be at least 8 characters.";
+    } else if (!/[A-Z]/.test(signupData.password)) {
+      errors.password = "Password must contain at least one uppercase letter.";
+    } else if (!/[0-9]/.test(signupData.password)) {
+      errors.password = "Password must contain at least one number.";
+    } else if (!/[^A-Za-z0-9]/.test(signupData.password)) {
+      errors.password = "Password must contain at least one special character.";
     }
     if (!consentChecked) {
       errors.consent = "Please accept the Terms & Conditions to continue.";
@@ -300,8 +319,17 @@ const Auth = () => {
 
   const validateReset = () => {
     const errors = {};
-    if (!forgotPasswordData.newPassword) errors.newPassword = "Please enter a new password.";
-    else if (forgotPasswordData.newPassword.length < 6) errors.newPassword = "Password must be at least 6 characters.";
+    if (!forgotPasswordData.newPassword) {
+      errors.newPassword = "Please enter a new password.";
+    } else if (forgotPasswordData.newPassword.length < 8) {
+      errors.newPassword = "Password must be at least 8 characters.";
+    } else if (!/[A-Z]/.test(forgotPasswordData.newPassword)) {
+      errors.newPassword = "Password must contain at least one uppercase letter.";
+    } else if (!/[0-9]/.test(forgotPasswordData.newPassword)) {
+      errors.newPassword = "Password must contain at least one number.";
+    } else if (!/[^A-Za-z0-9]/.test(forgotPasswordData.newPassword)) {
+      errors.newPassword = "Password must contain at least one special character.";
+    }
     if (!forgotPasswordData.confirmPassword) errors.confirmPassword = "Please confirm your password.";
     else if (forgotPasswordData.newPassword !== forgotPasswordData.confirmPassword) errors.confirmPassword = "Passwords do not match.";
     return errors;
@@ -349,13 +377,13 @@ const Auth = () => {
       const res = await fetch(`${API_ENDPOINTS.auth}/verify-email-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: emailOtpSessionToken, otp: code, purpose: otpStep.action === "signup" ? "signup" : "forgot_password" }),
+        body: JSON.stringify({ token: emailOtpSessionToken, otp: code, purpose: "forgot_password" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "OTP verify failed");
-      if (otpStep.action === "signup") { setSignupOtpToken(emailOtpSessionToken); setSignupVerifiedEmail(String(signupData.email || "").trim().toLowerCase()); }
-      if (otpStep.action === "reset") { setResetOtpToken(emailOtpSessionToken); switchMode("resetPassword"); }
-      setOtpStep(null); setOtpCode(""); setSuccess("Email OTP verified.");
+      setResetOtpToken(emailOtpSessionToken);
+      switchMode("resetPassword");
+      setOtpStep(null); setOtpCode("");
     } catch (err) {
       setOtpError(getFriendlyError(err, "The OTP is incorrect or expired. Please try again."));
     } finally {
@@ -404,7 +432,14 @@ const Auth = () => {
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
       setPhoneVerifId(data.verificationId);
       setPhoneOtpSent(true);
-      setSuccess("OTP sent to your mobile number.");
+      clearInterval(phoneTimerRef.current);
+      setPhoneResendSeconds(45);
+      phoneTimerRef.current = setInterval(() => {
+        setPhoneResendSeconds((s) => {
+          if (s <= 1) { clearInterval(phoneTimerRef.current); return 0; }
+          return s - 1;
+        });
+      }, 1000);
     } catch (err) {
       setPhoneError(err.message || "Failed to send OTP. Please try again.");
     } finally {
@@ -420,7 +455,8 @@ const Auth = () => {
     setPhoneError(""); setLoading(true);
     try {
       await verifyPhoneOtp(pendingGoogleToken, phone, code, phoneVerifId);
-      showNotification("Account created successfully! Welcome!", "success");
+      clearInterval(phoneTimerRef.current);
+      setPhoneSuccess(true);
     } catch (err) {
       setPhoneError(err.message || "OTP verification failed. Please try again.");
     } finally {
@@ -449,19 +485,46 @@ const Auth = () => {
     e.preventDefault();
     const errors = validateSignupFields();
     if (Object.keys(errors).length) { setSignupErrors(errors); return; }
-    if (!signupOtpToken || signupVerifiedEmail !== signupData.email.trim().toLowerCase()) {
-      setSignupErrors((prev) => ({ ...prev, email: "Please verify your email before signing up." }));
-      return;
-    }
     setApiError(""); setLoading(true);
     try {
-      await signup({ ...signupData, phone: normalizePhone(signupData.phone), email: signupData.email.trim().toLowerCase(), email_otp_token: signupOtpToken });
-      showNotification("Account created successfully", "success");
-      setSuccess("Account created successfully.");
+      const result = await initiateRegistration({
+        name: signupData.name.trim(),
+        email: signupData.email.trim().toLowerCase(),
+        phone: normalizePhone(signupData.phone),
+        password: signupData.password,
+        referral_code: signupData.referral_code || undefined,
+      });
+      if (result.step === "phoneVerification") {
+        navigate(`/verify-email?vt=${encodeURIComponent(result.verifiedToken)}`);
+        return;
+      }
+      setRegistrationToken(result.registrationToken);
+      setSignupStep("emailSent");
     } catch (err) {
-      setApiError(getFriendlyError(err, "Unable to create account right now. Please contact support or try again later."));
+      setApiError(getFriendlyError(err, "Unable to start registration right now. Please contact support or try again later."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (resendLoading || !registrationToken) return;
+    setResendLoading(true);
+    setApiError(""); setSuccess("");
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/resend-verification-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to resend");
+      if (data.registrationToken) setRegistrationToken(data.registrationToken);
+      setSuccess("Verification email resent. Please check your inbox.");
+    } catch (err) {
+      setApiError(err.message || "Could not resend email. Please try again.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -514,14 +577,29 @@ const Auth = () => {
 
   return (
     <main className="auth-page" style={{ "--auth-bg": `url(${headerBackground})` }}>
+      <Link to="/" className="auth-back-btn" aria-label="Go to home page">
+        <Icon icon="lucide:arrow-left" />
+      </Link>
+      {((activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
+        <div className="auth-signup-brand">
+          <img src={verticalLogo} className="auth-signup-logo-img" alt="Banarasi Kala" />
+        </div>
+      )}
       <section className="auth-panel" key={animationKey}>
-        <header className="auth-heading">
-          <h1>{authCopy.title}</h1>
-          <p>{authCopy.subtitle}</p>
-        </header>
+        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && (
+          <header className={`auth-heading${activeTab === "signup" && signupStep === "form" ? " auth-heading-signup" : ""}`}>
+            <h1>{authCopy.title}</h1>
+            {activeTab === "signup" && signupStep === "form" && (
+              <div className="auth-lotus-divider" aria-hidden="true">
+                <span /><Icon icon="ph:flower-lotus" /><span />
+              </div>
+            )}
+            <p>{authCopy.subtitle}</p>
+          </header>
+        )}
 
-        {apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
-        {!apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
+        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
+        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && !apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
 
         {/* ── Login ── */}
         {activeTab === "login" && (
@@ -578,8 +656,8 @@ const Auth = () => {
           </form>
         )}
 
-        {/* ── Sign Up ── */}
-        {activeTab === "signup" && (
+        {/* ── Sign Up — Form ── */}
+        {activeTab === "signup" && signupStep === "form" && (
           <form className="auth-form auth-form-compact" onSubmit={onSignup} noValidate>
             <AuthField
               icon="lucide:user"
@@ -590,27 +668,16 @@ const Auth = () => {
               onChange={handleSignupChange}
               error={signupErrors.name}
             />
-            <div className="auth-verify-field">
-              <AuthField
-                icon="lucide:mail"
-                label="Email Address"
-                name="email"
-                type="email"
-                value={signupData.email}
-                placeholder="Enter your email"
-                onChange={handleSignupChange}
-                error={signupErrors.email}
-              />
-              <button
-                type="button"
-                className={signupVerifiedEmail === signupData.email.trim().toLowerCase() ? "auth-verify-link is-verified" : "auth-verify-link"}
-                onClick={() => startEmailOtp("signup", signupData.email, signupData.name)}
-                disabled={otpLoading || signupVerifiedEmail === signupData.email.trim().toLowerCase()}
-              >
-                <Icon icon={signupVerifiedEmail === signupData.email.trim().toLowerCase() ? "lucide:badge-check" : "lucide:shield-check"} />
-                {signupVerifiedEmail === signupData.email.trim().toLowerCase() ? "Email verified" : "Verify email"}
-              </button>
-            </div>
+            <AuthField
+              icon="lucide:mail"
+              label="Email Address"
+              name="email"
+              type="email"
+              value={signupData.email}
+              placeholder="Enter your email"
+              onChange={handleSignupChange}
+              error={signupErrors.email}
+            />
             <div className="auth-phone-verify">
               <AuthField
                 icon="lucide:phone"
@@ -621,7 +688,7 @@ const Auth = () => {
                 onChange={handleSignupChange}
                 inputMode="tel"
                 maxLength={10}
-                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91</span>}
+                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91<Icon icon="lucide:chevron-down" className="auth-country-chevron" /></span>}
                 error={signupErrors.phone}
               />
             </div>
@@ -650,11 +717,18 @@ const Auth = () => {
                 </button>
               }
             />
-            <div className="auth-strength" aria-label="Password strength">
-              {[1, 2, 3, 4].map((level) => (
-                <span key={level} className={level <= passwordStrength ? `is-level-${passwordStrength}` : ""} />
+            <div className="auth-pw-reqs" aria-label="Password requirements">
+              {[
+                { label: "8+ characters", met: signupData.password.length >= 8 },
+                { label: "1 uppercase", met: /[A-Z]/.test(signupData.password) },
+                { label: "1 number", met: /[0-9]/.test(signupData.password) },
+                { label: "1 special character", met: /[^A-Za-z0-9]/.test(signupData.password) },
+              ].map(({ label, met }) => (
+                <div key={label} className={`auth-pw-req${met ? " is-met" : ""}`}>
+                  <Icon icon="lucide:check-circle-2" />
+                  {label}
+                </div>
               ))}
-              <strong>{passwordStrength ? strengthLabels[passwordStrength - 1] : "Enter Password"}</strong>
             </div>
             <div className="auth-consent-wrap">
               <label className="auth-consent">
@@ -675,8 +749,8 @@ const Auth = () => {
               </label>
               {signupErrors.consent && <span className="auth-field-error">{signupErrors.consent}</span>}
             </div>
-            <button type="submit" disabled={loading || otpLoading} className="auth-primary">
-              {loading ? "Signing up..." : "Sign Up"}
+            <button type="submit" disabled={loading} className="auth-primary auth-primary-signup">
+              {loading ? "Please wait…" : <><span>Verify &amp; Continue</span><Icon icon="lucide:arrow-right" /></>}
             </button>
             <div className="auth-divider"><span /><em>or sign up with</em><span /></div>
             <div className="auth-google-wrap">
@@ -692,64 +766,246 @@ const Auth = () => {
           </form>
         )}
 
+        {/* ── Sign Up — Email Sent ── */}
+        {activeTab === "signup" && signupStep === "emailSent" && (
+          <div className="auth-es-screen">
+            <div className="auth-es-envelope-wrap">
+              <Icon icon="ph:envelope-open" className="auth-es-envelope-icon" />
+              <div className="auth-es-check-badge">
+                <Icon icon="lucide:check" />
+              </div>
+            </div>
+            <div className="auth-es-title-row">
+              <span className="auth-es-sparkle">✦</span>
+              <h1 className="auth-es-title">Verify Your Email</h1>
+              <span className="auth-es-sparkle">✦</span>
+            </div>
+            {apiError && <div className="auth-alert auth-alert-error" style={{ margin: "0 0 10px" }}>{apiError}</div>}
+            {!apiError && success && <div className="auth-alert auth-alert-success" style={{ margin: "0 0 10px" }}>{success}</div>}
+            <p className="auth-es-desc">We've sent a verification link to</p>
+            <p className="auth-es-email">{signupData.email.trim().toLowerCase()}</p>
+            <p className="auth-es-desc">Please check your email inbox and click on the verification link to continue.</p>
+            <div className="auth-es-hint">
+              <div className="auth-es-hint-icon">
+                <Icon icon="ph:envelope-simple" />
+              </div>
+              <div className="auth-es-hint-text">
+                <strong>Didn't receive the email?</strong>
+                <span>Check your spam or junk folder.</span>
+              </div>
+            </div>
+            <a
+              href="https://mail.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="auth-es-gmail-btn"
+            >
+              <Icon icon="logos:google-gmail" className="auth-es-gmail-icon" />
+              Open Gmail
+            </a>
+            <button
+              type="button"
+              className="auth-es-change-btn"
+              onClick={() => { setSignupStep("form"); setApiError(""); setSuccess(""); }}
+            >
+              Change Email
+            </button>
+            <p className="auth-es-resend">
+              Didn't receive email?{" "}
+              <button
+                type="button"
+                className="auth-es-resend-link"
+                onClick={handleResendVerificationEmail}
+                disabled={resendLoading}
+              >
+                {resendLoading ? "Sending…" : "Resend Link"}
+              </button>
+            </p>
+          </div>
+        )}
+
         {/* ── Phone Verification (Google new users) ── */}
-        {activeTab === "phoneVerification" && (
-          <form className="auth-form" onSubmit={handleVerifyPhoneOtp} noValidate>
-            <div className="auth-phone-verify">
-              <AuthField
-                icon="lucide:phone"
-                label="Mobile Number"
-                name="phone"
+        {activeTab === "phoneVerification" && !phoneOtpSent && (
+          <div className="auth-pv-screen">
+            <div className="auth-pv-icon-row">
+              <span className="auth-pv-sparkle">✦</span>
+              <div className="auth-pv-circle">
+                <Icon icon="lucide:smartphone" className="auth-pv-main-icon" />
+                <div className="auth-pv-shield-badge">
+                  <Icon icon="lucide:check" />
+                </div>
+              </div>
+              <span className="auth-pv-sparkle">✦</span>
+            </div>
+            <h1 className="auth-pv-title">Verify Mobile Number</h1>
+            <div className="auth-lotus-divider" aria-hidden="true">
+              <span /><Icon icon="ph:flower-lotus" /><span />
+            </div>
+            <p className="auth-pv-subtitle">
+              We will send you a One Time Password (OTP)<br />to verify your mobile number.
+            </p>
+            <p className="auth-label" style={{ margin: "0 0 8px" }}>Mobile Number</p>
+            <div className={`auth-pv-phone-field${phoneError ? " has-error" : ""}`}>
+              <span className="auth-country-code">
+                <span className="auth-flag-india" aria-hidden="true" />
+                +91
+                <Icon icon="lucide:chevron-down" className="auth-country-chevron" />
+              </span>
+              <span className="auth-pv-sep" />
+              <input
+                type="tel"
+                className="auth-pv-phone-input"
+                inputMode="tel"
+                maxLength={10}
                 value={phoneVerifPhone}
                 placeholder="Enter 10 digit mobile number"
                 onChange={(e) => {
-                  setPhoneVerifPhone(normalizePhone(e.target.value));
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  if (digits.length > 0 && !/^[6-9]/.test(digits)) return;
+                  setPhoneVerifPhone(digits);
                   setPhoneError("");
                 }}
-                inputMode="tel"
-                maxLength={10}
-                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91</span>}
-                error={!phoneOtpSent ? phoneError : undefined}
               />
-              {!phoneOtpSent && (
+            </div>
+            {phoneError && <span className="auth-field-error">{phoneError}</span>}
+            <p className="auth-pv-secure">
+              <Icon icon="lucide:lock" className="auth-pv-secure-icon" />
+              Your number is safe and secure with us.
+            </p>
+            <button type="button" className="auth-pv-btn" onClick={handleSendPhoneOtp} disabled={otpLoading}>
+              {otpLoading ? "Sending…" : <><span>Send OTP</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+          </div>
+        )}
+
+        {activeTab === "phoneVerification" && phoneOtpSent && !phoneSuccess && (
+          <form className="auth-pv-screen" onSubmit={handleVerifyPhoneOtp} noValidate>
+            <div className="auth-pv-icon-row">
+              <div className="auth-pv-circle">
+                <Icon icon="ph:chat-dots" className="auth-pv-main-icon" />
+                <div className="auth-pv-shield-badge">
+                  <Icon icon="lucide:check" />
+                </div>
+              </div>
+            </div>
+            <h1 className="auth-pv-title">Verify OTP</h1>
+            <div className="auth-lotus-divider" aria-hidden="true">
+              <span /><Icon icon="ph:flower-lotus" /><span />
+            </div>
+            <p className="auth-pv-subtitle">
+              Enter the 6-digit code sent to your mobile number
+            </p>
+            <p className="auth-pv-phone-display">
+              +91 {phoneVerifPhone.replace(/(\d{5})(\d{5})/, "$1 $2")}
+              <button
+                type="button"
+                className="auth-pv-edit-btn"
+                onClick={() => { setPhoneOtpSent(false); setPhoneOtp(""); setPhoneError(""); clearInterval(phoneTimerRef.current); setPhoneResendSeconds(0); }}
+              >
+                Edit
+              </button>
+            </p>
+            <div className="auth-pv-otp-wrap">
+              <OtpBoxes
+                value={phoneOtp}
+                length={6}
+                disabled={loading}
+                onChange={(v) => { setPhoneOtp(v.replace(/\D/g, "").slice(0, 6)); setPhoneError(""); }}
+              />
+            </div>
+            <div className="auth-pv-success-banner">
+              <Icon icon="lucide:shield-check" />
+              OTP sent successfully!
+            </div>
+            {phoneError && <span className="auth-field-error" style={{ textAlign: "center" }}>{phoneError}</span>}
+            <div className="auth-pv-resend">
+              <p className="auth-pv-resend-label">Didn't receive OTP?</p>
+              {phoneResendSeconds > 0 ? (
+                <p className="auth-pv-resend-timer">
+                  Resend OTP in <strong>{`${String(Math.floor(phoneResendSeconds / 60)).padStart(2, "0")}:${String(phoneResendSeconds % 60).padStart(2, "0")}`}</strong>
+                </p>
+              ) : (
                 <button
                   type="button"
-                  className="auth-verify-link"
+                  className="auth-pv-resend-btn"
                   onClick={handleSendPhoneOtp}
                   disabled={otpLoading}
                 >
-                  <Icon icon="lucide:send" />
-                  {otpLoading ? "Sending..." : "Send OTP"}
+                  {otpLoading ? "Sending…" : "Resend OTP"}
                 </button>
               )}
             </div>
-            {phoneOtpSent && (
-              <>
-                <div style={{ marginTop: "1rem" }}>
-                  <span className="auth-label">Enter OTP sent to +91 {phoneVerifPhone}</span>
-                  <OtpBoxes
-                    value={phoneOtp}
-                    length={6}
-                    disabled={loading}
-                    onChange={(v) => { setPhoneOtp(v.replace(/\D/g, "").slice(0, 6)); setPhoneError(""); }}
-                  />
-                </div>
-                {phoneError && <div className="auth-alert auth-alert-error">{phoneError}</div>}
-                <button type="submit" disabled={loading} className="auth-primary" style={{ marginTop: "1rem" }}>
-                  {loading ? "Verifying..." : "Verify & Complete Signup"}
-                </button>
-                <button
-                  type="button"
-                  className="auth-text-button"
-                  onClick={handleSendPhoneOtp}
-                  disabled={otpLoading}
-                >
-                  Resend OTP
-                </button>
-              </>
-            )}
-            {!phoneOtpSent && phoneError && <div className="auth-alert auth-alert-error">{phoneError}</div>}
+            <button type="submit" disabled={loading} className="auth-pv-btn">
+              {loading ? "Verifying…" : <><span>Verify &amp; Complete Signup</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+            <p className="auth-pv-bottom-note">
+              <Icon icon="lucide:lock" />
+              Your information is secure with us.
+            </p>
           </form>
+        )}
+
+        {/* ── Phone Verification — Success ── */}
+        {activeTab === "phoneVerification" && phoneSuccess && (
+          <div className="auth-pv-screen">
+            <div className="auth-pv-success-icon-wrap">
+              <span className="auth-pv-success-sparkle auth-pv-sp-tl">✦</span>
+              <span className="auth-pv-success-sparkle auth-pv-sp-tr">✦</span>
+              <div className="auth-pv-success-circle">
+                <Icon icon="lucide:check" />
+              </div>
+              <span className="auth-pv-success-sparkle auth-pv-sp-bl">✦</span>
+              <span className="auth-pv-success-sparkle auth-pv-sp-br">✦</span>
+            </div>
+            <h1 className="auth-pv-success-title">Welcome to<br />Banarasi Kala!</h1>
+            <div className="auth-lotus-divider" aria-hidden="true">
+              <span /><Icon icon="ph:flower-lotus" /><span />
+            </div>
+            <p className="auth-pv-success-subtitle">Your account has been created successfully.</p>
+            <div className="auth-pv-benefits">
+              <div className="auth-pv-benefit">
+                <div className="auth-pv-benefit-icon">
+                  <Icon icon="lucide:gift" />
+                </div>
+                <div className="auth-pv-benefit-text">
+                  <strong>₹100 Welcome Wallet Credit</strong>
+                  <span>Use it on your first purchase</span>
+                </div>
+              </div>
+              <div className="auth-pv-benefit">
+                <div className="auth-pv-benefit-icon">
+                  <Icon icon="lucide:package" />
+                </div>
+                <div className="auth-pv-benefit-text">
+                  <strong>Premium Packaging</strong>
+                  <span>Every order is packed with care</span>
+                </div>
+              </div>
+              <div className="auth-pv-benefit">
+                <div className="auth-pv-benefit-icon">
+                  <Icon icon="lucide:truck" />
+                </div>
+                <div className="auth-pv-benefit-text">
+                  <strong>Free Delivery</strong>
+                  <span>Enjoy free delivery on all orders</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="auth-pv-btn"
+              onClick={() => {
+                showNotification("Welcome to Banarasi Kala! Account created successfully.", "success");
+                navigate("/");
+              }}
+            >
+              <span>Start Shopping</span><Icon icon="lucide:arrow-right" />
+            </button>
+            <p className="auth-pv-bottom-note">
+              <Icon icon="lucide:shield" />
+              Your information is secure with us.
+            </p>
+          </div>
         )}
 
         {/* ── Forgot Password ── */}

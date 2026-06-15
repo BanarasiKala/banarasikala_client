@@ -103,6 +103,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const initiateRegistration = async (formData) => {
+    try {
+      const response = await axios.post(`${API_ENDPOINTS.auth}/initiate-registration`, formData);
+      return response.data;
+    } catch (error) {
+      const err = new Error(getApiErrorMessage(error, "We could not start registration right now. Please try again."));
+      err.code = error.response?.data?.code;
+      throw err;
+    }
+  };
+
+  const completeRegistration = async (registrationToken, otp, _verificationId, keepLoggedIn) => {
+    try {
+      const response = await axios.post(`${API_ENDPOINTS.auth}/complete-registration`, { registrationToken, otp });
+      const customer = response.data.customer || response.data.user;
+      persistAuth({ customer, accessToken: response.data.accessToken, refreshToken: response.data.refreshToken, keepLoggedIn: keepLoggedIn !== false });
+      return customer;
+    } catch (error) {
+      const err = new Error(getApiErrorMessage(error, "We could not complete registration right now. Please try again."));
+      throw err;
+    }
+  };
+
   const signup = async (userData) => {
     try {
       const response = await axios.post(`${API_ENDPOINTS.auth}/register`, userData);
@@ -140,7 +163,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser, googleLogin, verifyPhoneOtp }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser, googleLogin, verifyPhoneOtp, initiateRegistration, completeRegistration }}>
       {children}
     </AuthContext.Provider>
   );

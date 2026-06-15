@@ -1,0 +1,563 @@
+/* ── Page ──────────────────────────────────────────────────── */
+.ve-page {
+  min-height: 100vh;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 0;
+  padding: 18px 16px 32px;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+    var(--ve-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+  font-family: "Poppins", sans-serif;
+  color: #3b2118;
+}
+
+/* ── Back button ───────────────────────────────────────────── */
+.ve-back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #5b0710;
+  background: rgba(255, 252, 247, 0.82);
+  border: none;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.ve-back-btn:hover {
+  background: rgba(255, 252, 247, 0.98);
+  transform: translateX(-2px);
+}
+
+.ve-back-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Brand logo (outside card) ─────────────────────────────── */
+.ve-brand {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0 16px 20px;
+}
+
+.ve-logo {
+  width: 160px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(79, 42, 13, 0.18));
+}
+
+/* ── Card ──────────────────────────────────────────────────── */
+.ve-card {
+  width: min(100%, 440px);
+  padding: 32px 32px 36px;
+  background: rgba(255, 252, 247, 0.96);
+  border: 1px solid rgba(189, 145, 85, 0.22);
+  border-radius: 12px;
+  box-shadow: 0 20px 44px rgba(79, 42, 13, 0.13);
+  animation: ve-card-in 0.42s ease both;
+}
+
+@keyframes ve-card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.992); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Phone icon block ──────────────────────────────────────── */
+.ve-confirm-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.ve-sparkle {
+  font-size: 20px;
+  color: #c9a248;
+  line-height: 1;
+}
+
+.ve-phone-circle {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  background: #f5e8d3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ve-phone-icon {
+  font-size: 38px;
+  color: #c9a248;
+}
+
+.ve-shield-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  background: #760819;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+.ve-shield-badge svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  stroke-width: 3;
+}
+
+/* ── Title ─────────────────────────────────────────────────── */
+.ve-title {
+  margin: 0;
+  color: #5b0710;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 3.2vw, 26px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── Lotus divider ─────────────────────────────────────────── */
+.ve-lotus-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px auto 12px;
+  width: 75%;
+  color: #c9a248;
+}
+
+.ve-lotus-divider span {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c9a248 40%, #c9a248 60%, transparent);
+}
+
+.ve-lotus-divider svg {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Subtitle ──────────────────────────────────────────────── */
+.ve-subtitle {
+  margin: 0 0 20px;
+  color: #76695f;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.ve-subtitle strong {
+  color: #3b2118;
+}
+
+/* ── Field label ───────────────────────────────────────────── */
+.ve-field-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4d201b;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── Phone display row ─────────────────────────────────────── */
+.ve-phone-display {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(91, 55, 28, 0.22);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.ve-phone-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  color: #5b0710;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ve-flag-india {
+  position: relative;
+  width: 20px;
+  height: 14px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: linear-gradient(#ff9933 0 33.33%, #fff 33.33% 66.66%, #138808 66.66%);
+  border: 1px solid rgba(91, 55, 28, 0.18);
+  border-radius: 2px;
+}
+
+.ve-flag-india::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border: 1px solid #1a4b9b;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ve-chevron {
+  width: 12px;
+  height: 12px;
+  color: #806f62;
+  opacity: 0.8;
+}
+
+.ve-phone-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(91, 55, 28, 0.2);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.ve-phone-number {
+  flex: 1;
+  color: #3b2118;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.ve-phone-input {
+  flex: 1;
+  color: #3b2118;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ve-phone-input::placeholder {
+  color: rgba(77, 65, 57, 0.5);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.ve-phone-display.ve-phone-error {
+  border-color: rgba(173, 51, 36, 0.5);
+}
+
+.ve-phone-display:focus-within {
+  border-color: rgba(91, 7, 16, 0.45);
+  box-shadow: 0 0 0 4px rgba(91, 7, 16, 0.07);
+}
+
+.ve-change-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  flex-shrink: 0;
+}
+
+.ve-change-btn:hover {
+  color: #5b0710;
+}
+
+/* ── Secure note ───────────────────────────────────────────── */
+.ve-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 20px;
+  color: #8a7a70;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ve-lock-icon {
+  width: 14px;
+  height: 14px;
+  color: #c9a248;
+  flex-shrink: 0;
+}
+
+/* ── Primary button ────────────────────────────────────────── */
+.ve-btn-primary {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+  color: #fff;
+  background: #760819;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(75, 6, 13, 0.26);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+}
+
+.ve-btn-primary:hover {
+  background: #650716;
+  box-shadow: 0 11px 24px rgba(75, 6, 13, 0.32);
+}
+
+.ve-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.ve-btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.ve-btn-primary svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── OTP boxes ─────────────────────────────────────────────── */
+.ve-otp-form {
+  display: grid;
+  gap: 0;
+}
+
+.ve-otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.ve-otp-boxes input {
+  width: 100%;
+  aspect-ratio: 1;
+  color: #3b2118;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(91, 55, 28, 0.24);
+  border-radius: 8px;
+  outline: none;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ve-otp-boxes input:focus {
+  border-color: rgba(91, 7, 16, 0.5);
+  box-shadow: 0 0 0 4px rgba(91, 7, 16, 0.07);
+}
+
+.ve-otp-boxes input:disabled {
+  opacity: 0.65;
+}
+
+/* ── Error / resend ────────────────────────────────────────── */
+.ve-error {
+  margin: 0 0 10px;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ve-resend {
+  margin: 14px 0 0;
+  color: #8a7a70;
+  font-size: 12px;
+  text-align: center;
+}
+
+.ve-resend-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+/* ── Email Verified intermediate step ─────────────────────── */
+.ve-ev {
+  align-items: center;
+  text-align: center;
+}
+
+.ve-ev-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 20px;
+}
+
+.ve-ev-circle {
+  width: 84px;
+  height: 84px;
+  background: #effaf3;
+  border: 2px solid rgba(38, 112, 66, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ve-ev-circle svg {
+  width: 42px;
+  height: 42px;
+  color: #267042;
+  stroke-width: 2.5;
+}
+
+.ve-ev-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ve-ev-inline-sparkle {
+  font-size: 16px;
+}
+
+/* ── Center layout (verifying / success / error) ───────────── */
+.ve-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+/* ── Spinner ───────────────────────────────────────────────── */
+.ve-spinner {
+  width: 42px;
+  height: 42px;
+  border: 3px solid rgba(118, 8, 25, 0.15);
+  border-top-color: #760819;
+  border-radius: 50%;
+  animation: ve-spin 0.8s linear infinite;
+}
+
+@keyframes ve-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Status circles ────────────────────────────────────────── */
+.ve-status-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.ve-status-circle svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2.5;
+}
+
+.ve-status-success {
+  background: #effaf3;
+  color: #267042;
+  border: 2px solid rgba(38, 112, 66, 0.25);
+}
+
+.ve-status-error {
+  background: #fff0ed;
+  color: #8b1d1d;
+  border: 2px solid rgba(173, 51, 36, 0.2);
+}
+
+/* ── Confirm layout ────────────────────────────────────────── */
+.ve-confirm {
+  display: grid;
+  gap: 0;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .ve-page {
+    padding: 14px 12px 20px;
+  }
+
+  .ve-logo {
+    width: 140px;
+  }
+
+  .ve-card {
+    padding: 24px 18px 28px;
+    border-radius: 10px;
+  }
+
+  .ve-phone-circle {
+    width: 72px;
+    height: 72px;
+  }
+
+  .ve-phone-icon {
+    font-size: 32px;
+  }
+
+  .ve-otp-boxes {
+    gap: 6px;
+  }
+
+  .ve-otp-boxes input {
+    font-size: 18px;
+  }
+}

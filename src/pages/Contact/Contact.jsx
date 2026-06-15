@@ -10,44 +10,54 @@ const WHATSAPP_TEXT = encodeURIComponent("Hi Banarasi Kala, I need quick help.")
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_TEXT}`;
 
 const EMPTY_FORM = { name: "", email: "", phone: "", subject: "", message: "" };
-
-// Strip non-digits, remove leading zeros, keep last 10 digits
-const normalizePhone = (value) => {
-  const digits = String(value || "").replace(/\D/g, "");
-  const stripped = digits.replace(/^0+/, "");
-  return stripped.length > 10 ? stripped.slice(-10) : stripped;
-};
+const EMPTY_ERRORS = { name: "", email: "", phone: "", subject: "", message: "" };
 
 const Contact = () => {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState(EMPTY_ERRORS);
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "phone" ? normalizePhone(value) : value,
-    }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 10);
+      if (digits.length > 0 && !/^[6-9]/.test(digits)) return;
+      setForm((prev) => ({ ...prev, phone: digits }));
+      return;
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.name.trim()) errs.name = "Please enter your full name.";
+    if (!form.email.trim()) {
+      errs.email = "Please enter your email address.";
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+      errs.email = "Please enter a valid email address.";
+    }
+    if (!form.phone) {
+      errs.phone = "Please enter your mobile number.";
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      errs.phone = "Please enter a valid 10-digit mobile number starting with 6–9.";
+    }
+    if (!form.subject.trim()) errs.subject = "Please enter a subject.";
+    if (!form.message.trim()) errs.message = "Please enter your message.";
+    return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
 
-    const { name, email, phone, subject, message } = form;
-    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      toast.error("Please fill all required fields.");
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      toast.error("Please enter a valid email address.");
-      return;
-    }
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      toast.error("Please enter a valid 10-digit mobile number starting with 6–9.");
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors((prev) => ({ ...prev, ...errs }));
       return;
     }
 
+    const { name, email, phone, subject, message } = form;
     setSubmitting(true);
     try {
       const res = await fetch(API_ENDPOINTS.contactSubmit, {
@@ -59,6 +69,7 @@ const Contact = () => {
       if (res.ok && data.success) {
         toast.success("Message sent! We will get back to you soon.");
         setForm(EMPTY_FORM);
+        setErrors(EMPTY_ERRORS);
       } else {
         toast.error(data.message || "Could not send message. Please try again.");
       }
@@ -122,56 +133,72 @@ const Contact = () => {
 
           <form onSubmit={handleSubmit} className="contact-form" noValidate>
             <div className="contact-form-grid">
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                placeholder="Full Name *"
-              />
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                placeholder="Email Address *"
-              />
+              <div className="contact-field">
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Full Name *"
+                  className={errors.name ? "has-error" : ""}
+                />
+                {errors.name && <span className="contact-field-error">{errors.name}</span>}
+              </div>
+              <div className="contact-field">
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="Email Address *"
+                  className={errors.email ? "has-error" : ""}
+                />
+                {errors.email && <span className="contact-field-error">{errors.email}</span>}
+              </div>
             </div>
 
             <div className="contact-form-grid">
-              <div className="contact-phone-wrap">
-                <span className="contact-phone-prefix">+91</span>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  required
-                  placeholder="10-digit mobile number *"
-                  inputMode="numeric"
-                  maxLength={10}
-                />
+              <div className="contact-field">
+                <div className={`contact-phone-wrap${errors.phone ? " has-error" : ""}`}>
+                  <span className="contact-phone-prefix">
+                    <span className="contact-flag-india" aria-hidden="true" />+91
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="10-digit mobile number *"
+                    inputMode="numeric"
+                    maxLength={10}
+                  />
+                </div>
+                {errors.phone && <span className="contact-field-error">{errors.phone}</span>}
               </div>
-              <input
-                type="text"
-                name="subject"
-                value={form.subject}
-                onChange={handleChange}
-                required
-                placeholder="Subject *"
-              />
+              <div className="contact-field">
+                <input
+                  type="text"
+                  name="subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  placeholder="Subject *"
+                  className={errors.subject ? "has-error" : ""}
+                />
+                {errors.subject && <span className="contact-field-error">{errors.subject}</span>}
+              </div>
             </div>
 
-            <textarea
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              rows="5"
-              required
-              placeholder="Your Message *"
-            />
+            <div className="contact-field">
+              <textarea
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                rows="5"
+                placeholder="Your Message *"
+                className={errors.message ? "has-error" : ""}
+              />
+              {errors.message && <span className="contact-field-error">{errors.message}</span>}
+            </div>
 
             <button type="submit" className="contact-submit" disabled={submitting}>
               <span>{submitting ? "Sending..." : "Send Message"}</span>
