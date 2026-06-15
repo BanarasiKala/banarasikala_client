@@ -161,7 +161,18 @@ const Auth = () => {
   const [phoneResetToken, setPhoneResetToken] = useState("");
   const phoneResetTimerRef = useRef(null);
 
-  const { login, googleLogin, verifyPhoneOtp, user, initiateRegistration } = useAuth();
+  const [otpLoginMode, setOtpLoginMode] = useState(false);
+  const [otpLoginKeepLoggedIn, setOtpLoginKeepLoggedIn] = useState(false);
+  const [otpLoginType, setOtpLoginType] = useState(null);
+  const [otpLoginToken, setOtpLoginToken] = useState("");
+  const [otpLoginVerifId, setOtpLoginVerifId] = useState("");
+  const [otpLoginOtp, setOtpLoginOtp] = useState("");
+  const [otpLoginPhone, setOtpLoginPhone] = useState("");
+  const [otpLoginSeconds, setOtpLoginSeconds] = useState(0);
+  const [otpLoginError, setOtpLoginError] = useState("");
+  const otpLoginTimerRef = useRef(null);
+
+  const { login, googleLogin, verifyPhoneOtp, user, initiateRegistration, loginWithOtpResponse } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
@@ -213,7 +224,7 @@ const Auth = () => {
     return () => window.removeEventListener("auth:refresh", handler);
   }, []);
 
-  useEffect(() => () => { clearInterval(phoneTimerRef.current); clearInterval(phoneResetTimerRef.current); }, []);
+  useEffect(() => () => { clearInterval(phoneTimerRef.current); clearInterval(phoneResetTimerRef.current); clearInterval(otpLoginTimerRef.current); }, []);
 
   const authCopy = useMemo(() => {
     if (activeTab === "signup" && signupStep === "emailSent") return { title: "Check Your Inbox", subtitle: "A verification link has been sent to your email." };
@@ -222,6 +233,7 @@ const Auth = () => {
     if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Choose a strong password to keep your account secure." };
     if (activeTab === "phoneVerification") return { title: "One Last Step", subtitle: "Add your mobile number to complete your account." };
     if (activeTab === "phoneReset") return { title: "Verify OTP", subtitle: "Enter the 6-digit OTP sent to your mobile." };
+    if (activeTab === "loginOtp") return { title: "Login with OTP", subtitle: `Enter the OTP sent to your ${otpLoginType === "phone" ? "mobile" : "email"}.` };
     return { title: "Welcome Back", subtitle: "Sign in to continue shopping your favourite Banarasi Sarees" };
   }, [activeTab, signupStep]);
 
@@ -242,10 +254,22 @@ const Auth = () => {
     setForgotErrors({});
     setResetErrors({});
     setForgotMode(false);
+    setOtpLoginMode(false);
     setLoginData({ identifier: "", password: "", keepLoggedIn: false });
     setSignupData({ name: "", phone: "", email: "", password: "", referral_code: "" });
     setForgotPasswordData({ email: "", newPassword: "", confirmPassword: "" });
     setConsentChecked(false);
+    if (mode !== "loginOtp") {
+      setOtpLoginKeepLoggedIn(false);
+      setOtpLoginType(null);
+      setOtpLoginToken("");
+      setOtpLoginVerifId("");
+      setOtpLoginOtp("");
+      setOtpLoginPhone("");
+      setOtpLoginError("");
+      clearInterval(otpLoginTimerRef.current);
+      setOtpLoginSeconds(0);
+    }
     if (mode !== "phoneVerification") {
       setPendingGoogleToken("");
       setPhoneVerifPhone("");
@@ -541,9 +565,111 @@ const Auth = () => {
   // ── Forgot-password inline flow ────────────────────────────
   const handleForgotClick = () => {
     setForgotMode(true);
+    setOtpLoginMode(false);
     setLoginErrors({});
     setApiError("");
     setSuccess("");
+  };
+
+  const handleOtpLoginClick = () => {
+    setOtpLoginMode(true);
+    setForgotMode(false);
+    setLoginErrors({});
+    setApiError("");
+    setSuccess("");
+  };
+
+  const handleOtpLoginProceed = async () => {
+    const val = String(loginData.identifier || "").trim();
+    if (!val) {
+      setLoginErrors({ identifier: "Please enter your email or mobile number to receive a login OTP." });
+      return;
+    }
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    const digits = val.replace(/\D/g, "");
+    const normalizedPhone = digits.length > 10 ? digits.slice(-10) : digits.replace(/^0+/, "");
+    const isPhone = /^[6-9]\d{9}$/.test(normalizedPhone);
+    if (!isEmail && !isPhone) {
+      setLoginErrors({ identifier: "Enter a valid email address or 10-digit mobile number." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const identifier = isPhone ? normalizedPhone : val.toLowerCase();
+      const res = await fetch(`${API_ENDPOINTS.auth}/send-login-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP.");
+      setOtpLoginType(data.type);
+      setOtpLoginToken(data.token || "");
+      setOtpLoginVerifId(data.verificationId || "");
+      setOtpLoginPhone(identifier);
+      setOtpLoginOtp("");
+      setOtpLoginError("");
+      clearInterval(otpLoginTimerRef.current);
+      setOtpLoginSeconds(45);
+      otpLoginTimerRef.current = setInterval(() => {
+        setOtpLoginSeconds((s) => { if (s <= 1) { clearInterval(otpLoginTimerRef.current); return 0; } return s - 1; });
+      }, 1000);
+      switchMode("loginOtp");
+    } catch (err) {
+      setApiError(getFriendlyError(err, "Failed to send OTP. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendLoginOtp = async () => {
+    if (!otpLoginPhone || otpLoading) return;
+    setOtpLoginOtp(""); setOtpLoginError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/send-login-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: otpLoginPhone }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to resend OTP.");
+      if (data.token) setOtpLoginToken(data.token);
+      if (data.verificationId) setOtpLoginVerifId(data.verificationId);
+      clearInterval(otpLoginTimerRef.current);
+      setOtpLoginSeconds(45);
+      otpLoginTimerRef.current = setInterval(() => {
+        setOtpLoginSeconds((s) => { if (s <= 1) { clearInterval(otpLoginTimerRef.current); return 0; } return s - 1; });
+      }, 1000);
+    } catch (err) {
+      setOtpLoginError(err.message || "Failed to resend OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyLoginOtp = async (e) => {
+    e.preventDefault();
+    const code = otpLoginOtp.replace(/\D/g, "");
+    const expectedLen = otpLoginType === "phone" ? 6 : activeOtpDigitCount;
+    if (code.length !== expectedLen) { setOtpLoginError(`Please enter the complete ${expectedLen}-digit OTP.`); return; }
+    setOtpLoginError(""); setLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/verify-login-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: otpLoginPhone, otp: code, token: otpLoginToken, verificationId: otpLoginVerifId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "OTP verification failed.");
+      clearInterval(otpLoginTimerRef.current);
+      loginWithOtpResponse({ customer: data.customer || data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, keepLoggedIn: otpLoginKeepLoggedIn });
+      showNotification("Logged in successfully!", "success");
+    } catch (err) {
+      setOtpLoginError(err.message || "Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotProceed = async () => {
@@ -614,6 +740,7 @@ const Auth = () => {
   const onLogin = async (e) => {
     e.preventDefault();
     if (forgotMode) { await handleForgotProceed(); return; }
+    if (otpLoginMode) { await handleOtpLoginProceed(); return; }
     const errors = validateLogin();
     if (Object.keys(errors).length) { setLoginErrors(errors); return; }
     setApiError(""); setLoading(true);
@@ -735,13 +862,13 @@ const Auth = () => {
       <Link to="/" className="auth-back-btn" aria-label="Go to home page">
         <Icon icon="lucide:arrow-left" />
       </Link>
-      {(activeTab === "login" || activeTab === "resetPassword" || activeTab === "phoneReset" || (activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
+      {(activeTab === "login" || activeTab === "resetPassword" || activeTab === "phoneReset" || activeTab === "loginOtp" || (activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
         <div className="auth-signup-brand">
           <img src={verticalLogo} className="auth-signup-logo-img" alt="Banarasi Kala" />
         </div>
       )}
       <section className="auth-panel" key={animationKey}>
-        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && (
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && activeTab !== "loginOtp" && !(activeTab === "signup" && signupStep === "emailSent") && (
           <header className={`auth-heading${activeTab === "signup" && signupStep === "form" ? " auth-heading-signup" : ""}`}>
             {(activeTab === "login" || activeTab === "resetPassword") && (
               <div className="auth-lotus-divider" aria-hidden="true">
@@ -766,8 +893,8 @@ const Auth = () => {
           </header>
         )}
 
-        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
-        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && !apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && activeTab !== "loginOtp" && !(activeTab === "signup" && signupStep === "emailSent") && apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && activeTab !== "loginOtp" && !(activeTab === "signup" && signupStep === "emailSent") && !apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
 
         {/* ── Login ── */}
         {activeTab === "login" && (
@@ -787,7 +914,13 @@ const Auth = () => {
                 Enter your email or mobile number above to reset your password.
               </div>
             )}
-            {!forgotMode && (
+            {otpLoginMode && !loginErrors.identifier && (
+              <div className="auth-forgot-hint">
+                <Icon icon="lucide:info" />
+                Enter your email or mobile number above to receive a login OTP.
+              </div>
+            )}
+            {!forgotMode && !otpLoginMode && (
               <AuthField
                 icon="lucide:lock"
                 label="Password"
@@ -804,33 +937,40 @@ const Auth = () => {
                 }
               />
             )}
-            <div className={`auth-row${forgotMode ? " auth-row-end" : ""}`}>
-              {!forgotMode && (
+            <div className="auth-row">
+              {!forgotMode && !otpLoginMode && (
                 <label className="auth-remember auth-remember-pill">
                   <input type="checkbox" name="keepLoggedIn" checked={loginData.keepLoggedIn} onChange={handleLoginChange} />
                   <span><Icon icon="lucide:check" /> Keep me logged in</span>
                 </label>
               )}
-              {forgotMode ? (
-                <button
-                  type="button"
-                  className="auth-cancel-btn"
-                  onClick={() => { setForgotMode(false); setLoginErrors({}); setApiError(""); }}
-                >
-                  ← Cancel
-                </button>
-              ) : (
-                <button type="button" onClick={handleForgotClick}>Forgot Password?</button>
-              )}
+              <div className={`auth-row-links${(forgotMode || otpLoginMode) ? " auth-row-links-end" : ""}`}>
+                {forgotMode || otpLoginMode ? (
+                  <button
+                    type="button"
+                    className="auth-cancel-btn"
+                    onClick={() => { setForgotMode(false); setOtpLoginMode(false); setLoginErrors({}); setApiError(""); }}
+                  >
+                    ← Cancel
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" onClick={handleForgotClick}>Forgot Password?</button>
+                    <button type="button" onClick={handleOtpLoginClick}>Login with OTP</button>
+                  </>
+                )}
+              </div>
             </div>
             <button type="submit" disabled={loading || otpLoading} className="auth-primary auth-login-btn">
               {loading || otpLoading
                 ? "Please wait..."
                 : forgotMode
                 ? <><span>Proceed</span><Icon icon="lucide:arrow-right" /></>
+                : otpLoginMode
+                ? <><span>Send OTP</span><Icon icon="lucide:arrow-right" /></>
                 : "Login"}
             </button>
-            {!forgotMode && (
+            {!forgotMode && !otpLoginMode && (
               <>
                 <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
                 <div className="auth-google-wrap">
@@ -1275,6 +1415,83 @@ const Auth = () => {
             </div>
             <button type="submit" disabled={loading} className="auth-pv-btn">
               {loading ? "Verifying…" : <><span>Verify &amp; Proceed</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+            <p className="auth-pv-bottom-note">
+              <Icon icon="lucide:lock" />
+              Your information is secure with us.
+            </p>
+          </form>
+        )}
+
+        {/* ── Login OTP ── */}
+        {activeTab === "loginOtp" && (
+          <form className="auth-pv-screen" onSubmit={handleVerifyLoginOtp} noValidate>
+            <div className="auth-pv-icon-row">
+              <div className="auth-pv-circle">
+                <Icon icon={otpLoginType === "phone" ? "ph:chat-dots" : "ph:envelope-open"} className="auth-pv-main-icon" />
+                <div className="auth-pv-shield-badge">
+                  <Icon icon="lucide:check" />
+                </div>
+              </div>
+            </div>
+            <h1 className="auth-pv-title">Login with OTP</h1>
+            <div className="auth-lotus-divider" aria-hidden="true">
+              <span /><Icon icon="ph:flower-lotus" /><span />
+            </div>
+            <p className="auth-pv-subtitle">
+              Enter the {otpLoginType === "phone" ? "6" : activeOtpDigitCount}-digit OTP sent to your {otpLoginType === "phone" ? "mobile number" : "email"}
+            </p>
+            <p className="auth-pv-phone-display">
+              {otpLoginType === "phone"
+                ? `+91 ${otpLoginPhone.replace(/(\d{5})(\d{5})/, "$1 $2")}`
+                : otpLoginPhone}
+              <button
+                type="button"
+                className="auth-pv-edit-btn"
+                onClick={() => {
+                  clearInterval(otpLoginTimerRef.current);
+                  switchMode("login");
+                  setOtpLoginMode(true);
+                }}
+              >
+                Edit
+              </button>
+            </p>
+            <div className="auth-pv-otp-wrap">
+              <OtpBoxes
+                value={otpLoginOtp}
+                length={otpLoginType === "phone" ? 6 : activeOtpDigitCount}
+                disabled={loading}
+                onChange={(v) => { setOtpLoginOtp(v.replace(/\D/g, "").slice(0, otpLoginType === "phone" ? 6 : activeOtpDigitCount)); setOtpLoginError(""); }}
+              />
+            </div>
+            <div className="auth-pv-success-banner">
+              <Icon icon="lucide:shield-check" />
+              OTP sent successfully!
+            </div>
+            {otpLoginError && <span className="auth-field-error" style={{ textAlign: "center" }}>{otpLoginError}</span>}
+            <div className="auth-pv-resend">
+              <p className="auth-pv-resend-label">Didn't receive OTP?</p>
+              {otpLoginSeconds > 0 ? (
+                <p className="auth-pv-resend-timer">
+                  Resend OTP in <strong>{`${String(Math.floor(otpLoginSeconds / 60)).padStart(2, "0")}:${String(otpLoginSeconds % 60).padStart(2, "0")}`}</strong>
+                </p>
+              ) : (
+                <button type="button" className="auth-pv-resend-btn" onClick={handleResendLoginOtp} disabled={otpLoading}>
+                  {otpLoading ? "Sending…" : "Resend OTP"}
+                </button>
+              )}
+            </div>
+            <label className="auth-remember auth-remember-pill auth-otp-keep">
+              <input
+                type="checkbox"
+                checked={otpLoginKeepLoggedIn}
+                onChange={(e) => setOtpLoginKeepLoggedIn(e.target.checked)}
+              />
+              <span><Icon icon="lucide:check" /> Keep me logged in</span>
+            </label>
+            <button type="submit" disabled={loading} className="auth-pv-btn">
+              {loading ? "Verifying…" : <><span>Login with OTP</span><Icon icon="lucide:arrow-right" /></>}
             </button>
             <p className="auth-pv-bottom-note">
               <Icon icon="lucide:lock" />

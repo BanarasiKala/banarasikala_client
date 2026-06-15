@@ -150,6 +150,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithOtpResponse = ({ customer, accessToken, refreshToken, keepLoggedIn = false }) => {
+    persistAuth({ customer, accessToken, refreshToken, keepLoggedIn });
+    return customer;
+  };
+
   const logout = () => {
     setUser(null);
     clearStoredAuth();
@@ -163,7 +168,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser, googleLogin, verifyPhoneOtp, initiateRegistration, completeRegistration }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading, updateUser, googleLogin, verifyPhoneOtp, initiateRegistration, completeRegistration, loginWithOtpResponse }}>
       {children}
     </AuthContext.Provider>
   );
