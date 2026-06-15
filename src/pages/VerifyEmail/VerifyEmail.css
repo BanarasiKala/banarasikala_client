@@ -561,3 +561,210 @@
     font-size: 18px;
   }
 }
+
+/* ── OTP step redesign ─────────────────────────────────────── */
+.ve-otp-phone-display {
+  color: #760819;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 14px;
+}
+
+.ve-otp-edit-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.ve-otp-edit-btn:hover {
+  color: #5b0710;
+}
+
+.ve-otp-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 250, 243, 0.9);
+  border: 1px solid rgba(38, 112, 66, 0.25);
+  border-radius: 8px;
+  color: #267042;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 14px;
+}
+
+.ve-otp-success-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ve-otp-resend {
+  text-align: center;
+  margin: 4px 0 18px;
+}
+
+.ve-otp-resend-label {
+  margin: 0 0 4px;
+  color: #76695f;
+  font-size: 13px;
+}
+
+.ve-otp-resend-timer {
+  margin: 0;
+  color: #76695f;
+  font-size: 13px;
+}
+
+.ve-otp-resend-timer strong {
+  color: #760819;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ve-otp-bottom-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: #8a7a70;
+  font-size: 12px;
+}
+
+.ve-otp-bottom-note svg {
+  width: 13px;
+  height: 13px;
+  color: #c9a248;
+  flex-shrink: 0;
+}
+
+/* ── Welcome / Success screen ──────────────────────────────── */
+.ve-success-screen {
+  align-items: center;
+  text-align: center;
+}
+
+.ve-success-icon-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 8px auto 24px;
+}
+
+.ve-success-circle {
+  width: 96px;
+  height: 96px;
+  background: #effaf3;
+  border: 2px solid rgba(38, 112, 66, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ve-success-circle svg {
+  width: 46px;
+  height: 46px;
+  color: #267042;
+  stroke-width: 2.5;
+}
+
+.ve-success-sparkle {
+  position: absolute;
+  font-size: 15px;
+  color: #c9a248;
+  line-height: 1;
+}
+
+.ve-ss-tl { top: -6px; left: -20px; }
+.ve-ss-tr { top: -6px; right: -20px; }
+.ve-ss-bl { bottom: -6px; left: -20px; }
+.ve-ss-br { bottom: -6px; right: -20px; }
+
+.ve-success-title {
+  line-height: 1.2;
+}
+
+.ve-benefits {
+  width: 100%;
+  background: rgba(255, 248, 237, 0.7);
+  border: 1px solid rgba(189, 145, 85, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 12px 0 20px;
+  text-align: left;
+}
+
+.ve-benefit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+}
+
+.ve-benefit + .ve-benefit {
+  border-top: 1px solid rgba(189, 145, 85, 0.15);
+}
+
+.ve-benefit-icon {
+  width: 46px;
+  height: 46px;
+  background: rgba(245, 232, 211, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ve-benefit-icon svg {
+  width: 22px;
+  height: 22px;
+  color: #c9a248;
+}
+
+.ve-benefit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ve-benefit-text strong {
+  color: #3b2118;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ve-benefit-text span {
+  color: #76695f;
+  font-size: 12px;
+}
+
+.ve-success-bottom-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: #8a7a70;
+  font-size: 12px;
+}
+
+.ve-success-bottom-note svg {
+  width: 13px;
+  height: 13px;
+  color: #c9a248;
+  flex-shrink: 0;
+}

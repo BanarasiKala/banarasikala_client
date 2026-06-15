@@ -194,7 +194,6 @@ export default function VerifyEmail() {
     try {
       await completeRegistration(registrationToken, cleanOtp, null, true);
       setStep(STEPS.SUCCESS);
-      setTimeout(() => navigate("/"), 2500);
     } catch (err) {
       setOtpError(err.message || "Invalid or expired OTP. Please try again.");
     } finally {
@@ -304,37 +303,109 @@ export default function VerifyEmail() {
 
         {step === STEPS.PHONE_OTP && (
           <form onSubmit={handleSubmitOtp} className="ve-otp-form" noValidate>
-            <PhoneIconBlock />
-            <h1 className="ve-title">Enter OTP</h1>
+            <div className="ve-confirm-icon-row" style={{ marginBottom: 22 }}>
+              <div className="ve-phone-circle">
+                <Icon icon="ph:chat-dots" className="ve-phone-icon" />
+                <div className="ve-shield-badge">
+                  <Icon icon="lucide:check" />
+                </div>
+              </div>
+            </div>
+            <h1 className="ve-title">Verify OTP</h1>
             <LotusDivider />
             <p className="ve-subtitle">
-              Enter the 6-digit code sent to<br /><strong>{maskedPhone}</strong>
+              Enter the 6-digit code sent to your mobile number
+            </p>
+            <p className="ve-otp-phone-display">
+              {editablePhone
+                ? `+91 ${editablePhone.replace(/(\d{5})(\d{5})/, "$1 $2")}`
+                : maskedPhone}
+              {editablePhone && (
+                <button
+                  type="button"
+                  className="ve-otp-edit-btn"
+                  onClick={() => { setStep(STEPS.CONFIRM_PHONE); setOtp(""); setOtpError(""); }}
+                >
+                  Edit
+                </button>
+              )}
             </p>
             <OtpBoxes
               value={otp}
               onChange={(v) => { setOtp(v.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
               disabled={otpLoading}
             />
+            <div className="ve-otp-success-banner">
+              <Icon icon="lucide:shield-check" />
+              OTP sent successfully!
+            </div>
             {otpError && <p className="ve-error">{otpError}</p>}
+            <div className="ve-otp-resend">
+              <p className="ve-otp-resend-label">Didn't receive OTP?</p>
+              {resendSeconds > 0 ? (
+                <p className="ve-otp-resend-timer">
+                  Resend OTP in <strong>{`${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`}</strong>
+                </p>
+              ) : (
+                <button type="button" className="ve-resend-btn" onClick={handleResend}>
+                  Resend OTP
+                </button>
+              )}
+            </div>
             <button type="submit" className="ve-btn-primary" disabled={otpLoading}>
               {otpLoading ? "Verifying…" : <><span>Create My Account</span><Icon icon="lucide:arrow-right" /></>}
             </button>
-            <p className="ve-resend">
-              {resendSeconds > 0
-                ? `Resend OTP in ${resendSeconds}s`
-                : <button type="button" className="ve-resend-btn" onClick={handleResend}>Resend OTP</button>}
+            <p className="ve-otp-bottom-note">
+              <Icon icon="lucide:lock" />
+              Your information is secure with us.
             </p>
           </form>
         )}
 
         {step === STEPS.SUCCESS && (
-          <div className="ve-center">
-            <div className="ve-status-circle ve-status-success">
-              <Icon icon="lucide:check" />
+          <div className="ve-confirm ve-success-screen">
+            <div className="ve-success-icon-wrap">
+              <span className="ve-success-sparkle ve-ss-tl">✦</span>
+              <span className="ve-success-sparkle ve-ss-tr">✦</span>
+              <div className="ve-success-circle">
+                <Icon icon="lucide:check" />
+              </div>
+              <span className="ve-success-sparkle ve-ss-bl">✦</span>
+              <span className="ve-success-sparkle ve-ss-br">✦</span>
             </div>
-            <h1 className="ve-title">Account Created!</h1>
+            <h1 className="ve-title ve-success-title">Welcome to<br />Banarasi Kala!</h1>
             <LotusDivider />
-            <p className="ve-subtitle">Welcome to Banarasi Kala. Redirecting you…</p>
+            <p className="ve-subtitle">Your account has been created successfully.</p>
+            <div className="ve-benefits">
+              <div className="ve-benefit">
+                <div className="ve-benefit-icon"><Icon icon="lucide:gift" /></div>
+                <div className="ve-benefit-text">
+                  <strong>₹100 Welcome Wallet Credit</strong>
+                  <span>Use it on your first purchase</span>
+                </div>
+              </div>
+              <div className="ve-benefit">
+                <div className="ve-benefit-icon"><Icon icon="lucide:package" /></div>
+                <div className="ve-benefit-text">
+                  <strong>Premium Packaging</strong>
+                  <span>Every order is packed with care</span>
+                </div>
+              </div>
+              <div className="ve-benefit">
+                <div className="ve-benefit-icon"><Icon icon="lucide:truck" /></div>
+                <div className="ve-benefit-text">
+                  <strong>Free Delivery</strong>
+                  <span>Enjoy free delivery on all orders</span>
+                </div>
+              </div>
+            </div>
+            <button type="button" className="ve-btn-primary" onClick={() => navigate("/")}>
+              <span>Start Shopping</span><Icon icon="lucide:arrow-right" />
+            </button>
+            <p className="ve-success-bottom-note">
+              <Icon icon="lucide:shield" />
+              Your information is secure with us.
+            </p>
           </div>
         )}
 
