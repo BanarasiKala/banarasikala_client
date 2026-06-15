@@ -128,6 +128,7 @@ const Auth = () => {
   const [success, setSuccess] = useState("");
   const [animationKey, setAnimationKey] = useState(0);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetOtpToken, setResetOtpToken] = useState("");
@@ -152,6 +153,13 @@ const Auth = () => {
   const [phoneResendSeconds, setPhoneResendSeconds] = useState(0);
   const phoneTimerRef = useRef(null);
   const [phoneSuccess, setPhoneSuccess] = useState(false);
+
+  const [phoneResetPhone, setPhoneResetPhone] = useState("");
+  const [phoneResetVerifId, setPhoneResetVerifId] = useState("");
+  const [phoneResetOtp, setPhoneResetOtp] = useState("");
+  const [phoneResetSeconds, setPhoneResetSeconds] = useState(0);
+  const [phoneResetToken, setPhoneResetToken] = useState("");
+  const phoneResetTimerRef = useRef(null);
 
   const { login, googleLogin, verifyPhoneOtp, user, initiateRegistration } = useAuth();
   const { showNotification } = useNotification();
@@ -205,14 +213,15 @@ const Auth = () => {
     return () => window.removeEventListener("auth:refresh", handler);
   }, []);
 
-  useEffect(() => () => clearInterval(phoneTimerRef.current), []);
+  useEffect(() => () => { clearInterval(phoneTimerRef.current); clearInterval(phoneResetTimerRef.current); }, []);
 
   const authCopy = useMemo(() => {
     if (activeTab === "signup" && signupStep === "emailSent") return { title: "Check Your Inbox", subtitle: "A verification link has been sent to your email." };
     if (activeTab === "signup") return { title: "Create Account", subtitle: "Fill in your details to create your account." };
     if (activeTab === "forgotPassword") return { title: "Reset Password", subtitle: "Enter your registered email to verify ownership." };
-    if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Your email is verified. Set a secure new password." };
+    if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Choose a strong password to keep your account secure." };
     if (activeTab === "phoneVerification") return { title: "One Last Step", subtitle: "Add your mobile number to complete your account." };
+    if (activeTab === "phoneReset") return { title: "Verify OTP", subtitle: "Enter the 6-digit OTP sent to your mobile." };
     return { title: "Welcome Back", subtitle: "Sign in to continue shopping your favourite Banarasi Sarees" };
   }, [activeTab, signupStep]);
 
@@ -232,6 +241,7 @@ const Auth = () => {
     setSignupErrors({});
     setForgotErrors({});
     setResetErrors({});
+    setForgotMode(false);
     setLoginData({ identifier: "", password: "", keepLoggedIn: false });
     setSignupData({ name: "", phone: "", email: "", password: "", referral_code: "" });
     setForgotPasswordData({ email: "", newPassword: "", confirmPassword: "" });
@@ -246,6 +256,14 @@ const Auth = () => {
       setPhoneSuccess(false);
       clearInterval(phoneTimerRef.current);
       setPhoneResendSeconds(0);
+    }
+    if (mode !== "phoneReset") {
+      setPhoneResetPhone("");
+      setPhoneResetVerifId("");
+      setPhoneResetOtp("");
+      setPhoneResetToken("");
+      clearInterval(phoneResetTimerRef.current);
+      setPhoneResetSeconds(0);
     }
     setAnimationKey((k) => k + 1);
   }
@@ -401,6 +419,58 @@ const Auth = () => {
     startEmailOtp(otpStep.action, otpStep.email, signupData.name);
   };
 
+  // ── Phone-based password reset ─────────────────────────────
+  const handleResendPhoneResetOtp = async () => {
+    if (!phoneResetPhone || otpLoading) return;
+    setPhoneResetOtp(""); setPhoneError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/send-password-reset-phone-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneResetPhone }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to resend OTP.");
+      setPhoneResetVerifId(data.verificationId);
+      clearInterval(phoneResetTimerRef.current);
+      setPhoneResetSeconds(45);
+      phoneResetTimerRef.current = setInterval(() => {
+        setPhoneResetSeconds((s) => {
+          if (s <= 1) { clearInterval(phoneResetTimerRef.current); return 0; }
+          return s - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      setPhoneError(err.message || "Failed to resend OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneResetOtp = async (e) => {
+    e.preventDefault();
+    const code = phoneResetOtp.replace(/\D/g, "");
+    if (code.length !== 6) { setPhoneError("Please enter the complete 6-digit OTP."); return; }
+    setPhoneError(""); setLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/verify-password-reset-phone-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneResetPhone, verificationId: phoneResetVerifId, otp: code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "OTP verification failed.");
+      clearInterval(phoneResetTimerRef.current);
+      switchMode("resetPassword");
+      setPhoneResetToken(data.resetToken);
+    } catch (err) {
+      setPhoneError(err.message || "Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Google OAuth ───────────────────────────────────────────
   const handleGoogleSuccess = async (credentialResponse) => {
     setApiError(""); setLoading(true);
@@ -468,9 +538,82 @@ const Auth = () => {
     }
   };
 
+  // ── Forgot-password inline flow ────────────────────────────
+  const handleForgotClick = () => {
+    setForgotMode(true);
+    setLoginErrors({});
+    setApiError("");
+    setSuccess("");
+  };
+
+  const handleForgotProceed = async () => {
+    const val = String(loginData.identifier || "").trim();
+    if (!val) {
+      setLoginErrors({ identifier: "Please enter your email or mobile number to reset your password." });
+      return;
+    }
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    const digits = val.replace(/\D/g, "");
+    const normalizedPhone = digits.length > 10 ? digits.slice(-10) : digits.replace(/^0+/, "");
+    const isPhone = /^[6-9]\d{9}$/.test(normalizedPhone);
+
+    if (!isEmail && !isPhone) {
+      setLoginErrors({ identifier: "Enter a valid email address or 10-digit mobile number." });
+      return;
+    }
+    if (isPhone) {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_ENDPOINTS.auth}/send-password-reset-phone-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: normalizedPhone }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to send OTP.");
+        setPhoneResetPhone(normalizedPhone);
+        setPhoneResetVerifId(data.verificationId);
+        setForgotMode(false);
+        clearInterval(phoneResetTimerRef.current);
+        setPhoneResetSeconds(45);
+        phoneResetTimerRef.current = setInterval(() => {
+          setPhoneResetSeconds((s) => {
+            if (s <= 1) { clearInterval(phoneResetTimerRef.current); return 0; }
+            return s - 1;
+          });
+        }, 1000);
+        switchMode("phoneReset");
+      } catch (err) {
+        setApiError(getFriendlyError(err, "Failed to send OTP. Please try again."));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    const email = val.toLowerCase();
+    setForgotPasswordData((prev) => ({ ...prev, email }));
+    setApiError(""); setLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.auth}/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Request failed");
+      await startEmailOtp("reset", email);
+    } catch (err) {
+      setApiError(getFriendlyError(err, "Unable to start password reset. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Handlers ───────────────────────────────────────────────
   const onLogin = async (e) => {
     e.preventDefault();
+    if (forgotMode) { await handleForgotProceed(); return; }
     const errors = validateLogin();
     if (Object.keys(errors).length) { setLoginErrors(errors); return; }
     setApiError(""); setLoading(true);
@@ -561,10 +704,18 @@ const Auth = () => {
     if (Object.keys(errors).length) { setResetErrors(errors); return; }
     setApiError(""); setLoading(true);
     try {
-      const res = await fetch(`${API_ENDPOINTS.auth}/reset-password`, {
+      const isPhoneReset = !!phoneResetToken;
+      const url = isPhoneReset
+        ? `${API_ENDPOINTS.auth}/reset-password-by-phone`
+        : `${API_ENDPOINTS.auth}/reset-password`;
+      const body = isPhoneReset
+        ? { resetToken: phoneResetToken, newPassword: forgotPasswordData.newPassword }
+        : { email: String(forgotPasswordData.email || "").trim().toLowerCase(), email_otp_token: resetOtpToken, newPassword: forgotPasswordData.newPassword };
+
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: String(forgotPasswordData.email || "").trim().toLowerCase(), email_otp_token: resetOtpToken, newPassword: forgotPasswordData.newPassword }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Reset failed");
@@ -584,20 +735,20 @@ const Auth = () => {
       <Link to="/" className="auth-back-btn" aria-label="Go to home page">
         <Icon icon="lucide:arrow-left" />
       </Link>
-      {(activeTab === "login" || (activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
+      {(activeTab === "login" || activeTab === "resetPassword" || activeTab === "phoneReset" || (activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
         <div className="auth-signup-brand">
           <img src={verticalLogo} className="auth-signup-logo-img" alt="Banarasi Kala" />
         </div>
       )}
       <section className="auth-panel" key={animationKey}>
-        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && (
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && (
           <header className={`auth-heading${activeTab === "signup" && signupStep === "form" ? " auth-heading-signup" : ""}`}>
-            {activeTab === "login" && (
+            {(activeTab === "login" || activeTab === "resetPassword") && (
               <div className="auth-lotus-divider" aria-hidden="true">
                 <span /><Icon icon="ph:flower-lotus" /><span />
               </div>
             )}
-            {activeTab === "login" ? (
+            {(activeTab === "login" || activeTab === "resetPassword") ? (
               <div className="auth-heading-spark-row">
                 <span className="auth-login-sparkle">✦</span>
                 <h1>{authCopy.title}</h1>
@@ -615,8 +766,8 @@ const Auth = () => {
           </header>
         )}
 
-        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
-        {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && !apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && apiError && <div ref={alertRef} className="auth-alert auth-alert-error">{apiError}</div>}
+        {activeTab !== "phoneVerification" && activeTab !== "phoneReset" && !(activeTab === "signup" && signupStep === "emailSent") && !apiError && success && <div className="auth-alert auth-alert-success">{success}</div>}
 
         {/* ── Login ── */}
         {activeTab === "login" && (
@@ -630,51 +781,79 @@ const Auth = () => {
               onChange={handleLoginChange}
               error={loginErrors.identifier}
             />
-            <AuthField
-              icon="lucide:lock"
-              label="Password"
-              name="password"
-              type={showLoginPassword ? "text" : "password"}
-              value={loginData.password}
-              placeholder="Enter your password"
-              onChange={handleLoginChange}
-              error={loginErrors.password}
-              rightAction={
-                <button type="button" className="auth-eye" onClick={() => setShowLoginPassword((v) => !v)}>
-                  <Icon icon={showLoginPassword ? "lucide:eye-off" : "lucide:eye"} />
-                </button>
-              }
-            />
-            <div className="auth-row">
-              <label className="auth-remember auth-remember-pill">
-                <input type="checkbox" name="keepLoggedIn" checked={loginData.keepLoggedIn} onChange={handleLoginChange} />
-                <span><Icon icon="lucide:check" /> Keep me logged in</span>
-              </label>
-              <button type="button" onClick={() => switchMode("forgotPassword")}>Forgot Password?</button>
-            </div>
-            <button type="submit" disabled={loading} className="auth-primary auth-login-btn">
-              {loading ? "Please wait..." : "Login"}
-            </button>
-            <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
-            <div className="auth-google-wrap">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setApiError("Google Sign-In failed. Please try again.")}
-                width="100%"
-                text="continue_with"
-                shape="rectangular"
+            {forgotMode && !loginErrors.identifier && (
+              <div className="auth-forgot-hint">
+                <Icon icon="lucide:info" />
+                Enter your email or mobile number above to reset your password.
+              </div>
+            )}
+            {!forgotMode && (
+              <AuthField
+                icon="lucide:lock"
+                label="Password"
+                name="password"
+                type={showLoginPassword ? "text" : "password"}
+                value={loginData.password}
+                placeholder="Enter your password"
+                onChange={handleLoginChange}
+                error={loginErrors.password}
+                rightAction={
+                  <button type="button" className="auth-eye" onClick={() => setShowLoginPassword((v) => !v)}>
+                    <Icon icon={showLoginPassword ? "lucide:eye-off" : "lucide:eye"} />
+                  </button>
+                }
               />
+            )}
+            <div className={`auth-row${forgotMode ? " auth-row-end" : ""}`}>
+              {!forgotMode && (
+                <label className="auth-remember auth-remember-pill">
+                  <input type="checkbox" name="keepLoggedIn" checked={loginData.keepLoggedIn} onChange={handleLoginChange} />
+                  <span><Icon icon="lucide:check" /> Keep me logged in</span>
+                </label>
+              )}
+              {forgotMode ? (
+                <button
+                  type="button"
+                  className="auth-cancel-btn"
+                  onClick={() => { setForgotMode(false); setLoginErrors({}); setApiError(""); }}
+                >
+                  ← Cancel
+                </button>
+              ) : (
+                <button type="button" onClick={handleForgotClick}>Forgot Password?</button>
+              )}
             </div>
-            <button type="button" className="auth-no-account-card" onClick={() => switchMode("signup")}>
-              <div className="auth-no-account-text">
-                <span>Don't have an account?</span>
-                <strong>CREATE NEW ACCOUNT →</strong>
-              </div>
-              <div className="auth-no-account-deco" aria-hidden="true">
-                <span className="auth-no-account-deco-main">✦</span>
-                <span className="auth-no-account-deco-sub">✦</span>
-              </div>
+            <button type="submit" disabled={loading || otpLoading} className="auth-primary auth-login-btn">
+              {loading || otpLoading
+                ? "Please wait..."
+                : forgotMode
+                ? <><span>Proceed</span><Icon icon="lucide:arrow-right" /></>
+                : "Login"}
             </button>
+            {!forgotMode && (
+              <>
+                <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
+                <div className="auth-google-wrap">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setApiError("Google Sign-In failed. Please try again.")}
+                    width="100%"
+                    text="continue_with"
+                    shape="rectangular"
+                  />
+                </div>
+                <button type="button" className="auth-no-account-card" onClick={() => switchMode("signup")}>
+                  <div className="auth-no-account-text">
+                    <span>Don't have an account?</span>
+                    <strong>CREATE NEW ACCOUNT →</strong>
+                  </div>
+                  <div className="auth-no-account-deco" aria-hidden="true">
+                    <span className="auth-no-account-deco-main">✦</span>
+                    <span className="auth-no-account-deco-sub">✦</span>
+                  </div>
+                </button>
+              </>
+            )}
           </form>
         )}
 
@@ -1039,6 +1218,71 @@ const Auth = () => {
           </div>
         )}
 
+        {/* ── Phone Reset OTP ── */}
+        {activeTab === "phoneReset" && (
+          <form className="auth-pv-screen" onSubmit={handleVerifyPhoneResetOtp} noValidate>
+            <div className="auth-pv-icon-row">
+              <div className="auth-pv-circle">
+                <Icon icon="ph:chat-dots" className="auth-pv-main-icon" />
+                <div className="auth-pv-shield-badge">
+                  <Icon icon="lucide:check" />
+                </div>
+              </div>
+            </div>
+            <h1 className="auth-pv-title">Verify OTP</h1>
+            <div className="auth-lotus-divider" aria-hidden="true">
+              <span /><Icon icon="ph:flower-lotus" /><span />
+            </div>
+            <p className="auth-pv-subtitle">Enter the 6-digit code sent to your mobile</p>
+            <p className="auth-pv-phone-display">
+              +91 {phoneResetPhone.replace(/(\d{5})(\d{5})/, "$1 $2")}
+              <button
+                type="button"
+                className="auth-pv-edit-btn"
+                onClick={() => {
+                  clearInterval(phoneResetTimerRef.current);
+                  switchMode("login");
+                  setForgotMode(true);
+                }}
+              >
+                Edit
+              </button>
+            </p>
+            <div className="auth-pv-otp-wrap">
+              <OtpBoxes
+                value={phoneResetOtp}
+                length={6}
+                disabled={loading}
+                onChange={(v) => { setPhoneResetOtp(v.replace(/\D/g, "").slice(0, 6)); setPhoneError(""); }}
+              />
+            </div>
+            <div className="auth-pv-success-banner">
+              <Icon icon="lucide:shield-check" />
+              OTP sent successfully!
+            </div>
+            {phoneError && <span className="auth-field-error" style={{ textAlign: "center" }}>{phoneError}</span>}
+            <div className="auth-pv-resend">
+              <p className="auth-pv-resend-label">Didn't receive OTP?</p>
+              {phoneResetSeconds > 0 ? (
+                <p className="auth-pv-resend-timer">
+                  Resend OTP in <strong>{`${String(Math.floor(phoneResetSeconds / 60)).padStart(2, "0")}:${String(phoneResetSeconds % 60).padStart(2, "0")}`}</strong>
+                </p>
+              ) : (
+                <button type="button" className="auth-pv-resend-btn" onClick={handleResendPhoneResetOtp} disabled={otpLoading}>
+                  {otpLoading ? "Sending…" : "Resend OTP"}
+                </button>
+              )}
+            </div>
+            <button type="submit" disabled={loading} className="auth-pv-btn">
+              {loading ? "Verifying…" : <><span>Verify &amp; Proceed</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+            <p className="auth-pv-bottom-note">
+              <Icon icon="lucide:lock" />
+              Your information is secure with us.
+            </p>
+          </form>
+        )}
+
         {/* ── Forgot Password ── */}
         {activeTab === "forgotPassword" && (
           <form className="auth-form" onSubmit={handleForgotPassword} noValidate>
@@ -1063,7 +1307,7 @@ const Auth = () => {
 
         {/* ── Reset Password ── */}
         {activeTab === "resetPassword" && (
-          <form className="auth-form" onSubmit={handleResetPassword} noValidate>
+          <form className="auth-form auth-form-compact" onSubmit={handleResetPassword} noValidate>
             <AuthField
               icon="lucide:lock"
               label="New Password"
@@ -1082,6 +1326,19 @@ const Auth = () => {
                 </button>
               }
             />
+            <div className="auth-pw-reqs" aria-label="Password requirements">
+              {[
+                { label: "8+ characters", met: forgotPasswordData.newPassword.length >= 8 },
+                { label: "1 uppercase",   met: /[A-Z]/.test(forgotPasswordData.newPassword) },
+                { label: "1 number",      met: /[0-9]/.test(forgotPasswordData.newPassword) },
+                { label: "1 special char",met: /[^A-Za-z0-9]/.test(forgotPasswordData.newPassword) },
+              ].map(({ label, met }) => (
+                <div key={label} className={`auth-pw-req${met ? " is-met" : ""}`}>
+                  <Icon icon="lucide:check-circle-2" />
+                  {label}
+                </div>
+              ))}
+            </div>
             <AuthField
               icon="lucide:lock-keyhole"
               label="Confirm Password"
@@ -1095,8 +1352,20 @@ const Auth = () => {
               }}
               error={resetErrors.confirmPassword}
             />
-            <button type="submit" disabled={loading} className="auth-primary">
-              {loading ? "Resetting..." : "Reset Password"}
+            <button type="submit" disabled={loading} className="auth-primary auth-login-btn">
+              {loading
+                ? "Resetting..."
+                : <><span>Reset Password</span><Icon icon="lucide:arrow-right" /></>}
+            </button>
+            <button type="button" className="auth-no-account-card" onClick={() => switchMode("login")}>
+              <div className="auth-no-account-text">
+                <span>Remember your password?</span>
+                <strong>BACK TO LOGIN →</strong>
+              </div>
+              <div className="auth-no-account-deco" aria-hidden="true">
+                <span className="auth-no-account-deco-main">✦</span>
+                <span className="auth-no-account-deco-sub">✦</span>
+              </div>
             </button>
           </form>
         )}

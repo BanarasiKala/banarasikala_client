@@ -1562,6 +1562,51 @@
   line-height: 1.4;
 }
 
+/* ── Login: forgot-password inline hint ─────────────────────── */
+.auth-forgot-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: -4px;
+  padding: 10px 12px;
+  color: #5b0710;
+  background: rgba(255, 240, 237, 0.9);
+  border: 1px solid rgba(173, 51, 36, 0.22);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.auth-forgot-hint svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #760819;
+}
+
+.auth-cancel-btn {
+  color: #760819;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.auth-cancel-btn:hover {
+  color: #5b0710;
+  text-decoration: underline;
+}
+
+.auth-row-end {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
 /* ── Login: announcement banner ─────────────────────────────── */
 .auth-announce-banner {
   justify-self: stretch;
