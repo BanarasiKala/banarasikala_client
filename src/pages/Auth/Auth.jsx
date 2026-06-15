@@ -213,7 +213,7 @@ const Auth = () => {
     if (activeTab === "forgotPassword") return { title: "Reset Password", subtitle: "Enter your registered email to verify ownership." };
     if (activeTab === "resetPassword") return { title: "Create New Password", subtitle: "Your email is verified. Set a secure new password." };
     if (activeTab === "phoneVerification") return { title: "One Last Step", subtitle: "Add your mobile number to complete your account." };
-    return { title: "Welcome Back", subtitle: "Please enter your details" };
+    return { title: "Welcome Back", subtitle: "Sign in to continue shopping your favourite Banarasi Sarees" };
   }, [activeTab, signupStep]);
 
   function switchMode(mode) {
@@ -232,6 +232,10 @@ const Auth = () => {
     setSignupErrors({});
     setForgotErrors({});
     setResetErrors({});
+    setLoginData({ identifier: "", password: "", keepLoggedIn: false });
+    setSignupData({ name: "", phone: "", email: "", password: "", referral_code: "" });
+    setForgotPasswordData({ email: "", newPassword: "", confirmPassword: "" });
+    setConsentChecked(false);
     if (mode !== "phoneVerification") {
       setPendingGoogleToken("");
       setPhoneVerifPhone("");
@@ -580,7 +584,7 @@ const Auth = () => {
       <Link to="/" className="auth-back-btn" aria-label="Go to home page">
         <Icon icon="lucide:arrow-left" />
       </Link>
-      {((activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
+      {(activeTab === "login" || (activeTab === "signup" && (signupStep === "form" || signupStep === "emailSent")) || activeTab === "phoneVerification") && (
         <div className="auth-signup-brand">
           <img src={verticalLogo} className="auth-signup-logo-img" alt="Banarasi Kala" />
         </div>
@@ -588,7 +592,20 @@ const Auth = () => {
       <section className="auth-panel" key={animationKey}>
         {activeTab !== "phoneVerification" && !(activeTab === "signup" && signupStep === "emailSent") && (
           <header className={`auth-heading${activeTab === "signup" && signupStep === "form" ? " auth-heading-signup" : ""}`}>
-            <h1>{authCopy.title}</h1>
+            {activeTab === "login" && (
+              <div className="auth-lotus-divider" aria-hidden="true">
+                <span /><Icon icon="ph:flower-lotus" /><span />
+              </div>
+            )}
+            {activeTab === "login" ? (
+              <div className="auth-heading-spark-row">
+                <span className="auth-login-sparkle">✦</span>
+                <h1>{authCopy.title}</h1>
+                <span className="auth-login-sparkle">✦</span>
+              </div>
+            ) : (
+              <h1>{authCopy.title}</h1>
+            )}
             {activeTab === "signup" && signupStep === "form" && (
               <div className="auth-lotus-divider" aria-hidden="true">
                 <span /><Icon icon="ph:flower-lotus" /><span />
@@ -635,23 +652,28 @@ const Auth = () => {
               </label>
               <button type="button" onClick={() => switchMode("forgotPassword")}>Forgot Password?</button>
             </div>
-            <button type="submit" disabled={loading} className="auth-primary">
+            <button type="submit" disabled={loading} className="auth-primary auth-login-btn">
               {loading ? "Please wait..." : "Login"}
             </button>
-            <div className="auth-divider"><span /><em>or</em><span /></div>
+            <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
             <div className="auth-google-wrap">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setApiError("Google Sign-In failed. Please try again.")}
                 width="100%"
-                text="signin_with"
+                text="continue_with"
                 shape="rectangular"
               />
             </div>
-            <div className="auth-divider"><span /><em>or</em><span /></div>
-            <button type="button" className="auth-secondary" onClick={() => switchMode("signup")}>
-              <Icon icon="lucide:user-plus" />
-              Create New Account
+            <button type="button" className="auth-no-account-card" onClick={() => switchMode("signup")}>
+              <div className="auth-no-account-text">
+                <span>Don't have an account?</span>
+                <strong>CREATE NEW ACCOUNT →</strong>
+              </div>
+              <div className="auth-no-account-deco" aria-hidden="true">
+                <span className="auth-no-account-deco-main">✦</span>
+                <span className="auth-no-account-deco-sub">✦</span>
+              </div>
             </button>
           </form>
         )}
@@ -762,7 +784,16 @@ const Auth = () => {
                 shape="rectangular"
               />
             </div>
-            <button type="button" className="auth-text-button" onClick={() => switchMode("login")}>Back to Login</button>
+            <button type="button" className="auth-no-account-card" onClick={() => switchMode("login")}>
+              <div className="auth-no-account-text">
+                <span>Already have an account?</span>
+                <strong>BACK TO LOGIN →</strong>
+              </div>
+              <div className="auth-no-account-deco" aria-hidden="true">
+                <span className="auth-no-account-deco-main">✦</span>
+                <span className="auth-no-account-deco-sub">✦</span>
+              </div>
+            </button>
           </form>
         )}
 
@@ -1109,6 +1140,31 @@ const Auth = () => {
           </div>
         )}
       </section>
+      {activeTab === "login" && (
+        <div className="auth-trust-badges">
+          <div className="auth-trust-badge">
+            <div className="auth-trust-icon"><Icon icon="lucide:shield-check" /></div>
+            <div className="auth-trust-text">
+              <strong>Secure Checkout</strong>
+              <span>100% Protected</span>
+            </div>
+          </div>
+          <div className="auth-trust-badge">
+            <div className="auth-trust-icon"><Icon icon="lucide:truck" /></div>
+            <div className="auth-trust-text">
+              <strong>Pan India Delivery</strong>
+              <span>Fast &amp; Reliable</span>
+            </div>
+          </div>
+          <div className="auth-trust-badge">
+            <div className="auth-trust-icon"><Icon icon="lucide:gift" /></div>
+            <div className="auth-trust-text">
+              <strong>Premium Packaging</strong>
+              <span>Handcrafted with Love</span>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
