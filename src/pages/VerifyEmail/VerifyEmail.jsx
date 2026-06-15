@@ -409,19 +409,33 @@ export default function VerifyEmail() {
           </div>
         )}
 
-        {step === STEPS.ERROR && (
-          <div className="ve-center">
-            <div className="ve-status-circle ve-status-error">
-              <Icon icon="lucide:x" />
+        {step === STEPS.ERROR && (() => {
+          const m = errorMsg.toLowerCase();
+          const isLogin   = m.includes("log in") || m.includes("login");
+          const isExpired = !isLogin && m.includes("expired");
+          const isNotFound = !isLogin && !isExpired && m.includes("not found");
+
+          const icon   = isLogin ? "lucide:user-check" : isExpired ? "lucide:clock" : isNotFound ? "lucide:user-x" : "lucide:link-2-off";
+          const circle = isLogin ? "ve-status-info" : "ve-status-error";
+          const title  = isLogin ? "Already Registered" : isExpired ? "Link Expired" : isNotFound ? "Account Not Found" : "Invalid Link";
+          const cta    = isLogin
+            ? { to: "/login",            label: "Go to Login" }
+            : { to: "/login?mode=signup", label: "Register Again" };
+
+          return (
+            <div className="ve-center">
+              <div className={`ve-status-circle ${circle}`}>
+                <Icon icon={icon} />
+              </div>
+              <h1 className="ve-title">{title}</h1>
+              <LotusDivider />
+              <p className="ve-subtitle">{errorMsg}</p>
+              <Link to={cta.to} className="ve-btn-primary ve-btn-link">
+                <span>{cta.label}</span><Icon icon="lucide:arrow-right" />
+              </Link>
             </div>
-            <h1 className="ve-title">Verification Failed</h1>
-            <LotusDivider />
-            <p className="ve-subtitle">{errorMsg}</p>
-            <Link to="/login?mode=signup" className="ve-btn-primary ve-btn-link">
-              <span>Go to Registration</span><Icon icon="lucide:arrow-right" />
-            </Link>
-          </div>
-        )}
+          );
+        })()}
 
       </div>
     </main>

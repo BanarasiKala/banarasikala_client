@@ -523,6 +523,12 @@
   border: 2px solid rgba(173, 51, 36, 0.2);
 }
 
+.ve-status-info {
+  background: #fffbeb;
+  color: #92400e;
+  border: 2px solid rgba(180, 140, 30, 0.25);
+}
+
 /* ── Confirm layout ────────────────────────────────────────── */
 .ve-confirm {
   display: grid;
