@@ -3,6 +3,8 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
+import mobileBackground from "../../assets/img.jpg";
+import flatSaree from "../../assets/image.png";
 import verticalLogo from "../../assets/vertical_logo.png";
 import { API_ENDPOINTS } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
@@ -309,6 +311,8 @@ const Auth = () => {
       } else {
         nextValue = digits;
       }
+    } else if (name === "referral_code") {
+      nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11);
     } else {
       nextValue = value;
     }
@@ -348,6 +352,11 @@ const Auth = () => {
       errors.password = "Password must contain at least one number.";
     } else if (!/[^A-Za-z0-9]/.test(signupData.password)) {
       errors.password = "Password must contain at least one special character.";
+    }
+    if (signupData.referral_code) {
+      if (!/^VNS[A-Z0-9]{8}$/.test(signupData.referral_code)) {
+        errors.referral_code = "Invalid referral code. It should look like VNS followed by 8 characters (e.g. VNSA1B2C3D4).";
+      }
     }
     if (!consentChecked) {
       errors.consent = "Please accept the Terms & Conditions to continue.";
@@ -775,7 +784,12 @@ const Auth = () => {
       setRegistrationToken(result.registrationToken);
       setSignupStep("emailSent");
     } catch (err) {
-      setApiError(getFriendlyError(err, "Unable to start registration right now. Please contact support or try again later."));
+      const msg = err.message || "";
+      if (msg.toLowerCase().includes("referral")) {
+        setSignupErrors((prev) => ({ ...prev, referral_code: msg }));
+      } else {
+        setApiError(getFriendlyError(err, "Unable to start registration right now. Please contact support or try again later."));
+      }
     } finally {
       setLoading(false);
     }
@@ -858,7 +872,7 @@ const Auth = () => {
   };
 
   return (
-    <main className="auth-page" style={{ "--auth-bg": `url(${headerBackground})` }}>
+    <main className="auth-page" style={{ "--auth-bg": `url(${headerBackground})`, "--auth-bg-mobile": `url(${mobileBackground})` }}>
       <Link to="/" className="auth-back-btn" aria-label="Go to home page">
         <Icon icon="lucide:arrow-left" />
       </Link>
@@ -989,6 +1003,7 @@ const Auth = () => {
                   </div>
                   <div className="auth-no-account-deco" aria-hidden="true">
                     <span className="auth-no-account-deco-main">✦</span>
+                    <img src={flatSaree} alt="" className="auth-no-account-saree" />
                     <span className="auth-no-account-deco-sub">✦</span>
                   </div>
                 </button>
@@ -1029,7 +1044,7 @@ const Auth = () => {
                 onChange={handleSignupChange}
                 inputMode="tel"
                 maxLength={10}
-                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91<Icon icon="lucide:chevron-down" className="auth-country-chevron" /></span>}
+                leftAddon={<span className="auth-country-code"><span className="auth-flag-india" aria-hidden="true" />+91</span>}
                 error={signupErrors.phone}
               />
             </div>
@@ -1039,8 +1054,10 @@ const Auth = () => {
                 label="Referral Code (optional)"
                 name="referral_code"
                 value={signupData.referral_code}
-                placeholder="Have a referral code?"
+                placeholder="e.g. VNSA1B2C3D4"
                 onChange={handleSignupChange}
+                maxLength={11}
+                error={signupErrors.referral_code}
               />
             </div>
             <AuthField
@@ -1110,6 +1127,7 @@ const Auth = () => {
               </div>
               <div className="auth-no-account-deco" aria-hidden="true">
                 <span className="auth-no-account-deco-main">✦</span>
+                <img src={flatSaree} alt="" className="auth-no-account-saree" />
                 <span className="auth-no-account-deco-sub">✦</span>
               </div>
             </button>
@@ -1626,8 +1644,8 @@ const Auth = () => {
           </div>
         )}
       </section>
-      {activeTab === "login" && (
-        <div className="auth-trust-badges">
+      {(activeTab === "login" || activeTab === "signup") && (
+        <div className="auth-trust-card">
           <div className="auth-trust-badge">
             <div className="auth-trust-icon"><Icon icon="lucide:shield-check" /></div>
             <div className="auth-trust-text">
@@ -1635,6 +1653,7 @@ const Auth = () => {
               <span>100% Protected</span>
             </div>
           </div>
+          <div className="auth-trust-sep" aria-hidden="true" />
           <div className="auth-trust-badge">
             <div className="auth-trust-icon"><Icon icon="lucide:truck" /></div>
             <div className="auth-trust-text">
@@ -1642,6 +1661,7 @@ const Auth = () => {
               <span>Fast &amp; Reliable</span>
             </div>
           </div>
+          <div className="auth-trust-sep" aria-hidden="true" />
           <div className="auth-trust-badge">
             <div className="auth-trust-icon"><Icon icon="lucide:gift" /></div>
             <div className="auth-trust-text">

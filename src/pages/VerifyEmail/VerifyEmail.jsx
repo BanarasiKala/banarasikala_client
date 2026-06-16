@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import verticalLogo from "../../assets/vertical_logo.png";
 import headerBackground from "../../assets/header_backgroung.png";
+import mobileBackground from "../../assets/img.jpg";
 import "./VerifyEmail.css";
 
 const STEPS = {
@@ -119,7 +120,7 @@ export default function VerifyEmail() {
 
   useEffect(() => () => clearInterval(timerRef.current), []);
 
-  const sendOtp = async (regToken, phoneOverride = null) => {
+  const sendOtp = async (regToken, phoneOverride = null, userInitiated = false) => {
     try {
       const payload = { registrationToken: regToken };
       if (phoneOverride) payload.phone = phoneOverride;
@@ -129,8 +130,12 @@ export default function VerifyEmail() {
       startResendTimer();
     } catch (err) {
       const msg = err.response?.data?.message || "Could not send OTP. Please try again.";
-      setErrorMsg(msg);
-      setStep(STEPS.ERROR);
+      if (userInitiated) {
+        setOtpError(msg);
+      } else {
+        setErrorMsg(msg);
+        setStep(STEPS.ERROR);
+      }
     }
   };
 
@@ -175,14 +180,14 @@ export default function VerifyEmail() {
     }
     setOtpError("");
     setSendingOtp(true);
-    await sendOtp(registrationToken, normalized);
+    await sendOtp(registrationToken, normalized, true);
     setSendingOtp(false);
   };
 
   const handleResend = async () => {
     if (resendSeconds > 0) return;
     setOtpError("");
-    await sendOtp(registrationToken);
+    await sendOtp(registrationToken, null, true);
   };
 
   const handleSubmitOtp = async (e) => {
@@ -202,7 +207,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <main className="ve-page" style={{ "--ve-bg": `url(${headerBackground})` }}>
+    <main className="ve-page" style={{ "--ve-bg": `url(${headerBackground})`, "--ve-bg-mobile": `url(${mobileBackground})` }}>
       <Link to="/login?mode=signup" className="ve-back-btn" aria-label="Back">
         <Icon icon="lucide:arrow-left" />
       </Link>

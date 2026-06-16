@@ -16,6 +16,17 @@
   font-family: "Poppins", sans-serif;
 }
 
+@media (max-width: 640px) {
+  .auth-page {
+    background:
+      linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+      var(--auth-bg-mobile, var(--bk-section-bg)),
+      linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+    background-size: 100% 100%, cover, 100% 100%;
+    background-position: center;
+  }
+}
+
 .auth-back-btn {
   position: fixed;
   top: 16px;
@@ -691,7 +702,8 @@
   }
 
   .auth-signup-logo-img {
-    width: 140px;
+    width: 116px;
+    height: 72px;
   }
 
   .auth-pw-reqs {
@@ -767,8 +779,8 @@
 }
 
 .auth-signup-logo-img {
-  width: 160px;
-  height: auto;
+  width: 116px;
+  height: 72px;
   object-fit: contain;
   filter: drop-shadow(0 4px 12px rgba(79, 42, 13, 0.18));
 }
@@ -1685,7 +1697,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 18px;
+  padding: 8px 14px;
   background: rgba(250, 243, 230, 0.7);
   border: 1px solid rgba(189, 145, 85, 0.22);
   border-radius: 10px;
@@ -1722,9 +1734,9 @@
 
 .auth-no-account-deco {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -1741,31 +1753,51 @@
   line-height: 1;
 }
 
+.auth-no-account-saree {
+  width: auto;
+  height: 52px;
+  object-fit: contain;
+  flex-shrink: 0;
+  mix-blend-mode: multiply;
+}
+
 /* ── Login: trust badges ────────────────────────────────────── */
-.auth-trust-badges {
+.auth-trust-card {
   display: flex;
-  justify-content: center;
-  gap: 20px;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
   margin-top: 20px;
-  padding: 0 4px;
-  flex-wrap: wrap;
+  padding: 12px 8px;
   width: 100%;
   max-width: 440px;
+  background: rgba(255, 252, 247, 0.96);
+  border: 1px solid rgba(189, 145, 85, 0.22);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(79, 42, 13, 0.08);
+}
+
+.auth-trust-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(189, 145, 85, 0.22);
+  flex-shrink: 0;
 }
 
 .auth-trust-badge {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+  padding: 0 6px;
   min-width: 0;
 }
 
 .auth-trust-icon {
-  width: 38px;
-  height: 38px;
-  background: rgba(255, 252, 247, 0.8);
-  border: 1px solid rgba(189, 145, 85, 0.22);
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1773,33 +1805,36 @@
 }
 
 .auth-trust-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: #760819;
 }
 
 .auth-trust-text {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1px;
 }
 
 .auth-trust-text strong {
   color: #3b2118;
   font-family: "Poppins", sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1.3;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .auth-trust-text span {
   color: #76695f;
   font-family: "Poppins", sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 400;
   line-height: 1.3;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 @media (max-width: 640px) {
@@ -1809,30 +1844,27 @@
     padding: 10px 16px;
   }
 
-  .auth-trust-badges {
-    gap: 14px;
+  .auth-trust-card {
+    padding: 10px 6px;
   }
 
   .auth-trust-badge {
-    gap: 8px;
-  }
-
-  .auth-trust-icon {
-    width: 32px;
-    height: 32px;
+    gap: 4px;
+    padding: 0 4px;
   }
 
   .auth-trust-icon svg {
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
   }
 
   .auth-trust-text strong {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .auth-trust-text span {
-    font-size: 9px;
+    font-size: 8px;
   }
+
 }
 

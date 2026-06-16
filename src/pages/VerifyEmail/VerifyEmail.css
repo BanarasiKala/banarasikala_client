@@ -8,12 +8,23 @@
   padding: 18px 16px 32px;
   background:
     linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
-    var(--ve-bg),
+    var(--ve-bg, var(--bk-section-bg)),
     linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
   background-size: 100% 100%, cover, 100% 100%;
   background-position: center;
   font-family: "Poppins", sans-serif;
   color: #3b2118;
+}
+
+@media (max-width: 640px) {
+  .ve-page {
+    background:
+      linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
+      var(--ve-bg-mobile, var(--bk-section-bg)),
+      linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+    background-size: 100% 100%, cover, 100% 100%;
+    background-position: center;
+  }
 }
 
 /* ── Back button ───────────────────────────────────────────── */
@@ -54,8 +65,8 @@
 }
 
 .ve-logo {
-  width: 160px;
-  height: auto;
+  width: 116px;
+  height: 72px;
   object-fit: contain;
   filter: drop-shadow(0 4px 12px rgba(79, 42, 13, 0.18));
 }
@@ -542,7 +553,8 @@
   }
 
   .ve-logo {
-    width: 140px;
+    width: 116px;
+    height: 72px;
   }
 
   .ve-card {
