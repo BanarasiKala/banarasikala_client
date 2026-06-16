@@ -219,12 +219,19 @@ const Auth = () => {
   const [forgotPasswordData, setForgotPasswordData] = useState({ email: "", newPassword: "", confirmPassword: "" });
 
   const alertRef = useRef(null);
+  const pageRef = useRef(null);
   const activeOtpDigitCount = EMAIL_OTP_DIGIT_COUNT;
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    let rafId = requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (pageRef.current) pageRef.current.scrollTop = 0;
+      });
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [activeTab]);
 
   useEffect(() => {
@@ -909,7 +916,7 @@ const Auth = () => {
   };
 
   return (
-    <main className="auth-page" style={{ "--auth-bg": `url(${headerBackground})`, "--auth-bg-mobile": `url(${mobileBackground})` }}>
+    <main className="auth-page" ref={pageRef} style={{ "--auth-bg": `url(${headerBackground})`, "--auth-bg-mobile": `url(${mobileBackground})` }}>
       <Link to="/" className="auth-back-btn" aria-label="Go to home page">
         <Icon icon="lucide:arrow-left" />
       </Link>
