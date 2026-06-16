@@ -54,7 +54,7 @@ const ReviewsStory = () => {
       >
         <div className="bk-story-image">
           {STORY_IMAGES.weave && (
-            <img src={STORY_IMAGES.weave} alt="Banarasi artisan weaving saree" />
+            <img src={STORY_IMAGES.weave} alt="Banarasi artisan weaving saree" decoding="async" />
           )}
         </div>
         <div className="bk-story-copy">

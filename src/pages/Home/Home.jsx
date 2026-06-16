@@ -28,7 +28,7 @@ const HomeSection = ({ children, id, variant = "default" }) => {
           observer.disconnect();
         }
       },
-      { rootMargin: "500px 0px" }
+      { rootMargin: "200px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();

@@ -183,8 +183,8 @@ const PopularSarees = () => {
                       >
                         {sliderImages.map((image, imageIndex) => (
                           <span key={`${image.url}-${imageIndex}`} className="bk-popular-slide">
-                            <img src={imgUrl(image.url)} alt="" className="bk-popular-image-bg" aria-hidden="true" />
-                            <img src={imgUrl(image.url)} alt={product.name} className="bk-popular-image" />
+                            <img src={imgUrl(image.url, 40)} alt="" className="bk-popular-image-bg" aria-hidden="true" loading="lazy" decoding="async" />
+                            <img src={imgUrl(image.url, 600)} alt={product.name} className="bk-popular-image" loading={imageIndex > 0 ? "lazy" : undefined} decoding="async" />
                           </span>
                         ))}
                       </div>

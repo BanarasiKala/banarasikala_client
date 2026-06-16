@@ -56,7 +56,7 @@ const OccasionCollections = () => {
                 style={{ "--bk-occasion-delay": `${Math.min(index * 90, 360)}ms` }}
                 onClick={() => openOccasion(occasion.id)}
               >
-                <img src={imgUrl(occasion.image)} alt={occasion.name} />
+                <img src={imgUrl(occasion.image, 800)} alt={occasion.name} decoding="async" />
                 <span className="bk-occasion-overlay" />
                 <span className="bk-occasion-name">{occasion.name}</span>
               </button>

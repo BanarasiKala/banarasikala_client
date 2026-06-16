@@ -50,11 +50,18 @@ const HeroSlider = () => (
       pagination={{ clickable: true }}
       className="hero-swiper bk-hero-swiper"
     >
-      {HERO_SAREES.map((slide) => (
+      {HERO_SAREES.map((slide, index) => (
         <SwiperSlide key={slide.id}>
           <picture>
             <source media="(max-width: 768px)" srcSet={slide.mobileImage} />
-            <img src={slide.image} alt={slide.name} className="bk-hero-image" />
+            <img
+              src={slide.image}
+              alt={slide.name}
+              className="bk-hero-image"
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "auto"}
+              decoding={index === 0 ? "sync" : "async"}
+            />
           </picture>
         </SwiperSlide>
       ))}

@@ -525,6 +525,11 @@
 }
 
 @media (max-width: 820px) {
+  .bk-popular-card.is-visible:nth-child(2n),
+  .bk-popular-card.is-visible:nth-child(2n + 1) {
+    animation: none;
+  }
+
   .bk-popular-section {
     min-height: 360px;
     padding: 24px 0 30px;

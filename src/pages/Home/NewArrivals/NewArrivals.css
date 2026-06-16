@@ -531,6 +531,11 @@
 }
 
 @media (max-width: 820px) {
+  .bk-arrival-card.is-visible:nth-child(3n),
+  .bk-arrival-card.is-visible:nth-child(3n + 1) {
+    animation: none;
+  }
+
   .bk-arrivals-section {
     padding: 22px 0 30px;
   }

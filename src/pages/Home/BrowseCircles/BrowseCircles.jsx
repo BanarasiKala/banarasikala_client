@@ -90,12 +90,14 @@ const BrowseCircles = () => {
     let frameId;
     let lastTime = performance.now();
     const speed = 22;
+    let tabHidden = document.hidden;
+    let sectionHidden = false;
 
     const scroll = (time) => {
       const delta = Math.min(time - lastTime, 64);
       lastTime = time;
 
-      if (Date.now() > pauseAutoScrollUntilRef.current && scroller.scrollWidth > scroller.clientWidth) {
+      if (!tabHidden && !sectionHidden && Date.now() > pauseAutoScrollUntilRef.current && scroller.scrollWidth > scroller.clientWidth) {
         scroller.scrollLeft += (speed * delta) / 1000;
         const resetAt = scroller.scrollWidth / 2;
         if (resetAt > 0 && scroller.scrollLeft >= resetAt) {
@@ -108,8 +110,28 @@ const BrowseCircles = () => {
       frameId = window.requestAnimationFrame(scroll);
     };
 
+    const onVisibilityChange = () => {
+      tabHidden = document.hidden;
+      if (!tabHidden) lastTime = performance.now();
+    };
+
+    const sectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        sectionHidden = !entry.isIntersecting;
+        if (!sectionHidden) lastTime = performance.now();
+      },
+      { rootMargin: '200px 0px' },
+    );
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    sectionObserver.observe(scroller);
     frameId = window.requestAnimationFrame(scroll);
-    return () => window.cancelAnimationFrame(frameId);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      sectionObserver.disconnect();
+    };
   }, [items.length]);
 
   return (
@@ -165,7 +187,7 @@ const BrowseCircles = () => {
                   onClick={() => openItem(item.href)}
                 >
                   <span className="bk-browse-circle">
-                    {item.image ? <img src={imgUrl(item.image)} alt={item.name} /> : <span>{item.name.slice(0, 1)}</span>}
+                    {item.image ? <img src={imgUrl(item.image, 200)} alt={item.name} decoding="async" /> : <span>{item.name.slice(0, 1)}</span>}
                   </span>
                   <span className="bk-browse-name">{item.name}</span>
                 </button>
@@ -191,7 +213,7 @@ const BrowseCircles = () => {
                     onClick={() => openItem(item.href)}
                   >
                     <span className="bk-browse-circle">
-                      {item.image ? <img src={imgUrl(item.image)} alt={item.name} /> : <span>{item.name.slice(0, 1)}</span>}
+                      {item.image ? <img src={imgUrl(item.image, 200)} alt={item.name} decoding="async" /> : <span>{item.name.slice(0, 1)}</span>}
                     </span>
                     <span className="bk-browse-name">{item.name}</span>
                   </button>

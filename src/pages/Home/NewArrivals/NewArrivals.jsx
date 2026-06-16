@@ -181,8 +181,8 @@ const NewArrivals = () => {
                         >
                           {sliderImages.map((image, imageIndex) => (
                             <span className="bk-arrival-slide" key={`${image.url}-${imageIndex}`}>
-                              <img src={imgUrl(image.url)} alt="" className="bk-arrival-image-bg" aria-hidden="true" />
-                              <img src={imgUrl(image.url)} alt={product.name} className="bk-arrival-image" />
+                              <img src={imgUrl(image.url, 40)} alt="" className="bk-arrival-image-bg" aria-hidden="true" loading="lazy" decoding="async" />
+                              <img src={imgUrl(image.url, 600)} alt={product.name} className="bk-arrival-image" loading={imageIndex > 0 ? "lazy" : undefined} decoding="async" />
                             </span>
                           ))}
                         </div>
