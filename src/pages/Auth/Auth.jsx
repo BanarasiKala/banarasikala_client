@@ -118,27 +118,36 @@ const OtpBoxes = ({ value, length, onChange, disabled }) => {
   );
 };
 
+const G_BTN_W = 400;
+const G_BTN_H = 44;
+
 const GoogleBtn = ({ onSuccess, onError, text }) => {
   const ref = useRef(null);
-  const [width, setWidth] = useState(null);
+  const [scale, setScale] = useState(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => {
-      const w = el.offsetWidth;
-      if (w > 0) setWidth(w);
-    };
-    measure();
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(el);
-    return () => ro.disconnect();
+    // Double rAF: waits for CSS (media queries, animations) to fully settle before measuring
+    let id = requestAnimationFrame(() => {
+      id = requestAnimationFrame(() => {
+        const w = el.offsetWidth;
+        if (w > 0) setScale(Math.min(1, w / G_BTN_W));
+      });
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   return (
-    <div ref={ref} className="auth-google-wrap">
-      {width !== null && (
-        <GoogleLogin key={width} onSuccess={onSuccess} onError={onError} width={width} text={text} shape="rectangular" />
+    <div
+      ref={ref}
+      className="auth-google-wrap"
+      style={scale !== null ? { height: Math.round(G_BTN_H * scale) } : undefined}
+    >
+      {scale !== null && (
+        <div style={{ transform: `scale(${scale})`, transformOrigin: "left top", width: G_BTN_W, height: G_BTN_H }}>
+          <GoogleLogin onSuccess={onSuccess} onError={onError} width={G_BTN_W} text={text} shape="rectangular" />
+        </div>
       )}
     </div>
   );

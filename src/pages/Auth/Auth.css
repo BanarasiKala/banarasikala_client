@@ -6,6 +6,7 @@
   justify-items: center;
   gap: 0;
   padding: 18px 16px 32px;
+  overflow-x: hidden;
   background:
     linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
     var(--auth-bg, var(--bk-section-bg)),
@@ -58,12 +59,14 @@
 
 .auth-panel {
   width: min(100%, 440px);
+  min-width: 0;
   padding: 28px 38px 32px;
   background: rgba(255, 252, 247, 0.96);
   border: 1px solid rgba(189, 145, 85, 0.22);
   border-radius: 12px;
   box-shadow: 0 20px 44px rgba(79, 42, 13, 0.13);
   animation: auth-card-in 0.42s ease both;
+  overflow-x: hidden;
 }
 
 @keyframes auth-card-in {
@@ -103,6 +106,8 @@
   font-size: clamp(23px, 3.2vw, 30px);
   font-weight: 700;
   line-height: 1.1;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .auth-heading p {
@@ -120,13 +125,7 @@
 
 .auth-google-wrap {
   width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.auth-google-wrap > div,
-.auth-google-wrap iframe {
-  width: 100% !important;
+  overflow: hidden;
 }
 
 .auth-form-compact {
@@ -808,7 +807,6 @@
 
 .auth-heading-signup h1 {
   font-size: clamp(24px, 3.8vw, 32px);
-  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -1029,6 +1027,9 @@
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 8px !important;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  max-width: 100%;
 }
 
 /* spam hint box */
@@ -1882,5 +1883,369 @@
     font-size: 8px;
   }
 
+  /* ── Phone verification screen ─────────────────────────── */
+  .auth-pv-icon-row {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .auth-pv-sparkle {
+    font-size: 16px;
+  }
+
+  .auth-pv-circle {
+    width: 64px;
+    height: 64px;
+  }
+
+  .auth-pv-main-icon {
+    font-size: 28px !important;
+  }
+
+  .auth-pv-shield-badge {
+    width: 20px;
+    height: 20px;
+    bottom: 2px;
+    right: 2px;
+  }
+
+  .auth-pv-shield-badge svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .auth-pv-title {
+    font-size: 18px;
+    letter-spacing: 0.04em;
+  }
+
+  .auth-pv-subtitle {
+    font-size: 13px;
+    margin: 4px 0 14px;
+  }
+
+  .auth-pv-phone-field {
+    min-height: 42px;
+    padding: 0 10px;
+    margin-bottom: 6px;
+  }
+
+  .auth-pv-sep {
+    margin: 0 8px;
+  }
+
+  .auth-pv-phone-input {
+    font-size: 13px;
+  }
+
+  .auth-pv-secure {
+    margin: 6px 0 16px;
+    font-size: 11px;
+  }
+
+  .auth-pv-btn {
+    min-height: 44px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .auth-pv-phone-display {
+    font-size: 13px;
+    margin: 0 0 12px;
+  }
+
+  .auth-pv-otp-wrap .auth-otp-boxes {
+    gap: 5px;
+  }
+
+  .auth-pv-resend {
+    margin: 2px 0 14px;
+  }
+
+  .auth-pv-resend-label,
+  .auth-pv-resend-timer,
+  .auth-pv-resend-btn {
+    font-size: 12px;
+  }
+
+  .auth-pv-benefits {
+    margin-bottom: 14px;
+  }
+
+  .auth-pv-benefit {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .auth-pv-benefit-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-pv-benefit-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .auth-pv-benefit-text strong {
+    font-size: 13px;
+  }
+
+  .auth-pv-benefit-text span {
+    font-size: 11px;
+  }
+
+  .auth-pv-bottom-note {
+    font-size: 11px;
+    margin: 10px 0 0;
+  }
+
+  .auth-pv-success-icon-wrap {
+    width: 76px;
+    height: 76px;
+    margin: 4px auto 18px;
+  }
+
+  .auth-pv-success-circle {
+    width: 76px;
+    height: 76px;
+  }
+
+  .auth-pv-success-circle svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-pv-success-title {
+    font-size: 22px;
+  }
+
+  .auth-pv-success-subtitle {
+    font-size: 13px;
+    margin: 4px 0 16px;
+  }
+
+  .auth-pv-sp-tl { top: -4px; left: -14px; font-size: 12px; }
+  .auth-pv-sp-tr { top: -4px; right: -14px; font-size: 12px; }
+  .auth-pv-sp-bl { bottom: -4px; left: -14px; font-size: 12px; }
+  .auth-pv-sp-br { bottom: -4px; right: -14px; font-size: 12px; }
+
+  /* ── Email sent screen ─────────────────────────────────── */
+  .auth-es-envelope-wrap {
+    margin-bottom: 14px;
+  }
+
+  .auth-es-envelope-icon {
+    font-size: 80px !important;
+  }
+
+  .auth-es-check-badge {
+    width: 26px;
+    height: 26px;
+    bottom: 4px;
+    right: -2px;
+  }
+
+  .auth-es-check-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .auth-es-title-row {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .auth-es-sparkle {
+    font-size: 13px;
+  }
+
+  .auth-es-title {
+    font-size: 18px !important;
+    letter-spacing: 0.04em;
+  }
+
+  .auth-es-desc {
+    font-size: 13px;
+  }
+
+  .auth-es-email {
+    font-size: 14px;
+  }
+
+  .auth-es-hint {
+    padding: 10px 12px;
+    gap: 10px;
+    margin: 10px 0 16px;
+  }
+
+  .auth-es-hint-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .auth-es-hint-icon svg {
+    font-size: 14px;
+  }
+
+  .auth-es-hint-text strong {
+    font-size: 13px;
+  }
+
+  .auth-es-hint-text span {
+    font-size: 11px;
+  }
+
+  .auth-es-gmail-btn {
+    min-height: 44px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 0 14px;
+    margin-bottom: 8px;
+  }
+
+  .auth-es-change-btn {
+    min-height: 42px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 0 14px;
+    margin-bottom: 14px;
+  }
+
+  .auth-es-resend,
+  .auth-es-resend-link {
+    font-size: 12px;
+  }
+
+  /* ── No-account card ───────────────────────────────────── */
+  .auth-no-account-saree {
+    height: 42px;
+  }
+
+  .auth-no-account-text > strong {
+    font-size: 12px;
+  }
+
+  .auth-no-account-text > span {
+    font-size: 12px;
+  }
+
+  .auth-no-account-card {
+    padding: 7px 10px;
+  }
+}
+
+/* ── Very small phones (≤ 400px) ────────────────────────────── */
+@media (max-width: 400px) {
+  .auth-page {
+    padding: 12px 10px 20px;
+  }
+
+  .auth-panel {
+    padding: 16px 14px 18px;
+    border-radius: 8px;
+  }
+
+  .auth-announce-banner {
+    margin: -10px -8px 16px;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .auth-heading h1 {
+    font-size: 20px;
+  }
+
+  .auth-heading-signup h1 {
+    font-size: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .auth-form {
+    gap: 10px;
+  }
+
+  .auth-input-wrap {
+    min-height: 37px;
+    padding: 0 10px;
+    gap: 7px;
+  }
+
+  .auth-input-wrap input {
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .auth-primary,
+  .auth-secondary {
+    min-height: 38px;
+    font-size: 11px;
+  }
+
+  .auth-otp-boxes {
+    grid-template-columns: repeat(var(--otp-digits, 4), minmax(34px, 44px));
+    gap: 6px;
+  }
+
+  .auth-otp-boxes input {
+    font-size: 18px;
+  }
+
+  .auth-pw-req {
+    font-size: 10px;
+    padding: 4px 7px;
+    gap: 4px;
+  }
+
+  .auth-pw-req svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .auth-pv-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .auth-pv-main-icon {
+    font-size: 24px !important;
+  }
+
+  .auth-pv-title {
+    font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+
+  .auth-pv-btn {
+    font-size: 11px;
+    min-height: 42px;
+  }
+
+  .auth-pv-otp-wrap .auth-otp-boxes {
+    gap: 4px;
+  }
+
+  .auth-pv-success-title {
+    font-size: 20px;
+  }
+
+  .auth-es-envelope-icon {
+    font-size: 64px !important;
+  }
+
+  .auth-es-title {
+    font-size: 16px !important;
+    letter-spacing: 0.03em;
+  }
+
+  .auth-no-account-saree {
+    height: 36px;
+  }
+
+  .auth-no-account-text > strong {
+    font-size: 11px;
+  }
 }
 
