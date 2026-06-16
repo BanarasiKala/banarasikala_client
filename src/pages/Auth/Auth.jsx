@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
 import mobileBackground from "../../assets/img.jpg";
@@ -120,23 +120,26 @@ const OtpBoxes = ({ value, length, onChange, disabled }) => {
 
 const GoogleBtn = ({ onSuccess, onError, text }) => {
   const ref = useRef(null);
-  const [width, setWidth] = useState(400);
+  const [width, setWidth] = useState(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setWidth(el.offsetWidth || 400);
-    const ro = new ResizeObserver(([entry]) => {
-      const w = Math.floor(entry.contentRect.width);
+    const measure = () => {
+      const w = el.offsetWidth;
       if (w > 0) setWidth(w);
-    });
+    };
+    measure();
+    const ro = new ResizeObserver(() => measure());
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
   return (
     <div ref={ref} className="auth-google-wrap">
-      <GoogleLogin onSuccess={onSuccess} onError={onError} width={width} text={text} shape="rectangular" />
+      {width !== null && (
+        <GoogleLogin key={width} onSuccess={onSuccess} onError={onError} width={width} text={text} shape="rectangular" />
+      )}
     </div>
   );
 };
