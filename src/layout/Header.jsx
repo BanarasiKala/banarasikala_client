@@ -6,6 +6,7 @@ import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
 import { API_ENDPOINTS } from "../config/api";
 import api from "../utils/api";
+import { getProductCoverImage } from "../utils/productMedia";
 import verticalLogo from "../assets/vertical_logo.png";
 import headerBackground from "../assets/header_backgroung.png";
 import "./Header.css";
@@ -34,11 +35,17 @@ const Header = () => {
   const [referralCode, setReferralCode] = useState(user?.referral_code || "");
   const [referModalOpen, setReferModalOpen] = useState(false);
   const [referCopied, setReferCopied] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const sareeMenuRef = useRef(null);
   const profileMenuRef = useRef(null);
   const mobilePanelRef = useRef(null);
   const mobileMenuButtonRef = useRef(null);
   const varietiesAbortRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const suggestionAbortRef = useRef(null);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
   const isAuthPage = location.pathname === "/login";
   const hideHeaderSearch = location.pathname === "/my-orders";
@@ -179,6 +186,12 @@ const Header = () => {
       ) {
         setProfileOpen(false);
       }
+
+      const inDesktop = desktopSearchRef.current?.contains(event.target);
+      const inMobile = mobileSearchRef.current?.contains(event.target);
+      if (!inDesktop && !inMobile) {
+        setSuggestionsOpen(false);
+      }
     };
 
     const closeOnEscape = (event) => {
@@ -186,6 +199,7 @@ const Header = () => {
         setMobileMenuOpen(false);
         setProfileOpen(false);
         setSareeOpen(false);
+        setSuggestionsOpen(false);
       }
     };
 
@@ -210,6 +224,7 @@ const Header = () => {
     setMobileMenuOpen(false);
     setProfileOpen(false);
     setSareeOpen(false);
+    setSuggestionsOpen(false);
   };
 
   const handleHeaderSearch = (e) => {
@@ -315,6 +330,53 @@ const Header = () => {
     }
   };
 
+  const fetchSuggestions = useCallback(async (q) => {
+    suggestionAbortRef.current?.abort();
+    const controller = new AbortController();
+    suggestionAbortRef.current = controller;
+    try {
+      const params = new URLSearchParams({ search: q, limit: "20", view: "collection" });
+      const res = await fetch(`${API_ENDPOINTS.products}?${params}`, { signal: controller.signal });
+      if (!res.ok) throw new Error("fetch failed");
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : (data.items || data.rows || []);
+      setSuggestions(rows.slice(0, 20));
+      setSuggestionsOpen(rows.length > 0);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        setSuggestions([]);
+        setSuggestionsOpen(false);
+      }
+    }
+  }, []);
+
+  const handleSuggestionClick = (slug) => {
+    setSuggestionsOpen(false);
+    setSuggestions([]);
+    clearTimeout(debounceTimerRef.current);
+    suggestionAbortRef.current?.abort();
+    navigate(`/product/${slug}`);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setHeaderSearch(value);
+    clearTimeout(debounceTimerRef.current);
+    const q = value.trim();
+    if (!q) {
+      setSuggestionsOpen(false);
+      setSuggestions([]);
+      suggestionAbortRef.current?.abort();
+      return;
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      navigate(`/collection?search=${encodeURIComponent(q)}`, {
+        replace: location.pathname === "/collection",
+      });
+      fetchSuggestions(q);
+    }, 300);
+  };
+
   return (
     <header
       className={`bk-header${hideHeaderSearch ? " bk-header--no-search" : ""}`}
@@ -416,14 +478,16 @@ const Header = () => {
         <div className="bk-actions">
           {!hideHeaderSearch && (
             <form
+              ref={desktopSearchRef}
               className="bk-search bk-search-desktop"
               onSubmit={handleHeaderSearch}
             >
               <input
                 type="search"
                 value={headerSearch}
-                onChange={(e) => setHeaderSearch(e.target.value)}
+                onChange={handleSearchChange}
                 placeholder="Search for Banarasi Sarees"
+                autoComplete="off"
               />
               <button type="submit" aria-label="Search">
                 <svg
@@ -438,6 +502,33 @@ const Header = () => {
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
               </button>
+              {suggestionsOpen && suggestions.length > 0 && (
+                <div className="bk-suggestions">
+                  {suggestions.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className="bk-suggestion-item"
+                      onClick={() => handleSuggestionClick(product.slug)}
+                    >
+                      <img
+                        src={getProductCoverImage(product)}
+                        alt=""
+                        className="bk-suggestion-img"
+                        loading="lazy"
+                      />
+                      <div className="bk-suggestion-info">
+                        <span className="bk-suggestion-name">{product.name}</span>
+                        {product.selling_price && (
+                          <span className="bk-suggestion-price">
+                            Rs. {Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </form>
           )}
 
@@ -606,7 +697,7 @@ const Header = () => {
         </div>
 
         {!hideHeaderSearch && (
-          <form className="bk-search bk-search-mobile" onSubmit={handleHeaderSearch}>
+          <form ref={mobileSearchRef} className="bk-search bk-search-mobile" onSubmit={handleHeaderSearch}>
             <button type="submit" aria-label="Search">
               <svg
                 width="22"
@@ -623,9 +714,37 @@ const Header = () => {
             <input
               type="search"
               value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder="Search for Banarasi Sarees"
+              autoComplete="off"
             />
+            {suggestionsOpen && suggestions.length > 0 && (
+              <div className="bk-suggestions">
+                {suggestions.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className="bk-suggestion-item"
+                    onClick={() => handleSuggestionClick(product.slug)}
+                  >
+                    <img
+                      src={getProductCoverImage(product)}
+                      alt=""
+                      className="bk-suggestion-img"
+                      loading="lazy"
+                    />
+                    <div className="bk-suggestion-info">
+                      <span className="bk-suggestion-name">{product.name}</span>
+                      {product.selling_price && (
+                        <span className="bk-suggestion-price">
+                          Rs. {Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
         )}
       </div>}

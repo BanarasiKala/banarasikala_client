@@ -739,14 +739,17 @@ body.menu-open {
 }
 
 .bk-search {
+  position: relative;
   height: 29px;
   display: flex;
   align-items: center;
+  overflow: visible;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(82, 55, 42, 0.22);
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(61, 40, 23, 0.06);
 }
+
 
 .bk-search input {
   width: 100%;
@@ -783,6 +786,92 @@ body.menu-open {
 .bk-search-desktop button {
   order: 2;
   padding-left: 8px;
+}
+
+.bk-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  min-width: 280px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: #fffaf2;
+  border: 1px solid rgba(184, 134, 11, 0.22);
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(61, 40, 23, 0.18);
+  z-index: 60;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 0, 32, 0.18) transparent;
+}
+
+.bk-suggestions::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bk-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bk-suggestions::-webkit-scrollbar-thumb {
+  background: rgba(128, 0, 32, 0.2);
+  border-radius: 99px;
+}
+
+.bk-suggestion-item {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(184, 134, 11, 0.1);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s ease;
+}
+
+.bk-suggestion-item:last-child {
+  border-bottom: 0;
+}
+
+.bk-suggestion-item:hover {
+  background: #f5ecd7;
+}
+
+.bk-suggestion-img {
+  width: 34px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: #f0e4cc;
+}
+
+.bk-suggestion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bk-suggestion-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #2d1b0e;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.bk-suggestion-price {
+  color: #800020;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .bk-mobile-menu,
@@ -1078,6 +1167,12 @@ body.menu-open {
     gap: 12px;
     border-color: rgba(60, 42, 31, 0.16);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+    overflow: visible;
+  }
+
+  .bk-search-mobile .bk-suggestions {
+    min-width: 100%;
+    border-radius: 0 0 10px 10px;
   }
 
   .bk-search-mobile button {
