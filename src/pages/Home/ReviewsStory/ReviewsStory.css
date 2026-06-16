@@ -291,6 +291,10 @@
     scrollbar-width: none;
   }
 
+  .bk-review-cards::-webkit-scrollbar {
+    display: none;
+  }
+
   .bk-review-card {
     flex: 0 0 220px;
   }

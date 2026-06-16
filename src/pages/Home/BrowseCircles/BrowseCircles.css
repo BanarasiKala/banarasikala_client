@@ -209,6 +209,10 @@
     overscroll-behavior-x: contain;
   }
 
+  .bk-browse-mobile-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
   .bk-browse-mobile-wrap:active {
     cursor: grabbing;
   }
