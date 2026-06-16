@@ -787,7 +787,8 @@ body.menu-open {
 
 .bk-mobile-menu,
 .bk-search-mobile,
-.bk-mobile-panel {
+.bk-mobile-panel,
+.bk-mobile-overlay {
   display: none;
 }
 
@@ -1087,6 +1088,22 @@ body.menu-open {
     font-size: 13px;
   }
 
+  .bk-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(42, 23, 14, 0.44);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+
+  .bk-mobile-overlay--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .bk-mobile-panel {
     position: fixed;
     z-index: 1001;
@@ -1111,6 +1128,16 @@ body.menu-open {
     box-shadow: 18px 0 48px rgba(47, 21, 11, 0.26);
     scrollbar-width: none;
     touch-action: pan-y;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0.3s;
+  }
+
+  .bk-mobile-panel--open {
+    transform: translateX(0);
+    visibility: visible;
   }
 
   @supports not (height: 100dvh) {

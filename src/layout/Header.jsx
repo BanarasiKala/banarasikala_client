@@ -630,8 +630,20 @@ const Header = () => {
         )}
       </div>}
 
-      {!isAuthPage && mobileMenuOpen && (
-        <nav ref={mobilePanelRef} className="bk-mobile-panel" aria-label="Mobile navigation">
+      {!isAuthPage && (
+        <div
+          className={`bk-mobile-overlay${mobileMenuOpen ? " bk-mobile-overlay--open" : ""}`}
+          aria-hidden="true"
+        />
+      )}
+
+      {!isAuthPage && (
+        <nav
+          ref={mobilePanelRef}
+          className={`bk-mobile-panel${mobileMenuOpen ? " bk-mobile-panel--open" : ""}`}
+          aria-label="Mobile navigation"
+          aria-hidden={!mobileMenuOpen}
+        >
           <div className="bk-mobile-panel-head">
             <span>{user ? `Hello ${firstName}` : "Welcome"}</span>
             <p>{user ? userPhone : "Sign in for orders, wishlist and cart"}</p>
