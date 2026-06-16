@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
 import mobileBackground from "../../assets/img.jpg";
@@ -118,6 +118,29 @@ const OtpBoxes = ({ value, length, onChange, disabled }) => {
   );
 };
 
+const GoogleBtn = ({ onSuccess, onError, text }) => {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(400);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.offsetWidth || 400);
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.floor(entry.contentRect.width);
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="auth-google-wrap">
+      <GoogleLogin onSuccess={onSuccess} onError={onError} width={width} text={text} shape="rectangular" />
+    </div>
+  );
+};
+
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
@@ -187,7 +210,9 @@ const Auth = () => {
   const activeOtpDigitCount = EMAIL_OTP_DIGIT_COUNT;
 
   useEffect(() => {
-    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [activeTab]);
 
   useEffect(() => {
@@ -987,15 +1012,11 @@ const Auth = () => {
             {!forgotMode && !otpLoginMode && (
               <>
                 <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
-                <div className="auth-google-wrap">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setApiError("Google Sign-In failed. Please try again.")}
-                    width="100%"
-                    text="continue_with"
-                    shape="rectangular"
-                  />
-                </div>
+                <GoogleBtn
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setApiError("Google Sign-In failed. Please try again.")}
+                  text="continue_with"
+                />
                 <button type="button" className="auth-no-account-card" onClick={() => switchMode("signup")}>
                   <div className="auth-no-account-text">
                     <span>Don't have an account?</span>
@@ -1111,15 +1132,11 @@ const Auth = () => {
               {loading ? "Please wait…" : <><span>Verify &amp; Continue</span><Icon icon="lucide:arrow-right" /></>}
             </button>
             <div className="auth-divider"><span /><em>or sign up with</em><span /></div>
-            <div className="auth-google-wrap">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setApiError("Google Sign-In failed. Please try again.")}
-                width="100%"
-                text="signup_with"
-                shape="rectangular"
-              />
-            </div>
+            <GoogleBtn
+              onSuccess={handleGoogleSuccess}
+              onError={() => setApiError("Google Sign-In failed. Please try again.")}
+              text="signup_with"
+            />
             <button type="button" className="auth-no-account-card" onClick={() => switchMode("login")}>
               <div className="auth-no-account-text">
                 <span>Already have an account?</span>

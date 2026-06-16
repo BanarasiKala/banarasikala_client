@@ -1,5 +1,6 @@
 /* ── Page ──────────────────────────────────────────────────── */
 .ve-page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   align-content: start;
@@ -30,7 +31,7 @@
 
 /* ── Back button ───────────────────────────────────────────── */
 .ve-back-btn {
-  position: fixed;
+  position: absolute;
   top: 16px;
   left: 16px;
   z-index: 10;

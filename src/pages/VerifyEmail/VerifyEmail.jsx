@@ -270,7 +270,6 @@ export default function VerifyEmail() {
               <span className="ve-phone-country">
                 <span className="ve-flag-india" aria-hidden="true" />
                 +91
-                <Icon icon="lucide:chevron-down" className="ve-chevron" />
               </span>
               <span className="ve-phone-sep" />
               <input
