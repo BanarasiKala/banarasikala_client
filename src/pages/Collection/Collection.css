@@ -259,21 +259,52 @@ hat undo kiy ahai:root {
 
 .sort-container {
     position: relative;
-    padding: 10px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    min-width: 250px;
+    min-width: 200px;
 }
 
 .sort-container select {
     width: 100%;
-    border: none;
-    background: transparent;
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--text-main);
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 9px 36px 9px 14px;
+    background: rgba(255, 248, 239, 0.94);
+    border: 1px solid rgba(128, 0, 32, 0.18);
+    border-radius: 999px;
+    color: #3d2817;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     outline: none;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(88, 39, 13, 0.07);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sort-container select:focus {
+    border-color: rgba(128, 0, 32, 0.42);
+    box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.08);
+}
+
+.sort-container select option {
+    background: #fffaf2;
+    color: #3d2817;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+}
+
+.sort-container::after {
+    content: "";
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #800020;
+    pointer-events: none;
 }
 
 /* Product Grid */
@@ -804,7 +835,9 @@ hat undo kiy ahai:root {
     }
 
     .sort-container {
-        min-width: min(58vw, 250px);
+        min-width: 0;
+        flex: 1;
+        max-width: 220px;
     }
 }
 

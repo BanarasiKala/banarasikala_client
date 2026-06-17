@@ -340,7 +340,7 @@ const Header = () => {
     const controller = new AbortController();
     suggestionAbortRef.current = controller;
     try {
-      const params = new URLSearchParams({ search: q, limit: "20", view: "collection" });
+      const params = new URLSearchParams({ search: q, limit: "50", view: "collection" });
       const res = await fetch(`${API_ENDPOINTS.products}?${params}`, { signal: controller.signal });
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
@@ -372,6 +372,9 @@ const Header = () => {
       setSuggestionsOpen(false);
       setSuggestions([]);
       suggestionAbortRef.current?.abort();
+      if (location.pathname === "/collection") {
+        navigate("/collection", { replace: true });
+      }
       return;
     }
     debounceTimerRef.current = window.setTimeout(() => {

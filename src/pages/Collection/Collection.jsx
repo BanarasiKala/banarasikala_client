@@ -23,7 +23,8 @@ const getSortParam = (params) => {
   const sort = params.get("sort");
   if (sort === "special" || sort === "price_asc" || sort === "price_desc") return sort;
   if (sort === "popular") return "special";
-  return "newest";
+  if (sort === "newest") return "newest";
+  return "";
 };
 
 const Collection = () => {
@@ -57,7 +58,7 @@ const Collection = () => {
     color: [],
     minPrice: 0,
     maxPrice: 200000,
-    sortBy: getSortParam(searchParams),
+    sortBy: "",
     search: searchParams.get("search") || "",
   }));
 
@@ -73,6 +74,7 @@ const Collection = () => {
       search: urlSearch,
       variety: urlVarieties,
       sortBy: getSortParam(searchParams),
+      // preserve sidebar filters (occasion, material, color, price) across URL changes
     }));
     setCurrentPage(1);
   }, [searchParams]);
@@ -266,16 +268,16 @@ const Collection = () => {
 
   const clearAllFilters = () => {
     setCurrentPage(1);
-    setFilters({
+    setFilters((prev) => ({
       variety: [],
       occasion: [],
       material: [],
       color: [],
       minPrice: 0,
       maxPrice: 200000,
-      sortBy: "newest",
-      search: "",
-    });
+      sortBy: "",
+      search: prev.search,
+    }));
   };
 
   const handleWishlist = async (e, product) => {
@@ -384,9 +386,9 @@ const Collection = () => {
     filters.occasion.length > 0 ||
     filters.material.length > 0 ||
     filters.color.length > 0 ||
-    filters.search.trim().length > 0 ||
     Number(filters.minPrice) > 0 ||
-    Number(filters.maxPrice) < 200000;
+    Number(filters.maxPrice) < 200000 ||
+    filters.sortBy !== "";
 
   const renderFiltersBody = ({ priceFirst = false } = {}) => (
     <>
@@ -395,15 +397,17 @@ const Collection = () => {
       ) : (
         <>
           {priceFirst && renderPriceFilter()}
-          {renderFilterGroup("variety", "Variety", varieties, "variety")}
-          {renderFilterGroup("material", "Fabric", materials, "material")}
-          {renderFilterGroup("occasion", "Occasions", occasions, "occasion")}
+          {!priceFirst && renderPriceFilter()}
           {renderFilterGroup("color", "Color", colors, "color", (col) => (
             <svg className="color-swatch" viewBox="0 0 16 16" aria-hidden="true">
               <circle cx="8" cy="8" r="7.5" fill={col.hex_code || "#cccccc"} />
             </svg>
           ))}
-          {!priceFirst && renderPriceFilter()}
+          {renderFilterGroup("variety", "Variety", varieties, "variety")}
+          {renderFilterGroup("material", "Fabric", materials, "material")}
+          {renderFilterGroup("occasion", "Occasions", occasions, "occasion")}
+          
+          
         </>
       )}
     </>
@@ -450,7 +454,8 @@ const Collection = () => {
             </button>
             <div className="sort-container">
               <select value={filters.sortBy} onChange={handleSortChange}>
-                <option value="newest">Sort by: New Arrivals</option>
+                <option value="">{filters.sortBy ? "Clear sort" : "Sort by"}</option>
+                <option value="newest">New Arrivals</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
                 <option value="special">Exclusive Picks</option>
