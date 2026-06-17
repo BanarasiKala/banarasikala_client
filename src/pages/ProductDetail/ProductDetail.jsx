@@ -128,12 +128,14 @@ const ProductDetail = () => {
   const [playbackRate, setPlaybackRate] = useState(1);
   const pendingRateRef = useRef(null);
   const videoRefs = useRef({});
+  const isPlayingRef = useRef(false);
+  const swipeRef = useRef({ startX: 0, startY: 0, didSwipe: false });
   const SPEED_STEPS = [0.5, 0.75, 1, 1.5, 2];
 
   const togglePlayPause = () => {
     const el = videoRefs.current[activeImageIndex];
     if (!el || isBuffering) return;
-    if (el.paused) { el.play().catch(() => {}); } else { el.pause(); }
+    if (el.paused) { isPlayingRef.current = true; el.play().catch(() => {}); } else { el.pause(); }
   };
 
   const handleSpeedChange = (dir) => {
@@ -146,6 +148,32 @@ const ProductDetail = () => {
       pendingRateRef.current = next;
     } else {
       el.playbackRate = next;
+    }
+  };
+
+  const handleFramePointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false };
+  };
+  const handleFramePointerMove = (e) => {
+    if (Math.abs(e.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
+  };
+  const handleFramePointerUp = (e) => {
+    const dx = e.clientX - swipeRef.current.startX;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(e.clientY - swipeRef.current.startY);
+    if (absDx > 50 && absDx > absDy) {
+      if (dx < 0 && activeImageIndex < visibleMedia.length - 1) {
+        const n = activeImageIndex + 1;
+        setActiveImageIndex(n);
+        if (visibleMedia[n]?.type === "image") setMainImage(visibleMedia[n].url);
+      } else if (dx > 0 && activeImageIndex > 0) {
+        const n = activeImageIndex - 1;
+        setActiveImageIndex(n);
+        if (visibleMedia[n]?.type === "image") setMainImage(visibleMedia[n].url);
+      }
+    } else if (!swipeRef.current.didSwipe) {
+      openFullscreen(activeImageIndex);
     }
   };
 
@@ -355,6 +383,7 @@ const ProductDetail = () => {
   }, [loading]);
 
   useEffect(() => {
+    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsBuffering(false);
     setPlaybackRate(1);
@@ -1245,8 +1274,10 @@ const ProductDetail = () => {
               <div
                 className="product-3d-frame product-image-frame"
                 ref={frameRef}
-                onClick={() => openFullscreen(activeImageIndex)}
-                style={{ cursor: "zoom-in" }}
+                onPointerDown={handleFramePointerDown}
+                onPointerMove={handleFramePointerMove}
+                onPointerUp={handleFramePointerUp}
+                style={{ cursor: "zoom-in", touchAction: "pan-y" }}
               >
                 {loadingColorId ? <span className="product-image-loader" aria-hidden="true" /> : null}
                 {visibleMedia.length > 0 ? (
@@ -1263,11 +1294,13 @@ const ProductDetail = () => {
                           src={item.url}
                           muted={isMuted}
                           playsInline
-                          onPlay={() => { setIsPlaying(true); setIsBuffering(false); }}
-                          onPause={() => setIsPlaying(false)}
+                          preload="none"
+                          onPlay={() => { isPlayingRef.current = true; setIsPlaying(true); setIsBuffering(false); }}
+                          onPause={() => { isPlayingRef.current = false; setIsPlaying(false); }}
                           onWaiting={() => setIsBuffering(true)}
                           onCanPlay={(e) => {
                             setIsBuffering(false);
+                            if (!isPlayingRef.current) { e.target.pause(); return; }
                             if (pendingRateRef.current !== null) {
                               e.target.playbackRate = pendingRateRef.current;
                               pendingRateRef.current = null;
@@ -1280,6 +1313,7 @@ const ProductDetail = () => {
                           src={imgUrl(item.url)}
                           alt={index === activeImageIndex ? productName : ""}
                           className="product-main-image"
+                          draggable={false}
                         />
                       )
                     ))}

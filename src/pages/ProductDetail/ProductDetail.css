@@ -204,6 +204,8 @@
   max-height: 680px;
   display: grid;
   place-items: center;
+  user-select: none;
+  -webkit-user-select: none;
   background:
     radial-gradient(circle at top, rgba(212, 175, 55, 0.16), transparent 58%),
     linear-gradient(135deg, #f1d9b6 0%, #fff8ec 48%, #e5c394 100%);
