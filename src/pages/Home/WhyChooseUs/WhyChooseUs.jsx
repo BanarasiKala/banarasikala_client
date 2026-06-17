@@ -6,6 +6,10 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { FreeMode } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/free-mode";
 import "./WhyChooseUs.css";
 
 const WHY_CHOOSE_US = [
@@ -17,8 +21,6 @@ const WHY_CHOOSE_US = [
   { title: "Fast & Reliable", subtitle: "Delivery", icon: Truck },
 ];
 
-const marqueeItems = [...WHY_CHOOSE_US, ...WHY_CHOOSE_US];
-
 const WhyChooseUs = () => (
   <section className="bk-why-choose" aria-labelledby="why-choose-title">
     <div className="bk-why-shell">
@@ -29,17 +31,25 @@ const WhyChooseUs = () => (
     </div>
 
     <div className="bk-why-track-wrap">
-      <div className="bk-why-track">
-        {marqueeItems.map(({ title, subtitle, icon: Icon }, i) => (
-          <div className="bk-why-item" key={i}>
-            <Icon className="bk-why-icon" strokeWidth={1.8} />
-            <p>
-              <span>{title}</span>
-              <span>{subtitle}</span>
-            </p>
-          </div>
+      <Swiper
+        modules={[FreeMode]}
+        freeMode
+        slidesPerView="auto"
+        grabCursor
+        className="bk-why-swiper"
+      >
+        {WHY_CHOOSE_US.map(({ title, subtitle, icon: Icon }, i) => (
+          <SwiperSlide key={i} className="bk-why-slide">
+            <div className="bk-why-item">
+              <Icon className="bk-why-icon" strokeWidth={1.8} />
+              <p>
+                <span>{title}</span>
+                <span>{subtitle}</span>
+              </p>
+            </div>
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
     </div>
   </section>
 );

@@ -6,37 +6,20 @@
 .bk-hero-swiper .swiper-wrapper,
 .bk-hero-swiper .swiper-slide {
   width: 100%;
-  height: 70vh !important;
-}
-
-.bk-hero-swiper .swiper-slide {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5ecd7;
 }
 
 .bk-hero-swiper picture {
   width: 100%;
-  height: 100%;
   display: block;
 }
 
 .bk-hero-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
-  object-position: center center;
 }
 
 @media (max-width: 768px) {
-  .bk-hero-swiper,
-  .bk-hero-swiper .swiper-wrapper,
-  .bk-hero-swiper .swiper-slide {
-    height: 55vh !important;
-  }
-
   .bk-hero-arrow {
     display: none;
   }

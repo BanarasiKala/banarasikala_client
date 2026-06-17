@@ -50,25 +50,18 @@
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-/* Marquee container — overflow hidden here (not on section) so hover isn't clipped */
 .bk-why-track-wrap {
-  overflow: hidden;
   padding: 14px 0 18px;
 }
 
-.bk-why-track {
-  display: flex;
-  width: max-content;
-  animation: bk-why-marquee 22s linear infinite;
+.bk-why-swiper {
+  width: 100%;
+  padding: 0 var(--bk-page-pad);
+  box-sizing: border-box;
 }
 
-.bk-why-track:hover {
-  animation-play-state: paused;
-}
-
-@keyframes bk-why-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+.bk-why-slide {
+  width: auto !important;
 }
 
 .bk-why-item {
