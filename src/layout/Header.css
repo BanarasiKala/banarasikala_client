@@ -822,9 +822,9 @@ body.menu-open {
   display: flex !important;
   justify-content: flex-start !important;
   align-items: center;
-  gap: 11px;
+  gap: 9px;
   width: 100%;
-  padding: 9px 12px;
+  padding: 7px 12px;
   background: transparent;
   border: 0;
   border-bottom: 1px solid rgba(184, 134, 11, 0.1);
@@ -842,10 +842,10 @@ body.menu-open {
 }
 
 .bk-suggestion-img {
-  width: 34px;
-  height: 48px;
+  width: 30px;
+  height: 42px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 3px;
   flex-shrink: 0;
   background: #f0e4cc;
 }
@@ -853,24 +853,45 @@ body.menu-open {
 .bk-suggestion-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .bk-suggestion-name {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: #2d1b0e;
   font-size: 11px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
-.bk-suggestion-price {
-  color: #800020;
+.bk-suggestion-price-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.bk-suggestion-sell {
+  color: #46130d;
   font-size: 11px;
+  font-weight: 800;
+}
+
+.bk-suggestion-mrp {
+  color: rgba(78, 45, 27, 0.48);
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.bk-suggestion-disc {
+  color: #800020;
+  font-size: 9px;
   font-weight: 700;
 }
 

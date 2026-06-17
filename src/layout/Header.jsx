@@ -17,6 +17,11 @@ const formatHeaderMoney = (value) => {
   return `Rs. ${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 };
 
+const calcDiscount = (mrp, sell) => {
+  if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
+  return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
+};
+
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -370,9 +375,6 @@ const Header = () => {
       return;
     }
     debounceTimerRef.current = window.setTimeout(() => {
-      navigate(`/collection?search=${encodeURIComponent(q)}`, {
-        replace: location.pathname === "/collection",
-      });
       fetchSuggestions(q);
     }, 300);
   };
@@ -511,19 +513,26 @@ const Header = () => {
                       className="bk-suggestion-item"
                       onClick={() => handleSuggestionClick(product.slug)}
                     >
-                      <img
-                        src={getProductCoverImage(product)}
-                        alt=""
-                        className="bk-suggestion-img"
-                        loading="lazy"
-                      />
+                      {(() => {
+                        const cover = getProductCoverImage(product);
+                        return cover
+                          ? <img src={cover} alt="" className="bk-suggestion-img" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                          : <div className="bk-suggestion-img" />;
+                      })()}
                       <div className="bk-suggestion-info">
                         <span className="bk-suggestion-name">{product.name}</span>
-                        {product.selling_price && (
-                          <span className="bk-suggestion-price">
-                            Rs. {Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                          </span>
-                        )}
+                        {product.selling_price && (() => {
+                          const sell = Number(product.selling_price);
+                          const mrp = Number(product.mrp_price || 0);
+                          const disc = calcDiscount(mrp, sell);
+                          return (
+                            <div className="bk-suggestion-price-row">
+                              <span className="bk-suggestion-sell">Rs. {sell.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                              {mrp > sell && <span className="bk-suggestion-mrp">Rs. {mrp.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>}
+                              {disc > 0 && <span className="bk-suggestion-disc">({disc}% OFF)</span>}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </button>
                   ))}
