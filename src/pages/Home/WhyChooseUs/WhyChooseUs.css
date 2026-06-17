@@ -52,16 +52,24 @@
 
 .bk-why-track-wrap {
   padding: 14px 0 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
 }
 
-.bk-why-swiper {
-  width: 100%;
+.bk-why-track-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.bk-why-track-wrap:active {
+  cursor: grabbing;
+}
+
+.bk-why-track {
+  display: flex;
+  width: max-content;
   padding: 0 var(--bk-page-pad);
-  box-sizing: border-box;
-}
-
-.bk-why-slide {
-  width: auto !important;
 }
 
 .bk-why-item {

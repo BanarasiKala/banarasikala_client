@@ -6,10 +6,6 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { FreeMode } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/free-mode";
 import "./WhyChooseUs.css";
 
 const WHY_CHOOSE_US = [
@@ -31,25 +27,17 @@ const WhyChooseUs = () => (
     </div>
 
     <div className="bk-why-track-wrap">
-      <Swiper
-        modules={[FreeMode]}
-        freeMode
-        slidesPerView="auto"
-        grabCursor
-        className="bk-why-swiper"
-      >
+      <div className="bk-why-track">
         {WHY_CHOOSE_US.map(({ title, subtitle, icon: Icon }, i) => (
-          <SwiperSlide key={i} className="bk-why-slide">
-            <div className="bk-why-item">
-              <Icon className="bk-why-icon" strokeWidth={1.8} />
-              <p>
-                <span>{title}</span>
-                <span>{subtitle}</span>
-              </p>
-            </div>
-          </SwiperSlide>
+          <div className="bk-why-item" key={i}>
+            <Icon className="bk-why-icon" strokeWidth={1.8} />
+            <p>
+              <span>{title}</span>
+              <span>{subtitle}</span>
+            </p>
+          </div>
         ))}
-      </Swiper>
+      </div>
     </div>
   </section>
 );
