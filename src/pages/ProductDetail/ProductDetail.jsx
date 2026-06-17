@@ -123,7 +123,32 @@ const ProductDetail = () => {
   const [isGalleryHovering, setIsGalleryHovering] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const pendingRateRef = useRef(null);
   const videoRefs = useRef({});
+  const SPEED_STEPS = [0.5, 0.75, 1, 1.5, 2];
+
+  const togglePlayPause = () => {
+    const el = videoRefs.current[activeImageIndex];
+    if (!el || isBuffering) return;
+    if (el.paused) { el.play().catch(() => {}); } else { el.pause(); }
+  };
+
+  const handleSpeedChange = (dir) => {
+    const el = videoRefs.current[activeImageIndex];
+    const idx = SPEED_STEPS.indexOf(playbackRate);
+    const next = SPEED_STEPS[dir === "up" ? Math.min(idx + 1, SPEED_STEPS.length - 1) : Math.max(idx - 1, 0)];
+    setPlaybackRate(next);
+    if (!el) return;
+    if (isBuffering || el.readyState < 3) {
+      // Queue the rate — apply it once enough data is buffered
+      pendingRateRef.current = next;
+    } else {
+      el.playbackRate = next;
+    }
+  };
   const [relatedHoverId, setRelatedHoverId] = useState(null);
   const [relatedSlides, setRelatedSlides] = useState({});
   const [deliveryPincode, setDeliveryPincode] = useState("");
@@ -287,11 +312,15 @@ const ProductDetail = () => {
   }, [loading]);
 
   useEffect(() => {
+    setIsPlaying(false);
+    setIsBuffering(false);
+    setPlaybackRate(1);
+    pendingRateRef.current = null;
     Object.entries(videoRefs.current).forEach(([idx, el]) => {
       if (!el) return;
       if (Number(idx) === activeImageIndex) {
+        el.playbackRate = 1;
         el.play().catch(() => {
-          // Browser blocked autoplay with sound — fall back to muted
           el.muted = true;
           setIsMuted(true);
           el.play().catch(() => {});
@@ -1195,6 +1224,16 @@ const ProductDetail = () => {
                           src={item.url}
                           muted={isMuted}
                           playsInline
+                          onPlay={() => { setIsPlaying(true); setIsBuffering(false); }}
+                          onPause={() => setIsPlaying(false)}
+                          onWaiting={() => setIsBuffering(true)}
+                          onCanPlay={(e) => {
+                            setIsBuffering(false);
+                            if (pendingRateRef.current !== null) {
+                              e.target.playbackRate = pendingRateRef.current;
+                              pendingRateRef.current = null;
+                            }
+                          }}
                           onEnded={() => {
                             const next = (index + 1) % visibleMedia.length;
                             const nextItem = visibleMedia[next];
@@ -1242,6 +1281,39 @@ const ProductDetail = () => {
                   <span className="product-image-stock-badge out">Out of stock</span>
                 )}
               </div>
+              {visibleMedia[activeImageIndex]?.type === "video" && (
+                <div className="product-video-controls">
+                  <button
+                    type="button"
+                    className="product-video-ctrl-btn"
+                    onClick={() => handleSpeedChange("down")}
+                    disabled={isBuffering || playbackRate === SPEED_STEPS[0]}
+                    aria-label="Slow down"
+                  >
+                    <Icon icon="lucide:rewind" />
+                  </button>
+                  <span className="product-video-speed-badge">{playbackRate === 1 ? "1×" : `${playbackRate}×`}</span>
+                  <button
+                    type="button"
+                    className={`product-video-ctrl-btn product-video-ctrl-btn--play${isBuffering ? " is-buffering" : ""}`}
+                    onClick={togglePlayPause}
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isBuffering
+                      ? <Icon icon="lucide:loader-circle" className="product-video-spinner" />
+                      : <Icon icon={isPlaying ? "lucide:pause" : "lucide:play"} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="product-video-ctrl-btn"
+                    onClick={() => handleSpeedChange("up")}
+                    disabled={isBuffering || playbackRate === SPEED_STEPS[SPEED_STEPS.length - 1]}
+                    aria-label="Speed up"
+                  >
+                    <Icon icon="lucide:fast-forward" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className={`product-thumbs ${showThumbSkeletons ? "loading" : ""}`}>

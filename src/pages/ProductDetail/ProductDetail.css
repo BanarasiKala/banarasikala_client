@@ -449,6 +449,109 @@
   flex-shrink: 0;
 }
 
+.product-video-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 5px 10px;
+  background: rgba(47, 19, 12, 0.08);
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 999px;
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* Side speed buttons (rewind / fast-forward) */
+.product-video-ctrl-btn {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #5b0710;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+}
+
+.product-video-ctrl-btn:hover:not(:disabled) {
+  background: rgba(91, 7, 16, 0.1);
+  transform: scale(1.12);
+}
+
+.product-video-ctrl-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.product-video-ctrl-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+/* Play / Pause — centre button */
+.product-video-ctrl-btn--play {
+  width: 42px;
+  height: 42px;
+  margin: 0 4px;
+  color: #fff;
+  background: #5b0710;
+  border: 2px solid rgba(216, 164, 70, 0.6);
+  box-shadow: 0 2px 10px rgba(91, 7, 16, 0.3);
+}
+
+.product-video-ctrl-btn--play:hover:not(:disabled) {
+  background: #7a0d1a;
+  border-color: #d8a446;
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(91, 7, 16, 0.4);
+}
+
+.product-video-ctrl-btn--play svg {
+  width: 18px;
+  height: 18px;
+  transform: translateX(1px);
+}
+
+.product-video-ctrl-btn--play[aria-label="Pause"] svg {
+  transform: translateX(0);
+}
+
+.product-video-ctrl-btn--play.is-buffering {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.product-video-spinner {
+  width: 18px !important;
+  height: 18px !important;
+  animation: bk-video-spin 0.9s linear infinite;
+}
+
+@keyframes bk-video-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Speed indicator */
+.product-video-speed-badge {
+  min-width: 28px;
+  padding: 0 5px;
+  color: #8a4c22;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+  line-height: 1;
+}
+
 .product-mobile-color-card {
   display: none;
 }
