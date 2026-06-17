@@ -151,18 +151,9 @@ const ProductDetail = () => {
     }
   };
 
-  const handleFramePointerDown = (e) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false };
-  };
-  const handleFramePointerMove = (e) => {
-    if (Math.abs(e.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
-  };
-  const handleFramePointerUp = (e) => {
-    const dx = e.clientX - swipeRef.current.startX;
+  const resolveSwipe = (dx, dy, didSwipe) => {
     const absDx = Math.abs(dx);
-    const absDy = Math.abs(e.clientY - swipeRef.current.startY);
-    if (absDx > 50 && absDx > absDy) {
+    if (absDx > 50 && absDx > Math.abs(dy)) {
       if (dx < 0 && activeImageIndex < visibleMedia.length - 1) {
         const n = activeImageIndex + 1;
         setActiveImageIndex(n);
@@ -172,9 +163,48 @@ const ProductDetail = () => {
         setActiveImageIndex(n);
         if (visibleMedia[n]?.type === "image") setMainImage(visibleMedia[n].url);
       }
-    } else if (!swipeRef.current.didSwipe) {
+    } else if (!didSwipe) {
       openFullscreen(activeImageIndex);
     }
+  };
+
+  // ── Mouse (desktop) ──
+  const handleFrameMouseDown = (e) => {
+    swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false, dragging: true };
+  };
+  const handleFrameMouseMove = (e) => {
+    if (!swipeRef.current.dragging) return;
+    if (Math.abs(e.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
+  };
+  const handleFrameMouseUp = (e) => {
+    if (!swipeRef.current.dragging) return;
+    swipeRef.current.dragging = false;
+    resolveSwipe(
+      e.clientX - swipeRef.current.startX,
+      e.clientY - swipeRef.current.startY,
+      swipeRef.current.didSwipe,
+    );
+  };
+
+  // ── Touch (mobile) ──
+  const handleFrameTouchStart = (e) => {
+    const t = e.touches[0];
+    swipeRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false, dragging: true };
+  };
+  const handleFrameTouchMove = (e) => {
+    if (!swipeRef.current.dragging) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
+  };
+  const handleFrameTouchEnd = (e) => {
+    if (!swipeRef.current.dragging) return;
+    swipeRef.current.dragging = false;
+    const t = e.changedTouches[0];
+    resolveSwipe(
+      t.clientX - swipeRef.current.startX,
+      t.clientY - swipeRef.current.startY,
+      swipeRef.current.didSwipe,
+    );
   };
 
   // ── Fullscreen ──
@@ -1274,9 +1304,13 @@ const ProductDetail = () => {
               <div
                 className="product-3d-frame product-image-frame"
                 ref={frameRef}
-                onPointerDown={handleFramePointerDown}
-                onPointerMove={handleFramePointerMove}
-                onPointerUp={handleFramePointerUp}
+                onMouseDown={handleFrameMouseDown}
+                onMouseMove={handleFrameMouseMove}
+                onMouseUp={handleFrameMouseUp}
+                onMouseLeave={() => { swipeRef.current.dragging = false; }}
+                onTouchStart={handleFrameTouchStart}
+                onTouchMove={handleFrameTouchMove}
+                onTouchEnd={handleFrameTouchEnd}
                 style={{ cursor: "zoom-in", touchAction: "pan-y" }}
               >
                 {loadingColorId ? <span className="product-image-loader" aria-hidden="true" /> : null}
@@ -1295,7 +1329,11 @@ const ProductDetail = () => {
                           muted={isMuted}
                           playsInline
                           preload="none"
-                          onPlay={() => { isPlayingRef.current = true; setIsPlaying(true); setIsBuffering(false); }}
+                          onPlay={(e) => {
+                            if (!isPlayingRef.current) { e.target.pause(); return; }
+                            setIsPlaying(true);
+                            setIsBuffering(false);
+                          }}
                           onPause={() => { isPlayingRef.current = false; setIsPlaying(false); }}
                           onWaiting={() => setIsBuffering(true)}
                           onCanPlay={(e) => {
