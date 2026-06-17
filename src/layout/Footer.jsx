@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from "react";
+import { API_ENDPOINTS } from "../config/api";
 import { Icon } from "@iconify/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronRight,
+  ChevronUp,
   Mail,
   MapPin,
   Send,
@@ -40,21 +43,74 @@ const policyLinks = [
 ];
 
 const payments = [
-  ["logos:visa", "Visa"],
-  ["logos:mastercard", "Mastercard"],
-  ["simple-icons:upi", "UPI"],
-  ["simple-icons:paytm", "Paytm"],
+  { icon: "logos:visa",           label: "Visa" },
+  { icon: "logos:mastercard",     label: "Mastercard" },
+  { text: "RuPay",                label: "RuPay",     color: "#1a9ad7" },
+  { text: "UPI",                  label: "UPI",       color: "#097939" },
+  { icon: "logos:google-pay",     label: "Google Pay" },
+  { icon: "simple-icons:phonepe", label: "PhonePe",   color: "#5f259f" },
+  { icon: "simple-icons:paytm",   label: "Paytm",     color: "#002970" },
 ];
 
 const marketplaces = [
-  ["simple-icons:amazon", "Amazon"],
-  ["simple-icons:flipkart", "Flipkart"],
-  ["simple-icons:myntra", "Myntra"],
+  { icon: "simple-icons:amazon",  label: "Amazon",   color: "#FF9900", href: "https://www.amazon.in" },
+  { icon: "simple-icons:flipkart",label: "Flipkart", color: "#2874F0", href: "https://www.flipkart.com" },
+  { icon: "myntra",               label: "Myntra",   color: "#FF3F6C", href: "https://www.myntra.com" },
 ];
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Footer = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const footerRef = useRef(null);
+  const [showTop, setShowTop] = useState(false);
+
+  const [subEmail, setSubEmail] = useState("");
+  const [subError, setSubError] = useState("");
+  const [subSuccess, setSubSuccess] = useState("");
+  const [subLoading, setSubLoading] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    const email = subEmail.trim().toLowerCase();
+    if (!email) { setSubError("Please enter your email address."); return; }
+    if (!EMAIL_RE.test(email)) { setSubError("Please enter a valid email address."); return; }
+    setSubError(""); setSubSuccess(""); setSubLoading(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.newsletterSubscribe, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.alreadySubscribed) {
+          setSubError("This email is already subscribed. Thank you!");
+        } else {
+          setSubError(data.message || "Something went wrong. Please try again.");
+        }
+      } else {
+        setSubSuccess(data.message || "You're subscribed!");
+        setSubEmail("");
+      }
+    } catch {
+      setSubError("Could not subscribe right now. Please try again.");
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowTop(entry.isIntersecting),
+      { threshold: 0.05 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const refreshFooterLink = (to) => (event) => {
     const target = new URL(to, window.location.origin);
@@ -79,6 +135,7 @@ const Footer = () => {
 
   return (
     <footer
+      ref={footerRef}
       className="bk-footer"
       style={{ "--bk-footer-bg": `url(${footerBackground})` }}
     >
@@ -160,12 +217,25 @@ const Footer = () => {
 
         <div className="bk-footer-updates">
           <h3>Stay Updated</h3>
-          <form className="bk-footer-subscribe">
-            <input type="email" placeholder="Enter your email" aria-label="Email" />
-            <button type="submit" aria-label="Subscribe">
-              <Send size={20} />
+          <span className="bk-footer-rule" aria-hidden="true" />
+          <p className="bk-footer-updates-tagline">
+            Be the first to discover new arrivals, exclusive offers &amp; timeless Banarasi stories — straight to your inbox.
+          </p>
+          <form className="bk-footer-subscribe" onSubmit={handleSubscribe} noValidate>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              aria-label="Email address"
+              value={subEmail}
+              onChange={(e) => { setSubEmail(e.target.value); setSubError(""); setSubSuccess(""); }}
+              disabled={subLoading}
+            />
+            <button type="submit" aria-label="Subscribe" disabled={subLoading}>
+              {subLoading ? <span className="bk-footer-sub-spinner" /> : <Send size={16} />}
             </button>
           </form>
+          {subError && <p className="bk-footer-sub-msg bk-footer-sub-error">{subError}</p>}
+          {subSuccess && <p className="bk-footer-sub-msg bk-footer-sub-success">{subSuccess}</p>}
         </div>
       </div>
 
@@ -173,17 +243,17 @@ const Footer = () => {
         <div className="bk-footer-contact">
           <h3>Contact Us</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
-          <p>
+          {/* <p>
             <Phone size={15} />
             +91 98765 43210
-          </p>
+          </p> */}
           <p>
             <Mail size={15} />
             support@banarasikala.com
           </p>
           <p>
             <MapPin size={15} />
-            Bhadohi, Varanasi, Uttar Pradesh, India
+           Varanasi, Uttar Pradesh, India
           </p>
         </div>
 
@@ -191,23 +261,41 @@ const Footer = () => {
           <h3>We Accept</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
           <div className="bk-footer-payment-row" aria-label="Accepted payments">
-            {payments.map(([icon, label]) => (
-              <span key={label} title={label}>
-                <Icon icon={icon}></Icon>
+            {payments.map(({ icon, text, label, color }) => (
+              <span key={label} className="bk-footer-pay-badge" title={label}>
+                {icon
+                  ? <Icon icon={icon} style={color ? { color } : undefined} />
+                  : <span className="bk-footer-pay-text" style={{ color }}>{text}</span>
+                }
               </span>
             ))}
+          </div>
+          <div className="bk-footer-razorpay">
+            <Icon icon="simple-icons:razorpay" className="bk-footer-razorpay-icon" />
+            <span>Secured by Razorpay</span>
           </div>
         </div>
 
         <div className="bk-footer-marketplaces">
           <h3>Also Available On</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
-          <p>We are also available on Amazon, Flipkart &amp; Myntra.</p>
           <div className="bk-footer-market-row">
-            {marketplaces.map(([icon, label]) => (
-              <span key={label} className={`bk-footer-market-${label.toLowerCase()}`} title={label}>
-                <Icon icon={icon}></Icon>
-              </span>
+            {marketplaces.map(({ icon, label, color, href }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className="bk-footer-market-badge"
+                aria-label={label}
+                title={label}
+              >
+                {icon === "myntra"
+                  ? <img src="/image.png" alt="Myntra" className="bk-footer-myntra-img" />
+                  : <Icon icon={icon} style={{ color }} />
+                }
+                <span>{label}</span>
+              </a>
             ))}
           </div>
         </div>
@@ -217,6 +305,15 @@ const Footer = () => {
         <p>© 2026 Banarasi Kala. All Rights Reserved.</p>
         <span aria-hidden="true" />
       </div>
+
+      <button
+        type="button"
+        className={`bk-back-to-top${showTop ? " is-visible" : ""}`}
+        aria-label="Back to top"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
+        <ChevronUp size={22} strokeWidth={2.5} />
+      </button>
     </footer>
   );
 };

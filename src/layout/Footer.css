@@ -130,9 +130,12 @@
     transform 0.2s ease;
 }
 
-.bk-footer-column a:hover {
+.bk-footer-column a:hover,
+.bk-footer-column a:focus-visible {
   color: #800020;
   transform: translateX(3px);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .bk-footer-updates p,
@@ -142,6 +145,15 @@
   color: #3b251c;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 14px;
+  line-height: 1.65;
+}
+
+.bk-footer-updates-tagline {
+  margin: 0 0 16px;
+  max-width: 265px;
+  color: #3b251c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
   line-height: 1.65;
 }
 
@@ -174,6 +186,44 @@
   background: #720916;
   border: 0;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.bk-footer-subscribe button:hover:not(:disabled) {
+  background: #900f1e;
+}
+
+.bk-footer-subscribe button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.bk-footer-sub-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(217, 168, 73, 0.35);
+  border-top-color: #d9a849;
+  border-radius: 50%;
+  animation: bk-footer-spin 0.7s linear infinite;
+}
+
+@keyframes bk-footer-spin {
+  to { transform: rotate(360deg); }
+}
+
+.bk-footer-sub-msg {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.bk-footer-sub-error {
+  color: #c0392b;
+}
+
+.bk-footer-sub-success {
+  color: #27ae60;
 }
 
 .bk-footer-info {
@@ -200,59 +250,90 @@
   flex: 0 0 auto;
 }
 
-.bk-footer-payment-row,
+.bk-footer-payment-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bk-footer-pay-badge {
+  height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(112, 63, 24, 0.12);
+  border-radius: 5px;
+  line-height: 1;
+  font-size: 26px;
+}
+
+.bk-footer-pay-text {
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+
+.bk-footer-razorpay {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: #3395ff;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(51, 149, 255, 0.22);
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.bk-footer-razorpay-icon {
+  font-size: 18px;
+  color: #072654;
+}
+
 .bk-footer-market-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 10px;
 }
 
-.bk-footer-payment-row span {
-  min-width: 72px;
-  height: 40px;
-  padding: 0 14px;
+.bk-footer-market-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
   background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(112, 63, 24, 0.1);
-  border-radius: 4px;
-  line-height: 1;
-}
-
-.bk-footer-payment-row svg {
-  font-size: 31px;
-}
-
-.bk-footer-market-row span {
-  min-width: 86px;
-  height: 42px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid rgba(112, 63, 24, 0.12);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
   color: #1c1c1c;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
+  text-decoration: none;
   line-height: 1;
-  filter: drop-shadow(0 4px 6px rgba(70, 35, 13, 0.16));
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.bk-footer-market-row svg {
-  font-size: 38px;
+.bk-footer-market-badge svg {
+  font-size: 22px;
+  flex-shrink: 0;
 }
 
-.bk-footer-market-amazon svg {
-  color: #111111;
+.bk-footer-myntra-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
-.bk-footer-market-flipkart svg {
-  color: #2874f0;
-}
-
-.bk-footer-market-myntra svg {
-  color: #ff3f6c;
+.bk-footer-market-badge:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  transform: translateY(-2px);
 }
 
 .bk-footer-bottom {
@@ -268,6 +349,49 @@
   background-size: cover;
   background-position: center;
   border-top: 1px solid rgba(46, 3, 8, 0.6);
+}
+
+/* Floating back-to-top button */
+.bk-back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 28px;
+  z-index: 999;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  color: #d8a446;
+  background: #5b0710;
+  border: 2px solid rgba(216, 164, 70, 0.45);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bk-back-to-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.bk-back-to-top:hover {
+  background: #7a0d1a;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.36);
+  transform: translateY(-3px);
+}
+
+@media (max-width: 640px) {
+  .bk-back-to-top {
+    right: 16px;
+    bottom: 20px;
+    width: 42px;
+    height: 42px;
+  }
 }
 
 .bk-footer-bottom p {

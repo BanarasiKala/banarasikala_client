@@ -17,6 +17,8 @@ const WHY_CHOOSE_US = [
   { title: "Fast & Reliable", subtitle: "Delivery", icon: Truck },
 ];
 
+const marqueeItems = [...WHY_CHOOSE_US, ...WHY_CHOOSE_US];
+
 const WhyChooseUs = () => (
   <section className="bk-why-choose" aria-labelledby="why-choose-title">
     <div className="bk-why-shell">
@@ -24,10 +26,12 @@ const WhyChooseUs = () => (
         <h2 id="why-choose-title">Why Choose Us</h2>
         <span aria-hidden="true" />
       </div>
+    </div>
 
-      <div className="bk-why-grid">
-        {WHY_CHOOSE_US.map(({ title, subtitle, icon: Icon }) => (
-          <div className="bk-why-item" key={`${title}-${subtitle}`}>
+    <div className="bk-why-track-wrap">
+      <div className="bk-why-track">
+        {marqueeItems.map(({ title, subtitle, icon: Icon }, i) => (
+          <div className="bk-why-item" key={i}>
             <Icon className="bk-why-icon" strokeWidth={1.8} />
             <p>
               <span>{title}</span>

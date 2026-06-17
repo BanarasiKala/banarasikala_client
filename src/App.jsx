@@ -30,6 +30,11 @@ const Feedback = lazy(() => import("./pages/Feedback/Feedback"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail/VerifyEmail"));
+const ShippingPolicy = lazy(() => import("./pages/Policy/ShippingPolicy"));
+const ReturnExchange = lazy(() => import("./pages/Policy/ReturnExchange"));
+const RefundPolicy = lazy(() => import("./pages/Policy/RefundPolicy"));
+const TermsConditions = lazy(() => import("./pages/Policy/TermsConditions"));
+const PrivacyPolicy = lazy(() => import("./pages/Policy/PrivacyPolicy"));
 
 
 
@@ -107,6 +112,11 @@ function App() {
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/feedback" element={<Feedback />} />
                       <Route path="/testimonials" element={<Testimonials />} />
+                      <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                      <Route path="/return-exchange" element={<ReturnExchange />} />
+                      <Route path="/refund-policy" element={<RefundPolicy />} />
+                      <Route path="/terms-conditions" element={<TermsConditions />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />

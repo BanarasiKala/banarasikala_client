@@ -1,7 +1,6 @@
 .bk-browse-section {
   width: 100%;
   padding: 30px 0 34px;
-  overflow: hidden;
   background:
     linear-gradient(rgba(255, 246, 232, 0.62), rgba(255, 246, 232, 0.62)),
     var(--bk-section-bg),
@@ -45,23 +44,39 @@
   text-transform: uppercase;
 }
 
-.bk-browse-row {
-  display: flex;
-  gap: 26px;
-  align-items: start;
-  justify-content: center;
-  flex-wrap: wrap;
+/* Scrolling carousel — all screen sizes */
+.bk-browse-track-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  cursor: grab;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  padding: 10px 0 14px;
 }
 
-.bk-browse-mobile-wrap,
-.bk-browse-mobile {
+.bk-browse-track-wrap::-webkit-scrollbar {
   display: none;
 }
 
+.bk-browse-track-wrap:active {
+  cursor: grabbing;
+}
+
+.bk-browse-track {
+  display: flex;
+  width: max-content;
+  gap: 28px;
+  flex-wrap: nowrap;
+  padding: 0 var(--bk-page-pad, 32px);
+}
+
+/* Cards */
 .bk-browse-card {
-  flex: 0 1 150px;
+  flex: 0 0 auto;
   width: 150px;
-  min-width: 0;
   display: grid;
   justify-items: center;
   gap: 10px;
@@ -71,8 +86,6 @@
   border: 0;
   box-shadow: none;
   cursor: pointer;
-  animation: bk-browse-reveal 0.7s cubic-bezier(0.2, 0.72, 0.2, 1) both;
-  animation-delay: var(--bk-browse-delay, 0ms);
   transition: transform 0.28s ease;
 }
 
@@ -100,6 +113,14 @@
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: 42px;
   font-weight: 900;
+  transition: box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.bk-browse-card:hover .bk-browse-circle {
+  border-color: rgba(176, 120, 36, 0.7);
+  box-shadow:
+    inset 0 0 0 1px rgba(128, 0, 32, 0.18),
+    0 18px 32px rgba(92, 45, 16, 0.2);
 }
 
 .bk-browse-circle img {
@@ -126,6 +147,7 @@
   -webkit-box-orient: vertical;
 }
 
+/* Empty / skeleton */
 .bk-browse-empty {
   min-height: 180px;
   display: grid;
@@ -140,7 +162,6 @@
 
 .bk-browse-skeleton {
   pointer-events: none;
-  animation: none;
 }
 
 .bk-browse-skeleton .bk-browse-circle,
@@ -152,12 +173,8 @@
 
 .bk-browse-line {
   width: 78%;
-  height: 13px;
-  border-radius: 999px;
-}
-
-.bk-browse-mobile .bk-browse-line {
   height: 11px;
+  border-radius: 999px;
 }
 
 .bk-browse-skeleton .bk-browse-circle::after,
@@ -171,74 +188,17 @@
 }
 
 @keyframes bk-browse-shimmer {
-  to {
-    transform: translateX(100%);
-  }
+  to { transform: translateX(100%); }
 }
 
-@keyframes bk-browse-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
+/* Tablet */
 @media (max-width: 1190px) {
-  .bk-browse-shell {
+  .bk-browse-track {
+    gap: 18px;
     padding: 0 18px;
   }
 
-  .bk-browse-desktop {
-    display: none;
-  }
-
-  .bk-browse-mobile-wrap {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    touch-action: pan-x;
-    cursor: grab;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-  }
-
-  .bk-browse-mobile-wrap::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bk-browse-mobile-wrap:active {
-    cursor: grabbing;
-  }
-
-  .bk-browse-mobile-wrap::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-  }
-
-  .bk-browse-mobile {
-    display: flex;
-    width: max-content;
-    max-width: none;
-    gap: 16px;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    padding-right: 16px;
-  }
-
-  .bk-browse-mobile .bk-browse-card {
-    animation: none;
-    scroll-snap-align: start;
-  }
-
   .bk-browse-card {
-    flex: 0 0 124px;
     width: 124px;
   }
 
@@ -255,13 +215,10 @@
   }
 }
 
+/* Mobile */
 @media (max-width: 640px) {
   .bk-browse-section {
     padding: 22px 0 24px;
-  }
-
-  .bk-browse-shell {
-    padding: 0 14px;
   }
 
   .bk-browse-header {
@@ -273,13 +230,12 @@
     letter-spacing: 0.04em;
   }
 
-  .bk-browse-mobile {
+  .bk-browse-track {
     gap: 14px;
-    padding-right: 14px;
+    padding: 0 14px;
   }
 
   .bk-browse-card {
-    flex-basis: 116px;
     width: 116px;
   }
 

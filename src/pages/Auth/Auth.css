@@ -420,6 +420,13 @@
 .auth-consent a {
   color: #6b0712;
   font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-terms a:hover,
+.auth-consent a:hover {
+  color: #a00020;
 }
 
 .auth-consent {
