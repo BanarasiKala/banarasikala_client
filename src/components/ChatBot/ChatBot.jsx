@@ -25,6 +25,7 @@ const ChatBot = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const hasOpened = useRef(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     if (open) {
@@ -32,6 +33,17 @@ const ChatBot = () => {
       hasOpened.current = true;
       setTimeout(() => inputRef.current?.focus(), 120);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open]);
 
   useEffect(() => {
@@ -78,7 +90,7 @@ const ChatBot = () => {
   const showQuickReplies = messages.length === 1;
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* Floating toggle button */}
       <button
         type="button"
@@ -196,7 +208,7 @@ const ChatBot = () => {
           Powered by <strong>Banarasi Kala</strong>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
