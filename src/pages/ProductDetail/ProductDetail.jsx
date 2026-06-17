@@ -107,6 +107,7 @@ const PLYR_OPTIONS = {
   resetOnEnd: true,
   keyboard: { focused: false, global: false },
   tooltips: { controls: false, seek: true },
+  fullscreen: { enabled: true, fallback: true, iosNative: true },
 };
 
 const VideoSlide = memo(({ src, isActive }) => {
