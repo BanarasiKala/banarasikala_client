@@ -143,12 +143,55 @@ const ProductDetail = () => {
     setPlaybackRate(next);
     if (!el) return;
     if (isBuffering || el.readyState < 3) {
-      // Queue the rate — apply it once enough data is buffered
       pendingRateRef.current = next;
     } else {
       el.playbackRate = next;
     }
   };
+
+  // ── Fullscreen ──
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [fullscreenIdx, setFullscreenIdx] = useState(0);
+  const [fsIsPlaying, setFsIsPlaying] = useState(false);
+  const [fsIsBuffering, setFsIsBuffering] = useState(false);
+  const [fsPlaybackRate, setFsPlaybackRate] = useState(1);
+  const fsVideoRef = useRef(null);
+  const fsPendingRateRef = useRef(null);
+
+  const openFullscreen = (idx) => { setFullscreenIdx(idx); setFsIsPlaying(false); setFsIsBuffering(false); setFsPlaybackRate(1); setFullscreenOpen(true); };
+  const closeFullscreen = () => {
+    fsVideoRef.current?.pause();
+    setFullscreenOpen(false);
+    setFsIsPlaying(false);
+    setFsIsBuffering(false);
+    setFsPlaybackRate(1);
+    fsPendingRateRef.current = null;
+    document.body.style.overflow = "";
+  };
+
+  const toggleFsPlayPause = () => {
+    const el = fsVideoRef.current;
+    if (!el || fsIsBuffering) return;
+    if (el.paused) { el.play().catch(() => {}); } else { el.pause(); }
+  };
+
+  const handleFsSpeedChange = (dir) => {
+    const el = fsVideoRef.current;
+    const i = SPEED_STEPS.indexOf(fsPlaybackRate);
+    const next = SPEED_STEPS[dir === "up" ? Math.min(i + 1, SPEED_STEPS.length - 1) : Math.max(i - 1, 0)];
+    setFsPlaybackRate(next);
+    if (!el) return;
+    if (fsIsBuffering || el.readyState < 3) { fsPendingRateRef.current = next; } else { el.playbackRate = next; }
+  };
+
+  useEffect(() => {
+    if (!fullscreenOpen) return undefined;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") closeFullscreen(); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [fullscreenOpen]);
+
   const [relatedHoverId, setRelatedHoverId] = useState(null);
   const [relatedSlides, setRelatedSlides] = useState({});
   const [deliveryPincode, setDeliveryPincode] = useState("");
@@ -318,17 +361,8 @@ const ProductDetail = () => {
     pendingRateRef.current = null;
     Object.entries(videoRefs.current).forEach(([idx, el]) => {
       if (!el) return;
-      if (Number(idx) === activeImageIndex) {
-        el.playbackRate = 1;
-        el.play().catch(() => {
-          el.muted = true;
-          setIsMuted(true);
-          el.play().catch(() => {});
-        });
-      } else {
-        el.pause();
-        el.currentTime = 0;
-      }
+      el.pause();
+      if (Number(idx) !== activeImageIndex) el.currentTime = 0;
     });
   }, [activeImageIndex]);
 
@@ -1208,7 +1242,12 @@ const ProductDetail = () => {
               onMouseEnter={() => setIsGalleryHovering(true)}
               onMouseLeave={() => setIsGalleryHovering(false)}
             >
-              <div className="product-3d-frame product-image-frame" ref={frameRef}>
+              <div
+                className="product-3d-frame product-image-frame"
+                ref={frameRef}
+                onClick={() => openFullscreen(activeImageIndex)}
+                style={{ cursor: "zoom-in" }}
+              >
                 {loadingColorId ? <span className="product-image-loader" aria-hidden="true" /> : null}
                 {visibleMedia.length > 0 ? (
                   <div
@@ -1234,12 +1273,6 @@ const ProductDetail = () => {
                               pendingRateRef.current = null;
                             }
                           }}
-                          onEnded={() => {
-                            const next = (index + 1) % visibleMedia.length;
-                            const nextItem = visibleMedia[next];
-                            if (nextItem?.type === "image") setMainImage(nextItem.url);
-                            setActiveImageIndex(next);
-                          }}
                         />
                       ) : (
                         <img
@@ -1257,99 +1290,58 @@ const ProductDetail = () => {
                 {Number(product.discount_percent || 0) > 0 && (
                   <span className="product-discount-badge">{product.discount_percent}% OFF</span>
                 )}
-                <div className="product-image-actions">
-                  <button type="button" onClick={handleWishlist} className={isInWishlist(product.id, selectedColorId) ? "active" : ""} aria-label="Wishlist">
-                    <Icon icon={isInWishlist(product.id, selectedColorId) ? "mdi:heart" : "lucide:heart"} />
-                  </button>
-                  <button type="button" onClick={handleShare} aria-label="Share">
-                    <Icon icon="lucide:share-2" />
-                  </button>
-                  {visibleMedia[activeImageIndex]?.type === "video" && (
-                    <button type="button" onClick={() => setIsMuted((m) => !m)} aria-label={isMuted ? "Unmute" : "Mute"}>
-                      <Icon icon={isMuted ? "lucide:volume-x" : "lucide:volume-2"} />
-                    </button>
-                  )}
-                </div>
-                {visibleMedia.length > 1 && (
-                  <div className="product-image-dots" aria-hidden="true">
-                    {visibleMedia.map((item, index) => (
-                      <span key={`${item.url}-dot`} className={index === activeImageIndex ? "active" : ""} />
-                    ))}
-                  </div>
-                )}
                 {isSelectedOutOfStock && (
                   <span className="product-image-stock-badge out">Out of stock</span>
                 )}
               </div>
+
+              {/* ── Media bar: wishlist · dots · share · mute ── */}
+              <div className="product-media-bar">
+                <div className="product-media-bar-left">
+                  {visibleMedia[activeImageIndex]?.type === "video" && (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setIsMuted((m) => !m); }} className="product-media-action-btn" aria-label={isMuted ? "Unmute" : "Mute"}>
+                      <Icon icon={isMuted ? "lucide:volume-x" : "lucide:volume-2"} />
+                    </button>
+                  )}
+                </div>
+                <div className="product-media-bar-dots" aria-hidden="true">
+                  {visibleMedia.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`product-media-dot${index === activeImageIndex ? " active" : ""}`}
+                      onClick={() => { setActiveImageIndex(index); if (visibleMedia[index]?.type === "image") setMainImage(visibleMedia[index].url); }}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="product-media-bar-right">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); handleWishlist(); }} className={`product-media-action-btn${isInWishlist(product.id, selectedColorId) ? " active" : ""}`} aria-label="Wishlist">
+                    <Icon icon={isInWishlist(product.id, selectedColorId) ? "mdi:heart" : "lucide:heart"} />
+                  </button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); handleShare(); }} className="product-media-action-btn" aria-label="Share">
+                    <Icon icon="lucide:share-2" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Video controls ── */}
               {visibleMedia[activeImageIndex]?.type === "video" && (
                 <div className="product-video-controls">
-                  <button
-                    type="button"
-                    className="product-video-ctrl-btn"
-                    onClick={() => handleSpeedChange("down")}
-                    disabled={isBuffering || playbackRate === SPEED_STEPS[0]}
-                    aria-label="Slow down"
-                  >
+                  <button type="button" className="product-video-ctrl-btn" onClick={() => handleSpeedChange("down")} disabled={isBuffering || playbackRate === SPEED_STEPS[0]} aria-label="Slow down">
                     <Icon icon="lucide:rewind" />
                   </button>
                   <span className="product-video-speed-badge">{playbackRate === 1 ? "1×" : `${playbackRate}×`}</span>
-                  <button
-                    type="button"
-                    className={`product-video-ctrl-btn product-video-ctrl-btn--play${isBuffering ? " is-buffering" : ""}`}
-                    onClick={togglePlayPause}
-                    aria-label={isPlaying ? "Pause" : "Play"}
-                  >
-                    {isBuffering
-                      ? <Icon icon="lucide:loader-circle" className="product-video-spinner" />
-                      : <Icon icon={isPlaying ? "lucide:pause" : "lucide:play"} />}
+                  <button type="button" className={`product-video-ctrl-btn product-video-ctrl-btn--play${isBuffering ? " is-buffering" : ""}`} onClick={togglePlayPause} aria-label={isPlaying ? "Pause" : "Play"}>
+                    {isBuffering ? <Icon icon="lucide:loader-circle" className="product-video-spinner" /> : <Icon icon={isPlaying ? "lucide:pause" : "lucide:play"} />}
                   </button>
-                  <button
-                    type="button"
-                    className="product-video-ctrl-btn"
-                    onClick={() => handleSpeedChange("up")}
-                    disabled={isBuffering || playbackRate === SPEED_STEPS[SPEED_STEPS.length - 1]}
-                    aria-label="Speed up"
-                  >
+                  <button type="button" className="product-video-ctrl-btn" onClick={() => handleSpeedChange("up")} disabled={isBuffering || playbackRate === SPEED_STEPS[SPEED_STEPS.length - 1]} aria-label="Speed up">
                     <Icon icon="lucide:fast-forward" />
                   </button>
                 </div>
               )}
             </div>
 
-            <div className={`product-thumbs ${showThumbSkeletons ? "loading" : ""}`}>
-              {showThumbSkeletons
-                ? Array.from({ length: 6 }).map((_, index) => (
-                    <span key={`thumb-skeleton-${index}`} className="product-thumb-skeleton" aria-hidden="true" />
-                  ))
-                : visibleMedia.map((item, index) => (
-                    item.type === "video" ? (
-                      <button
-                        key={`${item.url}-${index}`}
-                        type="button"
-                        onClick={() => { setActiveImageIndex(index); }}
-                        className={`product-thumb product-video-thumb ${activeImageIndex === index ? "active" : ""}`}
-                        aria-label={`Play video ${index + 1}`}
-                      >
-                        <video src={item.url} preload="metadata" muted playsInline />
-                        <span className="product-video-thumb-icon" aria-hidden="true">
-                          <Icon icon={activeImageIndex === index ? "lucide:pause" : "lucide:play"} />
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        key={`${item.url}-${index}`}
-                        type="button"
-                        onClick={() => { setActiveImageIndex(index); setMainImage(item.url); }}
-                        onFocus={() => setActiveImageIndex(index)}
-                        onMouseEnter={() => setActiveImageIndex(index)}
-                        className={`product-thumb ${activeImageIndex === index ? "active" : ""}`}
-                        aria-label={`View image ${index + 1}`}
-                      >
-                        <img src={imgUrl(item.url)} alt="" />
-                      </button>
-                    )
-                  ))}
-            </div>
 
             {distinctColors.length > 0 && (
               <div className="product-mobile-color-card">
@@ -2190,6 +2182,89 @@ const ProductDetail = () => {
         onClose={() => setBuyNowMapOpen(false)}
         onConfirm={confirmBuyNowLocation}
       />
+
+      {/* ── Fullscreen overlay ── */}
+      {fullscreenOpen && (() => {
+        const fsMedia = visibleMedia[fullscreenIdx];
+        const isVideo = fsMedia?.type === "video";
+        const imageItems = visibleMedia.filter((m) => m.type === "image");
+        const videoItems = visibleMedia.filter((m) => m.type === "video");
+        const stripItems = isVideo ? videoItems : imageItems;
+        return (
+          <div className="bk-fs-overlay" onClick={closeFullscreen}>
+            <button type="button" className="bk-fs-close" onClick={closeFullscreen} aria-label="Close fullscreen">
+              <Icon icon="lucide:x" />
+            </button>
+
+            <div className="bk-fs-main" onClick={(e) => e.stopPropagation()}>
+              {isVideo ? (
+                <video
+                  ref={fsVideoRef}
+                  key={fsMedia.url}
+                  src={fsMedia.url}
+                  className="bk-fs-video"
+                  muted={isMuted}
+                  playsInline
+                  onPlay={() => { setFsIsPlaying(true); setFsIsBuffering(false); }}
+                  onPause={() => setFsIsPlaying(false)}
+                  onWaiting={() => setFsIsBuffering(true)}
+                  onCanPlay={(e) => {
+                    setFsIsBuffering(false);
+                    if (fsPendingRateRef.current !== null) {
+                      e.target.playbackRate = fsPendingRateRef.current;
+                      fsPendingRateRef.current = null;
+                    }
+                  }}
+                />
+              ) : (
+                <img src={imgUrl(fsMedia?.url, 1400)} alt={productName} className="bk-fs-image" />
+              )}
+            </div>
+
+            {isVideo && (
+              <div className="bk-fs-video-controls" onClick={(e) => e.stopPropagation()}>
+                <button type="button" className="bk-fs-ctrl-btn" onClick={() => handleFsSpeedChange("down")} disabled={fsIsBuffering || fsPlaybackRate === SPEED_STEPS[0]} aria-label="Slow down">
+                  <Icon icon="lucide:rewind" />
+                </button>
+                <span className="bk-fs-speed">{fsPlaybackRate === 1 ? "1×" : `${fsPlaybackRate}×`}</span>
+                <button type="button" className={`bk-fs-ctrl-btn bk-fs-play-btn${fsIsBuffering ? " is-buffering" : ""}`} onClick={toggleFsPlayPause} aria-label={fsIsPlaying ? "Pause" : "Play"}>
+                  {fsIsBuffering ? <Icon icon="lucide:loader-circle" className="product-video-spinner" /> : <Icon icon={fsIsPlaying ? "lucide:pause" : "lucide:play"} />}
+                </button>
+                <button type="button" className="bk-fs-ctrl-btn" onClick={() => handleFsSpeedChange("up")} disabled={fsIsBuffering || fsPlaybackRate === SPEED_STEPS[SPEED_STEPS.length - 1]} aria-label="Speed up">
+                  <Icon icon="lucide:fast-forward" />
+                </button>
+                <button type="button" className="bk-fs-ctrl-btn" onClick={() => setIsMuted((m) => !m)} aria-label={isMuted ? "Unmute" : "Mute"}>
+                  <Icon icon={isMuted ? "lucide:volume-x" : "lucide:volume-2"} />
+                </button>
+              </div>
+            )}
+
+            {stripItems.length > 1 && (
+              <div className="bk-fs-strip" onClick={(e) => e.stopPropagation()}>
+                {stripItems.map((item, i) => {
+                  const globalIdx = visibleMedia.indexOf(item);
+                  const active = globalIdx === fullscreenIdx;
+                  return (
+                    <button
+                      key={item.url}
+                      type="button"
+                      className={`bk-fs-thumb${active ? " active" : ""}`}
+                      onClick={() => setFullscreenIdx(globalIdx)}
+                      aria-label={isVideo ? `Video ${i + 1}` : `Image ${i + 1}`}
+                    >
+                      {isVideo ? (
+                        <video src={item.url} muted playsInline preload="metadata" className="bk-fs-thumb-video" />
+                      ) : (
+                        <img src={imgUrl(item.url, 200)} alt="" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };

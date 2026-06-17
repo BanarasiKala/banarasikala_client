@@ -24,12 +24,10 @@ const WhyChooseUs = () => (
         <h2 id="why-choose-title">Why Choose Us</h2>
         <span aria-hidden="true" />
       </div>
-    </div>
 
-    <div className="bk-why-track-wrap">
-      <div className="bk-why-track">
-        {WHY_CHOOSE_US.map(({ title, subtitle, icon: Icon }, i) => (
-          <div className="bk-why-item" key={i}>
+      <div className="bk-why-grid">
+        {WHY_CHOOSE_US.map(({ title, subtitle, icon: Icon }) => (
+          <div className="bk-why-item" key={`${title}-${subtitle}`}>
             <Icon className="bk-why-icon" strokeWidth={1.8} />
             <p>
               <span>{title}</span>

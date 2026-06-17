@@ -184,9 +184,7 @@
 }
 
 .product-gallery {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 14px;
+  display: block;
 }
 
 .product-main-media {
@@ -278,69 +276,262 @@
   text-transform: uppercase;
 }
 
-.product-image-actions {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 6;
-  display: inline-flex;
-  gap: 9px;
+/* ── Media bar (below image frame) ── */
+.product-media-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 0 2px;
 }
 
-.product-image-actions button {
-  width: 38px;
-  height: 38px;
+.product-media-bar-left,
+.product-media-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.product-media-bar-right {
+  justify-content: flex-end;
+}
+
+.product-media-action-btn {
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;
-  color: #fff8ee;
-  background: rgba(47, 19, 12, 0.52);
-  border: 1px solid rgba(255, 242, 218, 0.72);
-  border-radius: 999px;
-  box-shadow: 0 10px 20px rgba(55, 15, 10, 0.18);
-  backdrop-filter: blur(6px);
+  color: #5b0710;
+  background: rgba(91, 7, 16, 0.07);
+  border: 1px solid rgba(91, 7, 16, 0.15);
+  border-radius: 50%;
   cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-.product-image-actions button:hover,
-.product-image-actions button.active {
-  color: #ffe1a2;
-  background: rgba(128, 0, 32, 0.9);
+.product-media-action-btn:hover {
+  background: rgba(91, 7, 16, 0.14);
   transform: translateY(-1px);
 }
 
-.product-image-actions svg {
-  width: 19px;
-  height: 19px;
+.product-media-action-btn.active {
+  color: #e53935;
+  background: rgba(229, 57, 53, 0.1);
+  border-color: rgba(229, 57, 53, 0.3);
 }
 
-.product-image-dots {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  z-index: 6;
-  display: inline-flex;
+.product-media-action-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.product-media-bar-dots {
+  display: flex;
+  align-items: center;
   gap: 6px;
-  padding: 6px 8px;
-  background: rgba(47, 19, 12, 0.36);
-  border: 1px solid rgba(255, 242, 218, 0.24);
-  border-radius: 999px;
-  transform: translateX(-50%);
-  backdrop-filter: blur(5px);
+  flex: 1;
+  justify-content: center;
 }
 
-.product-image-dots span {
-  width: 6px;
-  height: 6px;
+.product-media-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
   border-radius: 999px;
-  background: rgba(255, 241, 211, 0.54);
+  background: rgba(91, 7, 16, 0.2);
+  border: none;
+  cursor: pointer;
   transition: width 180ms ease, background 180ms ease;
 }
 
-.product-image-dots span.active {
-  width: 16px;
-  background: #ffe1a2;
+.product-media-dot.active {
+  width: 18px;
+  background: #5b0710;
+}
+
+/* ── Fullscreen overlay ── */
+.bk-fs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(8, 3, 2, 0.96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.bk-fs-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.18s ease;
+  z-index: 1;
+}
+
+.bk-fs-close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.bk-fs-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bk-fs-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.bk-fs-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.bk-fs-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* Fullscreen video controls */
+.bk-fs-video-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.bk-fs-ctrl-btn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: rgba(255, 248, 238, 0.8);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.bk-fs-ctrl-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bk-fs-ctrl-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffe1a2;
+  transform: scale(1.1);
+}
+
+.bk-fs-ctrl-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.bk-fs-play-btn {
+  width: 44px;
+  height: 44px;
+  margin: 0 4px;
+  color: #fff;
+  background: #5b0710;
+  border: 2px solid rgba(216, 164, 70, 0.6);
+  box-shadow: 0 2px 10px rgba(91, 7, 16, 0.5);
+}
+
+.bk-fs-play-btn svg {
+  width: 18px;
+  height: 18px;
+  transform: translateX(1px);
+}
+
+.bk-fs-play-btn[aria-label="Pause"] svg {
+  transform: translateX(0);
+}
+
+.bk-fs-play-btn:hover:not(:disabled) {
+  background: #7a0d1a;
+  transform: scale(1.06);
+}
+
+.bk-fs-speed {
+  min-width: 28px;
+  color: #d8a446;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Fullscreen thumbnail strip */
+.bk-fs-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.bk-fs-strip::-webkit-scrollbar { display: none; }
+
+.bk-fs-thumb {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: #1a0a06;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.bk-fs-thumb:hover { transform: translateY(-2px); }
+
+.bk-fs-thumb.active {
+  border-color: #d8a446;
+  box-shadow: 0 0 0 1px #d8a446;
+}
+
+.bk-fs-thumb img,
+.bk-fs-thumb-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .product-image-stock-badge {

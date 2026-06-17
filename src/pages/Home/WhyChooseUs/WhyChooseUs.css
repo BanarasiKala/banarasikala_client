@@ -12,14 +12,14 @@
 .bk-why-shell {
   max-width: var(--bk-page-max);
   margin: 0 auto;
-  padding: 18px var(--bk-page-pad) 14px;
+  padding: 18px var(--bk-page-pad) 21px;
 }
 
 .bk-why-heading {
   display: grid;
   justify-items: center;
   gap: 5px;
-  margin-bottom: 0;
+  margin-bottom: 17px;
 }
 
 .bk-why-heading h2 {
@@ -50,47 +50,23 @@
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.bk-why-track-wrap {
-  padding: 14px 0 18px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  cursor: grab;
-}
-
-.bk-why-track-wrap::-webkit-scrollbar {
-  display: none;
-}
-
-.bk-why-track-wrap:active {
-  cursor: grabbing;
-}
-
-.bk-why-track {
-  display: flex;
-  width: max-content;
-  padding: 0 var(--bk-page-pad);
+.bk-why-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
 }
 
 .bk-why-item {
-  flex: 0 0 auto;
-  width: 168px;
+  min-width: 0;
   min-height: 79px;
   display: grid;
   grid-template-rows: 38px auto;
   justify-items: center;
   align-items: start;
   gap: 6px;
-  padding: 6px 22px;
+  padding: 0 22px;
   color: #2d1b0e;
   text-align: center;
-  border-radius: 8px;
-  transition: transform 0.22s ease, background 0.22s ease;
-}
-
-.bk-why-item:hover {
-  transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.55);
 }
 
 .bk-why-item + .bk-why-item {
@@ -101,11 +77,6 @@
   width: 38px;
   height: 38px;
   color: #b07824;
-  transition: color 0.22s ease;
-}
-
-.bk-why-item:hover .bk-why-icon {
-  color: #6b0d1a;
 }
 
 .bk-why-item p {
@@ -123,17 +94,41 @@
   display: block;
 }
 
+@keyframes bk-why-mobile-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 768px) {
   .bk-why-shell {
-    padding: 16px 14px 10px;
+    padding: 16px 14px 20px;
+  }
+
+  .bk-why-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 16px;
   }
 
   .bk-why-item {
-    width: 148px;
     min-height: 78px;
     grid-template-rows: 34px auto;
     gap: 7px;
-    padding: 6px 12px;
+    padding: 0 8px;
+  }
+
+  .bk-why-item + .bk-why-item {
+    border-left: 0;
+  }
+
+  .bk-why-item:not(:nth-child(3n + 1)) {
+    border-left: 1px dashed rgba(176, 122, 43, 0.28);
   }
 }
 
@@ -141,13 +136,17 @@
   .bk-why-choose {
     position: relative;
     z-index: 4;
-    /* border-radius kept but overflow: hidden removed — was clipping hover above */
+    overflow: hidden;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -10px 22px rgba(59, 25, 9, 0.12);
   }
 
   .bk-why-shell {
-    padding: 11px 10px 6px;
+    padding: 11px 10px 13px;
+  }
+
+  .bk-why-heading {
+    margin-bottom: 10px;
   }
 
   .bk-why-heading h2 {
@@ -155,22 +154,24 @@
     font-size: 15px;
   }
 
-  .bk-why-track-wrap {
-    padding: 10px 0 14px;
+  .bk-why-grid {
+    gap: 8px;
   }
 
   .bk-why-item {
-    width: 132px;
     min-height: 72px;
     grid-template-rows: 30px auto;
     gap: 5px;
-    padding: 8px 8px 7px;
+    padding: 8px 5px 7px;
+    overflow: hidden;
     background: linear-gradient(180deg, rgba(255, 253, 246, 0.94) 0%, rgba(255, 243, 221, 0.92) 100%);
     border: 1px solid rgba(140, 82, 30, 0.16);
     border-radius: 10px;
+    animation: bk-why-mobile-rise 0.62s cubic-bezier(0.18, 0.78, 0.28, 1) both;
   }
 
-  .bk-why-item + .bk-why-item {
+  .bk-why-item + .bk-why-item,
+  .bk-why-item:not(:nth-child(3n + 1)) {
     border-left: 1px solid rgba(140, 82, 30, 0.16);
   }
 
