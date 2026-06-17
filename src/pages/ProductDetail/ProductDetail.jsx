@@ -129,7 +129,8 @@ const ProductDetail = () => {
   const pendingRateRef = useRef(null);
   const videoRefs = useRef({});
   const isPlayingRef = useRef(false);
-  const swipeRef = useRef({ startX: 0, startY: 0, didSwipe: false });
+  const swipeRef = useRef({ startX: 0, startY: 0, didSwipe: false, dragging: false });
+  const touchActiveRef = useRef(false);
   const SPEED_STEPS = [0.5, 0.75, 1, 1.5, 2];
 
   const togglePlayPause = () => {
@@ -168,16 +169,17 @@ const ProductDetail = () => {
     }
   };
 
-  // ── Mouse (desktop) ──
+  // ── Mouse (desktop only — blocked on touch devices) ──
   const handleFrameMouseDown = (e) => {
+    if (touchActiveRef.current) return;
     swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false, dragging: true };
   };
   const handleFrameMouseMove = (e) => {
-    if (!swipeRef.current.dragging) return;
+    if (touchActiveRef.current || !swipeRef.current.dragging) return;
     if (Math.abs(e.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
   };
   const handleFrameMouseUp = (e) => {
-    if (!swipeRef.current.dragging) return;
+    if (touchActiveRef.current || !swipeRef.current.dragging) return;
     swipeRef.current.dragging = false;
     resolveSwipe(
       e.clientX - swipeRef.current.startX,
@@ -188,6 +190,7 @@ const ProductDetail = () => {
 
   // ── Touch (mobile) ──
   const handleFrameTouchStart = (e) => {
+    touchActiveRef.current = true;
     const t = e.touches[0];
     swipeRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false, dragging: true };
   };
@@ -198,6 +201,7 @@ const ProductDetail = () => {
   };
   const handleFrameTouchEnd = (e) => {
     if (!swipeRef.current.dragging) return;
+    e.preventDefault(); // stop browser from firing synthetic mousedown/mouseup after this touch
     swipeRef.current.dragging = false;
     const t = e.changedTouches[0];
     resolveSwipe(
@@ -205,6 +209,8 @@ const ProductDetail = () => {
       t.clientY - swipeRef.current.startY,
       swipeRef.current.didSwipe,
     );
+    // keep touchActiveRef true for 600 ms to block any ghost mouse events that slip through
+    setTimeout(() => { touchActiveRef.current = false; }, 600);
   };
 
   // ── Fullscreen ──
@@ -413,15 +419,24 @@ const ProductDetail = () => {
   }, [loading]);
 
   useEffect(() => {
-    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsBuffering(false);
     setPlaybackRate(1);
     pendingRateRef.current = null;
     Object.entries(videoRefs.current).forEach(([idx, el]) => {
       if (!el) return;
-      el.pause();
-      if (Number(idx) !== activeImageIndex) el.currentTime = 0;
+      if (Number(idx) === activeImageIndex) {
+        el.playbackRate = 1;
+        isPlayingRef.current = true;
+        el.play().catch(() => {
+          el.muted = true;
+          setIsMuted(true);
+          el.play().catch(() => { isPlayingRef.current = false; });
+        });
+      } else {
+        el.pause();
+        el.currentTime = 0;
+      }
     });
   }, [activeImageIndex]);
 
@@ -1307,7 +1322,7 @@ const ProductDetail = () => {
                 onMouseDown={handleFrameMouseDown}
                 onMouseMove={handleFrameMouseMove}
                 onMouseUp={handleFrameMouseUp}
-                onMouseLeave={() => { swipeRef.current.dragging = false; }}
+                onMouseLeave={() => { if (!touchActiveRef.current) swipeRef.current.dragging = false; }}
                 onTouchStart={handleFrameTouchStart}
                 onTouchMove={handleFrameTouchMove}
                 onTouchEnd={handleFrameTouchEnd}
@@ -1328,17 +1343,11 @@ const ProductDetail = () => {
                           src={item.url}
                           muted={isMuted}
                           playsInline
-                          preload="none"
-                          onPlay={(e) => {
-                            if (!isPlayingRef.current) { e.target.pause(); return; }
-                            setIsPlaying(true);
-                            setIsBuffering(false);
-                          }}
+                          onPlay={() => { isPlayingRef.current = true; setIsPlaying(true); setIsBuffering(false); }}
                           onPause={() => { isPlayingRef.current = false; setIsPlaying(false); }}
                           onWaiting={() => setIsBuffering(true)}
                           onCanPlay={(e) => {
                             setIsBuffering(false);
-                            if (!isPlayingRef.current) { e.target.pause(); return; }
                             if (pendingRateRef.current !== null) {
                               e.target.playbackRate = pendingRateRef.current;
                               pendingRateRef.current = null;
