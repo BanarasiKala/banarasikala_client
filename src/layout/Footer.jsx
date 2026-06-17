@@ -105,11 +105,17 @@ const Footer = () => {
     const el = footerRef.current;
     if (!el) return undefined;
     const observer = new IntersectionObserver(
-      ([entry]) => setShowTop(entry.isIntersecting),
+      ([entry]) => {
+        setShowTop(entry.isIntersecting);
+        document.body.classList.toggle("btt-visible", entry.isIntersecting);
+      },
       { threshold: 0.05 },
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove("btt-visible");
+    };
   }, []);
 
   const refreshFooterLink = (to) => (event) => {

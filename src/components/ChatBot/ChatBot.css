@@ -2,10 +2,10 @@
 .bk-chat-fab {
   position: fixed;
   right: 24px;
-  bottom: 86px;
+  bottom: 28px;
   z-index: 1000;
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
   color: #d8a446;
@@ -14,7 +14,11 @@
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.32);
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.22s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.22s ease, bottom 0.28s ease;
+}
+
+body.btt-visible .bk-chat-fab {
+  bottom: 84px;
 }
 
 .bk-chat-fab:hover {
@@ -56,9 +60,13 @@
 @media (max-width: 640px) {
   .bk-chat-fab {
     right: 16px;
-    bottom: 78px;
-    width: 48px;
-    height: 48px;
+    bottom: 20px;
+    width: 42px;
+    height: 42px;
+  }
+
+  body.btt-visible .bk-chat-fab {
+    bottom: 72px;
   }
 }
 
@@ -66,7 +74,7 @@
 .bk-chat-window {
   position: fixed;
   right: 24px;
-  bottom: 150px;
+  bottom: 86px;
   z-index: 1000;
   width: 360px;
   max-height: 520px;
