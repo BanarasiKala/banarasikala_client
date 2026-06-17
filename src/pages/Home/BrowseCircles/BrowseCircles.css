@@ -44,21 +44,12 @@
   text-transform: uppercase;
 }
 
-/* Scrolling carousel — all screen sizes */
+/* Scrolling carousel — CSS transform animation (GPU accelerated) */
 .bk-browse-track-wrap {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  scrollbar-width: none;
-  touch-action: pan-x;
+  overflow: hidden;
   cursor: grab;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
   padding: 10px 0 14px;
-}
-
-.bk-browse-track-wrap::-webkit-scrollbar {
-  display: none;
 }
 
 .bk-browse-track-wrap:active {
@@ -71,6 +62,21 @@
   gap: 28px;
   flex-wrap: nowrap;
   padding: 0 var(--bk-page-pad, 32px);
+  animation: bk-browse-scroll 24s linear infinite;
+  will-change: transform;
+}
+
+.bk-browse-track--static {
+  animation: none;
+}
+
+.bk-browse-track-wrap.is-paused .bk-browse-track {
+  animation-play-state: paused;
+}
+
+@keyframes bk-browse-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
 /* Cards */
