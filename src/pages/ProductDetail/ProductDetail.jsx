@@ -103,6 +103,7 @@ const PLYR_OPTIONS = {
   controls: ["play", "progress", "current-time", "duration", "mute", "volume", "fullscreen", "settings"],
   settings: ["speed"],
   speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+  muted: true,
   resetOnEnd: true,
   keyboard: { focused: false, global: false },
   tooltips: { controls: false, seek: true },
@@ -115,20 +116,21 @@ const VideoSlide = memo(({ src, isActive }) => {
   useEffect(() => {
     isActiveRef.current = isActive;
     const player = plyrRef.current?.plyr;
-    if (!player) return;
+    // typeof check: the proxy returns h (a function) for .ready; real Plyr returns boolean
+    if (!player || typeof player.ready !== "boolean") return;
     if (isActive) {
-      player.play().catch(() => { player.muted = true; player.play().catch(() => {}); });
+      player.play().catch(() => {});
     } else {
       try { player.pause(); player.currentTime = 0; } catch {}
     }
   }, [isActive]);
 
-  const handleCanPlay = useCallback(() => {
+  // e.currentTarget.plyr is set by Plyr's constructor on the DOM element itself —
+  // available as soon as Plyr inits, before react-aptor's setState re-render updates the ref.
+  const handleCanPlay = useCallback((e) => {
     if (!isActiveRef.current) return;
-    const player = plyrRef.current?.plyr;
-    if (player) {
-      player.play().catch(() => { player.muted = true; player.play().catch(() => {}); });
-    }
+    const player = e.currentTarget.plyr ?? plyrRef.current?.plyr;
+    if (player) player.play().catch(() => {});
   }, []);
 
   return (
@@ -138,6 +140,7 @@ const VideoSlide = memo(({ src, isActive }) => {
         source={{ type: "video", sources: [{ src, type: "video/mp4" }] }}
         options={PLYR_OPTIONS}
         onCanPlay={handleCanPlay}
+        playsInline
       />
     </div>
   );
@@ -221,7 +224,6 @@ const ProductDetail = () => {
   };
   const handleFrameTouchEnd = (e) => {
     if (!swipeRef.current.dragging) return;
-    e.preventDefault(); // stop browser from firing synthetic mousedown/mouseup after this touch
     swipeRef.current.dragging = false;
     const t = e.changedTouches[0];
     resolveSwipe(
@@ -229,7 +231,12 @@ const ProductDetail = () => {
       t.clientY - swipeRef.current.startY,
       swipeRef.current.didSwipe,
     );
-    // keep touchActiveRef true for 600 ms to block any ghost mouse events that slip through
+    // On image slides, prevent the browser from firing synthetic click/mousedown after touch
+    // (which would re-trigger our carousel handlers). On video slides, skip this so the
+    // synthetic click can reach Plyr's controls; touchActiveRef still guards our own handlers.
+    if (visibleMedia[activeImageIndex]?.type !== "video") {
+      e.preventDefault();
+    }
     setTimeout(() => { touchActiveRef.current = false; }, 600);
   };
 
