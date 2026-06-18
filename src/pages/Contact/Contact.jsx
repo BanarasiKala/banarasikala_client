@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { Clock, Mail, MapPin, Phone, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { API_ENDPOINTS } from "../../config/api";
 import { useNotification } from "../../context/NotificationContext";
 import "./Contact.css";
 
-const WHATSAPP_NUMBER = "919555098884";
-const WHATSAPP_TEXT = encodeURIComponent("Hi Banarasi Kala, I need quick help.");
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_TEXT}`;
+const SUPPORT_EMAIL = "support@banarasikala.com";
+const INSTAGRAM_HANDLE = "@banarasikala_";
+const INSTAGRAM_URL = "https://www.instagram.com/banarasikala_?igsh=Z3dmdGxncDliaDQy&utm_source=qr";
 
 const EMPTY_FORM = { name: "", email: "", phone: "", subject: "", message: "" };
 const EMPTY_ERRORS = { name: "", email: "", phone: "", subject: "", message: "" };
@@ -96,34 +96,35 @@ const Contact = () => {
 
           <div className="contact-info-list">
             <article>
-              <span><Phone size={20} /></span>
+              <span><Icon icon="lucide:mail" /></span>
               <div>
-                <h2>Call Us</h2>
-                <p>+91 98765 43210</p>
-                <small>Mon - Sat, 10:00 AM - 7:00 PM</small>
+                <h2>Support</h2>
+                <p>
+                  <a href={`mailto:${SUPPORT_EMAIL}`}>
+                    {SUPPORT_EMAIL}
+                  </a>
+                </p>
+                <small>For order help, product questions, and follow-ups.</small>
               </div>
             </article>
             <article>
-              <span><Mail size={20} /></span>
+              <span><Icon icon="lucide:instagram" /></span>
               <div>
-                <h2>Email Us</h2>
-                <p>hello@banarasikala.com</p>
-                <small>We reply within 24 hours</small>
+                <h2>Instagram</h2>
+                <p>
+                  <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+                    {INSTAGRAM_HANDLE}
+                  </a>
+                </p>
+                <small>Follow for new drops, styling ideas, and updates.</small>
               </div>
             </article>
             <article>
-              <span><MapPin size={20} /></span>
+              <span><Icon icon="lucide:sparkles" /></span>
               <div>
-                <h2>Visit Us</h2>
-                <p>B-15/42, Assi Ghat Road, Varanasi, Uttar Pradesh - 221005</p>
-              </div>
-            </article>
-            <article>
-              <span><Clock size={20} /></span>
-              <div>
-                <h2>Store Hours</h2>
-                <p>Monday to Saturday: 10:00 AM - 7:00 PM</p>
-                <small>Sunday: Closed</small>
+                <h2>Saree Guidance</h2>
+                <p>Need help choosing?</p>
+                <small>Tell us your occasion, color preference, or fabric choice.</small>
               </div>
             </article>
           </div>
@@ -207,23 +208,6 @@ const Contact = () => {
             </button>
           </form>
 
-          <div className="contact-help-card">
-            <span>
-              <Icon icon="logos:whatsapp-icon" />
-            </span>
-            <div>
-              <h2>Looking for quick help?</h2>
-              <p>Chat with our support team on WhatsApp.</p>
-            </div>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Chat with Banarasi Kala support on WhatsApp"
-            >
-              Chat on WhatsApp
-            </a>
-          </div>
         </div>
       </section>
     </main>
