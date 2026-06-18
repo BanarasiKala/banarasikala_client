@@ -982,6 +982,7 @@
   width: 100%;
   margin: 28px 0 0;
   padding: 16px;
+  box-sizing: border-box;
   border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 16px;
   background: rgba(255, 252, 246, 0.76);
@@ -1785,7 +1786,7 @@
 @media (max-width: 920px) {
   .product-detail-shell {
     width: 100%;
-    padding: 16px 16px 80px;
+    padding: 16px 0 80px;
   }
 
   .product-detail-grid {
@@ -2023,11 +2024,18 @@
     position: static;
     max-height: none;
     overflow-y: visible;
-    padding: 18px 0;
+    padding: 18px 16px;
     background: none;
     border: none;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .product-price-card {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
   }
 
   .product-related-grid {
@@ -2048,7 +2056,7 @@
   .product-detail-shell {
     width: 100%;
     overflow-x: hidden;
-    padding: 12px 16px 80px;
+    padding: 12px 0 80px;
   }
 
   .product-detail-grid {
@@ -2161,13 +2169,16 @@
     width: 100%;
     max-width: 100%;
     margin-inline: 0;
-    padding: 14px 0;
+    padding: 14px 6px;
     border-radius: 0;
   }
 
   .product-price-card,
   .product-delivery-check-top {
     width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
   }
 
   .product-delivery-input-row {
@@ -3978,6 +3989,13 @@
     grid-template-columns: 1fr;
     width: 100%;
     margin-top: 20px;
+    padding: 0 16px;
+  }
+
+  .product-reviews-section {
+    margin: 20px 16px 0;
+    width: auto;
+    border-radius: 12px;
   }
 
   .product-mobile-sticky {
@@ -4031,12 +4049,16 @@
     display: none;
   }
 
-  /* Full-bleed carousel — break out of the shell's 16px horizontal padding */
+  .product-media-bar {
+    padding: 0 16px;
+  }
+
+  /* Full-bleed carousel — shell has no horizontal padding so gallery is naturally full-width */
   .product-gallery {
     flex-direction: column;
     align-items: stretch;
-    width: calc(100% + 32px);
-    margin-left: -16px;
+    width: 100%;
+    margin-left: 0;
     gap: 0;
   }
 
@@ -4055,6 +4077,7 @@
     display: block;
     width: 100%;
     margin: 0 0 14px;
+    padding: 0 16px;
   }
 
   .product-mobile-header .product-detail-title {
@@ -4169,6 +4192,7 @@
   .product-sections-grid {
     width: 100%;
     margin-inline: 0;
+    padding: 0 16px;
   }
 
   .product-section-card {
@@ -4177,12 +4201,12 @@
 
   .product-mobile-header {
     width: 100%;
+    padding: 0 16px;
   }
 
-  /* At 560px the shell has padding: 16px so the gallery breakout becomes calc(100% + 32px) margin-left: -16px */
-  /* Shell is already providing the gap, gallery still needs to break out the same 16px */
+  /* Gallery is naturally full-bleed — shell has no horizontal padding */
   .product-gallery {
-    width: calc(100% + 32px);
-    margin-left: -16px;
+    width: 100%;
+    margin-left: 0;
   }
 }
