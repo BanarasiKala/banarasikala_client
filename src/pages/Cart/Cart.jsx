@@ -1,9 +1,9 @@
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
 import { imgUrl } from "../../utils/cloudinary";
-import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "../../context/CartContext";
+import { useNotification } from "../../context/NotificationContext";
 import { useWishlist } from "../../context/WishlistContext";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
@@ -30,6 +30,7 @@ const Cart = () => {
     loading,
   } = useCart();
   const { toggleWishlist, wishlist } = useWishlist();
+  const { showNotification } = useNotification();
 
   const [stockAlerts, setStockAlerts] = useState([]);
   const checkingRef = useRef(false);
@@ -77,16 +78,16 @@ const Cart = () => {
     if (nextQuantity < 1) return;
     const stockInfo = getProductStockInfo(item, item.colorId);
     if (nextQuantity > stockInfo.quantity) return;
-    toast.success(`Quantity updated to ${nextQuantity}`);
+    showNotification(`Quantity updated to ${nextQuantity}`, "success");
     const result = await updateQuantity(item.id, nextQuantity, item.colorId);
     if (result && !result.success) {
-      toast.error(result.message);
+      showNotification(result.message, "error");
     }
   };
 
   const handleRemove = (item) => {
     removeFromCart(item.id, item.colorId);
-    toast.success(`${item.name} removed from bag`);
+    showNotification(`${item.name} removed from bag`, "success");
   };
 
   const isWishlisted = (item) =>

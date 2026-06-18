@@ -1231,11 +1231,13 @@
 .product-price-row {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .product-price-row strong {
+  flex: 0 0 auto;
   color: #35170f;
   font-family: "Poppins", sans-serif;
   font-size: 27px;
@@ -1243,6 +1245,7 @@
 }
 
 .product-price-row span {
+  flex: 0 0 auto;
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
   font-size: 16px;
@@ -1251,7 +1254,12 @@
 }
 
 .product-price-row em {
+  flex: 0 0 auto;
   color: #047857;
+  background: rgba(4, 120, 87, 0.1);
+  border: 1px solid rgba(4, 120, 87, 0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
   font-size: 12px;
   font-style: normal;
   font-weight: 600;
@@ -1387,28 +1395,21 @@
 
 .product-action-panel {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 24px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  margin: 24px 4px 0;
 }
 
 .product-qty-row {
-  grid-column: 1 / -1;
+  grid-column: 1;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
   min-width: 0;
 }
 
 .product-action-panel .product-qty-label {
-  flex: 0 0 auto;
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(53, 23, 15, 0.65);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  display: none;
 }
 
 .product-qty {
@@ -1482,11 +1483,12 @@
 
 .product-add-btn,
 .product-buy-btn {
-  min-height: 48px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
+  padding: 0 14px;
   border: 0;
   border-radius: 10px;
   background: linear-gradient(135deg, #800020, #4b070d);
@@ -1507,10 +1509,11 @@
 }
 
 .product-buy-btn {
-  grid-column: 2;
+  grid-column: 1 / -1;
   color: #800020;
-  background: linear-gradient(135deg, #ffe8ad, #f2c96d);
-  border: 1px solid rgba(128, 0, 32, 0.16);
+  background: transparent;
+  border: 1px solid rgba(128, 0, 32, 0.24);
+  box-shadow: none;
 }
 
 .product-add-btn:disabled,
@@ -1849,8 +1852,9 @@
 }
 
 .product-related-price em {
-  color: #800020;
-  background: rgba(128, 0, 32, 0.08);
+  color: #047857;
+  background: rgba(4, 120, 87, 0.1);
+  border: 1px solid rgba(4, 120, 87, 0.14);
   border-radius: 999px;
   padding: 3px 6px;
   font-size: 9px;
@@ -2229,10 +2233,10 @@
   }
 
   .product-action-panel {
-    width: 100%;
-    grid-template-columns: 140px minmax(0, 1fr);
-    gap: 10px;
-    margin-top: 18px;
+    width: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    margin: 18px 4px 0;
   }
 
   .product-buy-btn {
@@ -2248,14 +2252,14 @@
     width: 100%;
     max-width: 100%;
     margin-inline: 0;
-    padding: 0px 6px;
+    padding: 0 10px;
     border-radius: 0;
     margin-bottom: 10px;
   }
 
   .product-price-card,
   .product-delivery-check-top {
-    width: 100%;
+    width: auto;
     margin-left: 0;
     margin-right: 0;
     box-sizing: border-box;
@@ -4345,43 +4349,39 @@
   .product-info-panel .product-special-offers  { order: 6; margin-top: 12px; }
   .product-info-panel .product-trust-badges    { order: 7; }
 
-  /* Action panel: [Quantity label | stepper] on row 1, [ADD TO BAG | BUY NOW] on row 2 */
+  /* Action panel: [stepper | ADD TO BAG] on row 1, [BUY NOW] on row 2 */
   .product-info-panel .product-action-panel {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto auto;
     gap: 10px 12px;
-    margin-top: 12px;
-    width: 100%;
+    margin: 12px 4px 0;
+    width: auto;
   }
   .product-info-panel .product-qty-row {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 1;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 12px;
     width: fit-content;
     max-width: 100%;
   }
   .product-info-panel .product-qty-label {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
+    display: none;
   }
   .product-info-panel .product-qty {
     width: auto;
   }
   .product-info-panel .product-add-btn {
-    grid-column: 1;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 1;
     min-height: 46px;
     font-size: 12px;
     width: 100%;
   }
   .product-info-panel .product-buy-btn {
-    grid-column: 2;
+    grid-column: 1 / -1;
     grid-row: 2;
     min-height: 46px;
     font-size: 12px;
@@ -4464,7 +4464,7 @@
     border-radius: 0;
     box-shadow: none;
     padding: 6px 0 16px;
-    margin-top: 6px;
+    margin: 6px 4px 0;
     border-bottom: 1px solid rgba(128, 0, 32, 0.1);
   }
   .product-info-panel .product-price-row strong {
@@ -4474,7 +4474,7 @@
 
   /* 4. Color section — label + horizontal scroll slider */
   .product-info-panel .product-color-section {
-    margin-top: 0;
+    margin: 0 4px;
     padding-top: 14px;
     padding-bottom: 16px;
     border-bottom: 1px solid rgba(128, 0, 32, 0.1);
@@ -4506,13 +4506,13 @@
     grid-template-rows: auto auto auto;
     padding-top: 14px;
     padding-bottom: 18px;
-    margin-top: 0;
+    margin: 0 4px;
     border-bottom: 1px solid rgba(128, 0, 32, 0.1);
   }
   .product-info-panel .product-add-btn {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 52px;
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 48px;
     font-size: 13px;
     letter-spacing: 0.09em;
     border-radius: 14px;
@@ -4521,8 +4521,8 @@
   }
   .product-info-panel .product-buy-btn {
     grid-column: 1 / -1;
-    grid-row: 3;
-    min-height: 52px;
+    grid-row: 2;
+    min-height: 48px;
     font-size: 13px;
     letter-spacing: 0.09em;
     border-radius: 14px;
@@ -4628,7 +4628,6 @@
 
 .product-detail-page :is(
   .product-detail-title,
-  .product-price-row strong,
   .product-section-title,
   .product-related-head h2,
   .product-reviews-head h2,
@@ -4638,4 +4637,10 @@
   .product-related-discount
 ) {
   font-weight: 700;
+}
+
+.product-detail-page .product-price-row strong {
+  color: #800020;
+  font-size: 24px;
+  font-weight: 600;
 }

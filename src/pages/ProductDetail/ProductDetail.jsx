@@ -2,7 +2,6 @@ import { Icon } from "@iconify/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -638,7 +637,7 @@ const ProductDetail = () => {
     setQuantity(next);
     if (existingBagQuantity > 0) {
       const result = await updateQuantity(product.id, next, selectedColorId);
-      if (result && !result.success) toast.error(result.message);
+      if (result && !result.success) showNotification(result.message, "error");
     }
   };
 
@@ -648,7 +647,7 @@ const ProductDetail = () => {
     setQuantity(next);
     if (existingBagQuantity > 0) {
       const result = await updateQuantity(product.id, next, selectedColorId);
-      if (result && !result.success) toast.error(result.message);
+      if (result && !result.success) showNotification(result.message, "error");
     }
   };
 
@@ -723,21 +722,21 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!user) {
-      toast("Please login to add items to bag");
+      showNotification("Please login to add items to bag", "info");
       navigate("/login");
       return;
     }
     if (isSelectedOutOfStock) {
-      toast.error(selectedStockInfo.colorMessage || "This product is out of stock.");
+      showNotification("This product is out of stock.", "warning");
       return;
     }
     setAddingToBag(true);
     const result = await addToCart(product, quantity, selectedColorId);
     setAddingToBag(false);
     if (result?.success) {
-      toast.success(`Added to bag! Qty: ${quantity}`);
+      showNotification(`Added to bag! Qty: ${quantity}`, "success");
     } else {
-      toast.error(result?.message || "Could not add to bag. Try again.");
+      showNotification(result?.message || "Could not add to bag. Try again.", "error");
     }
   };
 
@@ -745,7 +744,7 @@ const ProductDetail = () => {
     if (removingFromBagRef.current) return;
     removingFromBagRef.current = true;
     removeFromCart(product.id, selectedColorId);
-    toast.success(`${product.name} removed from bag`);
+    showNotification(`${product.name} removed from bag`, "success");
   };
 
   const resetBuyNowForm = () => {
@@ -812,7 +811,7 @@ const ProductDetail = () => {
     }
 
     if (isSelectedOutOfStock || quantity > selectedStockInfo.quantity) {
-      showNotification(selectedStockInfo.colorMessage || "This product is out of stock.", "warning");
+      showNotification(isSelectedOutOfStock ? "This product is out of stock." : "Selected quantity is not available.", "warning");
       return;
     }
 
@@ -1430,7 +1429,7 @@ const ProductDetail = () => {
                     {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
                       <>
                         <span>{formatMoney(product.mrp_price)}</span>
-                        <em>SAVE {product.discount_percent}%</em>
+                        <em>{product.discount_percent}% OFF</em>
                       </>
                     )}
                   </>
@@ -1504,13 +1503,20 @@ const ProductDetail = () => {
                       >
                         <span style={{ backgroundColor: color.hex_code || "#ccc" }} />
                         <strong>{color.name}</strong>
-                        {isLow && <small>Few left</small>}
+                        {/* {isLow && <small>Few left</small>} */}
                         {isOut && <small>Out</small>}
                       </button>
                     );
                   })}
                 </div>
-                {(isSelectedLowStock || isSelectedOutOfStock) && (
+                {/*
+                {isSelectedLowStock && (
+                  <div className="product-stock-note low">
+                    {selectedStockInfo.colorMessage}
+                  </div>
+                )}
+                */}
+                {isSelectedOutOfStock && (
                   <div className={`product-stock-note ${isSelectedOutOfStock ? "out" : "low"}`}>
                     {selectedStockInfo.colorMessage}
                   </div>

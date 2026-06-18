@@ -8,7 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
-import { NotificationProvider } from "./context/NotificationContext";
+import { NOTIFICATION_TOASTER_OPTIONS, NotificationProvider } from "./context/NotificationContext";
 import PreLoader from "./components/PreLoader/PreLoader";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import headerBackground from "./assets/header_backgroung.png";
@@ -125,28 +125,7 @@ function App() {
                 </Suspense>
                 </ErrorBoundary>
               </div>
-              <Toaster
-                position="top-center"
-                toastOptions={{
-                  duration: 3200,
-                  style: {
-                    background: "#1a0a06",
-                    color: "#fff6e8",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    padding: "12px 16px",
-                    boxShadow: "0 14px 34px rgba(0,0,0,0.22)",
-                  },
-                  success: {
-                    iconTheme: { primary: "#4ade80", secondary: "#1a0a06" },
-                  },
-                  error: {
-                    iconTheme: { primary: "#f87171", secondary: "#1a0a06" },
-                  },
-                }}
-              />
+              <Toaster {...NOTIFICATION_TOASTER_OPTIONS} />
             </Router>
           </CartProvider>
         </WishlistProvider>

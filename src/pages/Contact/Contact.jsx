@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { Clock, Mail, MapPin, Phone, Send } from "lucide-react";
-import toast from "react-hot-toast";
 import { API_ENDPOINTS } from "../../config/api";
+import { useNotification } from "../../context/NotificationContext";
 import "./Contact.css";
 
 const WHATSAPP_NUMBER = "919555098884";
@@ -16,6 +16,7 @@ const Contact = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState(EMPTY_ERRORS);
   const [submitting, setSubmitting] = useState(false);
+  const { showNotification } = useNotification();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -67,14 +68,14 @@ const Contact = () => {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success("Message sent! We will get back to you soon.");
+        showNotification("Message sent! We will get back to you soon.", "success");
         setForm(EMPTY_FORM);
         setErrors(EMPTY_ERRORS);
       } else {
-        toast.error(data.message || "Could not send message. Please try again.");
+        showNotification(data.message || "Could not send message. Please try again.", "error");
       }
     } catch {
-      toast.error("Network error. Please check your connection and try again.");
+      showNotification("Network error. Please check your connection and try again.", "error");
     } finally {
       setSubmitting(false);
     }
