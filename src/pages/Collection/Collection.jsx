@@ -384,11 +384,9 @@ const Collection = () => {
           <p className="product-title" title={product.name || "Premium Saree"}>
             {product.name || "Handcrafted Banarasi Saree"}
           </p>
-          {product.short_description && (
-            <p className="product-short-desc">
-              {product.short_description}
-            </p>
-          )}
+          <p className="product-short-desc">
+            {product.short_description || product.description || "Premium Banarasi saree crafted for timeless celebrations."}
+          </p>
           <div className="price-container">
             <span className="selling-price">
               Rs. {Number(product.selling_price || 0).toLocaleString("en-IN")}
@@ -399,7 +397,7 @@ const Collection = () => {
                   Rs. {Number(product.mrp_price || product.mrp).toLocaleString("en-IN")}
                 </span>
                 <span className="discount-text">
-                  ({calculateDiscount(product.mrp_price || product.mrp, product.selling_price)}% OFF)
+                  {calculateDiscount(product.mrp_price || product.mrp, product.selling_price)}% OFF
                 </span>
               </>
             )}
