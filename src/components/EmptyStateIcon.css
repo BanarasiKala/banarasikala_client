@@ -87,7 +87,25 @@
 }
 
 .bk-empty-illustration-feedback .bk-empty-bag {
-  background: linear-gradient(145deg, #d9a941 0%, #8b5d12 100%);
+  background: linear-gradient(145deg, #a0002b 0%, #640016 100%);
+  color: #fff8ed;
+}
+
+.bk-empty-illustration-feedback .bk-empty-handle {
+  border-color: #800020;
+}
+
+.bk-empty-illustration-feedback .bk-empty-motion-lines {
+  background:
+    linear-gradient(#800020, #800020) 16px 4px / 28px 4px no-repeat,
+    linear-gradient(#800020, #800020) 0 18px / 22px 4px no-repeat;
+  opacity: 0.86;
+}
+
+.bk-empty-illustration-feedback .bk-empty-motion-lines::after {
+  border-color: #800020;
+  border-left: 0;
+  border-bottom: 0;
 }
 
 .bk-empty-illustration-orders .bk-empty-bag {

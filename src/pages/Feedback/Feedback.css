@@ -179,7 +179,7 @@
 
 .feedback-stars button:hover,
 .feedback-stars button.is-active {
-  color: #d4af37;
+  color: #5b0710;
   transform: translateY(-1px);
 }
 
@@ -233,6 +233,12 @@
   box-shadow: 0 0 0 4px rgba(91, 7, 16, 0.06);
 }
 
+.feedback-review-field textarea.has-error {
+  background: #fff8f6;
+  border-color: rgba(139, 29, 29, 0.5);
+  box-shadow: 0 0 0 4px rgba(139, 29, 29, 0.06);
+}
+
 .feedback-review-field textarea::placeholder {
   color: rgba(65, 51, 42, 0.56);
 }
@@ -243,6 +249,14 @@
   color: #b45309;
   font-size: 11px;
   font-weight: 500;
+}
+
+.feedback-field-error {
+  display: block;
+  margin-top: 5px;
+  color: #8b1d1d;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .feedback-message {
@@ -325,8 +339,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 60px 24px;
+  gap: 10px;
+  padding: 28px 24px 42px;
   text-align: center;
   color: #5b2e1a;
 }
@@ -351,22 +365,47 @@
 .feedback-login-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 10px 22px;
-  background: #800020;
-  color: #ffe1a2;
+  background: #4b070d;
+  color: #d2a24a;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-align: center;
   text-decoration: none;
   border-radius: 100px;
   transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .feedback-login-link:hover {
-  background: #5b0710;
+  background: #4b070d;
   transform: translateY(-1px);
+}
+
+/* Typography aligned with the home page */
+.feedback-page,
+.feedback-page :where(p, span, a, button, textarea, small, label) {
+  font-family: "Poppins", sans-serif !important;
+}
+
+.feedback-page :where(p, textarea) {
+  font-weight: 400 !important;
+}
+
+.feedback-page :where(span, a, button, small, label) {
+  font-weight: 500 !important;
+}
+
+.feedback-page :where(.feedback-info-list h2, .feedback-rating p, .feedback-submit, .feedback-login-link) {
+  font-weight: 600 !important;
+}
+
+.feedback-page :where(h1, .feedback-kicker) {
+  font-family: "Cinzel", Georgia, "Times New Roman", serif !important;
+  font-weight: 800 !important;
 }
 
 @media (max-width: 1100px) {

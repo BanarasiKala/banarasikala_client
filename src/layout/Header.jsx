@@ -853,6 +853,9 @@ const Header = () => {
                 </button>
               </span>
             )}
+            <button type="button" onClick={() => goProtected("/wishlist")}>
+              Wishlist
+            </button>
             <Link to="/about" onClick={refreshNavClick("/about")}>
               About Us
             </Link>

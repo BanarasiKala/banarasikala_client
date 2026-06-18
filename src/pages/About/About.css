@@ -367,6 +367,29 @@
   pointer-events: none;
 }
 
+/* Typography aligned with the home page */
+.about-page,
+.about-page :where(p, span, a, button, li, small, strong) {
+  font-family: "Poppins", sans-serif !important;
+}
+
+.about-page :where(p, li) {
+  font-weight: 400 !important;
+}
+
+.about-page :where(span, a, button, small) {
+  font-weight: 500 !important;
+}
+
+.about-page :where(h3, strong, .about-promise-row span) {
+  font-weight: 600 !important;
+}
+
+.about-page :where(h1, h2, .about-hero-subtitle, .about-hero-subtitle span) {
+  font-family: "Cinzel", Georgia, "Times New Roman", serif !important;
+  font-weight: 800 !important;
+}
+
 @media (max-width: 1100px) {
   .about-shell {
     padding-inline: 24px;

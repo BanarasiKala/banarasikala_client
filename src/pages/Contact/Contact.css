@@ -392,6 +392,29 @@
   transform: translateY(-1px);
 }
 
+/* Typography aligned with the home page */
+.contact-page,
+.contact-page :where(p, span, a, button, input, textarea, small, label) {
+  font-family: "Poppins", sans-serif !important;
+}
+
+.contact-page :where(p, input, textarea) {
+  font-weight: 400 !important;
+}
+
+.contact-page :where(span, a, button, small, label) {
+  font-weight: 500 !important;
+}
+
+.contact-page :where(.contact-info-list h2, .contact-submit, .contact-login-link) {
+  font-weight: 600 !important;
+}
+
+.contact-page :where(h1, .contact-kicker) {
+  font-family: "Cinzel", Georgia, "Times New Roman", serif !important;
+  font-weight: 800 !important;
+}
+
 @media (max-width: 1100px) {
   .contact-shell {
     width: 100%;

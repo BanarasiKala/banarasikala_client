@@ -13,16 +13,34 @@ const Feedback = () => {
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  const handleCommentChange = (e) => {
+    const nextComment = e.target.value;
+    setComment(nextComment);
+    if (reviewError && nextComment.trim().length >= 8) setReviewError("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (comment.trim().length < 8) {
-      setMessage({ type: "error", text: "Please write at least 8 characters in your review." });
+
+    const trimmedComment = comment.trim();
+    if (!trimmedComment) {
+      setReviewError("Please write your review.");
+      setMessage({ type: "", text: "" });
       return;
     }
+
+    if (trimmedComment.length < 8) {
+      setReviewError("Please write at least 8 characters in your review.");
+      setMessage({ type: "", text: "" });
+      return;
+    }
+
     setSubmitting(true);
+    setReviewError("");
     setMessage({ type: "", text: "" });
 
     try {
@@ -33,7 +51,7 @@ const Feedback = () => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ rating, comment })
+        body: JSON.stringify({ rating, comment: trimmedComment })
       });
 
       const data = await response.json();
@@ -124,13 +142,18 @@ const Feedback = () => {
                 <label className="feedback-review-field">
                   <span><MessageSquare size={14} /> Your Review</span>
                   <textarea
-                    required
-                    minLength={8}
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
+                    onChange={handleCommentChange}
                     placeholder="Tell us what you loved about our sarees or how we can improve..."
+                    className={reviewError ? "has-error" : ""}
+                    aria-invalid={Boolean(reviewError)}
+                    aria-describedby={reviewError ? "feedback-review-error" : undefined}
                   />
-                  {comment.length > 0 && comment.trim().length < 8 && (
+                  {reviewError ? (
+                    <small id="feedback-review-error" className="feedback-field-error">
+                      {reviewError}
+                    </small>
+                  ) : comment.length > 0 && comment.trim().length < 8 && (
                     <small className="feedback-char-hint">
                       {8 - comment.trim().length} more character{8 - comment.trim().length === 1 ? "" : "s"} needed
                     </small>
