@@ -320,7 +320,7 @@ const Collection = () => {
     const imageReady = Boolean(loadedImages[product.id]);
     const stockInfo = getProductStockInfo(product);
     const isOutOfStock = stockInfo.isOutOfStock;
-    const isLowStock = stockInfo.isLowStock;
+    // const isLowStock = stockInfo.isLowStock;
 
     return (
       <div
@@ -347,7 +347,7 @@ const Collection = () => {
         >
           {!imageReady && <span className="card-image-shimmer" aria-hidden="true" />}
           {isOutOfStock && <span className="collection-stock-badge">Out of stock</span>}
-          {isLowStock && <span className="collection-stock-badge low">{stockInfo.badge}</span>}
+          {/* {isLowStock && <span className="collection-stock-badge low">{stockInfo.badge}</span>} */}
           <div
             className={`card-img-track ${imageReady ? "is-loaded" : ""}`}
             style={{ transform: `translateX(-${activeSlide * 100}%)` }}
