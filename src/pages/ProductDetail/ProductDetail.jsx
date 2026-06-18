@@ -302,6 +302,7 @@ const ProductDetail = () => {
   }, [fullscreenOpen, fullscreenIdx]);
 
   const [relatedHoverId, setRelatedHoverId] = useState(null);
+  const [relatedActiveSlides, setRelatedActiveSlides] = useState({});
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
@@ -341,6 +342,8 @@ const ProductDetail = () => {
   const isMountedRef = useRef(true);
   const rootRef = useRef(null);
   const removingFromBagRef = useRef(false);
+  const relatedSwipeRef = useRef({});
+  const relatedSwipeBlockRef = useRef(new Set());
 
   const getCoverColorId = (targetProduct = product) => {
     const images = getSortedImages(targetProduct);
@@ -1164,6 +1167,57 @@ const ProductDetail = () => {
     }
   };
 
+  const goToRelatedSlide = (event, productId, slideIndex) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setRelatedActiveSlides((current) => ({ ...current, [productId]: slideIndex }));
+  };
+
+  const blockRelatedSwipeClick = (productId) => {
+    relatedSwipeBlockRef.current.add(productId);
+    window.setTimeout(() => relatedSwipeBlockRef.current.delete(productId), 450);
+  };
+
+  const handleRelatedSwipeStart = (event, productId) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    relatedSwipeRef.current[productId] = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      didMove: false,
+    };
+  };
+
+  const handleRelatedSwipeMove = (event, productId) => {
+    const touch = event.touches?.[0];
+    const swipe = relatedSwipeRef.current[productId];
+    if (!touch || !swipe) return;
+    if (Math.abs(touch.clientX - swipe.startX) > 8) swipe.didMove = true;
+  };
+
+  const handleRelatedSwipeEnd = (event, productId, imageCount) => {
+    const touch = event.changedTouches?.[0];
+    const swipe = relatedSwipeRef.current[productId];
+    delete relatedSwipeRef.current[productId];
+    if (!touch || !swipe || imageCount <= 1) return;
+
+    const dx = touch.clientX - swipe.startX;
+    const dy = touch.clientY - swipe.startY;
+    const absDx = Math.abs(dx);
+    if (absDx <= 40 || absDx <= Math.abs(dy)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    blockRelatedSwipeClick(productId);
+    setRelatedActiveSlides((current) => {
+      const currentIndex = current[productId] || 0;
+      const nextIndex = dx < 0
+        ? (currentIndex + 1) % imageCount
+        : (currentIndex - 1 + imageCount) % imageCount;
+      return { ...current, [productId]: nextIndex };
+    });
+  };
+
   const copyCouponCode = async (code) => {
     const couponCodeValue = String(code || "").trim();
     if (!couponCodeValue) return;
@@ -1817,7 +1871,7 @@ const ProductDetail = () => {
                 const images = getSortedImages(item);
                 const fallbackImage = getProductCoverImage(item, "https://via.placeholder.com/500x650?text=Banarasi+Kala");
                 const slideImages = images.length ? images : [{ url: fallbackImage }];
-                const activeSlide = 0;
+                const activeSlide = Math.min(relatedActiveSlides[item.id] || 0, slideImages.length - 1);
                 const hasDiscount = Number(item.mrp_price || 0) > Number(item.selling_price || 0);
                 const relatedProductName = item.name;
                 const relatedColorId = slideImages[activeSlide]?.color_id || item.selected_color_id || null;
@@ -1833,8 +1887,19 @@ const ProductDetail = () => {
                       setRelatedHoverId((current) => (current === item.id ? null : current));
                     }}
                     onTouchStart={() => setRelatedHoverId(item.id)}
+                    onClick={(event) => {
+                      if (relatedSwipeBlockRef.current.has(item.id)) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }
+                    }}
                   >
-                    <div className="product-related-media">
+                    <div
+                      className="product-related-media"
+                      onTouchStart={(event) => handleRelatedSwipeStart(event, item.id)}
+                      onTouchMove={(event) => handleRelatedSwipeMove(event, item.id)}
+                      onTouchEnd={(event) => handleRelatedSwipeEnd(event, item.id, slideImages.length)}
+                    >
                       <div
                         className="product-related-track"
                         style={{ transform: `translateX(-${activeSlide * 100}%)` }}
@@ -1858,9 +1923,15 @@ const ProductDetail = () => {
                         </svg>
                       </button>
                       {slideImages.length > 1 && (
-                        <div className="product-related-dots" aria-hidden="true">
+                        <div className="product-related-dots">
                           {slideImages.map((image, index) => (
-                            <span key={`${image.url}-dot-${index}`} className={index === activeSlide ? "active" : ""} />
+                            <button
+                              type="button"
+                              key={`${image.url}-dot-${index}`}
+                              className={index === activeSlide ? "active" : ""}
+                              onClick={(event) => goToRelatedSlide(event, item.id, index)}
+                              aria-label={`Show ${relatedProductName} image ${index + 1}`}
+                            />
                           ))}
                         </div>
                       )}

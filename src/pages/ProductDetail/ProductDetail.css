@@ -1996,6 +1996,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 3 / 4;
+  touch-action: pan-y;
   background:
     radial-gradient(circle at top, rgba(212, 175, 55, 0.14), transparent 58%),
     linear-gradient(135deg, #f1d9b6 0%, #fff8ec 48%, #e5c394 100%);
@@ -2048,14 +2049,18 @@
   opacity: 1;
 }
 
-.product-related-dots span {
+.product-related-dots button {
   width: 5px;
   height: 5px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   background: rgba(255, 241, 211, 0.54);
+  cursor: pointer;
+  transition: width 0.2s ease, background 0.2s ease;
 }
 
-.product-related-dots span.active {
+.product-related-dots button.active {
   width: 14px;
   background: #ffe1a2;
 }
