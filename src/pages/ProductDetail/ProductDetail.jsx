@@ -375,16 +375,14 @@ const ProductDetail = () => {
         const initialColor = searchParams.get("color");
         const [prodRes, relatedRes] = await Promise.all([
           fetch(`${API_ENDPOINTS.products}/${slug}/detail${initialColor ? `?color=${encodeURIComponent(initialColor)}` : ""}`),
-          fetch(`${API_ENDPOINTS.products}?view=collection&limit=5&status=active`),
+          fetch(`${API_ENDPOINTS.products}/${slug}/related?limit=4`),
         ]);
 
         if (prodRes.status === 404) { setProductError("not_found"); return; }
         if (!prodRes.ok) { setProductError("error"); return; }
 
-        const [prodData, relatedData] = await Promise.all([
-          prodRes.json(),
-          relatedRes.json(),
-        ]);
+        const prodData = await prodRes.json();
+        const relatedData = relatedRes.ok ? await relatedRes.json() : [];
 
         const sortedImages = getSortedImages(prodData);
         const initialColorId = prodData.selected_color_id || getCoverColorId(prodData);
@@ -395,7 +393,8 @@ const ProductDetail = () => {
         setSelectedColorId(initialColorId);
         setColorImagesById(initialColorId ? { [String(initialColorId)]: sortedImages } : {});
         setMainImage(initialImage?.url || prodData.image_url || "");
-        setProducts((relatedData.items || relatedData.rows || relatedData || []).filter((item) => item.slug !== slug));
+        const relatedItems = Array.isArray(relatedData) ? relatedData : relatedData.items || relatedData.rows || [];
+        setProducts(relatedItems.filter((item) => item.slug !== slug));
         if (initialColorId && String(searchParams.get("color")) !== String(initialColorId)) updateColorInUrl(initialColorId, true);
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -1520,27 +1519,29 @@ const ProductDetail = () => {
             )}
 
             <div className="product-action-panel">
-              <p className="product-qty-label">Quantity</p>
-              <div className="product-qty">
-                <div className="product-qty-stepper">
-                  <button
-                    type="button"
-                    onClick={existingBagQuantity > 0 && quantity <= 1 ? handleRemoveFromBag : decrementQty}
-                    disabled={existingBagQuantity === 0 && quantity <= 1}
-                    aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from bag" : "Decrease quantity"}
-                    className={existingBagQuantity > 0 && quantity <= 1 ? "is-trash" : ""}
-                  >
-                    <Icon icon={existingBagQuantity > 0 && quantity <= 1 ? "lucide:trash-2" : "lucide:minus"} />
-                  </button>
-                  <span>{isSelectedOutOfStock ? 0 : quantity}</span>
-                  <button
-                    type="button"
-                    onClick={incrementQty}
-                    disabled={isSelectedOutOfStock || quantity >= selectedStockInfo.quantity}
-                    aria-label="Increase quantity"
-                  >
-                    <Icon icon="lucide:plus" />
-                  </button>
+              <div className="product-qty-row">
+                <p className="product-qty-label">Quantity</p>
+                <div className="product-qty">
+                  <div className="product-qty-stepper">
+                    <button
+                      type="button"
+                      onClick={existingBagQuantity > 0 && quantity <= 1 ? handleRemoveFromBag : decrementQty}
+                      disabled={existingBagQuantity === 0 && quantity <= 1}
+                      aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from bag" : "Decrease quantity"}
+                      className={existingBagQuantity > 0 && quantity <= 1 ? "is-trash" : ""}
+                    >
+                      <Icon icon={existingBagQuantity > 0 && quantity <= 1 ? "lucide:trash-2" : "lucide:minus"} />
+                    </button>
+                    <span>{isSelectedOutOfStock ? 0 : quantity}</span>
+                    <button
+                      type="button"
+                      onClick={incrementQty}
+                      disabled={isSelectedOutOfStock || quantity >= selectedStockInfo.quantity}
+                      aria-label="Increase quantity"
+                    >
+                      <Icon icon="lucide:plus" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <button
@@ -1723,7 +1724,13 @@ const ProductDetail = () => {
 
         {products.length > 0 && (
           <section className="product-related">
-            <h2>More Products</h2>
+            <div className="product-related-head">
+              <h2>More Products</h2>
+              <Link to="/collection" className="product-related-view-all" aria-label="View all products">
+                <span>View All</span>
+                <Icon icon="lucide:arrow-right" />
+              </Link>
+            </div>
             <div className="product-related-grid">
               {products.slice(0, 4).map((item) => {
                 const images = getSortedImages(item);

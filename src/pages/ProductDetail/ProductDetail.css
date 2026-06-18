@@ -452,7 +452,8 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(8, 3, 2, 0.96);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -470,9 +471,9 @@
   height: 42px;
   display: grid;
   place-items: center;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #800020;
+  background: rgba(255, 250, 245, 0.94);
+  border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 50%;
   cursor: pointer;
   transition: background 0.18s ease;
@@ -480,7 +481,7 @@
 }
 
 .bk-fs-close:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(128, 0, 32, 0.08);
 }
 
 .bk-fs-close svg {
@@ -607,8 +608,8 @@
   height: 68px;
   overflow: hidden;
   border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  background: #1a0a06;
+  border: 2px solid rgba(128, 0, 32, 0.14);
+  background: #fffaf5;
   cursor: pointer;
   padding: 0;
   transition: border-color 0.18s ease, transform 0.18s ease;
@@ -617,8 +618,8 @@
 .bk-fs-thumb:hover { transform: translateY(-2px); }
 
 .bk-fs-thumb.active {
-  border-color: #d8a446;
-  box-shadow: 0 0 0 1px #d8a446;
+  border-color: #800020;
+  box-shadow: 0 0 0 1px rgba(128, 0, 32, 0.2);
 }
 
 .bk-fs-thumb img,
@@ -1386,15 +1387,22 @@
 
 .product-action-panel {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 24px;
 }
-.product-action-panel > .product-qty-label {
-  grid-column: 1;
-  grid-row: 1;
+
+.product-qty-row {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.product-action-panel .product-qty-label {
+  flex: 0 0 auto;
   margin: 0;
   font-size: 13px;
   font-weight: 600;
@@ -1404,8 +1412,7 @@
 }
 
 .product-qty {
-  grid-column: 2;
-  grid-row: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1640,11 +1647,19 @@
 .product-related {
   width: 100%;
   min-width: 0;
-  margin-top: 56px;
+  margin-top: 28px;
 }
 
-.product-related h2 {
-  margin: 0 0 20px;
+.product-related-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.product-related-head h2 {
+  margin: 0;
   max-width: 100%;
   color: #720019;
   font-family: "Cinzel", Georgia, serif;
@@ -1652,6 +1667,38 @@
   font-weight: 950;
   text-transform: uppercase;
   overflow-wrap: anywhere;
+}
+
+.product-related-view-all {
+  flex: 0 0 auto;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  color: #800020;
+  background: rgba(255, 250, 241, 0.94);
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(88, 39, 13, 0.1);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.product-related-view-all:hover {
+  background: rgba(128, 0, 32, 0.08);
+  box-shadow: 0 12px 24px rgba(88, 39, 13, 0.14);
+  transform: translateX(2px);
+}
+
+.product-related-view-all svg {
+  width: 19px;
+  height: 19px;
 }
 
 .product-related-grid {
@@ -2193,7 +2240,7 @@
   }
 
   .product-qty {
-    width: 100%;
+    width: auto;
   }
 
 
@@ -2241,10 +2288,10 @@
 
   .product-related {
     width: 100%;
-    margin: 42px 0 0;
+    margin: 24px 0 0;
   }
 
-  .product-related h2 {
+  .product-related-head h2 {
     font-size: 22px;
     line-height: 1.1;
   }
@@ -4307,20 +4354,24 @@
     margin-top: 12px;
     width: 100%;
   }
-  .product-info-panel .product-action-panel > .product-qty-label {
-    grid-column: 1;
+  .product-info-panel .product-qty-row {
+    grid-column: 1 / -1;
     grid-row: 1;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .product-info-panel .product-qty-label {
     margin: 0;
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
   }
   .product-info-panel .product-qty {
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
+    width: auto;
   }
   .product-info-panel .product-add-btn {
     grid-column: 1;
@@ -4502,15 +4553,17 @@
 
   /* 9. Related products — warm top-fade section wrap */
   .product-related {
-    margin-top: 28px !important;
+    margin-top: 18px !important;
     padding: 24px 6px 20px;
     background: linear-gradient(180deg, rgba(255, 248, 230, 0.7) 0%, transparent 65%);
     border-radius: 22px 22px 0 0;
   }
-  .product-related h2 {
-    text-align: center;
-    font-size: 20px;
+  .product-related-head {
     margin-bottom: 18px;
+    padding: 0 2px;
+  }
+  .product-related-head h2 {
+    font-size: 20px;
     letter-spacing: 0.06em;
   }
   .product-related-card {
@@ -4526,5 +4579,63 @@
   /* Further reduce bottom padding on small phones */
   .product-detail-shell { padding-bottom: 28px !important; }
 
-  .product-related h2 { font-size: 17px; }
+  .product-related-head h2 { font-size: 17px; }
+}
+
+/* Softer typography across product detail */
+.product-detail-page {
+  font-weight: 400;
+}
+
+.product-detail-page :is(
+  p,
+  li,
+  span,
+  small,
+  input,
+  .product-section-text,
+  .product-related-desc,
+  .product-delivery-note,
+  .product-delivery-date,
+  .product-spec-row strong,
+  .product-shipping-item p
+) {
+  font-weight: 400;
+}
+
+.product-detail-page :is(
+  button,
+  label,
+  strong,
+  em,
+  .product-breadcrumb,
+  .product-price-card p,
+  .product-color-section p,
+  .product-color-btn strong,
+  .product-qty-label,
+  .product-feature-item span,
+  .product-special-offers-title,
+  .product-offer-card-body strong,
+  .product-offer-card-body em,
+  .product-related-view-all,
+  .product-related-card h3,
+  .product-shipping-item strong,
+  .product-shipping-link,
+  .product-spec-row span
+) {
+  font-weight: 500;
+}
+
+.product-detail-page :is(
+  .product-detail-title,
+  .product-price-row strong,
+  .product-section-title,
+  .product-related-head h2,
+  .product-reviews-head h2,
+  .product-review-score strong,
+  .product-discount-badge,
+  .product-stock-note,
+  .product-related-discount
+) {
+  font-weight: 700;
 }
