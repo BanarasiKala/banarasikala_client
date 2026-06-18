@@ -106,6 +106,13 @@ const PLYR_OPTIONS = {
   fullscreen: { enabled: true, fallback: true, iosNative: true },
 };
 
+const SHIPPING_RETURN_HIGHLIGHTS = [
+  { icon: "lucide:truck", title: "Free Delivery", text: "on all orders" },
+  { icon: "lucide:rotate-ccw", title: "Easy 7 Days Return" },
+  { icon: "lucide:refresh-cw", title: "Exchange", text: "available on all products" },
+  { icon: "lucide:package-check", title: "Secure Packaging" },
+];
+
 const ImageSlide = memo(({ url, alt }) => {
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef(null);
@@ -1158,6 +1165,30 @@ const ProductDetail = () => {
     }
   };
 
+  const copyCouponCode = async (code) => {
+    const couponCodeValue = String(code || "").trim();
+    if (!couponCodeValue) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(couponCodeValue);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = couponCodeValue;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      showNotification(`${couponCodeValue} copied`, "success");
+    } catch {
+      showNotification("Could not copy coupon code", "warning");
+    }
+  };
+
   const checkDelivery = async () => {
     if (isSelectedOutOfStock) {
       showNotification("Delivery charges are available when this color is in stock.", "warning");
@@ -1206,27 +1237,17 @@ const ProductDetail = () => {
   const specificationRows = product
     ? [
         ["SKU", selectedSku],
+        ["Selected Color", selectedColor?.name],
         ["Variety", product.Variety?.name],
-        ["Material", product.Material?.name],
+        ["Fabric", product.Material?.name],
         ["Occasion", product.Occasion?.name],
-        ["Length", product.length ? `${formatNumber(product.length)} m` : ""],
-        ["Width", product.width ? `${formatNumber(product.width)} m` : ""],
+        ["Saree Length", product.length ? `${formatNumber(product.length)} Meter` : ""],
+        ["Saree Width", product.width ? `${formatNumber(product.width)} Meter` : ""],
+        ["Height", product.height ? `${formatNumber(product.height)} cm` : ""],
         ["Weight", product.weight ? `${formatNumber(product.weight)} kg` : ""],
-        ["Blouse Piece", product.blouse_piece ? "Included" : ""],
+        ["Blouse", product.blouse_piece ? "Included" : "Not Included"],
         ["Care", product.care_instructions],
       ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
-    : [];
-
-  const shippingRows = product
-    ? [
-        ["Prepaid", `${formatMoney(PREPAID_DISCOUNT_AMOUNT)} extra discount on prepaid payment.`],
-        ["Payment", "Online payment and Cash on Delivery are available for eligible orders."],
-        ["COD", `Cash on Delivery is available when product value is ${formatMoney(COD_MAX_AMOUNT)} or below. COD charge is ${formatMoney(COD_FEE_AMOUNT)}.`],
-        ["Shipping", "Delivery charge is calculated by pincode and shown as a free delivery discount at payment review."],
-        ["Return", "Easy return is available. First-order returns do not deduct delivery charge. Other returns deduct the forward delivery charge."],
-        ["Exchange", "Easy exchange is available once with no delivery deduction. After one exchange, return or another exchange is not available for that item."],
-        ["Taxes", "Price is inclusive of all taxes."],
-      ].filter(Boolean)
     : [];
 
   if (loading) {
@@ -1551,13 +1572,24 @@ const ProductDetail = () => {
                   <Icon icon="lucide:tag" /> SPECIAL OFFERS FOR YOU 🔥
                 </h4>
                 <div className="product-offers-list">
-                  {pageCoupons.slice(0, 3).map((coupon) => (
+                  {pageCoupons.map((coupon) => (
                     <div key={coupon.id || coupon.code} className="product-offer-card">
                       <Icon icon={coupon.discount_type === "free_shipping" ? "lucide:truck" : coupon.discount_type === "wallet" ? "lucide:wallet" : "lucide:percent"} />
                       <div className="product-offer-card-body">
                         <strong>{coupon.description || coupon.name || coupon.title}</strong>
                         {coupon.code && <span>Code: <em>{coupon.code}</em></span>}
                       </div>
+                      {coupon.code && (
+                        <button
+                          type="button"
+                          className="product-offer-copy"
+                          onClick={() => copyCouponCode(coupon.code)}
+                          aria-label={`Copy coupon code ${coupon.code}`}
+                          title="Copy code"
+                        >
+                          <Icon icon="lucide:copy" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1603,16 +1635,23 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          <div className="product-section-card">
+          <div className="product-section-card product-shipping-card">
             <h3 className="product-section-title">SHIPPING &amp; RETURNS</h3>
-            <div className="product-spec-grid">
-              {shippingRows.map(([label, value]) => (
-                <div className="product-spec-row" key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
+            <div className="product-shipping-summary">
+              {SHIPPING_RETURN_HIGHLIGHTS.map(({ icon, title, text }) => (
+                <div className="product-shipping-item" key={title}>
+                  <Icon icon={icon} />
+                  <p>
+                    <strong>{title}</strong>
+                    {text && <span>{text}</span>}
+                  </p>
                 </div>
               ))}
             </div>
+            <Link to="/shipping-policy" className="product-shipping-link">
+              Know more about <span>Shipping &amp; Returns</span>
+              <Icon icon="lucide:chevron-right" />
+            </Link>
           </div>
         </div>
 
@@ -1743,31 +1782,6 @@ const ProductDetail = () => {
             </div>
           </section>
         )}
-        <div className="product-mobile-sticky">
-          <div className="product-mobile-sticky-price">
-            {isSelectedOutOfStock ? (
-              <strong>{formatMoney(product.mrp_price || product.selling_price)}</strong>
-            ) : (
-              <>
-                <strong>{formatMoney(product.selling_price)}</strong>
-                {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
-                  <s>{formatMoney(product.mrp_price)}</s>
-                )}
-              </>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className={`product-add-btn${existingBagQuantity > 0 ? " in-bag" : ""}`}
-            disabled={existingBagQuantity > 0 || !canAddToBag || addingToBag}
-          >
-            {existingBagQuantity > 0 ? "In Bag" : addingToBag ? "Adding..." : isSelectedOutOfStock ? "Out of Stock" : "ADD TO BAG"}
-          </button>
-          <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
-            BUY NOW
-          </button>
-        </div>
       </main>
 
       {reviewGalleryIndex !== null && approvedReviewImages[reviewGalleryIndex] && (
