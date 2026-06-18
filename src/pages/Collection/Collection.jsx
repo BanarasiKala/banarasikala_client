@@ -47,8 +47,11 @@ const Collection = () => {
   const [loadedImages, setLoadedImages] = useState({});
   const [hoveredProductId, setHoveredProductId] = useState(null);
   const [activeSlides, setActiveSlides] = useState({});
+  const [fallbackProducts, setFallbackProducts] = useState([]);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const productsRequestId = useRef(0);
+  const fallbackRequestId = useRef(0);
   const isFirstSearchParamsRun = useRef(true);
 
   const [filters, setFilters] = useState(() => ({
@@ -119,6 +122,8 @@ const Collection = () => {
     const requestId = productsRequestId.current + 1;
     productsRequestId.current = requestId;
     setLoading(true);
+    setFallbackProducts([]);
+    setFallbackLoading(false);
     try {
       const params = new URLSearchParams();
       params.append("paginated", "true");
@@ -171,7 +176,7 @@ const Collection = () => {
     cards.forEach((card) => revealObserver.observe(card));
 
     return () => revealObserver.disconnect();
-  }, [products, loading]);
+  }, [products, fallbackProducts, loading, fallbackLoading]);
 
 
   useEffect(() => {
@@ -220,7 +225,7 @@ const Collection = () => {
   useEffect(() => {
     if (!hoveredProductId) return undefined;
 
-    const product = products.find((item) => item.id === hoveredProductId);
+    const product = [...products, ...fallbackProducts].find((item) => item.id === hoveredProductId);
     const imageCount = getProductImages(product || {}).length;
     if (imageCount <= 1) return undefined;
 
@@ -238,7 +243,7 @@ const Collection = () => {
       window.clearTimeout(startTimer);
       window.clearInterval(timer);
     };
-  }, [hoveredProductId, products]);
+  }, [hoveredProductId, products, fallbackProducts]);
 
   const handleCardEnter = (productId) => {
     setHoveredProductId(productId);
@@ -281,6 +286,21 @@ const Collection = () => {
     }));
   };
 
+  const showAllProducts = () => {
+    setCurrentPage(1);
+    setFilters({
+      variety: [],
+      occasion: [],
+      material: [],
+      color: [],
+      minPrice: 0,
+      maxPrice: 200000,
+      sortBy: "",
+      search: "",
+    });
+    navigate("/collection");
+  };
+
   const handleWishlist = async (e, product) => {
     e.preventDefault();
     e.stopPropagation();
@@ -290,6 +310,104 @@ const Collection = () => {
       return;
     }
     await toggleWishlist(product);
+  };
+
+  const renderProductCard = (product) => {
+    const cover = getProductCoverImage(product, "https://via.placeholder.com/400x600?text=VNS+Saree");
+    const productImages = getProductImages(product);
+    const sliderImages = productImages.length > 0 ? productImages : [{ url: cover }];
+    const activeSlide = activeSlides[product.id] || 0;
+    const imageReady = Boolean(loadedImages[product.id]);
+    const stockInfo = getProductStockInfo(product);
+    const isOutOfStock = stockInfo.isOutOfStock;
+    const isLowStock = stockInfo.isLowStock;
+
+    return (
+      <div
+        key={product.id}
+        className={`product-card reveal-card ${isOutOfStock ? "out-of-stock" : ""}`}
+        onPointerEnter={() => handleCardEnter(product.id)}
+        onPointerLeave={() => handleCardLeave(product.id)}
+      >
+        <button
+          type="button"
+          className={`collection-wishlist-pill ${isInWishlist(product.id) ? "active" : ""}`}
+          onClick={(e) => handleWishlist(e, product)}
+          aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Icon
+            className="wishlist-icon"
+            icon={isInWishlist(product.id) ? "mdi:heart" : "lucide:heart"}
+          />
+        </button>
+
+        <Link
+          to={`/product/${product.slug}`}
+          className="card-img-container"
+        >
+          {!imageReady && <span className="card-image-shimmer" aria-hidden="true" />}
+          {isOutOfStock && <span className="collection-stock-badge">Out of stock</span>}
+          {isLowStock && <span className="collection-stock-badge low">{stockInfo.badge}</span>}
+          <div
+            className={`card-img-track ${imageReady ? "is-loaded" : ""}`}
+            style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+          >
+            {sliderImages.map((image, imageIndex) => (
+              <img
+                key={`${product.id}-${image.url}-${imageIndex}`}
+                src={imgUrl(image.url)}
+                alt={imageIndex === 0 ? product.name : ""}
+                className="card-img"
+                loading="lazy"
+                onLoad={() => {
+                  if (imageIndex === 0) markImageLoaded(product.id);
+                }}
+              />
+            ))}
+          </div>
+          {sliderImages.length > 1 && (
+            <div className="collection-card-dots" aria-hidden="true">
+              {sliderImages.map((image, imageIndex) => (
+                <button
+                  type="button"
+                  key={`${image.url}-${imageIndex}`}
+                  className={imageIndex === activeSlide ? "active" : ""}
+                  onClick={(event) => goToSlide(event, product.id, imageIndex)}
+                  tabIndex={-1}
+                />
+              ))}
+            </div>
+          )}
+        </Link>
+
+        <div className="card-details">
+          <p className="product-title" title={product.name || "Premium Saree"}>
+            {product.name || "Handcrafted Banarasi Saree"}
+          </p>
+          {product.short_description && (
+            <p className="product-short-desc">
+              {product.short_description}
+            </p>
+          )}
+          <div className="price-container">
+            <span className="selling-price">
+              Rs. {Number(product.selling_price || 0).toLocaleString("en-IN")}
+            </span>
+            {Number(product.mrp_price || product.mrp || 0) > Number(product.selling_price || 0) && (
+              <>
+                <span className="mrp-price">
+                  Rs. {Number(product.mrp_price || product.mrp).toLocaleString("en-IN")}
+                </span>
+                <span className="discount-text">
+                  ({calculateDiscount(product.mrp_price || product.mrp, product.selling_price)}% OFF)
+                </span>
+              </>
+            )}
+          </div>
+          <ProductRating product={product} className="collection-product-rating" />
+        </div>
+      </div>
+    );
   };
 
   const renderFilterGroup = (key, title, items, filterKey, renderExtra = null) => {
@@ -391,6 +509,50 @@ const Collection = () => {
     Number(filters.maxPrice) < 200000 ||
     filters.sortBy !== "";
 
+  const hasResultCriteria = hasActiveFilters || Boolean(filters.search.trim());
+
+  useEffect(() => {
+    if (loading || products.length > 0 || !hasResultCriteria) {
+      if (!loading && products.length > 0) setFallbackProducts([]);
+      return undefined;
+    }
+
+    const requestId = fallbackRequestId.current + 1;
+    fallbackRequestId.current = requestId;
+    const controller = new AbortController();
+
+    const fetchFallbackProducts = async () => {
+      setFallbackLoading(true);
+      try {
+        const params = new URLSearchParams({
+          paginated: "true",
+          page: "1",
+          pageSize: "8",
+          status: "active",
+          view: "collection",
+          sortBy: "special",
+        });
+
+        const res = await fetch(`${API_ENDPOINTS.products}?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (requestId !== fallbackRequestId.current) return;
+        setFallbackProducts(Array.isArray(data.items) ? data.items : []);
+      } catch (error) {
+        if (error.name !== "AbortError" && requestId === fallbackRequestId.current) {
+          setFallbackProducts([]);
+        }
+      } finally {
+        if (requestId === fallbackRequestId.current) setFallbackLoading(false);
+      }
+    };
+
+    fetchFallbackProducts();
+
+    return () => controller.abort();
+  }, [loading, products.length, hasResultCriteria]);
+
   const renderFiltersBody = ({ priceFirst = false } = {}) => (
     <>
       {filtersLoading ? (
@@ -476,105 +638,36 @@ const Collection = () => {
                 No products found matching your filters.
               </div>
             ) : (
-              products.map((product) => {
-                const cover = getProductCoverImage(product, "https://via.placeholder.com/400x600?text=VNS+Saree");
-                const productImages = getProductImages(product);
-                const sliderImages = productImages.length > 0 ? productImages : [{ url: cover }];
-                const activeSlide = activeSlides[product.id] || 0;
-                const imageReady = Boolean(loadedImages[product.id]);
-                const stockInfo = getProductStockInfo(product);
-                const isOutOfStock = stockInfo.isOutOfStock;
-                const isLowStock = stockInfo.isLowStock;
-
-                return (
-                <div
-                  key={product.id}
-                  className={`product-card reveal-card ${isOutOfStock ? "out-of-stock" : ""}`}
-                  onPointerEnter={() => handleCardEnter(product.id)}
-                  onPointerLeave={() => handleCardLeave(product.id)}
-                >
-                  <button
-                    type="button"
-                    className={`collection-wishlist-pill ${isInWishlist(product.id) ? "active" : ""}`}
-                    onClick={(e) => handleWishlist(e, product)}
-                    aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
-                  >
-                    <Icon
-                      className="wishlist-icon"
-                      icon={isInWishlist(product.id) ? "mdi:heart" : "lucide:heart"}
-                    />
-                  </button>
-
-                  <Link
-                    to={`/product/${product.slug}`}
-                    className="card-img-container"
-                  >
-                    {!imageReady && <span className="card-image-shimmer" aria-hidden="true" />}
-                    {isOutOfStock && <span className="collection-stock-badge">Out of stock</span>}
-                    {isLowStock && <span className="collection-stock-badge low">{stockInfo.badge}</span>}
-                    <div
-                      className={`card-img-track ${imageReady ? "is-loaded" : ""}`}
-                      style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-                    >
-                      {sliderImages.map((image, imageIndex) => (
-                        <img
-                          key={`${product.id}-${image.url}-${imageIndex}`}
-                          src={imgUrl(image.url)}
-                          alt={imageIndex === 0 ? product.name : ""}
-                          className="card-img"
-                          loading="lazy"
-                          onLoad={() => {
-                            if (imageIndex === 0) markImageLoaded(product.id);
-                          }}
-                        />
-                      ))}
-                    </div>
-                    {sliderImages.length > 1 && (
-                      <div className="collection-card-dots" aria-hidden="true">
-                        {sliderImages.map((image, imageIndex) => (
-                          <button
-                            type="button"
-                            key={`${image.url}-${imageIndex}`}
-                            className={imageIndex === activeSlide ? "active" : ""}
-                            onClick={(event) => goToSlide(event, product.id, imageIndex)}
-                            tabIndex={-1}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="card-details">
-                    <p className="product-title" title={product.name || "Premium Saree"}>
-                      {product.name || "Handcrafted Banarasi Saree"}
-                    </p>
-                    {product.short_description && (
-                      <p className="product-short-desc">
-                        {product.short_description}
-                      </p>
-                    )}
-                    <div className="price-container">
-                      <span className="selling-price">
-                        Rs. {Number(product.selling_price || 0).toLocaleString("en-IN")}
-                      </span>
-                      {Number(product.mrp_price || product.mrp || 0) > Number(product.selling_price || 0) && (
-                        <>
-                          <span className="mrp-price">
-                            Rs. {Number(product.mrp_price || product.mrp).toLocaleString("en-IN")}
-                          </span>
-                          <span className="discount-text">
-                            ({calculateDiscount(product.mrp_price || product.mrp, product.selling_price)}% OFF)
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <ProductRating product={product} className="collection-product-rating" />
-                  </div>
-                </div>
-              );
-              })
+              products.map(renderProductCard)
             )}
           </div>
+
+          {!loading && products.length === 0 && hasResultCriteria && (fallbackLoading || fallbackProducts.length > 0) && (
+            <section className="collection-more-section">
+              <div className="collection-more-head">
+                <h2>More Items Like This</h2>
+                <button type="button" className="collection-more-link" onClick={showAllProducts}>
+                  View All
+                </button>
+              </div>
+              <div className="product-grid collection-more-grid">
+                {fallbackLoading ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <div key={i} className="product-card">
+                      <div className="card-img-container skeleton"></div>
+                      <div className="card-details">
+                        <div className="skeleton skeleton-title"></div>
+                        <div className="skeleton skeleton-description"></div>
+                        <div className="skeleton skeleton-price"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  fallbackProducts.map(renderProductCard)
+                )}
+              </div>
+            </section>
+          )}
 
           {/* Pagination */}
           {totalPaginationPages > 1 && (
