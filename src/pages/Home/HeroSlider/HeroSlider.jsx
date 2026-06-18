@@ -1,7 +1,6 @@
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+import { Pagination } from "swiper/modules";
 import "swiper/css";
-import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "./HeroSlider.css";
 
@@ -39,13 +38,9 @@ const HERO_SAREES = Object.keys(desktopSlideMap)
 const HeroSlider = () => (
   <div className="bk-hero-wrap">
     <Swiper
-      modules={[Pagination, Navigation]}
+      modules={[Pagination]}
       slidesPerView={1}
       loop
-      navigation={{
-        nextEl: ".hs-next",
-        prevEl: ".hs-prev",
-      }}
       pagination={{ clickable: true }}
       className="hero-swiper bk-hero-swiper"
     >
@@ -64,37 +59,6 @@ const HeroSlider = () => (
           </picture>
         </SwiperSlide>
       ))}
-
-      <button
-        className="hs-prev bk-hero-arrow bk-hero-arrow-prev"
-        aria-label="Previous slide"
-      >
-        <svg
-          width="17"
-          height="17"
-          fill="none"
-          stroke="#2D1B0E"
-          strokeWidth="2.5"
-          viewBox="0 0 24 24"
-        >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-      <button
-        className="hs-next bk-hero-arrow bk-hero-arrow-next"
-        aria-label="Next slide"
-      >
-        <svg
-          width="17"
-          height="17"
-          fill="none"
-          stroke="#2D1B0E"
-          strokeWidth="2.5"
-          viewBox="0 0 24 24"
-        >
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </button>
     </Swiper>
   </div>
 );
