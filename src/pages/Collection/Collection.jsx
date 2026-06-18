@@ -424,11 +424,6 @@ const Collection = () => {
         <span className="font-bold">Sarees</span>
       </nav>
 
-      <div className="page-header">
-        <h1 className="page-title">Sarees For Women</h1>
-        <span className="item-count">- {totalItems} items</span>
-      </div>
-
       <div className="main-content">
         <aside className="filters-sidebar">
           <div className="sidebar-header">
@@ -656,7 +651,7 @@ const Collection = () => {
 
             <div className="mobile-filter-footer">
               <button type="button" onClick={() => setMobileFiltersOpen(false)}>
-                View {totalItems || ""} Sarees
+                View Sarees
               </button>
             </div>
           </aside>

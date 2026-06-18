@@ -259,7 +259,8 @@ hat undo kiy ahai:root {
 
 .sort-container {
     position: relative;
-    min-width: 200px;
+    min-width: 150px;
+    max-width: 170px;
 }
 
 .sort-container select {
@@ -684,6 +685,8 @@ hat undo kiy ahai:root {
 }
 
 .mobile-filter-drawer {
+    --collection-mobile-accent: #4b070d;
+    --collection-mobile-accent-text: #d2a24a;
     width: min(88vw, 390px);
     height: 100%;
     background:
@@ -703,14 +706,14 @@ hat undo kiy ahai:root {
     justify-content: space-between;
     gap: 16px;
     padding: 20px 18px 16px;
-    background: #6b0016;
+    background: var(--collection-mobile-accent);
     color: #fff8ec;
 }
 
 .mobile-filter-header span {
     display: block;
     margin-bottom: 4px;
-    color: #e7bd54;
+    color: var(--collection-mobile-accent-text);
     font-size: 11px;
     font-weight: 900;
     letter-spacing: 0.12em;
@@ -730,9 +733,9 @@ hat undo kiy ahai:root {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 248, 236, 0.28);
+    border: 1px solid rgba(210, 162, 74, 0.32);
     border-radius: 50%;
-    color: #fff8ec;
+    color: var(--collection-mobile-accent-text);
     background: rgba(255, 255, 255, 0.08);
 }
 
@@ -773,6 +776,7 @@ hat undo kiy ahai:root {
 .mobile-filter-body .filter-item input {
     width: 17px;
     height: 17px;
+    accent-color: var(--collection-mobile-accent);
 }
 
 .mobile-filter-body .collection-price-range {
@@ -781,6 +785,7 @@ hat undo kiy ahai:root {
 }
 
 .mobile-filter-body .filter-more-btn {
+    color: var(--collection-mobile-accent);
     font-size: 12px;
     font-weight: 700;
 }
@@ -796,8 +801,8 @@ hat undo kiy ahai:root {
     min-height: 48px;
     border: 0;
     border-radius: 999px;
-    background: #800020;
-    color: #fff8ec;
+    background: var(--collection-mobile-accent);
+    color: var(--collection-mobile-accent-text);
     font-size: 13px;
     font-weight: 900;
     text-transform: uppercase;
@@ -837,7 +842,7 @@ hat undo kiy ahai:root {
     .sort-container {
         min-width: 0;
         flex: 1;
-        max-width: 220px;
+        max-width: 170px;
     }
 }
 
@@ -915,7 +920,7 @@ hat undo kiy ahai:root {
     .sort-container {
         min-width: 0;
         flex: 1;
-        padding: 9px 10px;
+        max-width: 150px;
     }
 
     .sort-container select {
