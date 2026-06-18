@@ -1874,6 +1874,15 @@ const ProductDetail = () => {
                 const activeSlide = Math.min(relatedActiveSlides[item.id] || 0, slideImages.length - 1);
                 const hasDiscount = Number(item.mrp_price || 0) > Number(item.selling_price || 0);
                 const relatedProductName = item.name;
+                const relatedDescription =
+                  item.short_description ||
+                  item.description ||
+                  [item.Variety?.name, item.Material?.name].filter(Boolean).join(" ");
+                const relatedDiscountPercent = Number(item.discount_percent || (
+                  hasDiscount
+                    ? Math.round(((Number(item.mrp_price) - Number(item.selling_price)) / Number(item.mrp_price)) * 100)
+                    : 0
+                ));
                 const relatedColorId = slideImages[activeSlide]?.color_id || item.selected_color_id || null;
                 const relatedLiked = isInWishlist(item.id, relatedColorId);
 
@@ -1938,13 +1947,13 @@ const ProductDetail = () => {
                     </div>
                     <div className="product-related-body">
                       <h3>{relatedProductName}</h3>
-                      {item.short_description && <p className="product-related-desc">{item.short_description}</p>}
+                      <p className="product-related-desc">{relatedDescription}</p>
                       <div className="product-related-price">
                         <strong>{formatMoney(item.selling_price)}</strong>
                         {hasDiscount && (
                           <>
                             <span>{formatMoney(item.mrp_price)}</span>
-                            <em>{item.discount_percent}% OFF</em>
+                            {relatedDiscountPercent > 0 && <em>{relatedDiscountPercent}% OFF</em>}
                           </>
                         )}
                       </div>

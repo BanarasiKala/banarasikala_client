@@ -5,7 +5,6 @@ import { useAuth } from "../../../context/AuthContext";
 import { useWishlist } from "../../../context/WishlistContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
-import { getProductStockInfo } from "../../../utils/stockStatus";
 import ProductRating from "../../../components/ProductRating";
 import "./PopularSarees.css";
 
@@ -14,15 +13,17 @@ const calcDiscount = (mrp, sell) => {
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
 
+const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+
 const PopularSarees = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const sectionRef = useRef(null);
-  const touchStartX = useRef(null);
+  const swipeRef = useRef({});
+  const swipeBlockRef = useRef(new Set());
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hoveredProductId, setHoveredProductId] = useState(null);
   const [activeSlides, setActiveSlides] = useState({});
 
   useEffect(() => {
@@ -35,7 +36,12 @@ const PopularSarees = () => {
     });
     fetch(`${API_ENDPOINTS.products}?${params.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setProducts((data.items || data).slice(0, 10)))
+      .then((data) => {
+        const homeProducts = (data.items || data).slice(0, 10);
+        console.log("[Home][Exclusive Picks] products:", homeProducts);
+        console.log("[Home][Exclusive Picks] raw response:", data);
+        setProducts(homeProducts);
+      })
       .catch((err) => { if (err.name !== "AbortError") setProducts([]); })
       .finally(() => setLoading(false));
     return () => controller.abort();
@@ -59,52 +65,60 @@ const PopularSarees = () => {
     return () => observer.disconnect();
   }, [loading, products]);
 
-  // Slideshow on hover — desktop only (triggered by onMouseEnter)
-  useEffect(() => {
-    if (!hoveredProductId) return undefined;
-    const product = products.find((item) => item.id === hoveredProductId);
-    const imageCount = getProductImages(product || {}).length;
-    if (imageCount <= 1) return undefined;
-    const advanceSlide = () => {
-      setActiveSlides((current) => ({
-        ...current,
-        [hoveredProductId]: ((current[hoveredProductId] || 0) + 1) % imageCount,
-      }));
-    };
-    const startTimer = window.setTimeout(advanceSlide, 400);
-    const timer = window.setInterval(advanceSlide, 1800);
-    return () => {
-      window.clearTimeout(startTimer);
-      window.clearInterval(timer);
-    };
-  }, [hoveredProductId, products]);
-
-  const handleCardEnter = (productId) => setHoveredProductId(productId);
-  const handleCardLeave = (productId) => {
-    setHoveredProductId((current) => (current === productId ? null : current));
-    setActiveSlides((current) => ({ ...current, [productId]: 0 }));
+  const goToSlide = (event, productId, slideIndex) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveSlides((current) => ({ ...current, [productId]: slideIndex }));
   };
 
-  // Swipe to change image on mobile
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
+  const blockSwipeClick = (productId) => {
+    swipeBlockRef.current.add(productId);
+    window.setTimeout(() => swipeBlockRef.current.delete(productId), 450);
   };
-  const handleTouchEnd = (e, productId, imageCount) => {
-    if (touchStartX.current === null || imageCount <= 1) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(dx) < 40) return;
-    setActiveSlides((prev) => {
-      const idx = prev[productId] || 0;
+
+  const handleTouchStart = (event, productId) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    swipeRef.current[productId] = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      didMove: false,
+    };
+  };
+
+  const handleTouchMove = (event, productId) => {
+    const touch = event.touches?.[0];
+    const swipe = swipeRef.current[productId];
+    if (!touch || !swipe) return;
+    if (Math.abs(touch.clientX - swipe.startX) > 8) swipe.didMove = true;
+  };
+
+  const handleTouchEnd = (event, productId, imageCount) => {
+    const touch = event.changedTouches?.[0];
+    const swipe = swipeRef.current[productId];
+    delete swipeRef.current[productId];
+    if (!touch || !swipe || imageCount <= 1) return;
+
+    const dx = touch.clientX - swipe.startX;
+    const dy = touch.clientY - swipe.startY;
+    const absDx = Math.abs(dx);
+    if (absDx <= 40 || absDx <= Math.abs(dy)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    blockSwipeClick(productId);
+    setActiveSlides((current) => {
+      const idx = current[productId] || 0;
       const next = dx < 0
         ? (idx + 1) % imageCount
         : (idx - 1 + imageCount) % imageCount;
-      return { ...prev, [productId]: next };
+      return { ...current, [productId]: next };
     });
   };
 
   const handleWishlistClick = (e, product, colorId) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!user) { navigate("/wishlist"); return; }
     toggleWishlist(product, colorId || null);
   };
@@ -147,53 +161,56 @@ const PopularSarees = () => {
               const img = getProductCoverImage(product);
               const cardImages = getProductImages(product);
               const sliderImages = cardImages.length > 0 ? cardImages : [{ url: img }];
-              const activeIndex = activeSlides[product.id] || 0;
+              const activeIndex = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
               const currentColorId = sliderImages[activeIndex]?.color_id || null;
               const liked = isInWishlist(product.id, currentColorId);
-              const stockInfo = getProductStockInfo(product);
-              const motionClass = index % 3 === 0 ? "from-left" : index % 3 === 1 ? "from-bottom" : "from-right";
+              const discountPercent = Number(product.discount_percent || disc);
+              const productDescription =
+                product.short_description ||
+                product.description ||
+                [product.Variety?.name, product.Material?.name].filter(Boolean).join(" ");
 
               return (
                 <article
                   key={product.id}
-                  className={`bk-popular-card ${motionClass}${stockInfo.isOutOfStock ? " is-out-of-stock" : ""}`}
-                  onMouseEnter={() => handleCardEnter(product.id)}
-                  onMouseLeave={() => handleCardLeave(product.id)}
-                  onFocus={() => handleCardEnter(product.id)}
-                  onBlur={() => handleCardLeave(product.id)}
+                  className="bk-popular-card"
                   style={{ transitionDelay: `${Math.min(index * 40, 200)}ms` }}
                 >
-                  <Link to={`/product/${product.slug}`} className="bk-popular-card-link">
+                  <Link
+                    to={`/product/${product.slug}`}
+                    className="bk-popular-card-link"
+                    onClick={(event) => {
+                      if (swipeBlockRef.current.has(product.id)) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }
+                    }}
+                  >
                     <div
                       className="bk-popular-image-wrap"
-                      onTouchStart={handleTouchStart}
-                      onTouchEnd={(e) => handleTouchEnd(e, product.id, sliderImages.length)}
+                      onTouchStart={(event) => handleTouchStart(event, product.id)}
+                      onTouchMove={(event) => handleTouchMove(event, product.id)}
+                      onTouchEnd={(event) => handleTouchEnd(event, product.id, sliderImages.length)}
                     >
-                      {(stockInfo.isOutOfStock || stockInfo.isLowStock) && (
-                        <span className={`bk-home-stock-badge ${stockInfo.isOutOfStock ? "out" : "low"}`}>
-                          {stockInfo.badge}
-                        </span>
-                      )}
                       <div
                         className="bk-popular-image-track"
-                        style={{
-                          "--slide-count": sliderImages.length,
-                          transform: `translateX(-${activeIndex * (100 / sliderImages.length)}%)`,
-                        }}
+                        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
                       >
                         {sliderImages.map((image, imageIndex) => (
-                          <span key={`${image.url}-${imageIndex}`} className="bk-popular-slide">
-                            <img src={imgUrl(image.url, 40)} alt="" className="bk-popular-image-bg" aria-hidden="true" loading="lazy" decoding="async" />
-                            <img src={imgUrl(image.url, 600)} alt={product.name} className="bk-popular-image" loading={imageIndex > 0 ? "lazy" : undefined} decoding="async" />
+                          <span key={`${product.id}-${image.url}-${imageIndex}`} className="bk-popular-slide">
+                            <img src={imgUrl(image.url, 600)} alt={imageIndex === 0 ? product.name : ""} className="bk-popular-image" loading={imageIndex > 0 ? "lazy" : undefined} decoding="async" />
                           </span>
                         ))}
                       </div>
                       {sliderImages.length > 1 && (
-                        <div className="bk-popular-dots" aria-hidden="true">
+                        <div className="bk-popular-dots">
                           {sliderImages.map((image, dotIndex) => (
-                            <span
+                            <button
+                              type="button"
                               key={`${image.url}-dot-${dotIndex}`}
-                              className={dotIndex === activeIndex ? "is-active" : ""}
+                              className={dotIndex === activeIndex ? "active" : ""}
+                              onClick={(event) => goToSlide(event, product.id, dotIndex)}
+                              aria-label={`Show ${product.name} image ${dotIndex + 1}`}
                             />
                           ))}
                         </div>
@@ -212,17 +229,13 @@ const PopularSarees = () => {
 
                     <div className="bk-popular-card-body">
                       <h3>{product.name}</h3>
+                      <p className="bk-popular-desc">{productDescription}</p>
                       <div className="bk-popular-price-row">
-                        {stockInfo.isOutOfStock ? (
-                          <span className="bk-popular-oos-stack">
-                            {mrp > 0 && <span className="bk-popular-price">Rs. {mrp.toLocaleString("en-IN")}</span>}
-                            <span className="bk-popular-oos-label">Out of Stock</span>
-                          </span>
-                        ) : (
+                        <span className="bk-popular-price">{formatMoney(sell)}</span>
+                        {mrp > sell && (
                           <>
-                            <span className="bk-popular-price">Rs. {sell.toLocaleString("en-IN")}</span>
-                            {mrp > sell && <span className="bk-popular-mrp">Rs. {mrp.toLocaleString("en-IN")}</span>}
-                            {disc > 0 && <span className="bk-popular-discount">{disc}% OFF</span>}
+                            <span className="bk-popular-mrp">{formatMoney(mrp)}</span>
+                            {discountPercent > 0 && <span className="bk-popular-discount">{discountPercent}% OFF</span>}
                           </>
                         )}
                       </div>
