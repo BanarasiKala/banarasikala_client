@@ -82,7 +82,6 @@ const About = () => {
 
       <section className="about-shell about-editorial-grid">
         <article className="about-text-panel about-philosophy">
-          <span className="about-icon">BQ</span>
           <h2>Our Philosophy</h2>
           <h3>We Believe in Real Quality</h3>
           <p>
@@ -101,7 +100,6 @@ const About = () => {
         </div>
 
         <article className="about-text-panel about-curation">
-          <span className="about-icon">CP</span>
           <h2>Our Curation Process</h2>
           <p>
             Our collection is not randomly sourced. Our team personally explores
@@ -121,7 +119,6 @@ const About = () => {
         </div>
 
         <article className="about-text-panel about-why">
-          <span className="about-icon">WQ</span>
           <h2>Why Choose Banarasi Kala?</h2>
           <h3>Crafted for Those Who Understand Real Quality</h3>
           <p>
@@ -136,7 +133,6 @@ const About = () => {
         </article>
 
         <article className="about-text-panel about-quality">
-          <span className="about-icon">QT</span>
           <h2>Quality That Speaks for Itself</h2>
           <p>
             We believe customers should receive exactly what they are promised.

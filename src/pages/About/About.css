@@ -105,7 +105,7 @@
   align-items: center;
   padding-top: 34px;
   padding-bottom: 34px;
-  background: rgba(255, 250, 241, 0.96);
+  background: rgba(255, 250, 241, 0.52);
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 18px;
   box-shadow: 0 18px 42px rgba(70, 35, 13, 0.13);
@@ -182,18 +182,6 @@
   padding: 26px 24px;
   background: rgba(255, 250, 241, 0.52);
   border-left: 1px solid rgba(174, 126, 42, 0.42);
-}
-
-.about-icon {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 12px;
-  color: #9b681f;
-  border: 1px solid rgba(155, 104, 31, 0.6);
-  border-radius: 50%;
-  font-size: 22px;
 }
 
 .about-text-panel h2 {
@@ -473,6 +461,10 @@
 
   .about-promise-row {
     grid-template-columns: 1fr;
+  }
+
+  .about-promise-row span:first-child {
+    border-left: 1px solid rgba(212, 175, 55, 0.32);
   }
 
   .about-founder {
