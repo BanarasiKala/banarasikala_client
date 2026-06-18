@@ -57,17 +57,13 @@ const getEmptyBuyNowAddress = (user) => ({
 const ReviewRatingBadge = ({ summary, onClick }) => {
   const average = Number(summary?.average || 0);
   const count = Number(summary?.count || 0);
-  if (!count || average <= 0) return null;
-
+  if (!count) return null;
   return (
     <button type="button" className="product-rating-row" onClick={onClick} aria-label={`${average.toFixed(1)} rating from ${count} reviews`}>
       <strong>{average.toFixed(1)}</strong>
       <span>
         {[1, 2, 3, 4, 5].map((star) => (
-          <Icon
-            key={star}
-            icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"}
-          />
+          <Icon key={star} icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"} />
         ))}
       </span>
       <small>({count})</small>
@@ -110,9 +106,35 @@ const PLYR_OPTIONS = {
   fullscreen: { enabled: true, fallback: true, iosNative: true },
 };
 
+const ImageSlide = memo(({ url, alt }) => {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef(null);
+
+  useEffect(() => {
+    // Cached images fire onLoad before React attaches the handler; catch them here
+    if (imgRef.current?.complete) setLoaded(true);
+  }, [url]);
+
+  return (
+    <div className="product-main-image-slot">
+      {!loaded && <div className="bk-carousel-loader bk-carousel-loader--image" aria-hidden="true" />}
+      <img
+        ref={imgRef}
+        src={url}
+        alt={alt}
+        className="product-main-image"
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+});
+ImageSlide.displayName = "ImageSlide";
+
 const VideoSlide = memo(({ src, isActive }) => {
   const plyrRef = useRef(null);
   const isActiveRef = useRef(isActive);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   useEffect(() => {
     isActiveRef.current = isActive;
@@ -129,6 +151,7 @@ const VideoSlide = memo(({ src, isActive }) => {
   // e.currentTarget.plyr is set by Plyr's constructor on the DOM element itself —
   // available as soon as Plyr inits, before react-aptor's setState re-render updates the ref.
   const handleCanPlay = useCallback((e) => {
+    setIsBuffering(false);
     if (!isActiveRef.current) return;
     const player = e.currentTarget.plyr ?? plyrRef.current?.plyr;
     if (player) player.play().catch(() => {});
@@ -136,11 +159,14 @@ const VideoSlide = memo(({ src, isActive }) => {
 
   return (
     <div className="product-main-video-slot">
+      {isBuffering && <div className="bk-carousel-loader bk-carousel-loader--video" aria-hidden="true" />}
       <Plyr
         ref={plyrRef}
         source={{ type: "video", sources: [{ src, type: "video/mp4" }] }}
         options={PLYR_OPTIONS}
         onCanPlay={handleCanPlay}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
         playsInline
       />
     </div>
@@ -244,6 +270,8 @@ const ProductDetail = () => {
   // ── Fullscreen (images only — Plyr handles video fullscreen natively) ──
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
+  const [fsImageLoaded, setFsImageLoaded] = useState(false);
+  const fsImageRef = useRef(null);
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
   const closeFullscreen = () => { setFullscreenOpen(false); document.body.style.overflow = ""; };
@@ -255,6 +283,17 @@ const ProductDetail = () => {
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [fullscreenOpen]);
+
+  // Reset loader when fullscreen opens or the shown image changes;
+  // check .complete to handle browser-cached images that fire onLoad before the effect runs.
+  useEffect(() => {
+    if (!fullscreenOpen) return;
+    if (fsImageRef.current?.complete) {
+      setFsImageLoaded(true);
+    } else {
+      setFsImageLoaded(false);
+    }
+  }, [fullscreenOpen, fullscreenIdx]);
 
   const [relatedHoverId, setRelatedHoverId] = useState(null);
   const [relatedSlides, setRelatedSlides] = useState({});
@@ -283,6 +322,7 @@ const ProductDetail = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const [pageCoupons, setPageCoupons] = useState([]);
   const [couponLoading, setCouponLoading] = useState(false);
   const [appliedBuyNowCoupon, setAppliedBuyNowCoupon] = useState(null);
   const [availableCoupons, setAvailableCoupons] = useState([]);
@@ -363,6 +403,12 @@ const ProductDetail = () => {
   }, [slug]);
 
   useEffect(() => {
+    api.get(API_ENDPOINTS.coupons)
+      .then((res) => setPageCoupons(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!product?.id) {
       setProductReviews([]);
       setReviewSummary({ average: 0, count: 0 });
@@ -374,7 +420,7 @@ const ProductDetail = () => {
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error("Failed to load reviews"))))
       .then((payload) => {
         const data = payload?.data || {};
-        setReviewSummary(data.summary || { average: 0, count: 0 });
+         setReviewSummary(data.summary || { average: 0, count: 0 });
         setProductReviews(Array.isArray(data.reviews) ? data.reviews : []);
       })
       .catch((error) => {
@@ -1270,24 +1316,39 @@ const ProductDetail = () => {
   return (
     <div className="product-detail-page" ref={rootRef}>
       <main className="product-detail-shell">
-        <nav className="product-breadcrumb" aria-label="Breadcrumb">
-          <Link to="/">Home</Link>
-          <Icon icon="lucide:chevron-right" />
-          <Link to="/collection">Collections</Link>
-            <Icon icon="lucide:chevron-right" />
-            <span>{productName}</span>
-          </nav>
-
-          <div className="product-mobile-summary">
-            <div className="product-mobile-title-row">
-              <h1>{productName}</h1>
-              <ReviewRatingBadge summary={reviewSummary} onClick={scrollToReviews} />
-            </div>
-            <p>{product.short_description || [product.Variety?.name, product.Material?.name].filter(Boolean).join(" / ")}</p>
+        <div className="product-mobile-header">
+          <div className="product-name-rating-row">
+            <h1 className="product-detail-title">{productName}</h1>
+            <ReviewRatingBadge summary={reviewSummary} onClick={scrollToReviews} />
           </div>
+          {(product.short_description || product.Variety?.name || product.Material?.name) && (
+            <p className="product-mobile-header-desc">
+              {product.short_description || [product.Variety?.name, product.Material?.name].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        </div>
 
         <div className="product-detail-grid">
           <section className="product-gallery">
+            {visibleMedia.length > 1 && (
+              <div className="product-thumb-strip">
+                {visibleMedia.map((item, index) => (
+                  <button
+                    key={item.url}
+                    type="button"
+                    className={`product-thumb-item${index === activeImageIndex ? " active" : ""}`}
+                    onClick={() => { setActiveImageIndex(index); if (item.type === "image") setMainImage(item.url); }}
+                    aria-label={item.type === "video" ? "View video" : `View image ${index + 1}`}
+                  >
+                    {item.type === "video" ? (
+                      <span className="product-thumb-play"><Icon icon="lucide:play" /></span>
+                    ) : (
+                      <img src={imgUrl(item.url, 200)} alt="" draggable={false} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
             <div
               className="product-main-media product-3d-perspective"
               ref={perspectiveRef}
@@ -1316,18 +1377,12 @@ const ProductDetail = () => {
                       item.type === "video" ? (
                         <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} />
                       ) : (
-                        <img
-                          key={item.url}
-                          src={imgUrl(item.url)}
-                          alt={index === activeImageIndex ? productName : ""}
-                          className="product-main-image"
-                          draggable={false}
-                        />
+                        <ImageSlide key={item.url} url={imgUrl(item.url)} alt={index === activeImageIndex ? productName : ""} />
                       )
                     ))}
                   </div>
                 ) : mainImage ? (
-                  <img src={imgUrl(mainImage)} alt={productName} className="product-main-image" />
+                  <ImageSlide url={imgUrl(mainImage)} alt={productName} />
                 ) : null}
                 {Number(product.discount_percent || 0) > 0 && (
                   <span className="product-discount-badge">{product.discount_percent}% OFF</span>
@@ -1362,58 +1417,21 @@ const ProductDetail = () => {
               </div>
 
             </div>
-
-
-            {distinctColors.length > 0 && (
-              <div className="product-mobile-color-card">
-                <p>
-                  Selected color <span>{selectedColor?.name || "Choose color"}</span>
-                </p>
-                <div className="product-mobile-color-list">
-                  {distinctColors.map((color) => {
-                    const colorStock = getProductStockInfo({ ...product, stock_quantity: color.stock_quantity });
-                    const isOut = colorStock.isOutOfStock;
-                    const isLow = colorStock.isLowStock;
-                    const isActive = String(selectedColorId) === String(color.id);
-                    return (
-                      <button
-                        key={color.id}
-                        type="button"
-                        onClick={() => handleColorChange(color.id)}
-                        className={`product-mobile-color-btn ${isActive ? "active" : ""} ${isOut ? "out" : ""} ${isLow ? "low" : ""}`}
-                        aria-label={`Select ${color.name}`}
-                        aria-pressed={isActive}
-                        title={color.name}
-                      >
-                        <span style={{ backgroundColor: color.hex_code || "#ccc" }} />
-                        <strong>{color.name}</strong>
-                      </button>
-                    );
-                  })}
-                </div>
-                {(isSelectedLowStock || isSelectedOutOfStock) && (
-                  <small className={`product-mobile-stock-note ${isSelectedOutOfStock ? "out" : ""}`}>
-                    {selectedStockInfo.colorMessage}
-                  </small>
-                )}
-              </div>
-            )}
           </section>
 
           <section className="product-info-panel">
-            <div className="product-title-row">
-              <div>
-                <span className="product-kicker">
-                  {[product.Variety?.name, product.Occasion?.name].filter(Boolean).join(" / ") || "Banarasi Kala"}
-                </span>
-                <div className="product-name-line">
-                  <h1 className="product-detail-title">{productName}</h1>
-                  <ReviewRatingBadge summary={reviewSummary} onClick={scrollToReviews} />
-                </div>
-                <p className="product-detail-subtitle">
-                  {[product.Material?.name, selectedColor?.name].filter(Boolean).join(" / ")}
-                </p>
-              </div>
+
+            <nav className="product-breadcrumb product-breadcrumb--panel" aria-label="Breadcrumb">
+              <Link to="/">Home</Link>
+              <Icon icon="lucide:chevron-right" />
+              <Link to="/collection">Sarees</Link>
+              <Icon icon="lucide:chevron-right" />
+              <span>{productName}</span>
+            </nav>
+
+            <div className="product-name-rating-row">
+              <h1 className="product-detail-title">{productName}</h1>
+              <ReviewRatingBadge summary={reviewSummary} onClick={scrollToReviews} />
             </div>
 
             <div className="product-price-card">
@@ -1426,39 +1444,55 @@ const ProductDetail = () => {
                     {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
                       <>
                         <span>{formatMoney(product.mrp_price)}</span>
-                        <em>Save {product.discount_percent}%</em>
+                        <em>SAVE {product.discount_percent}%</em>
                       </>
                     )}
                   </>
                 )}
               </div>
-              {!isSelectedOutOfStock && <p>Incl. of all taxes </p>}
+              {!isSelectedOutOfStock && <p>Inclusive of all taxes</p>}
+            </div>
+
+            <div className="product-feature-icons">
+              {[
+                { icon: "lucide:banknote", label: "COD", sub: "Available" },
+                { icon: "lucide:shield-check", label: "Secure", sub: "Prepaid" },
+                { icon: "lucide:truck", label: "Free", sub: "Shipping" },
+                { icon: "lucide:refresh-ccw", label: "7 Days", sub: "Return" },
+                { icon: "lucide:repeat-2", label: "Exchange", sub: "Available" },
+                { icon: "lucide:headphones", label: "24x7", sub: "Support" },
+              ].map(({ icon, label, sub }) => (
+                <div key={label} className="product-feature-item">
+                  <Icon icon={icon} />
+                  <span>{label}<br />{sub}</span>
+                </div>
+              ))}
             </div>
 
             {!isSelectedOutOfStock && (
               <div className="product-delivery-check product-delivery-check-top">
-                <p className="product-delivery-helper">Enter pincode to see estimated delivery date.</p>
+                <p className="product-delivery-helper">
+                  <Icon icon="lucide:map-pin" /> Check Delivery Availability
+                </p>
                 <div className="product-delivery-input-row">
                   <input
                     type="text"
                     maxLength={6}
                     inputMode="numeric"
-                    placeholder="Enter pincode"
+                    placeholder="Enter Pincode"
                     value={deliveryPincode}
                     onChange={(e) => setDeliveryPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") checkDelivery();
-                    }}
+                    onKeyDown={(event) => { if (event.key === "Enter") checkDelivery(); }}
                   />
                   <button type="button" onClick={checkDelivery} disabled={deliveryCheckLoading}>
-                    {deliveryCheckLoading ? "Checking..." : "Check"}
+                    {deliveryCheckLoading ? "Checking..." : "CHECK"}
                   </button>
                 </div>
                 {deliveryQuote?.unavailable ? (
                   <p className="product-delivery-note">Delivery details unavailable for this pincode.</p>
                 ) : deliveryQuote?.deliveryDate ? (
                   <div className="product-delivery-date">
-                    <span>Estimated delivery</span>
+                    <span>Estimated delivery:</span>
                     <strong>{deliveryQuote.deliveryDate}</strong>
                   </div>
                 ) : null}
@@ -1467,9 +1501,7 @@ const ProductDetail = () => {
 
             {distinctColors.length > 0 && (
               <div className="product-color-section">
-                <p>
-                  Select Color: <span>{selectedColor?.name || "Choose color"}</span>
-                </p>
+                <p>SELECTED COLOR: <span>{selectedColor?.name || "Choose color"}</span></p>
                 <div className="product-color-list">
                   {distinctColors.map((color) => {
                     const colorStock = getProductStockInfo({ ...product, stock_quantity: color.stock_quantity });
@@ -1501,6 +1533,7 @@ const ProductDetail = () => {
             )}
 
             <div className="product-action-panel">
+              <p className="product-qty-label">Quantity</p>
               <div className="product-qty">
                 <div className="product-qty-stepper">
                   <button
@@ -1523,7 +1556,6 @@ const ProductDetail = () => {
                   </button>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={handleAddToCart}
@@ -1539,90 +1571,113 @@ const ProductDetail = () => {
                 ) : isChangingColor ? (
                   <>Loading...</>
                 ) : (
-                  <><Icon icon="lucide:shopping-bag" /> Add to Bag</>
+                  <><Icon icon="lucide:shopping-bag" /> ADD TO BAG</>
                 )}
               </button>
-
               <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
-                <Icon icon="lucide:zap" />
-                Buy Now
+                <Icon icon="lucide:zap" /> BUY NOW
               </button>
             </div>
 
-            <div className="product-accordion">
-              {[
-                {
-                  id: "description",
-                  title: "Description",
-                  content: <p>{product.description || product.short_description || "Product description will be updated soon."}</p>,
-                },
-                {
-                  id: "specifications",
-                  title: "Material & Specifications",
-                  content: (
-                    <div className="product-spec-grid">
-                      {specificationRows.map(([label, value]) => (
-                        <div className="product-spec-row" key={label}>
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  ),
-                },
-                {
-                  id: "shipping",
-                  title: "Shipping & Returns",
-                  content: (
-                    <>
-                      <div className="product-spec-grid">
-                        {shippingRows.map(([label, value]) => (
-                          <div className="product-spec-row" key={label}>
-                            <span>{label}</span>
-                            <strong>{value}</strong>
-                          </div>
-                        ))}
+            {pageCoupons.length > 0 && (
+              <div className="product-special-offers">
+                <h4 className="product-special-offers-title">
+                  <Icon icon="lucide:tag" /> SPECIAL OFFERS FOR YOU 🔥
+                </h4>
+                <div className="product-offers-list">
+                  {pageCoupons.slice(0, 3).map((coupon) => (
+                    <div key={coupon.id || coupon.code} className="product-offer-card">
+                      <Icon icon={coupon.discount_type === "free_shipping" ? "lucide:truck" : coupon.discount_type === "wallet" ? "lucide:wallet" : "lucide:percent"} />
+                      <div className="product-offer-card-body">
+                        <strong>{coupon.description || coupon.name || coupon.title}</strong>
+                        {coupon.code && <span>Code: <em>{coupon.code}</em></span>}
                       </div>
-                    </>
-                  ),
-                },
-              ].map((item) => (
-                <div key={item.id} className="product-accordion-item">
-                  <button type="button" onClick={() => setActiveAccordion((prev) => (prev === item.id ? null : item.id))}>
-                    <span>{item.title}</span>
-                    <Icon icon="lucide:chevron-down" className={activeAccordion === item.id ? "rotate" : ""} />
-                  </button>
-                  <div className={`product-accordion-content ${activeAccordion === item.id ? "open" : ""}`}>
-                    {item.content}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {hasApprovedReviews && (
-          <section className="product-reviews-section" id="product-reviews">
-            {approvedReviewImages.length > 0 && (
-              <div className="product-review-gallery">
-                {approvedReviewImages.slice(0, 10).map((image, index) => {
-                  const remaining = approvedReviewImages.length - 10;
-                  const showMore = index === 9 && remaining > 0;
-                  return (
-                    <button
-                      type="button"
-                      className="product-review-gallery-item"
-                      onClick={() => setReviewGalleryIndex(index)}
-                      key={`${image.url}-${index}`}
-                    >
-                      <img src={imgUrl(image.url)} alt="Uploaded product photo" loading="lazy" />
-                      {showMore && <span>+{remaining} more</span>}
-                    </button>
-                  );
-                })}
               </div>
             )}
 
+            <div className="product-trust-badges">
+              <span><Icon icon="lucide:lock" /> 100% Secure Payments</span>
+              <span><Icon icon="lucide:badge-check" /> Premium Quality</span>
+              <span><Icon icon="lucide:refresh-ccw" /> Easy Returns &amp; Exchange</span>
+            </div>
+
+          </section>
+        </div>
+
+        <div className="product-sections-grid">
+          <div className="product-section-card">
+            <h3 className="product-section-title">KEY HIGHLIGHTS</h3>
+            <ul className="product-highlights-list">
+              {[
+                product.Variety?.name ? { icon: "lucide:sparkles", text: `Rich ${product.Variety.name} Weaving` } : null,
+                product.Material?.name ? { icon: "lucide:layers", text: `Premium ${product.Material.name} Fabric` } : null,
+                product.Occasion?.name ? { icon: "lucide:calendar-check", text: `Perfect for ${product.Occasion.name}` } : null,
+                product.blouse_piece ? { icon: "lucide:shirt", text: "Blouse Piece Included" } : null,
+                { icon: "lucide:gift", text: "Premium Gift Packaging" },
+                { icon: "lucide:map-pin", text: "Made in Banaras" },
+              ].filter(Boolean).map(({ icon, text }) => (
+                <li key={text}><Icon icon={icon} />{text}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="product-section-card">
+            <h3 className="product-section-title">PRODUCT DESCRIPTION</h3>
+            <p className="product-section-text">
+              {product.description || product.short_description || "Product description will be updated soon."}
+            </p>
+          </div>
+
+          <div className="product-section-card">
+            <h3 className="product-section-title">MATERIAL &amp; SPECIFICATIONS</h3>
+            <div className="product-spec-grid">
+              {specificationRows.map(([label, value]) => (
+                <div className="product-spec-row" key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="product-section-card">
+            <h3 className="product-section-title">SHIPPING &amp; RETURNS</h3>
+            <div className="product-spec-grid">
+              {shippingRows.map(([label, value]) => (
+                <div className="product-spec-row" key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <section className="product-reviews-section" id="product-reviews">
+          {approvedReviewImages.length > 0 && (
+            <div className="product-review-gallery">
+              {approvedReviewImages.slice(0, 10).map((image, index) => {
+                const remaining = approvedReviewImages.length - 10;
+                const showMore = index === 9 && remaining > 0;
+                return (
+                  <button
+                    type="button"
+                    className="product-review-gallery-item"
+                    onClick={() => setReviewGalleryIndex(index)}
+                    key={`${image.url}-${index}`}
+                  >
+                    <img src={imgUrl(image.url)} alt="Uploaded product photo" loading="lazy" />
+                    {showMore && <span>+{remaining} more</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {productReviews.length > 0 ? (
             <div className="product-review-list">
               {productReviews.slice(0, 6).map((review) => {
                 const rating = Number(review.rating || 0);
@@ -1658,8 +1713,14 @@ const ProductDetail = () => {
                 );
               })}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="product-reviews-empty">
+              <Icon icon="lucide:message-square" />
+              <strong>No reviews yet</strong>
+              <p>Be the first to share your experience with this product.</p>
+            </div>
+          )}
+        </section>
 
         {products.length > 0 && (
           <section className="product-related">
@@ -1722,6 +1783,31 @@ const ProductDetail = () => {
             </div>
           </section>
         )}
+        <div className="product-mobile-sticky">
+          <div className="product-mobile-sticky-price">
+            {isSelectedOutOfStock ? (
+              <strong>{formatMoney(product.mrp_price || product.selling_price)}</strong>
+            ) : (
+              <>
+                <strong>{formatMoney(product.selling_price)}</strong>
+                {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
+                  <s>{formatMoney(product.mrp_price)}</s>
+                )}
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className={`product-add-btn${existingBagQuantity > 0 ? " in-bag" : ""}`}
+            disabled={existingBagQuantity > 0 || !canAddToBag || addingToBag}
+          >
+            {existingBagQuantity > 0 ? "In Bag" : addingToBag ? "Adding..." : isSelectedOutOfStock ? "Out of Stock" : "ADD TO BAG"}
+          </button>
+          <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
+            BUY NOW
+          </button>
+        </div>
       </main>
 
       {reviewGalleryIndex !== null && approvedReviewImages[reviewGalleryIndex] && (
@@ -2214,7 +2300,14 @@ const ProductDetail = () => {
               <Icon icon="lucide:x" />
             </button>
             <div className="bk-fs-main" onClick={(e) => e.stopPropagation()}>
-              <img src={imgUrl(fsMedia?.url, 1400)} alt={productName} className="bk-fs-image" />
+              {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
+              <img
+                ref={fsImageRef}
+                src={imgUrl(fsMedia?.url, 1400)}
+                alt={productName}
+                className="bk-fs-image"
+                onLoad={() => setFsImageLoaded(true)}
+              />
             </div>
             {imageItems.length > 1 && (
               <div className="bk-fs-strip" onClick={(e) => e.stopPropagation()}>
