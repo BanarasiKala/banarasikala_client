@@ -1142,12 +1142,13 @@ const ProductDetail = () => {
     }
   };
 
-  const handleWishlist = async () => {
+  const handleWishlist = async (targetProduct = product, colorId = selectedColorId) => {
+    if (!targetProduct) return;
     if (!user) {
       navigate("/wishlist");
       return;
     }
-    await toggleWishlist(product, selectedColorId || null);
+    await toggleWishlist(targetProduct, colorId || null);
   };
 
   const handleShare = async () => {
@@ -1252,32 +1253,99 @@ const ProductDetail = () => {
     return (
       <div className="product-detail-page">
         <main className="product-detail-shell">
+          <div className="product-skeleton-mobile-header" aria-hidden="true">
+            <span className="product-skeleton-line title" />
+            <span className="product-skeleton-line medium" />
+          </div>
           <div className="product-detail-skeleton" aria-label="Loading product">
             <div className="product-skeleton-gallery">
-              <span className="product-skeleton-thumb" />
-              <span className="product-skeleton-thumb" />
-              <span className="product-skeleton-thumb" />
-              <span className="product-skeleton-image" />
+              <div className="product-skeleton-thumb-strip" aria-hidden="true">
+                <span className="product-skeleton-thumb" />
+                <span className="product-skeleton-thumb" />
+                <span className="product-skeleton-thumb" />
+                <span className="product-skeleton-thumb" />
+              </div>
+              <div className="product-skeleton-main">
+                <span className="product-skeleton-image" />
+                <div className="product-skeleton-media-bar" aria-hidden="true">
+                  <span className="product-skeleton-shape product-skeleton-media-spacer" />
+                  <span className="product-skeleton-media-dots">
+                    <span className="product-skeleton-shape product-skeleton-dot wide" />
+                    <span className="product-skeleton-shape product-skeleton-dot" />
+                    <span className="product-skeleton-shape product-skeleton-dot" />
+                  </span>
+                  <span className="product-skeleton-media-actions">
+                    <span className="product-skeleton-shape product-skeleton-circle" />
+                    <span className="product-skeleton-shape product-skeleton-circle" />
+                  </span>
+                </div>
+              </div>
               <div className="product-skeleton-mobile-thumbs" aria-hidden="true">
                 <span />
                 <span />
                 <span />
                 <span />
                 <span />
-                <span />
               </div>
-              <span className="product-skeleton-mobile-colors" />
             </div>
             <div className="product-skeleton-info">
               <span className="product-skeleton-line short" />
               <span className="product-skeleton-line title" />
               <span className="product-skeleton-line medium" />
-              <span className="product-skeleton-box" />
-              <span className="product-skeleton-line medium" />
-              <span className="product-skeleton-actions" />
-              <span className="product-skeleton-box tall" />
+              <div className="product-skeleton-price-card">
+                <span className="product-skeleton-line price" />
+                <span className="product-skeleton-line tiny" />
+              </div>
+              <div className="product-skeleton-color-card">
+                <span className="product-skeleton-line short" />
+                <div className="product-skeleton-color-pills" aria-hidden="true">
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                </div>
+              </div>
+              <div className="product-skeleton-action-panel" aria-hidden="true">
+                <span className="product-skeleton-shape product-skeleton-qty" />
+                <span className="product-skeleton-shape product-skeleton-add" />
+                <span className="product-skeleton-shape product-skeleton-buy" />
+              </div>
+              <div className="product-skeleton-feature-grid" aria-hidden="true">
+                {[...Array(6)].map((_, index) => (
+                  <span key={index} className="product-skeleton-feature">
+                    <span className="product-skeleton-shape product-skeleton-feature-icon" />
+                    <span className="product-skeleton-shape product-skeleton-feature-text" />
+                  </span>
+                ))}
+              </div>
+              <span className="product-skeleton-box delivery" />
+              <span className="product-skeleton-box offers" />
             </div>
           </div>
+          <div className="product-skeleton-section-grid" aria-hidden="true">
+            {[...Array(4)].map((_, index) => (
+              <span key={index} className="product-skeleton-section-card">
+                <span className="product-skeleton-line short" />
+                <span className="product-skeleton-line medium" />
+                <span className="product-skeleton-line medium" />
+                <span className="product-skeleton-line tiny" />
+              </span>
+            ))}
+          </div>
+          <section className="product-skeleton-related" aria-hidden="true">
+            <div className="product-skeleton-related-head">
+              <span className="product-skeleton-line medium" />
+              <span className="product-skeleton-line tiny" />
+            </div>
+            <div className="product-skeleton-related-grid">
+              {[...Array(4)].map((_, index) => (
+                <span key={index} className="product-skeleton-related-card">
+                  <span className="product-skeleton-related-image" />
+                  <span className="product-skeleton-line medium" />
+                  <span className="product-skeleton-line tiny" />
+                </span>
+              ))}
+            </div>
+          </section>
         </main>
       </div>
     );
@@ -1369,9 +1437,6 @@ const ProductDetail = () => {
                 ) : mainImage ? (
                   <ImageSlide url={imgUrl(mainImage)} alt={productName} />
                 ) : null}
-                {Number(product.discount_percent || 0) > 0 && (
-                  <span className="product-discount-badge">{product.discount_percent}% OFF</span>
-                )}
                 {isSelectedOutOfStock && (
                   <span className="product-image-stock-badge out">Out of stock</span>
                 )}
@@ -1392,8 +1457,18 @@ const ProductDetail = () => {
                   ))}
                 </div>
                 <div className="product-media-bar-right">
-                  <button type="button" onClick={(e) => { e.stopPropagation(); handleWishlist(); }} className={`product-media-action-btn${isInWishlist(product.id, selectedColorId) ? " active" : ""}`} aria-label="Wishlist">
-                    <Icon icon={isInWishlist(product.id, selectedColorId) ? "mdi:heart" : "lucide:heart"} />
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleWishlist(product, selectedColorId);
+                    }}
+                    className={`product-media-action-btn product-media-wishlist-btn${isInWishlist(product.id, selectedColorId) ? " active" : ""}`}
+                    aria-label={isInWishlist(product.id, selectedColorId) ? "Remove from wishlist" : "Add to wishlist"}
+                  >
+                    <svg width="20" height="20" fill={isInWishlist(product.id, selectedColorId) ? "#800020" : "none"} stroke="#800020" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
                   </button>
                   <button type="button" onClick={(e) => { e.stopPropagation(); handleShare(); }} className="product-media-action-btn" aria-label="Share">
                     <Icon icon="lucide:share-2" />
@@ -1745,6 +1820,8 @@ const ProductDetail = () => {
                 const activeSlide = 0;
                 const hasDiscount = Number(item.mrp_price || 0) > Number(item.selling_price || 0);
                 const relatedProductName = item.name;
+                const relatedColorId = slideImages[activeSlide]?.color_id || item.selected_color_id || null;
+                const relatedLiked = isInWishlist(item.id, relatedColorId);
 
                 return (
                   <Link
@@ -1766,7 +1843,20 @@ const ProductDetail = () => {
                           <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? relatedProductName : ""} />
                         ))}
                       </div>
-                      {hasDiscount && <span className="product-related-discount">{item.discount_percent}% off</span>}
+                      <button
+                        type="button"
+                        className="product-related-wishlist"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleWishlist(item, relatedColorId);
+                        }}
+                        aria-label={relatedLiked ? "Remove from wishlist" : "Add to wishlist"}
+                      >
+                        <svg width="20" height="20" fill={relatedLiked ? "#800020" : "none"} stroke={relatedLiked ? "#800020" : "#fff"} strokeWidth="1.8" viewBox="0 0 24 24">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                      </button>
                       {slideImages.length > 1 && (
                         <div className="product-related-dots" aria-hidden="true">
                           {slideImages.map((image, index) => (
