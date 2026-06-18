@@ -579,10 +579,8 @@ body.menu-open {
   height: 24px;
   display: block;
   overflow: hidden;
-  color: #c99a38;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 50%),
-    linear-gradient(90deg, #4b060d 0%, #650d17 50%, #4b060d 100%);
+  color: #d2a24a;
+  background: #4b070d;
   border-top: 1px solid rgba(199, 146, 48, 0.16);
   border-bottom: 1px solid rgba(199, 146, 48, 0.16);
   contain: paint;
@@ -601,7 +599,7 @@ body.menu-open {
 .bk-topline p {
   margin: 0;
   padding: 0 42px;
-  color: #c99a38;
+  color: #d2a24a;
   font-family: Georgia, "Times New Roman", serif !important;
   font-size: 13px;
   font-weight: 500;

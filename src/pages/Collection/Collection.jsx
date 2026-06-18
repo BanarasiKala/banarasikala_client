@@ -53,7 +53,7 @@ const Collection = () => {
 
   const [filters, setFilters] = useState(() => ({
     variety: getIdListParam(searchParams, "variety"),
-    occasion: [],
+    occasion: getIdListParam(searchParams, "occasion"),
     material: [],
     color: [],
     minPrice: 0,
@@ -69,12 +69,13 @@ const Collection = () => {
     }
     const urlSearch = searchParams.get("search") || "";
     const urlVarieties = getIdListParam(searchParams, "variety");
+    const urlOccasions = getIdListParam(searchParams, "occasion");
     setFilters((prev) => ({
       ...prev,
       search: urlSearch,
       variety: urlVarieties,
+      occasion: urlOccasions.length ? urlOccasions : prev.occasion,
       sortBy: getSortParam(searchParams),
-      // preserve sidebar filters (occasion, material, color, price) across URL changes
     }));
     setCurrentPage(1);
   }, [searchParams]);

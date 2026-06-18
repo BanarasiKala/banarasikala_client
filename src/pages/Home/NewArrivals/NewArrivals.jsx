@@ -115,7 +115,7 @@ const NewArrivals = () => {
       <div className="bk-arrivals-shell">
         <div className="bk-arrivals-copy">
           <span className="bk-arrivals-kicker">Fresh Drapes</span>
-          <h2>New Arrivals</h2>
+          <h2 id="new-arrivals-heading">New Arrivals</h2>
           <p>Freshly added sarees, ready for the first glance and the next celebration.</p>
         </div>
 

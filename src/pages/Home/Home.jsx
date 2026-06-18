@@ -49,20 +49,40 @@ const Home = () => {
   useEffect(() => {
     if (location.hash !== "#new-arrivals") return undefined;
 
+    let timer = null;
     let attempts = 0;
-    const scrollToNewArrivals = () => {
-      const target = document.getElementById("new-arrivals");
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+
+    const getHeaderOffset = () => {
+      const header = document.querySelector(".bk-header");
+      const headerHeight = header?.getBoundingClientRect().height || 0;
+      return headerHeight + 58;
+    };
+
+    const scrollToHeading = () => {
+      const heading = document.getElementById("new-arrivals-heading");
+      const fallback = document.getElementById("new-arrivals");
+      const target = heading || fallback;
+      if (!target) return false;
+
+      const top = target.getBoundingClientRect().top + window.scrollY - getHeaderOffset();
+      window.scrollTo({ top: Math.max(0, top), behavior: attempts === 0 ? "auto" : "smooth" });
+      return Boolean(heading);
+    };
+
+    const runScroll = () => {
+      const foundHeading = scrollToHeading();
       attempts += 1;
-      if (attempts < 6) {
-        window.setTimeout(scrollToNewArrivals, 160);
+
+      if (!foundHeading && attempts < 12) {
+        timer = window.setTimeout(runScroll, 180);
       }
     };
 
-    const timer = window.setTimeout(scrollToNewArrivals, 80);
-    return () => window.clearTimeout(timer);
+    timer = window.setTimeout(runScroll, 60);
+
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
   }, [location.hash]);
 
   return (

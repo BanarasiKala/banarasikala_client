@@ -46,6 +46,7 @@
 }
 
 .bk-arrivals-copy h2 {
+  scroll-margin-top: 190px;
   margin: 0;
   max-width: 260px;
   color: #5a160f;

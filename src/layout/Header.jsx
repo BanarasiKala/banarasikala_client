@@ -306,16 +306,38 @@ const Header = () => {
     });
   };
 
+  const getHeaderOffset = () => {
+    const header = document.querySelector(".bk-header");
+    const headerHeight = header?.getBoundingClientRect().height || 0;
+    return headerHeight + 58;
+  };
+
+  const getScrollTarget = (hash) => {
+    if (hash === "#new-arrivals") {
+      return document.getElementById("new-arrivals-heading") || document.getElementById("new-arrivals");
+    }
+
+    try {
+      return document.querySelector(hash);
+    } catch {
+      return null;
+    }
+  };
+
   const scrollForTarget = (target) => {
     if (target.hash) {
-      const section = document.querySelector(target.hash);
+      const section = getScrollTarget(target.hash);
       if (section) {
-        section.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
+        const top = section.getBoundingClientRect().top + window.scrollY - getHeaderOffset();
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        return true;
       }
+
+      return false;
     }
 
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    return true;
   };
 
   const refreshNavClick = (to) => (event) => {
@@ -331,7 +353,16 @@ const Header = () => {
         replace: true,
         state: { refreshKey: Date.now() },
       });
-      window.setTimeout(() => scrollForTarget(target), 40);
+
+      const runScroll = (attempt = 0) => {
+        const foundTarget = scrollForTarget(target);
+        const needsHeading = target.hash === "#new-arrivals" && !document.getElementById("new-arrivals-heading");
+        if ((!foundTarget || needsHeading) && attempt < 8) {
+          window.setTimeout(() => runScroll(attempt + 1), 180);
+        }
+      };
+
+      window.setTimeout(runScroll, 40);
     }
   };
 
@@ -393,7 +424,7 @@ const Header = () => {
             <p key={index}>
               <span>Free Delivery on All Orders!</span>
               <span className="bk-topline-separator" aria-hidden="true" />
-              <span>Grab Rs.100 in your wallet right after sign up</span>
+              <span>Grab Rs.50 Signup Bonus</span>
             </p>
           ))}
         </div>
