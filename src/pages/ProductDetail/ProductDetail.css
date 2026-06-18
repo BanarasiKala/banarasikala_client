@@ -1209,8 +1209,8 @@
 }
 
 .product-price-card {
-  margin-top: 22px;
-  padding: 16px;
+  margin-top: 10px;
+  padding: 10px;
   background: rgba(255, 252, 246, 0.72);
   border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 14px;
@@ -2024,7 +2024,7 @@
     position: static;
     max-height: none;
     overflow-y: visible;
-    padding: 18px 16px;
+    padding: 18px 6px;
     background: none;
     border: none;
     border-radius: 0;
@@ -2061,7 +2061,7 @@
 
   .product-detail-grid {
     width: 100%;
-    gap: 16px;
+    gap: 2px;
     justify-items: stretch;
   }
 
@@ -2169,8 +2169,9 @@
     width: 100%;
     max-width: 100%;
     margin-inline: 0;
-    padding: 14px 6px;
+    padding: 0px 6px;
     border-radius: 0;
+    margin-bottom: 10px;
   }
 
   .product-price-card,
@@ -3831,7 +3832,8 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   margin-top: 16px;
-  padding-top: 14px;
+  /* padding-top: 14px; */
+  margin-bottom: 14px;
   border-top: 1px solid rgba(128, 0, 32, 0.1);
 }
 .product-trust-badges span {
@@ -3989,11 +3991,11 @@
     grid-template-columns: 1fr;
     width: 100%;
     margin-top: 20px;
-    padding: 0 16px;
+    padding: 0 6px;
   }
 
   .product-reviews-section {
-    margin: 20px 16px 0;
+    margin: 20px 6px 0;
     width: auto;
     border-radius: 12px;
   }
@@ -4050,7 +4052,7 @@
   }
 
   .product-media-bar {
-    padding: 0 16px;
+    padding: 0 6px;
   }
 
   /* Full-bleed carousel — shell has no horizontal padding so gallery is naturally full-width */
@@ -4077,7 +4079,7 @@
     display: block;
     width: 100%;
     margin: 0 0 14px;
-    padding: 0 16px;
+    padding: 0 6px;
   }
 
   .product-mobile-header .product-detail-title {
@@ -4190,9 +4192,9 @@
 
 @media (max-width: 560px) {
   .product-sections-grid {
-    width: 100%;
-    margin-inline: 0;
-    padding: 0 16px;
+    width: calc(100% - 12px);
+    margin: 0 6px;
+    padding: 0;
   }
 
   .product-section-card {
@@ -4201,7 +4203,7 @@
 
   .product-mobile-header {
     width: 100%;
-    padding: 0 16px;
+    padding: 0 6px;
   }
 
   /* Gallery is naturally full-bleed — shell has no horizontal padding */

@@ -296,7 +296,6 @@ const ProductDetail = () => {
   }, [fullscreenOpen, fullscreenIdx]);
 
   const [relatedHoverId, setRelatedHoverId] = useState(null);
-  const [relatedSlides, setRelatedSlides] = useState({});
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
@@ -612,39 +611,6 @@ const ProductDetail = () => {
     return () => window.clearInterval(timer);
   }, [isGalleryHovering, visibleMedia, activeImageIndex]);
 
-  useEffect(() => {
-    if (!relatedHoverId) return undefined;
-    const target = products.find((item) => item.id === relatedHoverId);
-    const imageCount = getSortedImages(target).length;
-    if (imageCount <= 1) return undefined;
-
-    const timer = window.setInterval(() => {
-      setRelatedSlides((current) => ({
-        ...current,
-        [relatedHoverId]: ((current[relatedHoverId] || 0) + 1) % imageCount,
-      }));
-    }, 1450);
-
-    return () => window.clearInterval(timer);
-  }, [relatedHoverId, products]);
-
-  useEffect(() => {
-    if (!products.length) return undefined;
-
-    const timer = window.setInterval(() => {
-      setRelatedSlides((current) => {
-        const next = { ...current };
-        products.slice(0, 4).forEach((item) => {
-          if (item.id === relatedHoverId) return;
-          const count = getSortedImages(item).length;
-          if (count > 1) next[item.id] = ((next[item.id] || 0) + 1) % count;
-        });
-        return next;
-      });
-    }, 1850);
-
-    return () => window.clearInterval(timer);
-  }, [products, relatedHoverId]);
 
   // Keep quantity in sync with cart (so cart-page changes reflect here instantly)
   useEffect(() => {
@@ -1598,12 +1564,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <div className="product-trust-badges">
-              <span><Icon icon="lucide:lock" /> 100% Secure Payments</span>
-              <span><Icon icon="lucide:badge-check" /> Premium Quality</span>
-              <span><Icon icon="lucide:refresh-ccw" /> Easy Returns &amp; Exchange</span>
-            </div>
-
           </section>
         </div>
 
@@ -1656,7 +1616,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        <section className="product-reviews-section" id="product-reviews">
+        {productReviews.length > 0 && <section className="product-reviews-section" id="product-reviews">
           {approvedReviewImages.length > 0 && (
             <div className="product-review-gallery">
               {approvedReviewImages.slice(0, 10).map((image, index) => {
@@ -1720,7 +1680,7 @@ const ProductDetail = () => {
               <p>Be the first to share your experience with this product.</p>
             </div>
           )}
-        </section>
+        </section>}
 
         {products.length > 0 && (
           <section className="product-related">
@@ -1730,7 +1690,7 @@ const ProductDetail = () => {
                 const images = getSortedImages(item);
                 const fallbackImage = getProductCoverImage(item, "https://via.placeholder.com/500x650?text=Banarasi+Kala");
                 const slideImages = images.length ? images : [{ url: fallbackImage }];
-                const activeSlide = relatedSlides[item.id] || 0;
+                const activeSlide = 0;
                 const hasDiscount = Number(item.mrp_price || 0) > Number(item.selling_price || 0);
                 const relatedProductName = item.name;
 
