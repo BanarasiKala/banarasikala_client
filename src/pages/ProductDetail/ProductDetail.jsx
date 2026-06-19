@@ -59,13 +59,15 @@ const ReviewRatingBadge = ({ summary, onClick }) => {
   if (!count) return null;
   return (
     <button type="button" className="product-rating-row" onClick={onClick} aria-label={`${average.toFixed(1)} rating from ${count} reviews`}>
-      <strong>{average.toFixed(1)}</strong>
-      <span>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Icon key={star} icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"} />
-        ))}
+      <span className="product-rating-main">
+        <strong>{average.toFixed(1)}</strong>
+        <span className="product-rating-stars">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Icon key={star} icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"} />
+          ))}
+        </span>
       </span>
-      <small>({count})</small>
+      <small>{count} {count === 1 ? "review" : "reviews"}</small>
     </button>
   );
 };
