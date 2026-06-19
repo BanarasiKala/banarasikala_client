@@ -371,14 +371,17 @@ const Collection = () => {
     const cover = getProductCoverImage(product, "https://via.placeholder.com/400x600?text=VNS+Saree");
     const productImages = getProductImages(product);
     const sliderImages = productImages.length > 0 ? productImages : [{ url: cover }];
-    const activeSlide = activeSlides[product.id] || 0;
+    const activeSlide = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
     const imageReady = Boolean(loadedImages[product.id]);
     const stockInfo = getProductStockInfo(product);
     const isOutOfStock = stockInfo.isOutOfStock;
     const sell = Number(product.selling_price || 0);
     const mrp = Number(product.mrp_price || product.mrp || 0);
     const discountPercent = Number(product.discount_percent || calcDiscount(mrp, sell));
-    const productDescription = product.short_description || product.description || "";
+    const productDescription =
+      product.short_description ||
+      product.description ||
+      [product.Variety?.name, product.Material?.name].filter(Boolean).join(" ");
 
     return (
       <div
@@ -430,6 +433,7 @@ const Collection = () => {
                     key={`${image.url}-${imageIndex}`}
                     className={imageIndex === activeSlide ? "active" : ""}
                     onClick={(event) => goToSlide(event, product.id, imageIndex)}
+                    aria-label={`Show ${product.name} image ${imageIndex + 1}`}
                     tabIndex={-1}
                   />
                 ))}
