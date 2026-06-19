@@ -1009,12 +1009,17 @@
   place-items: center;
   z-index: 9999;
   padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
   animation: modal-fade-in 240ms ease-out;
 }
 
 .cancel-modal-container {
   position: relative;
   width: min(520px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
   background: #fffdf8;
   border: 1px solid rgba(123, 0, 27, 0.16);
   border-radius: 20px;
@@ -1165,6 +1170,7 @@
 
 .feedback-modal-container {
   width: min(560px, 100%);
+  max-height: calc(100dvh - 32px);
 }
 
 .feedback-image-preview {
@@ -1221,6 +1227,14 @@
   gap: 12px;
   margin-top: 10px;
   padding: 0;
+}
+
+.feedback-modal-container .modal-actions {
+  position: sticky;
+  bottom: -1px;
+  padding-top: 12px;
+  background: #fffdf8;
+  z-index: 1;
 }
 
 .modal-action-btn {
@@ -1287,8 +1301,13 @@
 }
 
 @media (max-width: 576px) {
+  .cancel-modal-overlay {
+    padding: 10px;
+  }
+
   .cancel-modal-container {
     padding: 20px;
+    max-height: calc(100dvh - 20px);
     border-radius: 16px;
   }
   

@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../utils/api";
 import { getOrderDisplayNumber } from "../../utils/itemCode";
 import { numberEnv } from "../../utils/env";
+import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import { useNotification } from "../../context/NotificationContext";
 import "./OrderConfirmation.css";
 
@@ -454,6 +455,7 @@ export default function OrderConfirmation() {
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
   const [bankForm, setBankForm] = useState({
     account_holder_name: "",
     account_number: "",
@@ -547,6 +549,7 @@ export default function OrderConfirmation() {
     if (feedbackSubmitting) return;
     setFeedbackModal({ isOpen: false, item: null });
     setFeedbackForm({ rating: 5, title: "", comment: "", images: [] });
+    setFeedbackSubmitLabel("");
   };
 
   const submitFeedback = async (event) => {
@@ -562,19 +565,21 @@ export default function OrderConfirmation() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("orderId", order.id);
-    formData.append("orderItemId", item.id);
-    formData.append("productId", item.product_id);
-    formData.append("rating", feedbackForm.rating);
-    formData.append("title", feedbackForm.title.trim());
-    formData.append("comment", feedbackForm.comment.trim());
-    feedbackForm.images.forEach((file) => formData.append("images", file));
-
     setFeedbackSubmitting(true);
+    setFeedbackSubmitLabel(feedbackForm.images.length ? "Uploading photos..." : "Submitting...");
     try {
-      const response = await api.post("/api/feedback/submit", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const uploadedImages = feedbackForm.images.length
+        ? await uploadReviewImages(feedbackForm.images)
+        : [];
+      setFeedbackSubmitLabel("Submitting review...");
+      const response = await api.post("/api/feedback/submit", {
+        orderId: order.id,
+        orderItemId: item.id,
+        productId: item.product_id,
+        rating: feedbackForm.rating,
+        title: feedbackForm.title.trim(),
+        comment: feedbackForm.comment.trim(),
+        images: uploadedImages,
       });
       const msg = response.data?.message?.toLowerCase().includes("updated") ? "Review updated" : "Review submitted";
       showNotification(msg, "success");
@@ -585,6 +590,7 @@ export default function OrderConfirmation() {
       showNotification(error?.response?.data?.message || "Could not submit review right now.", "error");
     } finally {
       setFeedbackSubmitting(false);
+      setFeedbackSubmitLabel("");
     }
   };
 
@@ -1001,7 +1007,7 @@ export default function OrderConfirmation() {
                   accept="image/*"
                   multiple
                   onChange={(event) => {
-                    const files = Array.from(event.target.files || []).slice(0, 5);
+                    const files = Array.from(event.target.files || []).slice(0, MAX_REVIEW_IMAGES);
                     setFeedbackForm((current) => ({ ...current, images: files }));
                   }}
                 />
@@ -1012,7 +1018,7 @@ export default function OrderConfirmation() {
                   Go Back
                 </button>
                 <button type="submit" className="modal-action-btn primary" disabled={feedbackSubmitting}>
-                  {feedbackSubmitting ? "Submitting..." : "Submit Feedback"}
+                  {feedbackSubmitting ? feedbackSubmitLabel || "Submitting..." : "Submit Feedback"}
                 </button>
               </div>
             </form>
