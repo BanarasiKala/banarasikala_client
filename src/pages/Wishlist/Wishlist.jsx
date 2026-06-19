@@ -10,6 +10,7 @@ import api from "../../utils/api";
 import { getColorStock, getProductImages } from "../../utils/productMedia";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
+import ProductRating from "../../components/ProductRating";
 import "./Wishlist.css";
 
 const Wishlist = () => {
@@ -22,6 +23,7 @@ const Wishlist = () => {
   const [selectedColorId, setSelectedColorId] = useState(null);
   const [addingToBag, setAddingToBag] = useState(false);
   const [directAddingId, setDirectAddingId] = useState(null);
+  const [activeSlides, setActiveSlides] = useState({});
   const hasItems = wishlist.length > 0;
 
   useEffect(() => {
@@ -138,6 +140,23 @@ const Wishlist = () => {
   };
 
   const modalColors = colorModalProduct ? getAvailableColors(colorModalProduct) : [];
+
+  const getWishlistImages = (item) => {
+    const images = getProductImages(item)
+      .filter((image) => image?.url)
+      .sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
+    const selectedColorImages = item.colorId
+      ? images.filter((image) => String(image.color_id) === String(item.colorId))
+      : [];
+    const ordered = item.colorId ? selectedColorImages : images;
+    return ordered.length ? ordered : [{ url: item.image_url }];
+  };
+
+  const goToSlide = (event, itemId, index) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveSlides((current) => ({ ...current, [itemId]: index }));
+  };
 
   return (
     <main className="wishlist-page">
@@ -258,54 +277,83 @@ const Wishlist = () => {
 
             return (
               <article key={item.wishlistItemId || `${item.id}-${item.colorId}`} className={`wishlist-card ${cardIsOos ? "out-of-stock" : ""}`}>
-                <Link to={`/product/${item.slug}${item.colorId ? `?color=${item.colorId}` : ""}`} className="wishlist-card-image">
-                  <img src={imgUrl(item.image_url)} alt={item.name} loading="lazy" />
-                  {hasDiscount && discountPercent > 0 && !cardIsOos && (
-                    <span className="wishlist-discount-badge">{discountPercent}% off</span>
-                  )}
-                  {item.colorName && (
-                    <span className="wishlist-color-badge">
-                      {item.colorHex && (
-                        <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
-                      )}
-                      {item.colorName}
-                    </span>
-                  )}
-                </Link>
-                <button
-                  type="button"
-                  className="wishlist-remove-icon"
-                  onClick={() => removeFromWishlist(item.wishlistItemId)}
-                  aria-label={`Remove ${item.name} from wishlist`}
-                >
-                  <Icon icon="lucide:x" />
-                </button>
+                {(() => {
+                  const sliderImages = getWishlistImages(item);
+                  const cardKey = item.wishlistItemId || item.id;
+                  const activeSlide = Math.min(activeSlides[cardKey] || 0, sliderImages.length - 1);
+                  const description = item.short_description || item.description || [item.Variety?.name, item.Material?.name].filter(Boolean).join(" ");
+                  return (
+                    <>
+                      <div className="wishlist-card-image">
+                        <Link to={`/product/${item.slug}${item.colorId ? `?color=${item.colorId}` : ""}`} className="wishlist-card-media-link" aria-label={`Open ${item.name}`}>
+                          <div className="wishlist-card-image-track" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
+                            {sliderImages.map((image, index) => (
+                              <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? item.name : ""} loading="lazy" />
+                            ))}
+                          </div>
+                          {item.colorName && (
+                            <span className="wishlist-color-badge">
+                              {item.colorHex && (
+                                <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
+                              )}
+                              {item.colorName}
+                            </span>
+                          )}
+                        </Link>
+                        {sliderImages.length > 1 && (
+                          <div className="wishlist-card-dots">
+                            {sliderImages.map((image, index) => (
+                              <button
+                                type="button"
+                                key={`${image.url}-dot-${index}`}
+                                className={index === activeSlide ? "active" : ""}
+                                onClick={(event) => goToSlide(event, cardKey, index)}
+                                aria-label={`Show ${item.name} image ${index + 1}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="wishlist-remove-icon"
+                        onClick={() => removeFromWishlist(item.wishlistItemId)}
+                        aria-label={`Remove ${item.name} from wishlist`}
+                      >
+                        <Icon icon="lucide:x" />
+                      </button>
 
-                <div className="wishlist-card-body">
-                  <Link to={`/product/${item.slug}`} className="wishlist-card-title">
-                    {item.name}
-                  </Link>
-                  {(showColorOos || (noColorSaved && stockInfo.isOutOfStock) || isLowStock) && (
-                    <div className="wishlist-card-status">
-                      {showColorOos && <span className="wishlist-status-pill">Color unavailable</span>}
-                      {noColorSaved && stockInfo.isOutOfStock && <span className="wishlist-status-pill">Out of stock</span>}
-                      {isLowStock && <span className="wishlist-status-pill low">{stockInfo.badge}</span>}
-                    </div>
-                  )}
-                  <div className="wishlist-card-price">
-                    {cardIsOos ? (
-                      <strong>Rs. {(mrp > 0 ? mrp : price).toLocaleString("en-IN")}</strong>
-                    ) : (
-                      <>
-                        <strong>Rs. {price.toLocaleString("en-IN")}</strong>
-                        {hasDiscount && <span>Rs. {mrp.toLocaleString("en-IN")}</span>}
-                      </>
-                    )}
-                  </div>
-                  <div className="wishlist-card-actions">
-                    {actionBtn}
-                  </div>
-                </div>
+                      <div className="wishlist-card-body">
+                        <Link to={`/product/${item.slug}`} className="wishlist-card-title">
+                          {item.name}
+                        </Link>
+                        {description && <p className="wishlist-card-desc">{description}</p>}
+                        <ProductRating product={item} className="wishlist-card-rating" />
+                        {(showColorOos || (noColorSaved && stockInfo.isOutOfStock) || isLowStock) && (
+                          <div className="wishlist-card-status">
+                            {showColorOos && <span className="wishlist-status-pill">Color unavailable</span>}
+                            {noColorSaved && stockInfo.isOutOfStock && <span className="wishlist-status-pill">Out of stock</span>}
+                            {isLowStock && <span className="wishlist-status-pill low">{stockInfo.badge}</span>}
+                          </div>
+                        )}
+                        <div className="wishlist-card-price">
+                          {!cardIsOos && hasDiscount && discountPercent > 0 && <em>-{discountPercent}%</em>}
+                          {cardIsOos ? (
+                            <strong>Rs. {(mrp > 0 ? mrp : price).toLocaleString("en-IN")}</strong>
+                          ) : (
+                            <>
+                              <strong>Rs. {price.toLocaleString("en-IN")}</strong>
+                              {hasDiscount && <span>Rs. {mrp.toLocaleString("en-IN")}</span>}
+                            </>
+                          )}
+                        </div>
+                        <div className="wishlist-card-actions">
+                          {actionBtn}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </article>
             );
           })}
