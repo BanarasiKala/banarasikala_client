@@ -329,18 +329,6 @@ const Collection = () => {
         onPointerEnter={() => handleCardEnter(product.id)}
         onPointerLeave={() => handleCardLeave(product.id)}
       >
-        <button
-          type="button"
-          className={`collection-wishlist-pill ${isInWishlist(product.id) ? "active" : ""}`}
-          onClick={(e) => handleWishlist(e, product)}
-          aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
-        >
-          <Icon
-            className="wishlist-icon"
-            icon={isInWishlist(product.id) ? "mdi:heart" : "lucide:heart"}
-          />
-        </button>
-
         <Link
           to={`/product/${product.slug}`}
           className="card-img-container"

@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { imgUrl } from "../../../utils/cloudinary";
 import { useAuth } from "../../../context/AuthContext";
+import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
+import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
 import ProductRating from "../../../components/ProductRating";
@@ -18,7 +20,9 @@ const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")
 const NewArrivals = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { showNotification } = useNotification();
   const sectionRef = useRef(null);
   const swipeRef = useRef({});
   const swipeBlockRef = useRef(new Set());
@@ -71,6 +75,15 @@ const NewArrivals = () => {
     e.stopPropagation();
     if (!user) { navigate("/wishlist"); return; }
     toggleWishlist(product, colorId || null);
+  };
+
+  const handleAddToCart = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
+    const result = await addToCart(product, 1, product.selected_color_id || null);
+    if (result?.success) showNotification("Added to bag!", "success");
+    else showNotification(result?.message || "Could not add to bag.", "error");
   };
 
   const goToSlide = (event, productId, slideIndex) => {
@@ -214,31 +227,20 @@ const NewArrivals = () => {
                             ))}
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={(e) => handleWishlistClick(e, product, currentColorId)}
-                          className="bk-arrival-wishlist"
-                          aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
-                        >
-                          <svg width="20" height="20" fill={liked ? "#800020" : "none"} stroke={liked ? "#800020" : "#fff"} strokeWidth="1.8" viewBox="0 0 24 24">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
                       </div>
 
                       <div className="bk-arrival-info">
                         <h3>{product.name}</h3>
-                        <p className="bk-arrival-desc">{productDescription}</p>
-                        <div className="bk-arrival-price-row">
-                          <span className="bk-arrival-price">{formatMoney(sell)}</span>
-                          {mrp > sell && (
-                            <>
-                              <span className="bk-arrival-mrp">{formatMoney(mrp)}</span>
-                              {discountPercent > 0 && <span className="bk-arrival-discount">{discountPercent}% OFF</span>}
-                            </>
-                          )}
-                        </div>
+                        {productDescription && <p className="bk-arrival-desc">{productDescription}</p>}
                         <ProductRating product={product} className="bk-arrival-rating" />
+                        <div className="bk-arrival-price-row">
+                          {discountPercent > 0 && <em className="bk-arrival-discount">-{discountPercent}%</em>}
+                          <strong className="bk-arrival-price">{formatMoney(sell)}</strong>
+                          {mrp > sell && <span className="bk-arrival-mrp">{formatMoney(mrp)}</span>}
+                        </div>
+                        <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product)}>
+                          Add to Cart
+                        </button>
                       </div>
                     </Link>
                   </article>

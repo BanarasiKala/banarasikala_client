@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { imgUrl } from "../../../utils/cloudinary";
 import { useAuth } from "../../../context/AuthContext";
+import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
+import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
 import ProductRating from "../../../components/ProductRating";
@@ -18,7 +20,9 @@ const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")
 const PopularSarees = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { showNotification } = useNotification();
   const sectionRef = useRef(null);
   const swipeRef = useRef({});
   const swipeBlockRef = useRef(new Set());
@@ -123,6 +127,15 @@ const PopularSarees = () => {
     toggleWishlist(product, colorId || null);
   };
 
+  const handleAddToCart = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
+    const result = await addToCart(product, 1, product.selected_color_id || null);
+    if (result?.success) showNotification("Added to bag!", "success");
+    else showNotification(result?.message || "Could not add to bag.", "error");
+  };
+
   return (
     <section className="bk-popular-section" ref={sectionRef}>
       <div className="bk-popular-shell">
@@ -215,31 +228,20 @@ const PopularSarees = () => {
                           ))}
                         </div>
                       )}
-                      <button
-                        type="button"
-                        onClick={(e) => handleWishlistClick(e, product, currentColorId)}
-                        className="bk-popular-wishlist"
-                        aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
-                      >
-                        <svg width="23" height="23" fill={liked ? "#800020" : "none"} stroke={liked ? "#800020" : "#fff"} strokeWidth="1.8" viewBox="0 0 24 24">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                      </button>
                     </div>
 
                     <div className="bk-popular-card-body">
                       <h3>{product.name}</h3>
-                      <p className="bk-popular-desc">{productDescription}</p>
-                      <div className="bk-popular-price-row">
-                        <span className="bk-popular-price">{formatMoney(sell)}</span>
-                        {mrp > sell && (
-                          <>
-                            <span className="bk-popular-mrp">{formatMoney(mrp)}</span>
-                            {discountPercent > 0 && <span className="bk-popular-discount">{discountPercent}% OFF</span>}
-                          </>
-                        )}
-                      </div>
+                      {productDescription && <p className="bk-popular-desc">{productDescription}</p>}
                       <ProductRating product={product} className="bk-popular-rating" />
+                      <div className="bk-popular-price-row">
+                        {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
+                        <strong className="bk-popular-price">{formatMoney(sell)}</strong>
+                        {mrp > sell && <span className="bk-popular-mrp">{formatMoney(mrp)}</span>}
+                      </div>
+                      <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product)}>
+                        Add to Cart
+                      </button>
                     </div>
                   </Link>
                 </article>
