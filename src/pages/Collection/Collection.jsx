@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useNotification } from "../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../config/api";
@@ -12,6 +13,12 @@ import ProductRating from "../../components/ProductRating";
 import "./Collection.css";
 
 const PAGE_SIZE = 20;
+
+const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+const calcDiscount = (mrp, sell) => {
+  if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
+  return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
+};
 
 const getIdListParam = (params, key) =>
   (params.get(key) || "")
@@ -30,6 +37,7 @@ const getSortParam = (params) => {
 const Collection = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -53,6 +61,8 @@ const Collection = () => {
   const productsRequestId = useRef(0);
   const fallbackRequestId = useRef(0);
   const isFirstSearchParamsRun = useRef(true);
+  const swipeRef = useRef({});
+  const swipeBlockRef = useRef(new Set());
 
   const [filters, setFilters] = useState(() => ({
     variety: getIdListParam(searchParams, "variety"),
@@ -251,7 +261,6 @@ const Collection = () => {
 
   const handleCardLeave = (productId) => {
     setHoveredProductId((current) => (current === productId ? null : current));
-    setActiveSlides((current) => ({ ...current, [productId]: 0 }));
   };
 
   const goToSlide = (event, productId, slideIndex) => {
@@ -259,6 +268,43 @@ const Collection = () => {
     event.stopPropagation();
     setActiveSlides((current) => ({ ...current, [productId]: slideIndex }));
     setHoveredProductId(productId);
+  };
+
+  const blockSwipeClick = (productId) => {
+    swipeBlockRef.current.add(productId);
+    window.setTimeout(() => swipeBlockRef.current.delete(productId), 450);
+  };
+
+  const handleTouchStart = (event, productId) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    swipeRef.current[productId] = { startX: touch.clientX, startY: touch.clientY };
+  };
+
+  const handleTouchMove = (event, productId) => {
+    const touch = event.touches?.[0];
+    const swipe = swipeRef.current[productId];
+    if (!touch || !swipe) return;
+    if (Math.abs(touch.clientX - swipe.startX) > 8) swipe.didMove = true;
+  };
+
+  const handleTouchEnd = (event, productId, imageCount) => {
+    const touch = event.changedTouches?.[0];
+    const swipe = swipeRef.current[productId];
+    delete swipeRef.current[productId];
+    if (!touch || !swipe || imageCount <= 1) return;
+    const dx = touch.clientX - swipe.startX;
+    const dy = touch.clientY - swipe.startY;
+    const absDx = Math.abs(dx);
+    if (absDx <= 40 || absDx <= Math.abs(dy)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    blockSwipeClick(productId);
+    setActiveSlides((current) => {
+      const idx = current[productId] || 0;
+      const next = dx < 0 ? (idx + 1) % imageCount : (idx - 1 + imageCount) % imageCount;
+      return { ...current, [productId]: next };
+    });
   };
 
   const markImageLoaded = (productId) => {
@@ -312,6 +358,15 @@ const Collection = () => {
     await toggleWishlist(product);
   };
 
+  const handleAddToCart = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
+    const result = await addToCart(product, 1, product.selected_color_id || null);
+    if (result?.success) showNotification("Added to bag!", "success");
+    else showNotification(result?.message || "Could not add to bag.", "error");
+  };
+
   const renderProductCard = (product) => {
     const cover = getProductCoverImage(product, "https://via.placeholder.com/400x600?text=VNS+Saree");
     const productImages = getProductImages(product);
@@ -320,7 +375,10 @@ const Collection = () => {
     const imageReady = Boolean(loadedImages[product.id]);
     const stockInfo = getProductStockInfo(product);
     const isOutOfStock = stockInfo.isOutOfStock;
-    // const isLowStock = stockInfo.isLowStock;
+    const sell = Number(product.selling_price || 0);
+    const mrp = Number(product.mrp_price || product.mrp || 0);
+    const discountPercent = Number(product.discount_percent || calcDiscount(mrp, sell));
+    const productDescription = product.short_description || product.description || "";
 
     return (
       <div
@@ -331,67 +389,72 @@ const Collection = () => {
       >
         <Link
           to={`/product/${product.slug}`}
-          className="card-img-container"
+          className="card-link"
+          onClick={(event) => {
+            if (swipeBlockRef.current.has(product.id)) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
         >
-          {!imageReady && <span className="card-image-shimmer" aria-hidden="true" />}
-          {isOutOfStock && <span className="collection-stock-badge">Out of stock</span>}
-          {/* {isLowStock && <span className="collection-stock-badge low">{stockInfo.badge}</span>} */}
           <div
-            className={`card-img-track ${imageReady ? "is-loaded" : ""}`}
-            style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+            className="card-img-container"
+            onTouchStart={(event) => handleTouchStart(event, product.id)}
+            onTouchMove={(event) => handleTouchMove(event, product.id)}
+            onTouchEnd={(event) => handleTouchEnd(event, product.id, sliderImages.length)}
           >
-            {sliderImages.map((image, imageIndex) => (
-              <img
-                key={`${product.id}-${image.url}-${imageIndex}`}
-                src={imgUrl(image.url)}
-                alt={imageIndex === 0 ? product.name : ""}
-                className="card-img"
-                loading="lazy"
-                onLoad={() => {
-                  if (imageIndex === 0) markImageLoaded(product.id);
-                }}
-              />
-            ))}
-          </div>
-          {sliderImages.length > 1 && (
-            <div className="collection-card-dots" aria-hidden="true">
+            {!imageReady && <span className="card-image-shimmer" aria-hidden="true" />}
+            {isOutOfStock && <span className="collection-stock-badge">Out of stock</span>}
+            <div
+              className={`card-img-track ${imageReady ? "is-loaded" : ""}`}
+              style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+            >
               {sliderImages.map((image, imageIndex) => (
-                <button
-                  type="button"
-                  key={`${image.url}-${imageIndex}`}
-                  className={imageIndex === activeSlide ? "active" : ""}
-                  onClick={(event) => goToSlide(event, product.id, imageIndex)}
-                  tabIndex={-1}
+                <img
+                  key={`${product.id}-${image.url}-${imageIndex}`}
+                  src={imgUrl(image.url)}
+                  alt={imageIndex === 0 ? product.name : ""}
+                  className="card-img"
+                  loading="lazy"
+                  onLoad={() => {
+                    if (imageIndex === 0) markImageLoaded(product.id);
+                  }}
                 />
               ))}
             </div>
-          )}
-        </Link>
-
-        <div className="card-details">
-          <p className="product-title" title={product.name || "Premium Saree"}>
-            {product.name || "Handcrafted Banarasi Saree"}
-          </p>
-          <p className="product-short-desc">
-            {product.short_description || product.description || "Premium Banarasi saree crafted for timeless celebrations."}
-          </p>
-          <div className="price-container">
-            <span className="selling-price">
-              Rs. {Number(product.selling_price || 0).toLocaleString("en-IN")}
-            </span>
-            {Number(product.mrp_price || product.mrp || 0) > Number(product.selling_price || 0) && (
-              <>
-                <span className="mrp-price">
-                  Rs. {Number(product.mrp_price || product.mrp).toLocaleString("en-IN")}
-                </span>
-                <span className="discount-text">
-                  {calculateDiscount(product.mrp_price || product.mrp, product.selling_price)}% OFF
-                </span>
-              </>
+            {sliderImages.length > 1 && (
+              <div className="collection-card-dots" aria-hidden="true">
+                {sliderImages.map((image, imageIndex) => (
+                  <button
+                    type="button"
+                    key={`${image.url}-${imageIndex}`}
+                    className={imageIndex === activeSlide ? "active" : ""}
+                    onClick={(event) => goToSlide(event, product.id, imageIndex)}
+                    tabIndex={-1}
+                  />
+                ))}
+              </div>
             )}
           </div>
-          <ProductRating product={product} className="collection-product-rating" />
-        </div>
+
+          <div className="card-details">
+            <h3>{product.name || "Handcrafted Banarasi Saree"}</h3>
+            {productDescription && <p className="collection-desc">{productDescription}</p>}
+            <ProductRating product={product} className="collection-product-rating" />
+            <div className="price-container">
+              {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
+              <strong className="selling-price">{formatMoney(sell)}</strong>
+              {mrp > sell && <span className="mrp-price">{formatMoney(mrp)}</span>}
+            </div>
+            <button
+              type="button"
+              className="collection-atc-btn"
+              onClick={(e) => handleAddToCart(e, product)}
+            >
+              Add to Cart
+            </button>
+          </div>
+        </Link>
       </div>
     );
   };
