@@ -1234,6 +1234,22 @@ const ProductDetail = () => {
     });
   };
 
+  const handleRelatedAddToCart = async (e, relatedItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      showNotification("Please login to add items to bag", "info");
+      navigate("/login");
+      return;
+    }
+    const result = await addToCart(relatedItem, 1, relatedItem.selected_color_id || null);
+    if (result?.success) {
+      showNotification("Added to bag!", "success");
+    } else {
+      showNotification(result?.message || "Could not add to bag.", "error");
+    }
+  };
+
   const copyCouponCode = async (code) => {
     const couponCodeValue = String(code || "").trim();
     if (!couponCodeValue) return;
@@ -1948,20 +1964,6 @@ const ProductDetail = () => {
                           <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? relatedProductName : ""} />
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        className="product-related-wishlist"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleWishlist(item, relatedColorId);
-                        }}
-                        aria-label={relatedLiked ? "Remove from wishlist" : "Add to wishlist"}
-                      >
-                        <svg width="20" height="20" fill={relatedLiked ? "#800020" : "none"} stroke={relatedLiked ? "#800020" : "#fff"} strokeWidth="1.8" viewBox="0 0 24 24">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                      </button>
                       {slideImages.length > 1 && (
                         <div className="product-related-dots">
                           {slideImages.map((image, index) => (
@@ -1978,17 +1980,24 @@ const ProductDetail = () => {
                     </div>
                     <div className="product-related-body">
                       <h3>{relatedProductName}</h3>
-                      <p className="product-related-desc">{relatedDescription}</p>
-                      <div className="product-related-price">
-                        <strong>{formatMoney(item.selling_price)}</strong>
-                        {hasDiscount && (
-                          <>
-                            <span>{formatMoney(item.mrp_price)}</span>
-                            {relatedDiscountPercent > 0 && <em>{relatedDiscountPercent}% OFF</em>}
-                          </>
-                        )}
-                      </div>
+                      {relatedDescription && (
+                        <p className="product-related-desc">{relatedDescription}</p>
+                      )}
                       <ProductRating product={item} className="product-related-rating" />
+                      <div className="product-related-price">
+                        {hasDiscount && relatedDiscountPercent > 0 && (
+                          <em>-{relatedDiscountPercent}%</em>
+                        )}
+                        <strong>{formatMoney(item.selling_price)}</strong>
+                        {hasDiscount && <span>{formatMoney(item.mrp_price)}</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="product-related-atc-btn"
+                        onClick={(e) => handleRelatedAddToCart(e, item)}
+                      >
+                        Add to Cart
+                      </button>
                     </div>
                   </Link>
                 );
