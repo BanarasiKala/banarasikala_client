@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate } from "react-router-dom";
@@ -24,6 +24,8 @@ const Wishlist = () => {
   const [addingToBag, setAddingToBag] = useState(false);
   const [directAddingId, setDirectAddingId] = useState(null);
   const [activeSlides, setActiveSlides] = useState({});
+  const swipeRef = useRef({});
+  const swipeBlockRef = useRef(new Set());
   const hasItems = wishlist.length > 0;
 
   useEffect(() => {
@@ -150,6 +152,40 @@ const Wishlist = () => {
       : [];
     const ordered = item.colorId ? selectedColorImages : images;
     return ordered.length ? ordered : [{ url: item.image_url }];
+  };
+
+  const handleSwipeStart = (event, itemId) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    swipeRef.current[itemId] = { startX: touch.clientX, startY: touch.clientY };
+  };
+
+  const handleSwipeMove = (event, itemId) => {
+    const touch = event.touches?.[0];
+    const swipe = swipeRef.current[itemId];
+    if (!touch || !swipe) return;
+    if (Math.abs(touch.clientX - swipe.startX) > 8) swipe.didMove = true;
+  };
+
+  const handleSwipeEnd = (event, itemId, imageCount) => {
+    const touch = event.changedTouches?.[0];
+    const swipe = swipeRef.current[itemId];
+    delete swipeRef.current[itemId];
+    if (!touch || !swipe || imageCount <= 1) return;
+
+    const dx = touch.clientX - swipe.startX;
+    const dy = touch.clientY - swipe.startY;
+    if (Math.abs(dx) <= 40 || Math.abs(dx) <= Math.abs(dy)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    swipeBlockRef.current.add(itemId);
+    window.setTimeout(() => swipeBlockRef.current.delete(itemId), 450);
+    setActiveSlides((current) => {
+      const cur = current[itemId] || 0;
+      const next = dx < 0 ? (cur + 1) % imageCount : (cur - 1 + imageCount) % imageCount;
+      return { ...current, [itemId]: next };
+    });
   };
 
   const goToSlide = (event, itemId, index) => {
@@ -284,21 +320,28 @@ const Wishlist = () => {
                   const description = item.short_description || item.description || [item.Variety?.name, item.Material?.name].filter(Boolean).join(" ");
                   return (
                     <>
-                      <div className="wishlist-card-image">
-                        <Link to={`/product/${item.slug}${item.colorId ? `?color=${item.colorId}` : ""}`} className="wishlist-card-media-link" aria-label={`Open ${item.name}`}>
+                      <div
+                        className="wishlist-card-image"
+                        onTouchStart={(event) => handleSwipeStart(event, cardKey)}
+                        onTouchMove={(event) => handleSwipeMove(event, cardKey)}
+                        onTouchEnd={(event) => handleSwipeEnd(event, cardKey, sliderImages.length)}
+                      >
+                        <Link
+                          to={`/product/${item.slug}${item.colorId ? `?color=${item.colorId}` : ""}`}
+                          className="wishlist-card-media-link"
+                          aria-label={`Open ${item.name}`}
+                          onClick={(event) => {
+                            if (swipeBlockRef.current.has(cardKey)) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                            }
+                          }}
+                        >
                           <div className="wishlist-card-image-track" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
                             {sliderImages.map((image, index) => (
                               <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? item.name : ""} loading="lazy" />
                             ))}
                           </div>
-                          {item.colorName && (
-                            <span className="wishlist-color-badge">
-                              {item.colorHex && (
-                                <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
-                              )}
-                              {item.colorName}
-                            </span>
-                          )}
                         </Link>
                         {sliderImages.length > 1 && (
                           <div className="wishlist-card-dots">
@@ -324,6 +367,14 @@ const Wishlist = () => {
                       </button>
 
                       <div className="wishlist-card-body">
+                        {item.colorName && (
+                          <span className="wishlist-color-badge">
+                            {item.colorHex && (
+                              <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
+                            )}
+                            {item.colorName}
+                          </span>
+                        )}
                         <Link to={`/product/${item.slug}`} className="wishlist-card-title">
                           {item.name}
                         </Link>
