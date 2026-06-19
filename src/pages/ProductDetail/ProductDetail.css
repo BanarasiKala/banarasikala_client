@@ -1195,18 +1195,17 @@
   gap: 8px;
   margin-top: 6px;
   width: fit-content;
-  padding: 7px 14px 7px 10px;
-  border: 1px solid rgba(212, 161, 53, 0.28);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(255, 251, 240, 0.95) 0%, rgba(255, 244, 216, 0.9) 100%);
-  box-shadow: 0 2px 8px rgba(212, 161, 53, 0.12);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   white-space: nowrap;
   flex: 0 0 auto;
-  transition: box-shadow 0.15s;
 }
 .product-rating-row:hover {
-  box-shadow: 0 3px 12px rgba(212, 161, 53, 0.22);
+  box-shadow: none;
 }
 
 .product-rating-row span {
@@ -1238,7 +1237,7 @@
   color: rgba(53, 23, 15, 0.2);
 }
 .product-rating-row--empty:hover {
-  box-shadow: 0 2px 8px rgba(212, 161, 53, 0.12);
+  box-shadow: none;
 }
 
 .product-reviews-empty {
@@ -1493,6 +1492,116 @@
   color: #4b160e;
   font-size: 12px;
   font-weight: 700;
+}
+
+/* ── More Reviews button ── */
+.product-reviews-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.product-reviews-more-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #800020;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 0.16s ease, opacity 0.16s ease;
+}
+
+.product-reviews-more-btn:hover {
+  color: #4b070d;
+  opacity: 0.85;
+}
+
+/* ── Reviews modal ── */
+.product-reviews-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(22, 12, 7, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.product-reviews-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: 88vh;
+  background: linear-gradient(180deg, #fffaf1 0%, #fff8ec 100%);
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(60, 20, 10, 0.22);
+  overflow: hidden;
+}
+
+.product-reviews-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(128, 0, 32, 0.1);
+  flex-shrink: 0;
+}
+
+.product-reviews-modal-head h2 {
+  margin: 0;
+  color: #720019;
+  font-family: "Cinzel", serif;
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 700;
+}
+
+.product-reviews-modal-head h2 small {
+  color: rgba(53, 23, 15, 0.45);
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.product-reviews-modal-close {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #800020;
+  background: rgba(128, 0, 32, 0.07);
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.product-reviews-modal-close:hover {
+  background: rgba(128, 0, 32, 0.14);
+}
+
+.product-reviews-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-content: start;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 0, 32, 0.18) transparent;
 }
 
 .product-price-card {
@@ -1931,7 +2040,7 @@
 .product-related-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -1947,15 +2056,20 @@
   overflow-wrap: anywhere;
 }
 
+.product-related-view-all-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
 .product-related-view-all {
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: 0;
   color: #800020;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-decoration: underline;

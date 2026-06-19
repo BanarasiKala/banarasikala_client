@@ -195,6 +195,7 @@ const ProductDetail = () => {
   const [productReviews, setProductReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
   const [reviewGalleryIndex, setReviewGalleryIndex] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [productError, setProductError] = useState(null);
   const [mainImage, setMainImage] = useState("");
@@ -383,7 +384,7 @@ const ProductDetail = () => {
         const initialColor = searchParams.get("color");
         const [prodRes, relatedRes] = await Promise.all([
           fetch(`${API_ENDPOINTS.products}/${slug}/detail${initialColor ? `?color=${encodeURIComponent(initialColor)}` : ""}`),
-          fetch(`${API_ENDPOINTS.products}/${slug}/related?limit=4`),
+          fetch(`${API_ENDPOINTS.products}/${slug}/related?limit=20`),
         ]);
 
         if (prodRes.status === 404) { setProductError("not_found"); return; }
@@ -719,6 +720,15 @@ const ProductDetail = () => {
     const timer = window.setTimeout(() => setCouponCelebration(null), 2400);
     return () => window.clearTimeout(timer);
   }, [couponCelebration]);
+
+  useEffect(() => {
+    if (!reviewModalOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setReviewModalOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [reviewModalOpen]);
 
   useEffect(() => {
     if (!buyNowOpen) return undefined;
@@ -1797,30 +1807,43 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {productReviews.length > 0 && <section className="product-reviews-section" id="product-reviews">
-          {approvedReviewImages.length > 0 && (
-            <div className="product-review-gallery">
-              {approvedReviewImages.slice(0, 10).map((image, index) => {
-                const remaining = approvedReviewImages.length - 10;
-                const showMore = index === 9 && remaining > 0;
-                return (
-                  <button
-                    type="button"
-                    className="product-review-gallery-item"
-                    onClick={() => setReviewGalleryIndex(index)}
-                    key={`${image.url}-${index}`}
-                  >
-                    <img src={imgUrl(image.url)} alt="Uploaded product photo" loading="lazy" />
-                    {showMore && <span>+{remaining} more</span>}
-                  </button>
-                );
-              })}
+        {productReviews.length > 0 && (
+          <section className="product-reviews-section" id="product-reviews">
+            <div className="product-reviews-head">
+              <div>
+                <span>CUSTOMER FEEDBACK</span>
+                <h2>Reviews</h2>
+              </div>
+              {Number(reviewSummary.count || 0) > 0 && (
+                <div className="product-review-score">
+                  <strong>{Number(reviewSummary.average || 0).toFixed(1)}</strong>
+                  <small>{reviewSummary.count} reviews</small>
+                </div>
+              )}
             </div>
-          )}
 
-          {productReviews.length > 0 ? (
+            {approvedReviewImages.length > 0 && (
+              <div className="product-review-gallery">
+                {approvedReviewImages.slice(0, 10).map((image, index) => {
+                  const remaining = approvedReviewImages.length - 10;
+                  const showMore = index === 9 && remaining > 0;
+                  return (
+                    <button
+                      type="button"
+                      className="product-review-gallery-item"
+                      onClick={() => setReviewGalleryIndex(index)}
+                      key={`${image.url}-${index}`}
+                    >
+                      <img src={imgUrl(image.url)} alt="Uploaded product photo" loading="lazy" />
+                      {showMore && <span>+{remaining} more</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="product-review-list">
-              {productReviews.slice(0, 6).map((review) => {
+              {productReviews.slice(0, 3).map((review) => {
                 const rating = Number(review.rating || 0);
                 return (
                   <article className="product-review-card" key={review.id}>
@@ -1841,7 +1864,7 @@ const ProductDetail = () => {
                             type="button"
                             key={`${image.url}-${index}`}
                             onClick={() => {
-                              const galleryIndex = approvedReviewImages.findIndex((galleryImage) => galleryImage.url === image.url);
+                              const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
                               setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
                             }}
                           >
@@ -1854,26 +1877,28 @@ const ProductDetail = () => {
                 );
               })}
             </div>
-          ) : (
-            <div className="product-reviews-empty">
-              <Icon icon="lucide:message-square" />
-              <strong>No reviews yet</strong>
-              <p>Be the first to share your experience with this product.</p>
-            </div>
-          )}
-        </section>}
+
+            {productReviews.length > 3 && (
+              <div className="product-reviews-more-wrap">
+                <button
+                  type="button"
+                  className="product-reviews-more-btn"
+                  onClick={() => setReviewModalOpen(true)}
+                >
+                  More Reviews
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
         {products.length > 0 && (
           <section className="product-related">
             <div className="product-related-head">
               <h2>More Products</h2>
-              <Link to="/collection" className="product-related-view-all" aria-label="View all products">
-                <span>View All</span>
-                <Icon icon="lucide:arrow-right" />
-              </Link>
             </div>
             <div className="product-related-grid">
-              {products.slice(0, 4).map((item) => {
+              {products.slice(0, 20).map((item) => {
                 const images = getSortedImages(item);
                 const fallbackImage = getProductCoverImage(item, "https://via.placeholder.com/500x650?text=Banarasi+Kala");
                 const slideImages = images.length ? images : [{ url: fallbackImage }];
@@ -1969,6 +1994,12 @@ const ProductDetail = () => {
                 );
               })}
             </div>
+            <div className="product-related-view-all-wrap">
+              <Link to="/collection" className="product-related-view-all" aria-label="View all products">
+                <span>View All</span>
+                <Icon icon="lucide:arrow-right" />
+              </Link>
+            </div>
           </section>
         )}
       </main>
@@ -2010,6 +2041,55 @@ const ProductDetail = () => {
             </button>
           )}
           <span className="review-lightbox-count">{reviewGalleryIndex + 1} / {approvedReviewImages.length}</span>
+        </div>
+      )}
+
+      {reviewModalOpen && (
+        <div className="product-reviews-modal-overlay" role="dialog" aria-modal="true" onClick={() => setReviewModalOpen(false)}>
+          <div className="product-reviews-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="product-reviews-modal-head">
+              <h2>All Reviews <small>({productReviews.length})</small></h2>
+              <button type="button" className="product-reviews-modal-close" onClick={() => setReviewModalOpen(false)} aria-label="Close reviews">
+                <Icon icon="lucide:x" />
+              </button>
+            </div>
+            <div className="product-reviews-modal-body">
+              {productReviews.map((review) => {
+                const rating = Number(review.rating || 0);
+                return (
+                  <article className="product-review-card" key={review.id}>
+                    <div className="product-review-card-head">
+                      <div className="product-review-stars">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Icon key={star} icon={rating >= star ? "mdi:star" : "mdi:star-outline"} />
+                        ))}
+                      </div>
+                      <span>{review.Customer?.name || "Verified customer"}</span>
+                    </div>
+                    {review.title && <h3>{review.title}</h3>}
+                    <p>{review.comment}</p>
+                    {Array.isArray(review.images) && review.images.length > 0 && (
+                      <div className="product-review-images">
+                        {review.images.slice(0, 4).map((image, index) => (
+                          <button
+                            type="button"
+                            key={`${image.url}-${index}`}
+                            onClick={() => {
+                              const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
+                              setReviewModalOpen(false);
+                              setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
+                            }}
+                          >
+                            <img src={imgUrl(image.url)} alt="" loading="lazy" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
