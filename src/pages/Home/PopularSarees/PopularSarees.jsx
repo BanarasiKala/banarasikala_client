@@ -127,11 +127,11 @@ const PopularSarees = () => {
     toggleWishlist(product, colorId || null);
   };
 
-  const handleAddToCart = async (e, product) => {
+  const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
-    const result = await addToCart(product, 1, product.selected_color_id || null);
+    const result = await addToCart(product, 1, colorId || null);
     if (result?.success) showNotification("Added to bag!", "success");
     else showNotification(result?.message || "Could not add to bag.", "error");
   };
@@ -239,7 +239,7 @@ const PopularSarees = () => {
                         <strong className="bk-popular-price">{formatMoney(sell)}</strong>
                         {mrp > sell && <span className="bk-popular-mrp">{formatMoney(mrp)}</span>}
                       </div>
-                      <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product)}>
+                      <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                         Add to Cart
                       </button>
                     </div>

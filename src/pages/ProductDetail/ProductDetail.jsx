@@ -1827,36 +1827,24 @@ const ProductDetail = () => {
           <section className="product-reviews-section" id="product-reviews">
             <div className="product-reviews-head">
               <div>
-                <span>CUSTOMER FEEDBACK</span>
-                <h2>Reviews</h2>
+                <span>customer feedback</span>
+                <h2>reviews</h2>
               </div>
               {Number(reviewSummary.count || 0) > 0 && (
                 <div className="product-review-score">
                   <strong>{Number(reviewSummary.average || 0).toFixed(1)}</strong>
-                  <small>{reviewSummary.count} reviews</small>
+                  <span className="product-review-score-stars" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const average = Number(reviewSummary.average || 0);
+                      return (
+                        <Icon key={star} icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"} />
+                      );
+                    })}
+                  </span>
+                  <small>{reviewSummary.count} {Number(reviewSummary.count) === 1 ? "review" : "reviews"}</small>
                 </div>
               )}
             </div>
-
-            {approvedReviewImages.length > 0 && (
-              <div className="product-review-gallery">
-                {approvedReviewImages.slice(0, 10).map((image, index) => {
-                  const remaining = approvedReviewImages.length - 10;
-                  const showMore = index === 9 && remaining > 0;
-                  return (
-                    <button
-                      type="button"
-                      className="product-review-gallery-item"
-                      onClick={() => setReviewGalleryIndex(index)}
-                      key={`${image.url}-${index}`}
-                    >
-                      <img src={imgUrl(image.url)} alt="Uploaded product photo" loading="lazy" />
-                      {showMore && <span>+{remaining} more</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
 
             <div className="product-review-list">
               {productReviews.slice(0, 3).map((review) => {
@@ -1869,24 +1857,33 @@ const ProductDetail = () => {
                           <Icon key={star} icon={rating >= star ? "mdi:star" : "mdi:star-outline"} />
                         ))}
                       </div>
-                      <span>{review.Customer?.name || "Verified customer"}</span>
+                      <div className="product-review-buyer">
+                        <span>{review.Customer?.name || "verified customer"}</span>
+                        <small><Icon icon="lucide:badge-check" /> verified buyer</small>
+                      </div>
                     </div>
                     {review.title && <h3>{review.title}</h3>}
                     <p>{review.comment}</p>
                     {Array.isArray(review.images) && review.images.length > 0 && (
                       <div className="product-review-images">
-                        {review.images.slice(0, 4).map((image, index) => (
-                          <button
-                            type="button"
-                            key={`${image.url}-${index}`}
-                            onClick={() => {
-                              const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
-                              setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
-                            }}
-                          >
-                            <img src={imgUrl(image.url)} alt="" loading="lazy" />
-                          </button>
-                        ))}
+                        {review.images.slice(0, 4).map((image, index) => {
+                          const remaining = review.images.length - 4;
+                          const showMore = index === 3 && remaining > 0;
+                          return (
+                            <button
+                              type="button"
+                              key={`${image.url}-${index}`}
+                              aria-label={showMore ? `view ${remaining} more review images` : "view review image"}
+                              onClick={() => {
+                                const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
+                                setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
+                              }}
+                            >
+                              <img src={imgUrl(image.url)} alt="" loading="lazy" />
+                              {showMore && <span className="product-review-image-more">+{remaining}</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </article>
@@ -1901,7 +1898,7 @@ const ProductDetail = () => {
                   className="product-reviews-more-btn"
                   onClick={() => setReviewModalOpen(true)}
                 >
-                  More Reviews
+                  more reviews
                 </button>
               </div>
             )}
@@ -2018,6 +2015,11 @@ const ProductDetail = () => {
           <button type="button" className="review-lightbox-close" onClick={() => setReviewGalleryIndex(null)} aria-label="Close review image">
             <Icon icon="lucide:x" />
           </button>
+          <img
+            src={imgUrl(approvedReviewImages[reviewGalleryIndex].url)}
+            alt="Uploaded product photo"
+            onClick={(event) => event.stopPropagation()}
+          />
           {approvedReviewImages.length > 1 && (
             <button
               type="button"
@@ -2031,11 +2033,6 @@ const ProductDetail = () => {
               <Icon icon="lucide:chevron-left" />
             </button>
           )}
-          <img
-            src={imgUrl(approvedReviewImages[reviewGalleryIndex].url)}
-            alt="Uploaded product photo"
-            onClick={(event) => event.stopPropagation()}
-          />
           {approvedReviewImages.length > 1 && (
             <button
               type="button"
@@ -2057,7 +2054,7 @@ const ProductDetail = () => {
         <div className="product-reviews-modal-overlay" role="dialog" aria-modal="true" onClick={() => setReviewModalOpen(false)}>
           <div className="product-reviews-modal" onClick={(e) => e.stopPropagation()}>
             <div className="product-reviews-modal-head">
-              <h2>All Reviews <small>({productReviews.length})</small></h2>
+              <h2>all reviews <small>({productReviews.length})</small></h2>
               <button type="button" className="product-reviews-modal-close" onClick={() => setReviewModalOpen(false)} aria-label="Close reviews">
                 <Icon icon="lucide:x" />
               </button>
@@ -2073,25 +2070,34 @@ const ProductDetail = () => {
                           <Icon key={star} icon={rating >= star ? "mdi:star" : "mdi:star-outline"} />
                         ))}
                       </div>
-                      <span>{review.Customer?.name || "Verified customer"}</span>
+                      <div className="product-review-buyer">
+                        <span>{review.Customer?.name || "verified customer"}</span>
+                        <small><Icon icon="lucide:badge-check" /> verified buyer</small>
+                      </div>
                     </div>
                     {review.title && <h3>{review.title}</h3>}
                     <p>{review.comment}</p>
                     {Array.isArray(review.images) && review.images.length > 0 && (
                       <div className="product-review-images">
-                        {review.images.slice(0, 4).map((image, index) => (
-                          <button
-                            type="button"
-                            key={`${image.url}-${index}`}
-                            onClick={() => {
-                              const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
-                              setReviewModalOpen(false);
-                              setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
-                            }}
-                          >
-                            <img src={imgUrl(image.url)} alt="" loading="lazy" />
-                          </button>
-                        ))}
+                        {review.images.slice(0, 4).map((image, index) => {
+                          const remaining = review.images.length - 4;
+                          const showMore = index === 3 && remaining > 0;
+                          return (
+                            <button
+                              type="button"
+                              key={`${image.url}-${index}`}
+                              aria-label={showMore ? `view ${remaining} more review images` : "view review image"}
+                              onClick={() => {
+                                const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
+                                setReviewModalOpen(false);
+                                setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
+                              }}
+                            >
+                              <img src={imgUrl(image.url)} alt="" loading="lazy" />
+                              {showMore && <span className="product-review-image-more">+{remaining}</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </article>

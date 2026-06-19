@@ -358,11 +358,11 @@ const Collection = () => {
     await toggleWishlist(product);
   };
 
-  const handleAddToCart = async (e, product) => {
+  const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
-    const result = await addToCart(product, 1, product.selected_color_id || null);
+    const result = await addToCart(product, 1, colorId || null);
     if (result?.success) showNotification("Added to bag!", "success");
     else showNotification(result?.message || "Could not add to bag.", "error");
   };
@@ -372,6 +372,7 @@ const Collection = () => {
     const productImages = getProductImages(product);
     const sliderImages = productImages.length > 0 ? productImages : [{ url: cover }];
     const activeSlide = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
+    const currentColorId = sliderImages[activeSlide]?.color_id || null;
     const imageReady = Boolean(loadedImages[product.id]);
     const stockInfo = getProductStockInfo(product);
     const isOutOfStock = stockInfo.isOutOfStock;
@@ -453,7 +454,7 @@ const Collection = () => {
             <button
               type="button"
               className="collection-atc-btn"
-              onClick={(e) => handleAddToCart(e, product)}
+              onClick={(e) => handleAddToCart(e, product, currentColorId)}
             >
               Add to Cart
             </button>
