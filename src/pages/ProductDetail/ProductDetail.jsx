@@ -285,7 +285,11 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!fullscreenOpen) return undefined;
     document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") closeFullscreen(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") { closeFullscreen(); return; }
+      if (e.key === "ArrowLeft") fsHandlersRef.current.prev?.();
+      if (e.key === "ArrowRight") fsHandlersRef.current.next?.();
+    };
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [fullscreenOpen]);
@@ -344,6 +348,8 @@ const ProductDetail = () => {
   const removingFromBagRef = useRef(false);
   const relatedSwipeRef = useRef({});
   const relatedSwipeBlockRef = useRef(new Set());
+  const fsSwipeRef = useRef({ startX: 0, startY: 0, dragging: false });
+  const fsHandlersRef = useRef({});
 
   const getCoverColorId = (targetProduct = product) => {
     const images = getSortedImages(targetProduct);
@@ -2451,18 +2457,55 @@ const ProductDetail = () => {
       {fullscreenOpen && (() => {
         const fsMedia = visibleMedia[fullscreenIdx];
         const imageItems = visibleMedia.filter((m) => m.type === "image");
+        const currentFsImgIdx = imageItems.findIndex((item) => visibleMedia.indexOf(item) === fullscreenIdx);
+
+        const navigateFsPrev = () => {
+          if (imageItems.length <= 1) return;
+          const prev = (currentFsImgIdx - 1 + imageItems.length) % imageItems.length;
+          setFullscreenIdx(visibleMedia.indexOf(imageItems[prev]));
+        };
+        const navigateFsNext = () => {
+          if (imageItems.length <= 1) return;
+          const next = (currentFsImgIdx + 1) % imageItems.length;
+          setFullscreenIdx(visibleMedia.indexOf(imageItems[next]));
+        };
+        fsHandlersRef.current = { prev: navigateFsPrev, next: navigateFsNext };
+
+        const handleFsTouchStart = (e) => {
+          const t = e.touches[0];
+          fsSwipeRef.current = { startX: t.clientX, startY: t.clientY, dragging: true };
+        };
+        const handleFsTouchEnd = (e) => {
+          if (!fsSwipeRef.current.dragging) return;
+          fsSwipeRef.current.dragging = false;
+          const t = e.changedTouches[0];
+          const dx = t.clientX - fsSwipeRef.current.startX;
+          const dy = t.clientY - fsSwipeRef.current.startY;
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) navigateFsNext();
+            else navigateFsPrev();
+          }
+        };
+
         return (
           <div className="bk-fs-overlay" onClick={closeFullscreen}>
             <button type="button" className="bk-fs-close" onClick={closeFullscreen} aria-label="Close fullscreen">
               <Icon icon="lucide:x" />
             </button>
-            <div className="bk-fs-main" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="bk-fs-main"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={handleFsTouchStart}
+              onTouchEnd={handleFsTouchEnd}
+              style={{ touchAction: "pan-y" }}
+            >
               {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
               <img
                 ref={fsImageRef}
                 src={imgUrl(fsMedia?.url, 1400)}
                 alt={productName}
                 className="bk-fs-image"
+                draggable={false}
                 onLoad={() => setFsImageLoaded(true)}
               />
             </div>
