@@ -51,6 +51,7 @@ const Header = () => {
   const suggestionAbortRef = useRef(null);
   const desktopSearchRef = useRef(null);
   const mobileSearchRef = useRef(null);
+  const toplineTrackRef = useRef(null);
 
   const isAuthPage = location.pathname === "/login";
   const hideHeaderSearch = location.pathname === "/my-orders";
@@ -394,6 +395,35 @@ const Header = () => {
     navigate(`/product/${slug}`);
   };
 
+  // Seamless topline ticker — rAF avoids the CSS keyframe reset flash
+  useEffect(() => {
+    const track = toplineTrackRef.current;
+    if (!track) return;
+    const COPIES = 4;
+    const SPEED = 40; // px per second
+    let x = 0;
+    let lastTime = null;
+    let loopWidth = 0;
+    let raf;
+
+    const step = (time) => {
+      if (lastTime !== null) {
+        x -= (SPEED * (time - lastTime)) / 1000;
+        if (x <= -loopWidth) x += loopWidth;
+        track.style.transform = `translateX(${x}px)`;
+      }
+      lastTime = time;
+      raf = requestAnimationFrame(step);
+    };
+
+    raf = requestAnimationFrame(() => {
+      loopWidth = track.scrollWidth / COPIES;
+      raf = requestAnimationFrame(step);
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setHeaderSearch(value);
@@ -419,7 +449,7 @@ const Header = () => {
       style={{ "--bk-header-bg": `url(${headerBackground})` }}
     >
       <div className="bk-topline" aria-hidden="true">
-        <div className="bk-topline-track">
+        <div ref={toplineTrackRef} className="bk-topline-track">
           {[...Array(4)].map((_, index) => (
             <p key={index}>
               <span>Free Delivery on All Orders!</span>

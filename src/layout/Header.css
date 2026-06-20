@@ -591,8 +591,6 @@ body.menu-open {
   display: flex;
   align-items: center;
   width: max-content;
-  animation: bk-topline-marquee 32s linear infinite;
-  transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 
@@ -618,16 +616,6 @@ body.menu-open {
   border: 1px solid currentColor;
   transform: rotate(45deg) translateY(-1px);
   box-shadow: 0 0 10px rgba(201, 154, 56, 0.22);
-}
-
-@keyframes bk-topline-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
 }
 
 .bk-header-shell {

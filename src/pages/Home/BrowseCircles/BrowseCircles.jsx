@@ -12,11 +12,17 @@ const normalizeItems = (varieties = []) =>
     href: `/collection?variety=${item.id}`,
   }));
 
+const SPEED = 80; // px per second
+
 const BrowseCircles = () => {
   const navigate = useNavigate();
   const wrapRef = useRef(null);
+  const trackRef = useRef(null);
+  const isPausedRef = useRef(false);
+  const xRef = useRef(0);              // shared between rAF and drag
+  const loopWidthRef = useRef(0);
+  const dragRef = useRef({ active: false, startX: 0, startTrackX: 0 });
   const suppressClickRef = useRef(false);
-  const dragRef = useRef({ active: false, startX: 0 });
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +36,54 @@ const BrowseCircles = () => {
     return () => controller.abort();
   }, []);
 
-  const marqueeItems = useMemo(() => [...items, ...items], [items]);
+  const copies = useMemo(
+    () => (!items.length ? 2 : Math.max(2, Math.ceil(24 / items.length))),
+    [items]
+  );
+  const marqueeItems = useMemo(
+    () => Array.from({ length: copies }, () => items).flat(),
+    [items, copies]
+  );
+
+  // rAF loop — reads/writes xRef so drag can share the same position
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !marqueeItems.length) return;
+
+    xRef.current = 0;
+    let lastTime = null;
+    let raf;
+
+    const normalize = (x, lw) => {
+      x = x % lw;
+      if (x > 0) x -= lw;
+      return x;
+    };
+
+    const step = (time) => {
+      if (!isPausedRef.current) {
+        if (lastTime !== null) {
+          xRef.current -= (SPEED * (time - lastTime)) / 1000;
+          const lw = loopWidthRef.current;
+          if (lw > 0 && (xRef.current <= -lw || xRef.current > 0)) {
+            xRef.current = normalize(xRef.current, lw);
+          }
+          track.style.transform = `translateX(${xRef.current}px)`;
+        }
+        lastTime = time;
+      } else {
+        lastTime = null;
+      }
+      raf = requestAnimationFrame(step);
+    };
+
+    raf = requestAnimationFrame(() => {
+      loopWidthRef.current = track.scrollWidth / copies;
+      raf = requestAnimationFrame(step);
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [marqueeItems.length, copies]);
 
   const openItem = (href) => {
     if (suppressClickRef.current) { suppressClickRef.current = false; return; }
@@ -38,20 +91,30 @@ const BrowseCircles = () => {
   };
 
   const onPointerDown = (e) => {
-    dragRef.current = { active: true, startX: e.clientX };
-    wrapRef.current?.classList.add("is-paused");
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { active: true, startX: e.clientX, startTrackX: xRef.current };
+    isPausedRef.current = true;
   };
 
   const onPointerMove = (e) => {
     if (!dragRef.current.active) return;
-    if (Math.abs(e.clientX - dragRef.current.startX) > 5) {
-      suppressClickRef.current = true;
+    const delta = e.clientX - dragRef.current.startX;
+    if (Math.abs(delta) > 5) suppressClickRef.current = true;
+
+    const lw = loopWidthRef.current;
+    let newX = dragRef.current.startTrackX + delta;
+    if (lw > 0) {
+      newX = newX % lw;
+      if (newX > 0) newX -= lw;
     }
+    xRef.current = newX;
+    if (trackRef.current) trackRef.current.style.transform = `translateX(${newX}px)`;
   };
 
   const onPointerEnd = () => {
+    if (!dragRef.current.active) return;
     dragRef.current.active = false;
-    wrapRef.current?.classList.remove("is-paused");
+    isPausedRef.current = false;
     window.setTimeout(() => { suppressClickRef.current = false; }, 80);
   };
 
@@ -88,10 +151,10 @@ const BrowseCircles = () => {
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
           onPointerLeave={onPointerEnd}
-          onMouseEnter={() => wrapRef.current?.classList.add("is-paused")}
-          onMouseLeave={() => wrapRef.current?.classList.remove("is-paused")}
+          onMouseEnter={() => { isPausedRef.current = true; }}
+          onMouseLeave={() => { isPausedRef.current = false; }}
         >
-          <div className="bk-browse-track">
+          <div ref={trackRef} className="bk-browse-track">
             {marqueeItems.map((item, i) => (
               <button
                 type="button"
