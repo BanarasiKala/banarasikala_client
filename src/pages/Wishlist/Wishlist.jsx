@@ -368,33 +368,35 @@ const Wishlist = () => {
                       </button>
 
                       <div className="wishlist-card-body">
-                        {item.colorName && (
-                          <span className="wishlist-color-badge">
-                            {item.colorHex && (
-                              <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
-                            )}
-                            {item.colorName}
-                          </span>
-                        )}
                         <Link to={`/product/${item.slug}`} className="wishlist-card-title">
                           {item.name}
                         </Link>
                         {description && <p className="wishlist-card-desc">{description}</p>}
                         <ProductRating product={item} className="wishlist-card-rating" />
-                        {(showColorOos || (noColorSaved && stockInfo.isOutOfStock) || isLowStock) && (
+                        {(showColorOos || (noColorSaved && stockInfo.isOutOfStock) || item.colorName) && (
                           <div className="wishlist-card-status">
                             {showColorOos && <span className="wishlist-status-pill">Color unavailable</span>}
                             {noColorSaved && stockInfo.isOutOfStock && <span className="wishlist-status-pill">Out of stock</span>}
-                            {isLowStock && <span className="wishlist-status-pill low">{stockInfo.badge}</span>}
+                            {/* {isLowStock && <span className="wishlist-status-pill low">{stockInfo.badge}</span>} */}
+                            {item.colorName && (
+                              <span className="wishlist-color-badge">
+                                {item.colorHex && (
+                                  <span className="wishlist-color-dot" style={{ background: item.colorHex }} />
+                                )}
+                                {item.colorName}
+                              </span>
+                            )}
                           </div>
                         )}
                         <div className="wishlist-card-price">
-                          {!cardIsOos && hasDiscount && discountPercent > 0 && <em>-{discountPercent}%</em>}
                           {cardIsOos ? (
                             <strong>{formatMoney(mrp > 0 ? mrp : price)}</strong>
                           ) : (
                             <>
-                              <strong>{formatMoney(price)}</strong>
+                              <div className="wishlist-price-main">
+                                {hasDiscount && discountPercent > 0 && <em>-{discountPercent}%</em>}
+                                <strong>{formatMoney(price)}</strong>
+                              </div>
                               {hasDiscount && <span className="wishlist-card-mrp"><span className="wishlist-card-mrp-val">{formatMoney(mrp)}</span></span>}
                             </>
                           )}

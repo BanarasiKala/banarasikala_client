@@ -235,8 +235,10 @@ const PopularSarees = () => {
                       {productDescription && <p className="bk-popular-desc">{productDescription}</p>}
                       <ProductRating product={product} className="bk-popular-rating" />
                       <div className="bk-popular-price-row">
-                        {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
-                        <strong className="bk-popular-price">{formatMoney(sell)}</strong>
+                        <div className="bk-popular-price-main">
+                          {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
+                          <strong className="bk-popular-price">{formatMoney(sell)}</strong>
+                        </div>
                         {mrp > sell && <span className="bk-popular-mrp"><span className="bk-popular-mrp-val">{formatMoney(mrp)}</span></span>}
                       </div>
                       <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>

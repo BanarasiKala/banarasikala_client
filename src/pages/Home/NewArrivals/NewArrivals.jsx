@@ -234,8 +234,10 @@ const NewArrivals = () => {
                         {productDescription && <p className="bk-arrival-desc">{productDescription}</p>}
                         <ProductRating product={product} className="bk-arrival-rating" />
                         <div className="bk-arrival-price-row">
-                          {discountPercent > 0 && <em className="bk-arrival-discount">-{discountPercent}%</em>}
-                          <strong className="bk-arrival-price">{formatMoney(sell)}</strong>
+                          <div className="bk-arrival-price-main">
+                            {discountPercent > 0 && <em className="bk-arrival-discount">-{discountPercent}%</em>}
+                            <strong className="bk-arrival-price">{formatMoney(sell)}</strong>
+                          </div>
                           {mrp > sell && <span className="bk-arrival-mrp"><span className="bk-arrival-mrp-val">{formatMoney(mrp)}</span></span>}
                         </div>
                         <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>

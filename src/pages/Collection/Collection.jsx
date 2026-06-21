@@ -447,8 +447,10 @@ const Collection = () => {
             {productDescription && <p className="collection-desc">{productDescription}</p>}
             <ProductRating product={product} className="collection-product-rating" />
             <div className="price-container">
-              {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
-              <strong className="selling-price">{formatMoney(sell)}</strong>
+              <div className="price-main-row">
+                {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
+                <strong className="selling-price">{formatMoney(sell)}</strong>
+              </div>
               {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
             </div>
             <button

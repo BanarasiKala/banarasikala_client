@@ -629,10 +629,15 @@
 
 .price-container {
     display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2px;
+}
+
+.price-main-row {
+    display: flex;
     align-items: baseline;
     gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 2px;
 }
 
 .collection-discount {

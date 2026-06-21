@@ -2011,10 +2011,12 @@ const ProductDetail = () => {
                       )}
                       <ProductRating product={item} className="product-related-rating" />
                       <div className="product-related-price">
-                        {hasDiscount && relatedDiscountPercent > 0 && (
-                          <em>-{relatedDiscountPercent}%</em>
-                        )}
-                        <strong>{formatMoney(item.selling_price)}</strong>
+                        <div className="product-related-price-main">
+                          {hasDiscount && relatedDiscountPercent > 0 && (
+                            <em>-{relatedDiscountPercent}%</em>
+                          )}
+                          <strong>{formatMoney(item.selling_price)}</strong>
+                        </div>
                         {hasDiscount && <span className="product-related-mrp"><span className="product-related-mrp-val">{formatMoney(item.mrp_price)}</span></span>}
                       </div>
                       <button
