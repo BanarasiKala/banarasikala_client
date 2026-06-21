@@ -1601,21 +1601,25 @@ const ProductDetail = () => {
             </div>
 
             <div className="product-price-card">
-              <div className="product-price-row">
-                {isSelectedOutOfStock ? (
-                  <strong>{formatMoney(product.mrp_price || product.selling_price)}</strong>
-                ) : (
-                  <>
-                    <strong>{formatMoney(product.selling_price)}</strong>
+              {isSelectedOutOfStock ? (
+                <div className="product-price-row">
+                  <strong><sup className="product-price-currency">₹</sup>{Number(product.mrp_price || product.selling_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                </div>
+              ) : (
+                <>
+                  <div className="product-price-row">
                     {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
-                      <>
-                        <span className="product-price-mrp"><span className="product-price-mrp-val">{formatMoney(product.mrp_price)}</span></span>
-                        <em>-{product.discount_percent}%</em>
-                      </>
+                      <em>-{product.discount_percent}%</em>
                     )}
-                  </>
-                )}
-              </div>
+                    <strong><sup className="product-price-currency">₹</sup>{Number(product.selling_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </div>
+                  {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
+                    <div className="product-price-mrp-line">
+                      <span className="product-price-mrp"><span className="product-price-mrp-val">{formatMoney(product.mrp_price)}</span></span>
+                    </div>
+                  )}
+                </>
+              )}
               {!isSelectedOutOfStock && <p>Inclusive of all taxes</p>}
             </div>
 

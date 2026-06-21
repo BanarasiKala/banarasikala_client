@@ -1724,11 +1724,22 @@
   font-weight: 500;
 }
 
+.product-price-currency {
+  font-size: 0.48em;
+  font-weight: inherit;
+  vertical-align: top;
+  position: relative;
+  top: 12px;
+}
+
+.product-price-mrp-line {
+  margin-top: 2px;
+}
+
 .product-price-mrp {
-  flex: 0 0 auto;
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   text-decoration: none;
 }
@@ -1754,8 +1765,7 @@
   color: rgba(53, 23, 15, 0.52);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .product-color-section {
