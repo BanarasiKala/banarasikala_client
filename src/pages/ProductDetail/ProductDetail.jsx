@@ -521,7 +521,7 @@ const ProductDetail = () => {
   }, [cart, product, selectedColorId]);
 
   const canAddToBag = !isSelectedOutOfStock && !isChangingColor;
-  const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+  const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatDeliveryDate = (value) => {
     if (!value) return "";
     const parsedDate = new Date(value);
@@ -1988,7 +1988,7 @@ const ProductDetail = () => {
                           <em>-{relatedDiscountPercent}%</em>
                         )}
                         <strong>{formatMoney(item.selling_price)}</strong>
-                        {hasDiscount && <span>{formatMoney(item.mrp_price)}</span>}
+                        {hasDiscount && <span className="product-related-mrp"><span className="product-related-mrp-val">{formatMoney(item.mrp_price)}</span></span>}
                       </div>
                       <button
                         type="button"

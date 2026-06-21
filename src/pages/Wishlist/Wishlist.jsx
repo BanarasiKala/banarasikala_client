@@ -27,6 +27,7 @@ const Wishlist = () => {
   const swipeRef = useRef({});
   const swipeBlockRef = useRef(new Set());
   const hasItems = wishlist.length > 0;
+  const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -390,11 +391,11 @@ const Wishlist = () => {
                         <div className="wishlist-card-price">
                           {!cardIsOos && hasDiscount && discountPercent > 0 && <em>-{discountPercent}%</em>}
                           {cardIsOos ? (
-                            <strong>Rs. {(mrp > 0 ? mrp : price).toLocaleString("en-IN")}</strong>
+                            <strong>{formatMoney(mrp > 0 ? mrp : price)}</strong>
                           ) : (
                             <>
-                              <strong>Rs. {price.toLocaleString("en-IN")}</strong>
-                              {hasDiscount && <span>Rs. {mrp.toLocaleString("en-IN")}</span>}
+                              <strong>{formatMoney(price)}</strong>
+                              {hasDiscount && <span className="wishlist-card-mrp"><span className="wishlist-card-mrp-val">{formatMoney(mrp)}</span></span>}
                             </>
                           )}
                         </div>

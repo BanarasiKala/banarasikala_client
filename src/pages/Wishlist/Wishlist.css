@@ -177,7 +177,7 @@
   overflow: hidden;
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   line-height: 1.4;
   text-decoration: none;
@@ -224,21 +224,29 @@
   color: #047857;
   font-size: 11px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .wishlist-card-price strong {
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.wishlist-card-price span {
+.wishlist-card-mrp {
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.wishlist-card-mrp::before {
+  content: "M.R.P.: ";
+}
+
+.wishlist-card-mrp-val {
   text-decoration: line-through;
 }
 

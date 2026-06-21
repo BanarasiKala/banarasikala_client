@@ -316,8 +316,8 @@
   overflow: hidden;
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.4;
   text-transform: none;
   display: -webkit-box;
@@ -362,7 +362,7 @@
   color: rgba(53, 23, 15, 0.52);
   font-family: "Poppins", sans-serif;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -389,21 +389,21 @@
   font-family: "Poppins", sans-serif;
   font-size: 11px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .bk-popular-price {
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .bk-popular-mrp {
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
 }
 .bk-popular-mrp::before {
@@ -679,12 +679,7 @@
   }
 
   .bk-popular-price {
-    font-size: 12px;
-  }
-
-  .bk-popular-mrp,
-  .bk-popular-discount {
-    font-size: 8px;
+    font-size: 13px;
   }
 }
 
@@ -839,8 +834,8 @@
 .bk-popular-card-body h3 {
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.4;
   text-transform: none;
   display: -webkit-box;
@@ -854,7 +849,7 @@
   color: rgba(53, 23, 15, 0.52);
   font-family: "Poppins", sans-serif;
   font-size: 10px;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -880,21 +875,21 @@
   color: #047857;
   font-size: 11px;
   font-style: normal;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
 }
 
 .bk-popular-price {
   color: #1a1a1a;
   font-family: "Poppins", sans-serif;
-  font-size: 15px;
-  font-weight: 700 !important;
+  font-size: 13px;
+  font-weight: 500 !important;
 }
 
 .bk-popular-mrp {
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
   font-size: 11px;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
   text-decoration: none;
 }
 .bk-popular-mrp-val {
