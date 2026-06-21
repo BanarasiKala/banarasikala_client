@@ -1029,8 +1029,8 @@ const Checkout = () => {
 
                   <div className="mt-10 pt-6 border-t-2 border-[#D4AF37]/20">
                     <div className="flex justify-between items-center mb-8">
-                      <span className="text-sm font-bold text-[#3D2817] uppercase tracking-[0.2em]">Total Payable</span>
-                      <span className="text-2xl font-bold text-[#800020]">₹{total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-xs font-semibold text-[#3D2817] uppercase tracking-[0.2em]">Total Payable</span>
+                      <span className="text-lg font-bold text-[#800020]">₹{total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     
                     <div className="flex flex-col items-end mb-6">

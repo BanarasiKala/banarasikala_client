@@ -56,8 +56,8 @@
 
 .crs-item strong {
   color: #35170f;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .crs-item span {
@@ -364,7 +364,7 @@
 .crs-total span,
 .crs-total strong {
   color: #800020 !important;
-  font-size: 15px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
   letter-spacing: 0;
   text-transform: none;

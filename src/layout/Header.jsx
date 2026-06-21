@@ -11,6 +11,8 @@ import verticalLogo from "../assets/vertical_logo.png";
 import headerBackground from "../assets/header_backgroung.png";
 import "./Header.css";
 
+const SIGNUP_BONUS_AMOUNT = Number(import.meta.env.VITE_SIGNUP_BONUS_AMOUNT) || 50;
+
 const formatHeaderMoney = (value) => {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount)) return "₹0";
@@ -454,7 +456,7 @@ const Header = () => {
             <p key={index}>
               <span>Free Delivery on All Orders!</span>
               <span className="bk-topline-separator" aria-hidden="true" />
-              <span>Grab ₹50 Signup Bonus</span>
+              <span>Grab ₹{SIGNUP_BONUS_AMOUNT} Signup Bonus</span>
             </p>
           ))}
         </div>

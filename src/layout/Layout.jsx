@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import "./Layout.css";
 
+const SIGNUP_BONUS_AMOUNT = Number(import.meta.env.VITE_SIGNUP_BONUS_AMOUNT) || 50;
 const SIGNUP_POPUP_INITIAL_DELAY = 10000;
 const SIGNUP_POPUP_REPEAT_DELAY = 300000;
 
@@ -50,7 +51,7 @@ const SignupGiftPopup = ({ hidden = false }) => {
       </button>
 
       <span className="bk-signup-gift-kicker">Welcome Gift</span>
-      <h2 id="bk-signup-gift-title">₹50 in your wallet</h2>
+      <h2 id="bk-signup-gift-title">₹{SIGNUP_BONUS_AMOUNT} in your wallet</h2>
       <p>Sign up today and start your first Banarasi Kala order with a little extra joy.</p>
 
       <Link className="bk-signup-gift-action" to="/login?mode=signup">
