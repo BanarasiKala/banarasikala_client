@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import { imgUrl } from "../../utils/cloudinary";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
 import { useWishlist } from "../../context/WishlistContext";
@@ -24,6 +25,7 @@ const formatMoney = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const Cart = () => {
+  const { user } = useAuth();
   const {
     cart,
     removeFromCart,
@@ -93,6 +95,25 @@ const Cart = () => {
     showNotification(`${item.name} removed from bag`, "success");
   };
 
+
+  if (!user) {
+    return (
+      <div className="cart-page min-h-screen">
+        <div className="cart-empty-wrap">
+          <EmptyStateIcon variant="cart" className="cart-empty-icon" />
+          <h3 className="cart-empty-title">Login to view your bag</h3>
+          <p className="cart-empty-sub">Sign in to add items and place your order.</p>
+          <Link
+            to="/login"
+            state={{ from: { pathname: "/cart" } }}
+            className="cart-empty-btn"
+          >
+            Login / Sign up
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

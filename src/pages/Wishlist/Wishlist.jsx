@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
 import { useWishlist } from "../../context/WishlistContext";
@@ -14,6 +15,7 @@ import ProductRating from "../../components/ProductRating";
 import "./Wishlist.css";
 
 const Wishlist = () => {
+  const { user } = useAuth();
   const { wishlist, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
   const { showNotification } = useNotification();
@@ -204,7 +206,21 @@ const Wishlist = () => {
         </div>
       </section>
 
-      {loading ? (
+      {!user ? (
+        <section className="wishlist-empty">
+          <EmptyStateIcon variant="wishlist" />
+          <h2>Login to view your wishlist</h2>
+          <p>Sign in to save sarees you love and access them anytime.</p>
+          <Link
+            to="/login"
+            state={{ from: { pathname: "/wishlist" } }}
+            className="wishlist-primary-link"
+          >
+            Login / Sign up
+            <Icon icon="lucide:arrow-right" />
+          </Link>
+        </section>
+      ) : loading ? (
         <section className="wishlist-grid" aria-label="Loading wishlist products">
           {Array.from({ length: 6 }).map((_, index) => (
             <article key={index} className="wishlist-card wishlist-card-skeleton">

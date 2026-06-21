@@ -763,8 +763,18 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!user) {
-      showNotification("Please login to add items to bag", "info");
-      navigate("/login");
+      localStorage.setItem("bk_pending_cart", JSON.stringify({
+        product: {
+          id: product.id, slug: product.slug, name: product.name,
+          selling_price: product.selling_price, mrp_price: product.mrp_price,
+          discount_percent: product.discount_percent,
+          Images: product.Images || [], colors: product.colors || [],
+          image_url: product.image_url || "",
+        },
+        quantity: 1,
+        colorId: selectedColorId || null,
+      }));
+      navigate("/cart");
       return;
     }
     if (isSelectedOutOfStock) {
@@ -1186,6 +1196,19 @@ const ProductDetail = () => {
   const handleWishlist = async (targetProduct = product, colorId = selectedColorId) => {
     if (!targetProduct) return;
     if (!user) {
+      localStorage.setItem("bk_pending_wishlist", JSON.stringify({
+        product: {
+          id: targetProduct.id,
+          slug: targetProduct.slug,
+          name: targetProduct.name,
+          selling_price: targetProduct.selling_price,
+          mrp_price: targetProduct.mrp_price,
+          discount_percent: targetProduct.discount_percent,
+          Images: targetProduct.Images || [],
+          image_url: targetProduct.image_url || "",
+        },
+        colorId: colorId || null,
+      }));
       navigate("/wishlist");
       return;
     }
@@ -1260,8 +1283,18 @@ const ProductDetail = () => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      showNotification("Please login to add items to bag", "info");
-      navigate("/login");
+      localStorage.setItem("bk_pending_cart", JSON.stringify({
+        product: {
+          id: relatedItem.id, slug: relatedItem.slug, name: relatedItem.name,
+          selling_price: relatedItem.selling_price, mrp_price: relatedItem.mrp_price,
+          discount_percent: relatedItem.discount_percent,
+          Images: relatedItem.Images || [], colors: relatedItem.colors || [],
+          image_url: relatedItem.image_url || "",
+        },
+        quantity: 1,
+        colorId: relatedItem.selected_color_id || null,
+      }));
+      navigate("/cart");
       return;
     }
     const result = await addToCart(relatedItem, 1, relatedItem.selected_color_id || null);

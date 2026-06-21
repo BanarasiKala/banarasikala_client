@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
@@ -151,6 +151,25 @@ export const WishlistProvider = ({ children }) => {
     refreshWishlist();
     return isAdded;
   };
+
+  // Keep a ref to the latest toggleWishlist so the pending-action effect
+  // can call it without needing it as a dependency.
+  const toggleWishlistRef = useRef(toggleWishlist);
+  toggleWishlistRef.current = toggleWishlist;
+
+  // After login, execute any wishlist action the user tried while logged out.
+  useEffect(() => {
+    if (!user) return;
+    const raw = localStorage.getItem("bk_pending_wishlist");
+    if (!raw) return;
+    localStorage.removeItem("bk_pending_wishlist");
+    try {
+      const { product, colorId } = JSON.parse(raw);
+      if (product?.id) toggleWishlistRef.current(product, colorId ?? null);
+    } catch {
+      // ignore malformed data
+    }
+  }, [user]);
 
   const removeFromWishlist = async (wishlistItemId) => {
     if (!user) return { success: false };

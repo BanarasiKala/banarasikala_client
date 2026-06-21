@@ -130,7 +130,21 @@ const PopularSarees = () => {
   const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { showNotification("Please login to add items to bag", "info"); navigate("/login"); return; }
+    if (!user) {
+      localStorage.setItem("bk_pending_cart", JSON.stringify({
+        product: {
+          id: product.id, slug: product.slug, name: product.name,
+          selling_price: product.selling_price, mrp_price: product.mrp_price,
+          discount_percent: product.discount_percent,
+          Images: product.Images || [], colors: product.colors || [],
+          image_url: product.image_url || "",
+        },
+        quantity: 1,
+        colorId: colorId || null,
+      }));
+      navigate("/cart");
+      return;
+    }
     const result = await addToCart(product, 1, colorId || null);
     if (result?.success) showNotification("Added to bag!", "success");
     else showNotification(result?.message || "Could not add to bag.", "error");

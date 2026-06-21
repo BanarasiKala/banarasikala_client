@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../utils/api';
 import { API_ENDPOINTS } from '../config/api';
@@ -118,6 +118,22 @@ export const CartProvider = ({ children }) => {
       return { success: false, message: error.response?.data?.message || "Failed to add to bag" };
     }
   };
+
+  const addToCartRef = useRef(addToCart);
+  addToCartRef.current = addToCart;
+
+  useEffect(() => {
+    if (!user) return;
+    const raw = localStorage.getItem("bk_pending_cart");
+    if (!raw) return;
+    localStorage.removeItem("bk_pending_cart");
+    try {
+      const { product, quantity, colorId } = JSON.parse(raw);
+      if (product?.id) addToCartRef.current(product, quantity ?? 1, colorId ?? null);
+    } catch {
+      // ignore malformed data
+    }
+  }, [user]);
 
   const removeFromCart = async (productId, colorId = null) => {
     if (!user) return;
