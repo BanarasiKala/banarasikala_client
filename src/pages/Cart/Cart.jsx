@@ -20,6 +20,9 @@ const calcDiscount = (mrp, sell) => {
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
 
+const formatMoney = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 const Cart = () => {
   const {
     cart,
@@ -234,12 +237,18 @@ const Cart = () => {
                   <div className="cart-card-footer">
                     <div className="cart-card-price-row">
                       {stockInfo.isOutOfStock ? (
-                        <span className="cart-card-price">Rs. {(mrp > 0 ? mrp : sell).toLocaleString("en-IN")}</span>
+                        <div className="cart-price-main-row">
+                          <span className="cart-card-price">{formatMoney(mrp > 0 ? mrp : sell)}</span>
+                        </div>
                       ) : (
                         <>
-                          <span className="cart-card-price">Rs. {sell.toLocaleString("en-IN")}</span>
-                          {mrp > sell && <span className="cart-card-mrp">Rs. {mrp.toLocaleString("en-IN")}</span>}
-                          {disc > 0 && <span className="cart-card-off">{disc}% OFF</span>}
+                          <div className="cart-price-main-row">
+                            {disc > 0 && <em className="cart-card-off">-{disc}%</em>}
+                            <span className="cart-card-price">{formatMoney(sell)}</span>
+                          </div>
+                          {mrp > sell && (
+                            <span className="cart-card-mrp"><span className="cart-card-mrp-val">{formatMoney(mrp)}</span></span>
+                          )}
                         </>
                       )}
                     </div>
