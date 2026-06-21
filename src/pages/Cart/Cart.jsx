@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+﻿import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
 import { imgUrl } from "../../utils/cloudinary";
 import { useEffect, useRef, useState } from "react";
@@ -154,7 +154,7 @@ const Cart = () => {
           </div>
           <div className="cart-topbar-right">
             <div className="cart-topbar-subtotal-label">Subtotal</div>
-            <div className="cart-topbar-subtotal-value">₹{subtotal.toLocaleString("en-IN")}</div>
+            <div className="cart-topbar-subtotal-value">₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
         </div>
       </div>
@@ -310,3 +310,4 @@ const Cart = () => {
 };
 
 export default Cart;
+

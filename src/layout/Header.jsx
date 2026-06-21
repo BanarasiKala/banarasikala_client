@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
@@ -14,7 +14,7 @@ import "./Header.css";
 const formatHeaderMoney = (value) => {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount)) return "₹0";
-  return `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+  return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const calcDiscount = (mrp, sell) => {
@@ -591,8 +591,8 @@ const Header = () => {
                           const disc = calcDiscount(mrp, sell);
                           return (
                             <div className="bk-suggestion-price-row">
-                              <span className="bk-suggestion-sell">₹{sell.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
-                              {mrp > sell && <span className="bk-suggestion-mrp">₹{mrp.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>}
+                              <span className="bk-suggestion-sell">₹{sell.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              {mrp > sell && <span className="bk-suggestion-mrp">₹{mrp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
                               {disc > 0 && <span className="bk-suggestion-disc">({disc}% OFF)</span>}
                             </div>
                           );
@@ -810,7 +810,7 @@ const Header = () => {
                       <span className="bk-suggestion-name">{product.name}</span>
                       {product.selling_price && (
                         <span className="bk-suggestion-price">
-                          ₹{Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          ₹{Number(product.selling_price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </div>
@@ -970,3 +970,4 @@ const Header = () => {
 };
 
 export default Header;
+

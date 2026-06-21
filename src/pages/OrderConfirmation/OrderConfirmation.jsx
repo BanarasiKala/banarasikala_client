@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+﻿import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -16,7 +16,7 @@ const toNumber = (value) => {
   return Number.isFinite(next) ? next : 0;
 };
 
-const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN")}`;
+const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -1227,3 +1227,4 @@ export default function OrderConfirmation() {
     </main>
   );
 }
+

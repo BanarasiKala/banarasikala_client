@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+﻿import { Icon } from "@iconify/react";
 import { useState, useEffect, useRef } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -523,7 +523,7 @@ const Collection = () => {
         />
         <div className="collection-price-range">
           <span>₹0</span>
-          <span>₹{Number(filters.maxPrice).toLocaleString("en-IN")}</span>
+          <span>₹{Number(filters.maxPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </div>
     </div>
@@ -812,4 +812,5 @@ const Collection = () => {
 };
 
 export default Collection;
+
 

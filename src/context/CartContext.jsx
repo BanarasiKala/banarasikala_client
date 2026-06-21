@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../utils/api';
 import { API_ENDPOINTS } from '../config/api';
@@ -170,7 +170,7 @@ export const CartProvider = ({ children }) => {
     
     // 1. Min Purchase Check
     if (currentSubtotal < Number(coupon.min_purchase_amount)) {
-      showNotification(`Add ₹${(Number(coupon.min_purchase_amount) - currentSubtotal).toLocaleString("en-IN")} more to use this coupon.`, "info");
+      showNotification(`Add ₹${(Number(coupon.min_purchase_amount) - currentSubtotal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more to use this coupon.`, "info");
       return false;
     }
 
@@ -209,7 +209,7 @@ export const CartProvider = ({ children }) => {
 
     setDiscountAmount(discount);
     setAppliedCoupon(coupon);
-    showNotification(`Coupon ${coupon.code} applied. You saved ₹${discount.toLocaleString("en-IN")}.`, "success");
+    showNotification(`Coupon ${coupon.code} applied. You saved ₹${discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`, "success");
     return true;
   }, [cart, getSubtotal, showNotification]);
 
@@ -243,3 +243,4 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
+

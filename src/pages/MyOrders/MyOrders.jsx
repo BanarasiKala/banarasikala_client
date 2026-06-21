@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+﻿import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate } from "react-router-dom";
@@ -76,7 +76,7 @@ const toNumber = (value) => {
   const next = Number(value);
   return Number.isFinite(next) ? next : 0;
 };
-const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN")}`;
+const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const getItemImage = (item) => item.image_url || item.product_image_url || "";
 const getItemColorLabel = (item) => item.color_name || item.Color?.name || null;
 const isCancelled = (order) => ["cancelled", "seller cancelled"].includes(String(order.status || "").toLowerCase());
@@ -1062,3 +1062,4 @@ export default function MyOrders() {
     </div>
   );
 }
+
