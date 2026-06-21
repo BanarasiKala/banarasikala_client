@@ -29,7 +29,7 @@ const Cart = () => {
     refreshCart,
     loading,
   } = useCart();
-  const { toggleWishlist, wishlist } = useWishlist();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
 
   const [stockAlerts, setStockAlerts] = useState([]);
@@ -90,8 +90,6 @@ const Cart = () => {
     showNotification(`${item.name} removed from bag`, "success");
   };
 
-  const isWishlisted = (item) =>
-    wishlist.some(w => Number(w.id) === Number(item.id));
 
   if (loading) {
     return (
@@ -191,7 +189,7 @@ const Cart = () => {
           {cart.map((item) => {
             const stockInfo = getProductStockInfo(item, item.colorId);
             const sku = getVariantSku(item, item.colorId, item.selectedColorName);
-            const wishlisted = isWishlisted(item);
+            const wishlisted = isInWishlist(item.id, item.colorId || null);
             const sell = Number(item.price || item.selling_price || 0);
             const mrp = Number(item.mrp_price || item.mrp || 0);
             const disc = calcDiscount(mrp, sell);
@@ -205,7 +203,7 @@ const Cart = () => {
                   <button
                     type="button"
                     className={`cart-card-wish${wishlisted ? " is-active" : ""}`}
-                    onClick={() => toggleWishlist(item)}
+                    onClick={() => toggleWishlist(item, item.colorId || null)}
                     aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
                   >
                     <Icon icon={wishlisted ? "mdi:heart" : "lucide:heart"} />
