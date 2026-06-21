@@ -15,7 +15,7 @@ const calcDiscount = (mrp, sell) => {
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
 
-const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const PopularSarees = () => {
   const navigate = useNavigate();
@@ -237,7 +237,7 @@ const PopularSarees = () => {
                       <div className="bk-popular-price-row">
                         {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
                         <strong className="bk-popular-price">{formatMoney(sell)}</strong>
-                        {mrp > sell && <span className="bk-popular-mrp">{formatMoney(mrp)}</span>}
+                        {mrp > sell && <span className="bk-popular-mrp"><span className="bk-popular-mrp-val">{formatMoney(mrp)}</span></span>}
                       </div>
                       <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                         Add to Cart

@@ -404,6 +404,12 @@
   font-family: "Poppins", sans-serif;
   font-size: 11px;
   font-weight: 500;
+  text-decoration: none;
+}
+.bk-popular-mrp::before {
+  content: "M.R.P.: ";
+}
+.bk-popular-mrp-val {
   text-decoration: line-through;
 }
 
@@ -889,6 +895,9 @@
   font-family: "Poppins", sans-serif;
   font-size: 11px;
   font-weight: 500 !important;
+  text-decoration: none;
+}
+.bk-popular-mrp-val {
   text-decoration: line-through;
 }
 

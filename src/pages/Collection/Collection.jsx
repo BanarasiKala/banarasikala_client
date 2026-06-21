@@ -14,7 +14,7 @@ import "./Collection.css";
 
 const PAGE_SIZE = 20;
 
-const formatMoney = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const calcDiscount = (mrp, sell) => {
   if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
@@ -449,7 +449,7 @@ const Collection = () => {
             <div className="price-container">
               {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
               <strong className="selling-price">{formatMoney(sell)}</strong>
-              {mrp > sell && <span className="mrp-price">{formatMoney(mrp)}</span>}
+              {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
             </div>
             <button
               type="button"

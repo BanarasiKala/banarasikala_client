@@ -92,8 +92,20 @@ const BrowseCircles = () => {
 
   const onPointerDown = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { active: true, startX: e.clientX, startTrackX: xRef.current };
     isPausedRef.current = true;
+
+    // Silently shift startTrackX into [-2*lw, -lw] so a full swipe right
+    // never crosses 0 and triggers a wrap mid-gesture.
+    const lw = loopWidthRef.current;
+    let startTrackX = xRef.current;
+    if (lw > 0) {
+      while (startTrackX > -lw) startTrackX -= lw;
+      while (startTrackX < -2 * lw) startTrackX += lw;
+      xRef.current = startTrackX;
+      if (trackRef.current) trackRef.current.style.transform = `translateX(${startTrackX}px)`;
+    }
+
+    dragRef.current = { active: true, startX: e.clientX, startTrackX };
   };
 
   const onPointerMove = (e) => {
@@ -101,13 +113,8 @@ const BrowseCircles = () => {
     const delta = e.clientX - dragRef.current.startX;
     if (Math.abs(delta) > 5) suppressClickRef.current = true;
 
-    const lw = loopWidthRef.current;
-    let newX = dragRef.current.startTrackX + delta;
-    // wrap without jumping — only nudge when clearly out of range
-    if (lw > 0) {
-      while (newX > 0) newX -= lw;
-      while (newX <= -lw) newX += lw;
-    }
+    // No normalization here — free movement so the gesture feels 1:1
+    const newX = dragRef.current.startTrackX + delta;
     xRef.current = newX;
     if (trackRef.current) trackRef.current.style.transform = `translateX(${newX}px)`;
   };
@@ -115,6 +122,16 @@ const BrowseCircles = () => {
   const onPointerEnd = () => {
     if (!dragRef.current.active) return;
     dragRef.current.active = false;
+
+    // Normalize into [-lw, 0] only once, on release, so auto-scroll resumes cleanly
+    const lw = loopWidthRef.current;
+    if (lw > 0) {
+      let x = xRef.current;
+      while (x > 0) x -= lw;
+      while (x <= -lw) x += lw;
+      xRef.current = x;
+    }
+
     isPausedRef.current = false;
     window.setTimeout(() => { suppressClickRef.current = false; }, 80);
   };
