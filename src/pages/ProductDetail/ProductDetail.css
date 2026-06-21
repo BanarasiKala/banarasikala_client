@@ -735,6 +735,7 @@
   gap: 14px;
   padding: 16px;
   box-sizing: border-box;
+  overscroll-behavior: none;
 }
 
 .bk-fs-close {
@@ -1720,30 +1721,32 @@
   color: #35170f;
   font-family: "Poppins", sans-serif;
   font-size: 27px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.product-price-row span {
+.product-price-mrp {
   flex: 0 0 auto;
   color: rgba(53, 23, 15, 0.42);
   font-family: "Poppins", sans-serif;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.product-price-mrp::before {
+  content: "M.R.P.: ";
+}
+
+.product-price-mrp-val {
   text-decoration: line-through;
 }
 
 .product-price-row em {
   flex: 0 0 auto;
   color: #047857;
-  background: rgba(4, 120, 87, 0.1);
-  border: 1px solid rgba(4, 120, 87, 0.14);
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .product-price-card p {
@@ -1764,7 +1767,7 @@
   color: rgba(53, 23, 15, 0.5);
   font-size: 10px;
   font-weight: 950;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -1840,6 +1843,7 @@
   overflow: hidden;
   font-size: 11px;
   font-weight: 900;
+  letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2124,6 +2128,11 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
+}
+
+.product-spec-care {
+  display: block;
+  text-align: justify;
 }
 
 .product-related {
@@ -4549,12 +4558,17 @@
 }
 .product-highlights-list li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   color: #3d2817;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.5;
+}
+
+.product-highlights-list li span {
+  flex: 1;
+  text-align: justify;
 }
 .product-highlights-list li svg {
   flex: 0 0 auto;
@@ -4687,6 +4701,7 @@
   font-size: 13px;
   font-weight: 400;
   line-height: 1.65;
+  text-align: justify;
 }
 
 .product-shipping-card {
@@ -5115,7 +5130,7 @@
   }
   .product-info-panel .product-price-row strong {
     font-size: 30px;
-    font-weight: 800;
+    font-weight: 500;
   }
 
   /* 4. Color section — label + horizontal scroll slider */
@@ -5288,5 +5303,5 @@
 .product-detail-page .product-price-row strong {
   color: #800020;
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 500;
 }

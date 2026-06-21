@@ -283,18 +283,29 @@ const ProductDetail = () => {
   const fsImageRef = useRef(null);
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
-  const closeFullscreen = () => { setFullscreenOpen(false); document.body.style.overflow = ""; };
+  const closeFullscreen = () => { setFullscreenOpen(false); };
 
   useEffect(() => {
     if (!fullscreenOpen) return undefined;
+    const scrollY = window.scrollY;
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
     const onKey = (e) => {
       if (e.key === "Escape") { closeFullscreen(); return; }
       if (e.key === "ArrowLeft") fsHandlersRef.current.prev?.();
       if (e.key === "ArrowRight") fsHandlersRef.current.next?.();
     };
     document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY);
+    };
   }, [fullscreenOpen]);
 
   // Reset loader when fullscreen opens or the shown image changes;
@@ -628,6 +639,13 @@ const ProductDetail = () => {
     return () => window.clearInterval(timer);
   }, [isGalleryHovering, visibleMedia, activeImageIndex]);
 
+  // Preload all fullscreen-resolution images when lightbox opens so swipe is instant
+  useEffect(() => {
+    if (!fullscreenOpen) return;
+    visibleMedia
+      .filter((m) => m.type === "image")
+      .forEach((item) => { new Image().src = imgUrl(item.url, 1400); });
+  }, [fullscreenOpen, visibleMedia]);
 
   // Keep quantity in sync with cart (so cart-page changes reflect here instantly)
   useEffect(() => {
@@ -1591,8 +1609,8 @@ const ProductDetail = () => {
                     <strong>{formatMoney(product.selling_price)}</strong>
                     {Number(product.mrp_price || 0) > Number(product.selling_price || 0) && (
                       <>
-                        <span>{formatMoney(product.mrp_price)}</span>
-                        <em>{product.discount_percent}% OFF</em>
+                        <span className="product-price-mrp"><span className="product-price-mrp-val">{formatMoney(product.mrp_price)}</span></span>
+                        <em>-{product.discount_percent}%</em>
                       </>
                     )}
                   </>
@@ -1773,16 +1791,21 @@ const ProductDetail = () => {
           <div className="product-section-card">
             <h3 className="product-section-title">KEY HIGHLIGHTS</h3>
             <ul className="product-highlights-list">
-              {[
-                product.Variety?.name ? { icon: "lucide:sparkles", text: `Rich ${product.Variety.name} Weaving` } : null,
-                product.Material?.name ? { icon: "lucide:layers", text: `Premium ${product.Material.name} Fabric` } : null,
-                product.Occasion?.name ? { icon: "lucide:calendar-check", text: `Perfect for ${product.Occasion.name}` } : null,
-                product.blouse_piece ? { icon: "lucide:shirt", text: "Blouse Piece Included" } : null,
-                { icon: "lucide:gift", text: "Premium Gift Packaging" },
-                { icon: "lucide:map-pin", text: "Made in Banaras" },
-              ].filter(Boolean).map(({ icon, text }) => (
-                <li key={text}><Icon icon={icon} />{text}</li>
-              ))}
+              {Array.isArray(product.key_highlights) && product.key_highlights.length > 0
+                ? product.key_highlights.map((text) => (
+                    <li key={text}><Icon icon="lucide:check-circle" /><span>{text}</span></li>
+                  ))
+                : [
+                    product.Variety?.name ? { icon: "lucide:sparkles", text: `Rich ${product.Variety.name} Weaving` } : null,
+                    product.Material?.name ? { icon: "lucide:layers", text: `Premium ${product.Material.name} Fabric` } : null,
+                    product.Occasion?.name ? { icon: "lucide:calendar-check", text: `Perfect for ${product.Occasion.name}` } : null,
+                    product.blouse_piece ? { icon: "lucide:shirt", text: "Blouse Piece Included" } : null,
+                    { icon: "lucide:gift", text: "Premium Gift Packaging" },
+                    { icon: "lucide:map-pin", text: "Made in Banaras" },
+                  ].filter(Boolean).map(({ icon, text }) => (
+                    <li key={text}><Icon icon={icon} /><span>{text}</span></li>
+                  ))
+              }
             </ul>
           </div>
 
@@ -1799,7 +1822,7 @@ const ProductDetail = () => {
               {specificationRows.map(([label, value]) => (
                 <div className="product-spec-row" key={label}>
                   <span>{label}</span>
-                  <strong>{value}</strong>
+                  <strong className={label === "Care" ? "product-spec-care" : ""}>{value}</strong>
                 </div>
               ))}
             </div>
@@ -2594,7 +2617,7 @@ const ProductDetail = () => {
               onClick={(e) => e.stopPropagation()}
               onTouchStart={handleFsTouchStart}
               onTouchEnd={handleFsTouchEnd}
-              style={{ touchAction: "pan-y" }}
+              style={{ touchAction: "none" }}
             >
               {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
               <img
