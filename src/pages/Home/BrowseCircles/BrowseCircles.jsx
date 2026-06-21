@@ -103,9 +103,10 @@ const BrowseCircles = () => {
 
     const lw = loopWidthRef.current;
     let newX = dragRef.current.startTrackX + delta;
+    // wrap without jumping — only nudge when clearly out of range
     if (lw > 0) {
-      newX = newX % lw;
-      if (newX > 0) newX -= lw;
+      while (newX > 0) newX -= lw;
+      while (newX <= -lw) newX += lw;
     }
     xRef.current = newX;
     if (trackRef.current) trackRef.current.style.transform = `translateX(${newX}px)`;
@@ -150,9 +151,8 @@ const BrowseCircles = () => {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
-          onPointerLeave={onPointerEnd}
           onMouseEnter={() => { isPausedRef.current = true; }}
-          onMouseLeave={() => { isPausedRef.current = false; }}
+          onMouseLeave={() => { if (!dragRef.current.active) isPausedRef.current = false; }}
         >
           <div ref={trackRef} className="bk-browse-track">
             {marqueeItems.map((item, i) => (
