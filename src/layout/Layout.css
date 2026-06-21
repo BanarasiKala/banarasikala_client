@@ -43,6 +43,10 @@
   }
 }
 
+.bk-fullscreen-open .bk-signup-gift {
+  display: none !important;
+}
+
 .bk-signup-gift {
   position: fixed;
   left: 50%;

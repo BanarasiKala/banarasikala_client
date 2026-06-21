@@ -292,6 +292,7 @@ const ProductDetail = () => {
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = "100%";
+    document.body.classList.add("bk-fullscreen-open");
     const onKey = (e) => {
       if (e.key === "Escape") { closeFullscreen(); return; }
       if (e.key === "ArrowLeft") fsHandlersRef.current.prev?.();
@@ -304,6 +305,7 @@ const ProductDetail = () => {
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
+      document.body.classList.remove("bk-fullscreen-open");
       window.scrollTo(0, scrollY);
     };
   }, [fullscreenOpen]);
