@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+﻿import { Icon } from "@iconify/react";
 import { useState, useEffect, useRef } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate } from "react-router-dom";
@@ -145,13 +145,13 @@ const Checkout = () => {
     if (!coupon) return "Coupons & offers";
     const code = String(coupon.code || "").toUpperCase();
     if (coupon.discount_type === "percentage") return `Save ${Number(coupon.discount_percent || 0)}% with ${code}`;
-    return `Save Rs. ${Number(coupon.discount_amount || 0).toLocaleString("en-IN")} with ${code}`;
+    return `Save ₹${Number(coupon.discount_amount || 0).toLocaleString("en-IN")} with ${code}`;
   };
 
   const getCouponSubtext = (coupon) => {
     if (!coupon) return "Choose an offer for this order.";
     const minAmount = Number(coupon.min_purchase_amount || 0);
-    if (minAmount > subtotal) return `Shop for Rs. ${(minAmount - subtotal).toLocaleString("en-IN")} more to apply`;
+    if (minAmount > subtotal) return `Shop for ₹${(minAmount - subtotal).toLocaleString("en-IN")} more to apply`;
     return coupon.description || "Tap to apply this offer at checkout.";
   };
 
@@ -374,7 +374,7 @@ const Checkout = () => {
       return;
     }
     if (activePayment === "cod" && !isCodAllowed) {
-      showNotification(`COD is available only up to Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
+      showNotification(`COD is available only up to ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
       return;
     }
     setCheckoutStep("review");
@@ -478,7 +478,7 @@ const Checkout = () => {
         return;
       }
       if (activePayment === "cod" && !isCodAllowed) {
-        showNotification(`COD is available only up to Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
+        showNotification(`COD is available only up to ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
         setLoading(false);
         return;
       }
@@ -632,7 +632,7 @@ const Checkout = () => {
                   id: "online",
                   icon: "lucide:shield-check",
                   title: "Online Payment",
-                  description: `Rs. ${PREPAID_DISCOUNT_AMOUNT.toLocaleString("en-IN")} extra off`,
+                  description: `₹${PREPAID_DISCOUNT_AMOUNT.toLocaleString("en-IN")} extra off`,
                   active: activePayment === "online",
                   onSelect: () => setActivePayment("online"),
                 },
@@ -640,14 +640,14 @@ const Checkout = () => {
                   id: "cod",
                   icon: "lucide:banknote",
                   title: "Cash on Delivery",
-                  description: isCodAllowed ? `Rs. ${COD_FEE_AMOUNT.toLocaleString("en-IN")} COD charge` : subtotal > COD_MAX_AMOUNT ? `Not available above Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}` : "Unavailable for some items",
+                  description: isCodAllowed ? `₹${COD_FEE_AMOUNT.toLocaleString("en-IN")} COD charge` : subtotal > COD_MAX_AMOUNT ? `Not available above ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}` : "Unavailable for some items",
                   active: activePayment === "cod",
                   disabled: !isCodAllowed,
                   onSelect: () => {
                     if (isCodAllowed) {
                       setActivePayment("cod");
                     } else if (subtotal > COD_MAX_AMOUNT) {
-                      showNotification(`COD is available only up to Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
+                      showNotification(`COD is available only up to ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
                     } else {
                       showNotification("Some products in your cart do not support Cash on Delivery.", "warning");
                     }
@@ -658,8 +658,8 @@ const Checkout = () => {
                 key: `${item.id}-${item.colorId}-review`,
                 image: item.image_url,
                 name: item.name,
-                meta: `Qty ${item.quantity} x Rs. ${Number(item.price).toLocaleString("en-IN")}${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName) ? ` - SKU: ${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName)}` : ""}`,
-                total: item.checkoutUnavailable ? "Excluded" : `Rs. ${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
+                meta: `Qty ${item.quantity} x ₹${Number(item.price).toLocaleString("en-IN")}${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName) ? ` - SKU: ${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName)}` : ""}`,
+                total: item.checkoutUnavailable ? "Excluded" : `₹${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
                 unavailable: item.checkoutUnavailable,
                 unavailableLabel: item.checkoutStockInfo?.badge || "Unavailable - excluded from total",
               }))}
@@ -680,8 +680,8 @@ const Checkout = () => {
                   href: `/product/${item.slug}`,
                   image: item.image_url,
                   name: item.name,
-                  meta: `${item.quantity} x Rs. ${Number(item.price).toLocaleString("en-IN")}`,
-                  total: item.checkoutUnavailable ? "Excluded" : `Rs. ${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
+                  meta: `${item.quantity} x ₹${Number(item.price).toLocaleString("en-IN")}`,
+                  total: item.checkoutUnavailable ? "Excluded" : `₹${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
                   unavailable: item.checkoutUnavailable,
                   unavailableLabel: item.checkoutStockInfo?.badge || "Unavailable - excluded from total",
                 })),
@@ -697,14 +697,14 @@ const Checkout = () => {
                 useWallet,
                 setUseWallet,
                 rows: [
-                  { label: "Subtotal", value: `Rs. ${subtotal.toLocaleString("en-IN")}` },
+                  { label: "Subtotal", value: `₹${subtotal.toLocaleString("en-IN")}` },
                   ...(unavailableCart.length > 0 ? [{ label: "Unavailable items", value: `${unavailableCart.length} excluded`, tone: "accent" }] : []),
-                  { label: "Platform fee", value: `Rs. ${platformFee.toLocaleString("en-IN")}` },
-                  ...(paymentFee > 0 ? [{ label: "COD charge", value: `Rs. ${paymentFee.toLocaleString("en-IN")}`, tone: "accent" }] : []),
-                  { label: "Delivery", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>Rs. {shippingCharge.toLocaleString("en-IN")}</s>{" "}Free</> : "Free", tone: shippingLoading ? undefined : "success" },
-                  ...(paymentDiscount > 0 ? [{ label: "Prepaid discount", value: `-Rs. ${paymentDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
-                  ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-Rs. ${effectiveCouponDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
-                  ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-Rs. ${walletUsableAmount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                  { label: "Platform fee", value: `₹${platformFee.toLocaleString("en-IN")}` },
+                  ...(paymentFee > 0 ? [{ label: "COD charge", value: `₹${paymentFee.toLocaleString("en-IN")}`, tone: "accent" }] : []),
+                  { label: "Delivery", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>₹{shippingCharge.toLocaleString("en-IN")}</s>{" "}Free</> : "Free", tone: shippingLoading ? undefined : "success" },
+                  ...(paymentDiscount > 0 ? [{ label: "Prepaid discount", value: `-₹${paymentDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                  ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-₹${effectiveCouponDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                  ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-₹${walletUsableAmount.toLocaleString("en-IN")}`, tone: "success" }] : []),
                 ],
                 logistics: null,
                 deliveryPromise: shippingDeliveryDate ? {
@@ -714,7 +714,7 @@ const Checkout = () => {
                 } : null,
                 totalLabel: "Total Payable",
                 total,
-                formatMoney: (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`,
+                formatMoney: (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`,
                 action: {
                   label: loading ? "Processing..." : activePayment === "cod" ? "Place COD Order" : "Pay & Place Order",
                   onClick: handlePlaceOrder,
@@ -791,7 +791,7 @@ const Checkout = () => {
                   >
                     <Icon icon="lucide:shield-check" />
                     <span>Online Payment</span>
-                    <small>Rs. {PREPAID_DISCOUNT_AMOUNT.toLocaleString("en-IN")} extra off</small>
+                    <small>₹{PREPAID_DISCOUNT_AMOUNT.toLocaleString("en-IN")} extra off</small>
                   </button>
                   <button
                     type="button"
@@ -801,7 +801,7 @@ const Checkout = () => {
                       if (isCodAllowed) {
                         setActivePayment("cod");
                       } else if (subtotal > COD_MAX_AMOUNT) {
-                        showNotification(`COD is available only up to Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
+                        showNotification(`COD is available only up to ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}.`, "warning");
                       } else {
                         showNotification("Some products in your cart do not support Cash on Delivery.", "warning");
                       }
@@ -809,7 +809,7 @@ const Checkout = () => {
                   >
                     <Icon icon="lucide:banknote" />
                     <span>Cash on Delivery</span>
-                    <small>{isCodAllowed ? `Rs. ${COD_FEE_AMOUNT.toLocaleString("en-IN")} COD charge` : subtotal > COD_MAX_AMOUNT ? `Not available above Rs. ${COD_MAX_AMOUNT.toLocaleString("en-IN")}` : "Unavailable for some items"}</small>
+                    <small>{isCodAllowed ? `₹${COD_FEE_AMOUNT.toLocaleString("en-IN")} COD charge` : subtotal > COD_MAX_AMOUNT ? `Not available above ₹${COD_MAX_AMOUNT.toLocaleString("en-IN")}` : "Unavailable for some items"}</small>
                   </button>
                 </div>
               </section>
@@ -833,9 +833,9 @@ const Checkout = () => {
                         <img src={imgUrl(item.image_url)} alt="" />
                         <div>
                           <strong>{item.name}</strong>
-                          <small>Qty {item.quantity} x Rs. {Number(item.price).toLocaleString("en-IN")}</small>
+                          <small>Qty {item.quantity} x ₹{Number(item.price).toLocaleString("en-IN")}</small>
                         </div>
-                        <b>Rs. {(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}</b>
+                        <b>₹{(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}</b>
                       </div>
                     ))}
                   </div>
@@ -865,8 +865,8 @@ const Checkout = () => {
                       href: `/product/${item.slug}`,
                       image: item.image_url,
                       name: item.name,
-                      meta: `${item.quantity} x Rs. ${Number(item.price).toLocaleString("en-IN")}`,
-                      total: `Rs. ${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
+                      meta: `${item.quantity} x ₹${Number(item.price).toLocaleString("en-IN")}`,
+                      total: `₹${(Number(item.price) * Number(item.quantity || 1)).toLocaleString("en-IN")}`,
                     }))}
                     showOffers={checkoutStep === "review"}
                     coupons={availableCoupons}
@@ -880,23 +880,23 @@ const Checkout = () => {
                     useWallet={useWallet}
                     setUseWallet={setUseWallet}
                     rows={[
-                      { label: "Subtotal", value: `Rs. ${subtotal.toLocaleString("en-IN")}` },
-                      ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-Rs. ${effectiveCouponDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
-                      { label: "Free delivery charge", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>Rs. {shippingCharge.toLocaleString("en-IN")}</s> Free</> : "Free", tone: "success" },
-                      ...(paymentDiscount > 0 ? [{ label: "Prepaid payment discount", value: `-Rs. ${paymentDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
-                      ...(paymentFee > 0 ? [{ label: "COD charge", value: `Rs. ${paymentFee.toLocaleString("en-IN")}`, tone: "accent" }] : []),
-                      { label: "Platform fee", value: `Rs. ${platformFee.toLocaleString("en-IN")}` },
-                      ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-Rs. ${walletUsableAmount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                      { label: "Subtotal", value: `₹${subtotal.toLocaleString("en-IN")}` },
+                      ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-₹${effectiveCouponDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                      { label: "Free delivery charge", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>₹{shippingCharge.toLocaleString("en-IN")}</s> Free</> : "Free", tone: "success" },
+                      ...(paymentDiscount > 0 ? [{ label: "Prepaid payment discount", value: `-₹${paymentDiscount.toLocaleString("en-IN")}`, tone: "success" }] : []),
+                      ...(paymentFee > 0 ? [{ label: "COD charge", value: `₹${paymentFee.toLocaleString("en-IN")}`, tone: "accent" }] : []),
+                      { label: "Platform fee", value: `₹${platformFee.toLocaleString("en-IN")}` },
+                      ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-₹${walletUsableAmount.toLocaleString("en-IN")}`, tone: "success" }] : []),
                     ]}
                     logistics={shippingCharge > 0 ? {
                       label: "Returns & exchange available",
                       tooltip: shippingDiscountReason === "first_order"
                         ? "Return and exchange are available. For your first order, delivery charge will not be deducted."
-                        : `Return and exchange are available. On return, refund may deduct Rs. ${returnDeliveryDeduction.toLocaleString("en-IN")} delivery charge.`,
+                        : `Return and exchange are available. On return, refund may deduct ₹${returnDeliveryDeduction.toLocaleString("en-IN")} delivery charge.`,
                     } : null}
                     totalLabel="Total Payable"
                     total={total}
-                    formatMoney={(value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`}
+                    formatMoney={(value) => `₹${Number(value || 0).toLocaleString("en-IN")}`}
                     action={{
                       label: checkoutStep === "details"
                         ? (shippingLoading ? "Checking delivery..." : "Continue")
@@ -922,7 +922,7 @@ const Checkout = () => {
                           <Link to={`/product/${item.slug}`} className="checkout-summary-product-link">
                             <h4 className="text-xs font-bold text-[#3D2817] tracking-wider">{productName}</h4>
                           </Link>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">{item.quantity} x Rs. {Number(item.price).toLocaleString("en-IN")}</p>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">{item.quantity} x ₹{Number(item.price).toLocaleString("en-IN")}</p>
                         </div>
                       </div>
                       );
@@ -939,7 +939,7 @@ const Checkout = () => {
                         <span className="checkout-coupon-badge"><Icon icon="lucide:percent" /></span>
                         <span className="checkout-coupon-copy">
                           <strong>{appliedCoupon ? `Applied ${appliedCoupon.code}` : getCouponSavingsText(availableCoupons[0])}</strong>
-                          <small>{appliedCoupon ? `Rs. ${effectiveCouponDiscount.toLocaleString("en-IN")} saved on this order` : getCouponSubtext(availableCoupons[0])}</small>
+                          <small>{appliedCoupon ? `₹${effectiveCouponDiscount.toLocaleString("en-IN")} saved on this order` : getCouponSubtext(availableCoupons[0])}</small>
                         </span>
                         <Icon icon={appliedCoupon ? "lucide:check-circle-2" : "lucide:chevron-right"} />
                       </button>
@@ -957,7 +957,7 @@ const Checkout = () => {
                       <label className={`checkout-wallet-row ${Number(walletBalance || 0) <= 0 ? "disabled" : ""}`}>
                         <span>
                           <strong>Use wallet money</strong>
-                          <small>Available Rs. {Number(walletBalance || 0).toLocaleString("en-IN")}</small>
+                          <small>Available ₹{Number(walletBalance || 0).toLocaleString("en-IN")}</small>
                         </span>
                         <input
                           type="checkbox"
@@ -972,40 +972,40 @@ const Checkout = () => {
                   <div className="pt-6 border-t border-[#D4AF37]/10 space-y-4">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500 uppercase tracking-widest font-bold">Subtotal</span>
-                      <span className="font-bold text-[#3D2817]">Rs. {subtotal.toLocaleString("en-IN")}</span>
+                      <span className="font-bold text-[#3D2817]">₹{subtotal.toLocaleString("en-IN")}</span>
                     </div>
 
                     {appliedCoupon && (
                       <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
                         <div className="flex items-center gap-1"><Icon icon="lucide:ticket" /><span>COUPON ({appliedCoupon.code})</span></div>
-                        <span>-Rs. {effectiveCouponDiscount.toLocaleString("en-IN")}</span>
+                        <span>-₹{effectiveCouponDiscount.toLocaleString("en-IN")}</span>
                       </div>
                     )}
 
                     <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
                       <span>FREE DELIVERY CHARGE</span>
-                      <span>{shippingLoading ? "CALCULATING..." : shippingCharge > 0 ? <><s>Rs. {shippingCharge.toLocaleString("en-IN")}</s> Free</> : "FREE"}</span>
+                      <span>{shippingLoading ? "CALCULATING..." : shippingCharge > 0 ? <><s>₹{shippingCharge.toLocaleString("en-IN")}</s> Free</> : "FREE"}</span>
                     </div>
                     {paymentDiscount > 0 && (
                       <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
                         <span>PREPAID DISCOUNT</span>
-                        <span>-Rs. {paymentDiscount.toLocaleString("en-IN")}</span>
+                        <span>-₹{paymentDiscount.toLocaleString("en-IN")}</span>
                       </div>
                     )}
                     {paymentFee > 0 && (
                       <div className="flex justify-between items-center text-xs text-[#800020] font-bold">
                         <span>COD FEE</span>
-                        <span>Rs. {paymentFee.toLocaleString("en-IN")}</span>
+                        <span>₹{paymentFee.toLocaleString("en-IN")}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500 uppercase tracking-widest font-bold">Platform fee</span>
-                      <span className="font-bold text-[#3D2817]">Rs. {platformFee.toLocaleString("en-IN")}</span>
+                      <span className="font-bold text-[#3D2817]">₹{platformFee.toLocaleString("en-IN")}</span>
                     </div>
                     {walletUsableAmount > 0 && (
                       <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
                         <span>WALLET USED</span>
-                        <span>-Rs. {walletUsableAmount.toLocaleString("en-IN")}</span>
+                        <span>-₹{walletUsableAmount.toLocaleString("en-IN")}</span>
                       </div>
                     )}
                     {shippingCharge > 0 && (
@@ -1018,7 +1018,7 @@ const Checkout = () => {
                           data-tooltip={
                             shippingDiscountReason === "first_order"
                               ? "Return and exchange are available. For your first order, delivery charge will not be deducted."
-                              : `Return and exchange are available. On return, refund may deduct Rs. ${returnDeliveryDeduction.toLocaleString("en-IN")} delivery charge.`
+                              : `Return and exchange are available. On return, refund may deduct ₹${returnDeliveryDeduction.toLocaleString("en-IN")} delivery charge.`
                           }
                         >
                           <Icon icon="lucide:info" />
@@ -1030,7 +1030,7 @@ const Checkout = () => {
                   <div className="mt-10 pt-6 border-t-2 border-[#D4AF37]/20">
                     <div className="flex justify-between items-center mb-8">
                       <span className="text-sm font-bold text-[#3D2817] uppercase tracking-[0.2em]">Total Payable</span>
-                      <span className="text-2xl font-bold text-[#800020]">Rs. {total.toLocaleString("en-IN")}</span>
+                      <span className="text-2xl font-bold text-[#800020]">₹{total.toLocaleString("en-IN")}</span>
                     </div>
                     
                     <div className="flex flex-col items-end mb-6">
@@ -1222,7 +1222,7 @@ const Checkout = () => {
           <span><Icon icon="lucide:sparkles" /></span>
           <div>
             <strong>Yay! Coupon applied</strong>
-            <p>{couponCelebration.discount > 0 ? `Rs. ${Number(couponCelebration.discount).toLocaleString("en-IN")} off with ${couponCelebration.code}` : `${couponCelebration.code} is active on this order`}</p>
+            <p>{couponCelebration.discount > 0 ? `₹${Number(couponCelebration.discount).toLocaleString("en-IN")} off with ${couponCelebration.code}` : `${couponCelebration.code} is active on this order`}</p>
           </div>
         </div>
       )}
@@ -1247,3 +1247,4 @@ const Checkout = () => {
 };
 
 export default Checkout;
+

@@ -154,7 +154,7 @@ const Cart = () => {
           </div>
           <div className="cart-topbar-right">
             <div className="cart-topbar-subtotal-label">Subtotal</div>
-            <div className="cart-topbar-subtotal-value">Rs. {subtotal.toLocaleString("en-IN")}</div>
+            <div className="cart-topbar-subtotal-value">₹{subtotal.toLocaleString("en-IN")}</div>
           </div>
         </div>
       </div>

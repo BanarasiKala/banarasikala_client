@@ -16,7 +16,7 @@ const toNumber = (value) => {
   return Number.isFinite(next) ? next : 0;
 };
 
-const formatPrice = (value) => `Rs. ${toNumber(value).toLocaleString("en-IN")}`;
+const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN")}`;
 
 const formatDate = (value) => {
   if (!value) return "";

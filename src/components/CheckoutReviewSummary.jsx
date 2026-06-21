@@ -31,7 +31,7 @@ const CheckoutReviewSummary = ({
   setCouponCodeOpen,
   couponCelebration,
 }) => {
-  const money = formatMoney || ((value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`);
+  const money = formatMoney || ((value) => `₹${Number(value || 0).toLocaleString("en-IN")}`);
   const firstCoupon = coupons[0];
 
   const getCouponSavingsText = (coupon) => {

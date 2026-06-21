@@ -13,8 +13,8 @@ import "./Header.css";
 
 const formatHeaderMoney = (value) => {
   const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) return "Rs. 0";
-  return `Rs. ${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+  if (!Number.isFinite(amount)) return "₹0";
+  return `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 };
 
 const calcDiscount = (mrp, sell) => {
@@ -454,7 +454,7 @@ const Header = () => {
             <p key={index}>
               <span>Free Delivery on All Orders!</span>
               <span className="bk-topline-separator" aria-hidden="true" />
-              <span>Grab Rs.50 Signup Bonus</span>
+              <span>Grab ₹50 Signup Bonus</span>
             </p>
           ))}
         </div>
@@ -591,8 +591,8 @@ const Header = () => {
                           const disc = calcDiscount(mrp, sell);
                           return (
                             <div className="bk-suggestion-price-row">
-                              <span className="bk-suggestion-sell">Rs. {sell.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
-                              {mrp > sell && <span className="bk-suggestion-mrp">Rs. {mrp.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>}
+                              <span className="bk-suggestion-sell">₹{sell.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                              {mrp > sell && <span className="bk-suggestion-mrp">₹{mrp.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>}
                               {disc > 0 && <span className="bk-suggestion-disc">({disc}% OFF)</span>}
                             </div>
                           );
@@ -810,7 +810,7 @@ const Header = () => {
                       <span className="bk-suggestion-name">{product.name}</span>
                       {product.selling_price && (
                         <span className="bk-suggestion-price">
-                          Rs. {Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          ₹{Number(product.selling_price).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                         </span>
                       )}
                     </div>

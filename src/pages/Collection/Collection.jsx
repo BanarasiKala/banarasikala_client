@@ -522,8 +522,8 @@ const Collection = () => {
           onChange={handlePriceChange}
         />
         <div className="collection-price-range">
-          <span>Rs. 0</span>
-          <span>Rs. {Number(filters.maxPrice).toLocaleString("en-IN")}</span>
+          <span>₹0</span>
+          <span>₹{Number(filters.maxPrice).toLocaleString("en-IN")}</span>
         </div>
       </div>
     </div>

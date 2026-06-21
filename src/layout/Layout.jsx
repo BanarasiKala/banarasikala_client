@@ -50,7 +50,7 @@ const SignupGiftPopup = ({ hidden = false }) => {
       </button>
 
       <span className="bk-signup-gift-kicker">Welcome Gift</span>
-      <h2 id="bk-signup-gift-title">Rs.50 in your wallet</h2>
+      <h2 id="bk-signup-gift-title">₹50 in your wallet</h2>
       <p>Sign up today and start your first Banarasi Kala order with a little extra joy.</p>
 
       <Link className="bk-signup-gift-action" to="/login?mode=signup">
