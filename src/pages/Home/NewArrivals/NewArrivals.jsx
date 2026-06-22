@@ -37,13 +37,13 @@ const NewArrivals = () => {
       status: "active",
       storeFrontVisibility: "true",
       newArrival: "true",
-      limit: "10",
+      limit: "20",
       view: "home",
     });
     fetch(`${API_ENDPOINTS.products}?${params.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        const homeProducts = (data.items || data).slice(0, 10);
+        const homeProducts = (data.items || data).slice(0, 20);
         console.log("[Home][New Arrivals] products:", homeProducts);
         console.log("[Home][New Arrivals] raw response:", data);
         setProducts(homeProducts);

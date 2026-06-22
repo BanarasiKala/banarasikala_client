@@ -36,13 +36,13 @@ const PopularSarees = () => {
     const params = new URLSearchParams({
       status: "active",
       storeFrontVisibility: "true",
-      limit: "10",
+      limit: "20",
       view: "home",
     });
     fetch(`${API_ENDPOINTS.products}?${params.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        const homeProducts = (data.items || data).slice(0, 10);
+        const homeProducts = (data.items || data).slice(0, 20);
         console.log("[Home][Exclusive Picks] products:", homeProducts);
         console.log("[Home][Exclusive Picks] raw response:", data);
         setProducts(homeProducts);
@@ -182,7 +182,7 @@ const PopularSarees = () => {
           </div>
         ) : (
           <div className="bk-popular-showcase">
-            {products.slice(0, 10).map((product, index) => {
+            {products.slice(0, 20).map((product, index) => {
               const sell = Number(product.selling_price);
               const mrp = Number(product.mrp_price);
               const disc = calcDiscount(mrp, sell);
