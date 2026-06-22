@@ -752,11 +752,11 @@ export default function OrderConfirmation() {
                   <div className="confirmation-item-top">
                     {productUrl ? (
                       <Link to={productUrl} className="confirmation-item-media" aria-label={`Open ${item.product_name}`}>
-                        {getItemImage(item) ? <img src={imgUrl(getItemImage(item))} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
+                        {getItemImage(item) ? <img src={imgUrl(getItemImage(item), 200)} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
                       </Link>
                     ) : (
                       <div className="confirmation-item-media">
-                        {getItemImage(item) ? <img src={imgUrl(getItemImage(item))} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
+                        {getItemImage(item) ? <img src={imgUrl(getItemImage(item), 200)} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
                       </div>
                     )}
                     <div className="confirmation-item-copy">

@@ -220,7 +220,7 @@ const Cart = () => {
             return (
               <div key={`${item.id}-${item.colorId}`} className="cart-card">
                 <Link to={`/product/${item.slug}`} className="cart-card-image" aria-label={item.name}>
-                  <img src={imgUrl(item.image_url)} alt={item.name} />
+                  <img src={imgUrl(item.image_url, 200)} alt={item.name} />
                 </Link>
 
                 <div className="cart-card-body">

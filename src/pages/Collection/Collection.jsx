@@ -431,7 +431,7 @@ const Collection = () => {
               {sliderImages.map((image, imageIndex) => (
                 <img
                   key={`${product.id}-${image.url}-${imageIndex}`}
-                  src={imgUrl(image.url)}
+                  src={imgUrl(image.url, 600)}
                   alt={imageIndex === 0 ? product.name : ""}
                   className="card-img"
                   loading="lazy"

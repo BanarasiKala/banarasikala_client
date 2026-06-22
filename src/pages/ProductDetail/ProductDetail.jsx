@@ -808,13 +808,19 @@ const ProductDetail = () => {
     return () => window.clearInterval(timer);
   }, [isGalleryHovering, visibleMedia, activeImageIndex]);
 
-  // Preload all fullscreen-resolution images when lightbox opens so swipe is instant
+  // Preload only adjacent fullscreen images (prev + current + next) to avoid bulk bandwidth
   useEffect(() => {
     if (!fullscreenOpen) return;
-    visibleMedia
-      .filter((m) => m.type === "image")
-      .forEach((item) => { new Image().src = imgUrl(item.url, 1400); });
-  }, [fullscreenOpen, visibleMedia]);
+    const images = visibleMedia.filter((m) => m.type === "image");
+    const n = images.length;
+    if (n === 0) return;
+    const toLoad = new Set([
+      fullscreenIdx % n,
+      (fullscreenIdx + 1) % n,
+      (fullscreenIdx - 1 + n) % n,
+    ]);
+    toLoad.forEach((i) => { new Image().src = imgUrl(images[i]?.url, 1200); });
+  }, [fullscreenOpen, fullscreenIdx, visibleMedia]);
 
   // Keep quantity in sync with cart (so cart-page changes reflect here instantly)
   useEffect(() => {
@@ -1851,12 +1857,12 @@ const ProductDetail = () => {
                         item.type === "video" ? (
                           <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} />
                         ) : (
-                          <ImageSlide key={item.url} url={imgUrl(item.url)} alt={index === activeImageIndex ? productName : ""} />
+                          <ImageSlide key={item.url} url={imgUrl(item.url, 1200)} alt={index === activeImageIndex ? productName : ""} />
                         )
                       ))}
                     </div>
                   ) : mainImage ? (
-                    <ImageSlide url={imgUrl(mainImage)} alt={productName} />
+                    <ImageSlide url={imgUrl(mainImage, 1200)} alt={productName} />
                   ) : null}
                 </div>
                 {isSelectedOutOfStock && (
@@ -2278,7 +2284,7 @@ const ProductDetail = () => {
                                 setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
                               }}
                             >
-                              <img src={imgUrl(image.url)} alt="" loading="lazy" />
+                              <img src={imgUrl(image.url, 160)} alt="" loading="lazy" />
                               {showMore && <span className="product-review-image-more">+{remaining}</span>}
                             </button>
                           );
@@ -2358,7 +2364,7 @@ const ProductDetail = () => {
                         style={{ transform: `translateX(-${activeSlide * 100}%)` }}
                       >
                         {slideImages.map((image, index) => (
-                          <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? relatedProductName : ""} />
+                          <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url, 600)} alt={index === 0 ? relatedProductName : ""} />
                         ))}
                       </div>
                       {slideImages.length > 1 && (
@@ -2418,7 +2424,7 @@ const ProductDetail = () => {
             <Icon icon="lucide:x" />
           </button>
           <img
-            src={imgUrl(approvedReviewImages[reviewGalleryIndex].url)}
+            src={imgUrl(approvedReviewImages[reviewGalleryIndex].url, 1200)}
             alt="Uploaded product photo"
             onClick={(event) => event.stopPropagation()}
           />
@@ -2495,7 +2501,7 @@ const ProductDetail = () => {
                                 setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
                               }}
                             >
-                              <img src={imgUrl(image.url)} alt="" loading="lazy" />
+                              <img src={imgUrl(image.url, 160)} alt="" loading="lazy" />
                               {showMore && <span className="product-review-image-more">+{remaining}</span>}
                             </button>
                           );

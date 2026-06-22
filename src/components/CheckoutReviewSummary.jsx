@@ -56,10 +56,10 @@ const CheckoutReviewSummary = ({
             <div className={`crs-item ${item.unavailable ? "unavailable" : ""}`} key={item.key}>
               {item.href ? (
                 <Link to={item.href} className="crs-item-image" aria-label={`Open ${item.name}`}>
-                  {item.image && <img src={imgUrl(item.image)} alt={item.name} />}
+                  {item.image && <img src={imgUrl(item.image, 160)} alt={item.name} />}
                 </Link>
               ) : (
-                <span className="crs-item-image">{item.image && <img src={imgUrl(item.image)} alt="" />}</span>
+                <span className="crs-item-image">{item.image && <img src={imgUrl(item.image, 160)} alt="" />}</span>
               )}
               <div>
                 <strong>{item.name}</strong>

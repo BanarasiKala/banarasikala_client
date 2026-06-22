@@ -859,7 +859,7 @@ export default function Profile() {
           <div className="profile-identity">
             <div className="profile-avatar">
               {profile?.avatar_url ? (
-                <img src={imgUrl(profile.avatar_url)} alt="Profile" />
+                <img src={imgUrl(profile.avatar_url, 160)} alt="Profile" />
               ) : (
                 <div className="profile-avatar-fallback" aria-label="Default profile avatar">
                   <Icon icon="lucide:user-round" />

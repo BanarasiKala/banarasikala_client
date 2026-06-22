@@ -339,7 +339,7 @@ const OrderCard = ({ order, onFeedback }) => {
             >
               <div className="order-product-media">
                 {imageUrl ? (
-                  <img src={imgUrl(imageUrl)} alt={productName} loading="lazy" />
+                  <img src={imgUrl(imageUrl, 200)} alt={productName} loading="lazy" />
                 ) : (
                   <div className="order-product-placeholder">
                     <Icon icon="lucide:image-off" />

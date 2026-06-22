@@ -357,7 +357,7 @@ const Wishlist = () => {
                         >
                           <div className="wishlist-card-image-track" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
                             {sliderImages.map((image, index) => (
-                              <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url)} alt={index === 0 ? item.name : ""} loading="lazy" />
+                              <img key={`${item.id}-${image.url}-${index}`} src={imgUrl(image.url, 600)} alt={index === 0 ? item.name : ""} loading="lazy" />
                             ))}
                           </div>
                         </Link>
@@ -464,7 +464,7 @@ const Wishlist = () => {
             </button>
 
             <div className="wishlist-modal-product">
-              <img src={imgUrl(colorModalProduct.image_url)} alt={colorModalProduct.name} />
+              <img src={imgUrl(colorModalProduct.image_url, 600)} alt={colorModalProduct.name} />
               <div>
                 <span>Choose Color</span>
                 <h2 id="wishlist-color-title">{colorModalProduct.name}</h2>
