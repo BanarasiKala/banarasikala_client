@@ -3032,9 +3032,8 @@
 
 .product-delivery-date {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   margin-top: 10px;
   padding: 10px 12px;
   background: #fff;
@@ -3042,16 +3041,48 @@
   border-radius: 10px;
 }
 
-.product-delivery-date span {
-  color: rgba(53, 23, 15, 0.56);
-  font-size: 12px;
+.product-delivery-free-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1a6e1a;
+}
+
+.product-delivery-free-line svg {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+
+.product-delivery-free-line span {
+  color: #1a6e1a;
+  font-size: 13px;
   font-weight: 400;
 }
 
-.product-delivery-date strong {
-  color: #800020;
+.product-delivery-free-line strong {
+  color: #0d4f0d;
   font-size: 13px;
+  font-weight: 700;
+}
+
+.product-delivery-urgency-line {
+  margin: 0;
+  padding-left: 21px;
+  font-size: 12px;
+  color: rgba(53, 23, 15, 0.7);
+  line-height: 1.5;
+}
+
+.product-delivery-offer-tag {
+  color: #c44d00;
   font-weight: 600;
+}
+
+.product-delivery-urgency-line strong {
+  color: #c44d00;
+  font-weight: 700;
 }
 
 .buy-now-modal {

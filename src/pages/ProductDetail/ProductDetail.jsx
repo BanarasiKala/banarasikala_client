@@ -97,6 +97,17 @@ const getSortedImages = (targetProduct) => {
   return unique.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
 };
 
+const getOrderCutoff = () => {
+  const now = new Date();
+  const cutoff = new Date(now);
+  cutoff.setHours(23, 59, 0, 0);
+  const diffMs = cutoff - now;
+  if (diffMs <= 0) return null;
+  const hours = Math.floor(diffMs / 3600000);
+  const mins = Math.floor((diffMs % 3600000) / 60000);
+  return { hours, mins };
+};
+
 const PLYR_OPTIONS = {
   controls: ["play", "progress", "current-time", "duration", "mute", "volume", "fullscreen", "settings"],
   settings: ["speed"],
@@ -329,6 +340,7 @@ const ProductDetail = () => {
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
   const [showPincodeInput, setShowPincodeInput] = useState(false);
+  const [orderCountdown, setOrderCountdown] = useState(() => getOrderCutoff());
   const autoCheckedRef = useRef("");
   const [addingToBag, setAddingToBag] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
@@ -1365,9 +1377,11 @@ const ProductDetail = () => {
         setDeliveryQuote({ unavailable: true });
         return;
       }
+      const estimatedDate = getEstimatedDeliveryDate(selectedOption.etd);
       setDeliveryQuote({
         option: selectedOption,
-        deliveryDate: formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedOption.etd)),
+        deliveryDate: formatEstimatedDeliveryDate(estimatedDate),
+        deliveryDateObj: estimatedDate,
       });
       // Persist manually-entered pincodes so other product pages auto-populate
       if (!pinOverride) saveLocationPin(clean, "manual");
@@ -1394,6 +1408,13 @@ const ProductDetail = () => {
   // checkDelivery is intentionally omitted — it's recreated each render and adding it
   // would cause an infinite loop; we pass locationPincode explicitly so no stale closure.
   }, [locationPincode, locationSource, product?.id, isSelectedOutOfStock]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tick the "Order within X hrs Y mins" countdown every minute
+  useEffect(() => {
+    if (!deliveryQuote?.deliveryDate) return undefined;
+    const interval = setInterval(() => setOrderCountdown(getOrderCutoff()), 60000);
+    return () => clearInterval(interval);
+  }, [deliveryQuote?.deliveryDate]);
 
   const specificationRows = product
     ? [
@@ -1749,10 +1770,31 @@ const ProductDetail = () => {
                 {!deliveryCheckLoading && (
                   deliveryQuote?.unavailable ? (
                     <p className="product-delivery-note">Delivery not available for this pincode.</p>
-                  ) : deliveryQuote?.deliveryDate ? (
+                  ) : deliveryQuote?.deliveryDateObj ? (
                     <div className="product-delivery-date">
-                      <span>Estimated delivery:</span>
-                      <strong>{deliveryQuote.deliveryDate}</strong>
+                      <div className="product-delivery-free-line">
+                        <Icon icon="lucide:package-check" />
+                        <span>
+                          FREE delivery{" "}
+                          <strong>
+                            {deliveryQuote.deliveryDateObj.toLocaleDateString("en-IN", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            })}
+                          </strong>
+                        </span>
+                      </div>
+                      {orderCountdown && (
+                        <p className="product-delivery-urgency-line">
+                          <span className="product-delivery-offer-tag">Limited Period Offer.</span>
+                          {" "}Order within{" "}
+                          <strong>
+                            {orderCountdown.hours > 0 ? `${orderCountdown.hours} hr${orderCountdown.hours !== 1 ? "s" : ""} ` : ""}
+                            {orderCountdown.mins} min{orderCountdown.mins !== 1 ? "s" : ""}
+                          </strong>
+                        </p>
+                      )}
                     </div>
                   ) : null
                 )}
