@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { NOTIFICATION_TOASTER_OPTIONS, NotificationProvider } from "./context/NotificationContext";
+import { LocationProvider } from "./context/LocationContext";
 import PreLoader from "./components/PreLoader/PreLoader";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import headerBackground from "./assets/header_backgroung.png";
@@ -42,6 +43,7 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
+        <LocationProvider>
         <WishlistProvider>
           <CartProvider>
             <Router>
@@ -129,6 +131,7 @@ function App() {
             </Router>
           </CartProvider>
         </WishlistProvider>
+        </LocationProvider>
       </NotificationProvider>
     </AuthProvider>
   );

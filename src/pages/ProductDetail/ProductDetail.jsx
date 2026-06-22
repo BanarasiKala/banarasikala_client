@@ -15,6 +15,7 @@ import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
 import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
 import ProductRating from "../../components/ProductRating";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
+import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
 import { selectBestCourier } from "../../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../../utils/env";
@@ -190,6 +191,7 @@ const ProductDetail = () => {
   const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
+  const { pincode: locationPincode, locationSource, locationLoading: locationDetecting, setPincode: saveLocationPin } = useDeliveryLocation();
 
   const [product, setProduct] = useState(null);
   const [allColors, setAllColors] = useState([]);
@@ -326,6 +328,8 @@ const ProductDetail = () => {
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
+  const [showPincodeInput, setShowPincodeInput] = useState(false);
+  const autoCheckedRef = useRef("");
   const [addingToBag, setAddingToBag] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowStep, setBuyNowStep] = useState("details");
@@ -1329,12 +1333,12 @@ const ProductDetail = () => {
     }
   };
 
-  const checkDelivery = async () => {
+  const checkDelivery = async (pinOverride) => {
     if (isSelectedOutOfStock) {
       showNotification("Delivery charges are available when this color is in stock.", "warning");
       return;
     }
-    const clean = deliveryPincode.trim();
+    const clean = (pinOverride || deliveryPincode).trim();
     if (!/^\d{6}$/.test(clean)) {
       showNotification("Enter valid 6 digit pincode", "warning");
       return;
@@ -1357,7 +1361,6 @@ const ProductDetail = () => {
         requireCod: canUseCod,
       });
 
-      console.log("Delivery options: product", data?.data?.available_courier_companies, "Selected:", selectedOption);
       if (!selectedOption) {
         setDeliveryQuote({ unavailable: true });
         return;
@@ -1366,6 +1369,8 @@ const ProductDetail = () => {
         option: selectedOption,
         deliveryDate: formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedOption.etd)),
       });
+      // Persist manually-entered pincodes so other product pages auto-populate
+      if (!pinOverride) saveLocationPin(clean, "manual");
     } catch (error) {
       showNotification(error.message || "Unable to check delivery", "warning");
       setDeliveryQuote({ unavailable: true });
@@ -1373,6 +1378,22 @@ const ProductDetail = () => {
       setDeliveryCheckLoading(false);
     }
   };
+
+  // Auto-check delivery when a pincode is available from location context
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!locationPincode || !product || isSelectedOutOfStock) return undefined;
+    const key = `${locationPincode}_${String(product?.id || "")}`;
+    if (autoCheckedRef.current === key) return undefined;
+    autoCheckedRef.current = key;
+    setDeliveryPincode(locationPincode);
+    if (locationSource === "gps") setShowPincodeInput(false);
+    setDeliveryQuote(null);
+    const timer = setTimeout(() => { checkDelivery(locationPincode); }, 200);
+    return () => clearTimeout(timer);
+  // checkDelivery is intentionally omitted — it's recreated each render and adding it
+  // would cause an infinite loop; we pass locationPincode explicitly so no stale closure.
+  }, [locationPincode, locationSource, product?.id, isSelectedOutOfStock]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const specificationRows = product
     ? [
@@ -1677,30 +1698,64 @@ const ProductDetail = () => {
             {!isSelectedOutOfStock && (
               <div className="product-delivery-check product-delivery-check-top">
                 <p className="product-delivery-helper">
-                  <Icon icon="lucide:map-pin" /> Check Delivery Availability
+                  <Icon icon="lucide:map-pin" />
+                  {locationDetecting ? "Detecting your location…" : "Delivery Availability"}
                 </p>
-                <div className="product-delivery-input-row">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    inputMode="numeric"
-                    placeholder="Enter Pincode"
-                    value={deliveryPincode}
-                    onChange={(e) => setDeliveryPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    onKeyDown={(event) => { if (event.key === "Enter") checkDelivery(); }}
-                  />
-                  <button type="button" onClick={checkDelivery} disabled={deliveryCheckLoading}>
-                    {deliveryCheckLoading ? "Checking..." : "CHECK"}
-                  </button>
-                </div>
-                {deliveryQuote?.unavailable ? (
-                  <p className="product-delivery-note">Delivery details unavailable for this pincode.</p>
-                ) : deliveryQuote?.deliveryDate ? (
-                  <div className="product-delivery-date">
-                    <span>Estimated delivery:</span>
-                    <strong>{deliveryQuote.deliveryDate}</strong>
+
+                {locationDetecting ? (
+                  <div className="product-delivery-detecting">
+                    <Icon icon="lucide:loader" className="product-delivery-spinner" />
+                    <span>Finding your pincode for delivery estimate…</span>
                   </div>
-                ) : null}
+                ) : !showPincodeInput && locationSource === "gps" && locationPincode ? (
+                  <div className="product-delivery-detected">
+                    <Icon icon="lucide:map-pin" />
+                    <span>Delivering to <strong>{locationPincode}</strong></span>
+                    <button
+                      type="button"
+                      className="product-delivery-change-btn"
+                      onClick={() => {
+                        setShowPincodeInput(true);
+                        setDeliveryPincode(locationPincode);
+                        setDeliveryQuote(null);
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="product-delivery-input-row">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      inputMode="numeric"
+                      placeholder="Enter Pincode"
+                      value={deliveryPincode}
+                      onChange={(e) => {
+                        setDeliveryPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                        setDeliveryQuote(null);
+                      }}
+                      onKeyDown={(event) => { if (event.key === "Enter") checkDelivery(); }}
+                    />
+                    <button type="button" onClick={() => checkDelivery()} disabled={deliveryCheckLoading}>
+                      {deliveryCheckLoading ? "Checking…" : "CHECK"}
+                    </button>
+                  </div>
+                )}
+
+                {deliveryCheckLoading && (
+                  <p className="product-delivery-note">Checking delivery…</p>
+                )}
+                {!deliveryCheckLoading && (
+                  deliveryQuote?.unavailable ? (
+                    <p className="product-delivery-note">Delivery not available for this pincode.</p>
+                  ) : deliveryQuote?.deliveryDate ? (
+                    <div className="product-delivery-date">
+                      <span>Estimated delivery:</span>
+                      <strong>{deliveryQuote.deliveryDate}</strong>
+                    </div>
+                  ) : null
+                )}
               </div>
             )}
 
