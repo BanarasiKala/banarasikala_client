@@ -293,7 +293,11 @@ const ProductDetail = () => {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
+  const [fsZoom, setFsZoom] = useState(1);
+  const [fsPan, setFsPan] = useState({ x: 0, y: 0 });
   const fsImageRef = useRef(null);
+  const fsDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
+  const fsPinchRef = useRef({ active: false, startDist: 0, startZoom: 1, startPan: { x: 0, y: 0 }, midX: 0, midY: 0 });
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
   const closeFullscreen = () => { setFullscreenOpen(false); };
@@ -323,15 +327,15 @@ const ProductDetail = () => {
     };
   }, [fullscreenOpen]);
 
-  // Reset loader when fullscreen opens or the shown image changes;
-  // check .complete to handle browser-cached images that fire onLoad before the effect runs.
+  // Reset loader + zoom when fullscreen opens or the shown image changes.
   useEffect(() => {
     if (!fullscreenOpen) return;
-    if (fsImageRef.current?.complete) {
-      setFsImageLoaded(true);
-    } else {
-      setFsImageLoaded(false);
-    }
+    setFsZoom(1);
+    setFsPan({ x: 0, y: 0 });
+    fsDragRef.current.dragging = false;
+    fsPinchRef.current.active = false;
+    if (fsImageRef.current?.complete) setFsImageLoaded(true);
+    else setFsImageLoaded(false);
   }, [fullscreenOpen, fullscreenIdx]);
 
   const [relatedHoverId, setRelatedHoverId] = useState(null);
@@ -1787,9 +1791,8 @@ const ProductDetail = () => {
                       </div>
                       {orderCountdown && (
                         <p className="product-delivery-urgency-line">
-                          <span className="product-delivery-offer-tag">Limited Period Offer.</span>
-                          {" "}Order within{" "}
-                          <strong>
+                         {" "}Order within{" "}
+                          git<strong>
                             {orderCountdown.hours > 0 ? `${orderCountdown.hours} hr${orderCountdown.hours !== 1 ? "s" : ""} ` : ""}
                             {orderCountdown.mins} min{orderCountdown.mins !== 1 ? "s" : ""}
                           </strong>
@@ -2711,11 +2714,14 @@ const ProductDetail = () => {
         onConfirm={confirmBuyNowLocation}
       />
 
-      {/* ── Fullscreen overlay (images only — Plyr handles video fullscreen) ── */}
+      {/* ── Fullscreen overlay ── */}
       {fullscreenOpen && (() => {
         const fsMedia = visibleMedia[fullscreenIdx];
         const imageItems = visibleMedia.filter((m) => m.type === "image");
         const currentFsImgIdx = imageItems.findIndex((item) => visibleMedia.indexOf(item) === fullscreenIdx);
+        const isZoomed = fsZoom > 1;
+
+        const resetZoom = () => { setFsZoom(1); setFsPan({ x: 0, y: 0 }); };
 
         const navigateFsPrev = () => {
           if (imageItems.length <= 1) return;
@@ -2729,31 +2735,136 @@ const ProductDetail = () => {
         };
         fsHandlersRef.current = { prev: navigateFsPrev, next: navigateFsNext };
 
+        // ── Zoom: double-click ──
+        const handleFsDoubleClick = (e) => {
+          e.stopPropagation();
+          if (isZoomed) { resetZoom(); return; }
+          const ZOOM = 2.5;
+          const rect = fsImageRef.current?.getBoundingClientRect();
+          if (!rect) { setFsZoom(ZOOM); return; }
+          const cx = e.clientX - (rect.left + rect.width / 2);
+          const cy = e.clientY - (rect.top + rect.height / 2);
+          setFsPan({ x: -cx * (ZOOM - 1), y: -cy * (ZOOM - 1) });
+          setFsZoom(ZOOM);
+        };
+
+        // ── Zoom: mouse wheel ──
+        const handleFsWheel = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+          const newZoom = Math.max(1, Math.min(5, fsZoom * factor));
+          if (newZoom === 1) { resetZoom(); return; }
+          const rect = fsImageRef.current?.getBoundingClientRect();
+          if (!rect) { setFsZoom(newZoom); return; }
+          const cx = e.clientX - (rect.left + rect.width / 2);
+          const cy = e.clientY - (rect.top + rect.height / 2);
+          const zf = newZoom / fsZoom;
+          setFsPan({ x: cx * (1 - zf) + fsPan.x * zf, y: cy * (1 - zf) + fsPan.y * zf });
+          setFsZoom(newZoom);
+        };
+
+        // ── Drag to pan (mouse) ──
+        const handleFsMouseDown = (e) => {
+          if (!isZoomed) return;
+          e.preventDefault();
+          fsDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, panX: fsPan.x, panY: fsPan.y };
+        };
+        const handleFsMouseMove = (e) => {
+          if (!fsDragRef.current.dragging) return;
+          setFsPan({
+            x: fsDragRef.current.panX + e.clientX - fsDragRef.current.startX,
+            y: fsDragRef.current.panY + e.clientY - fsDragRef.current.startY,
+          });
+        };
+        const handleFsMouseUp = () => { fsDragRef.current.dragging = false; };
+
+        // ── Touch: swipe (not zoomed) + pan (zoomed) + pinch ──
         const handleFsTouchStart = (e) => {
+          if (e.touches.length === 2) {
+            fsPinchRef.current = {
+              active: true,
+              startDist: Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY),
+              startZoom: fsZoom,
+              startPan: { ...fsPan },
+              midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+              midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+            };
+            fsSwipeRef.current.dragging = false;
+            fsDragRef.current.dragging = false;
+            return;
+          }
           const t = e.touches[0];
           fsSwipeRef.current = { startX: t.clientX, startY: t.clientY, dragging: true };
+          if (isZoomed) {
+            fsDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: fsPan.x, panY: fsPan.y };
+          }
+        };
+        const handleFsTouchMove = (e) => {
+          if (e.touches.length === 2 && fsPinchRef.current.active) {
+            e.preventDefault();
+            const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+            const newZoom = Math.max(1, Math.min(5, fsPinchRef.current.startZoom * (dist / fsPinchRef.current.startDist)));
+            if (newZoom === 1) { resetZoom(); return; }
+            const rect = fsImageRef.current?.getBoundingClientRect();
+            if (rect) {
+              const cx = fsPinchRef.current.midX - (rect.left + rect.width / 2);
+              const cy = fsPinchRef.current.midY - (rect.top + rect.height / 2);
+              const zf = newZoom / fsPinchRef.current.startZoom;
+              setFsPan({ x: cx * (1 - zf) + fsPinchRef.current.startPan.x * zf, y: cy * (1 - zf) + fsPinchRef.current.startPan.y * zf });
+            }
+            setFsZoom(newZoom);
+            return;
+          }
+          if (isZoomed && fsDragRef.current.dragging) {
+            e.preventDefault();
+            const t = e.touches[0];
+            setFsPan({
+              x: fsDragRef.current.panX + t.clientX - fsDragRef.current.startX,
+              y: fsDragRef.current.panY + t.clientY - fsDragRef.current.startY,
+            });
+          }
         };
         const handleFsTouchEnd = (e) => {
+          fsPinchRef.current.active = false;
+          fsDragRef.current.dragging = false;
+          if (isZoomed) { fsSwipeRef.current.dragging = false; return; }
           if (!fsSwipeRef.current.dragging) return;
           fsSwipeRef.current.dragging = false;
           const t = e.changedTouches[0];
           const dx = t.clientX - fsSwipeRef.current.startX;
           const dy = t.clientY - fsSwipeRef.current.startY;
           if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-            if (dx < 0) navigateFsNext();
-            else navigateFsPrev();
+            if (dx < 0) navigateFsNext(); else navigateFsPrev();
           }
         };
 
         return (
-          <div className="bk-fs-overlay" onClick={closeFullscreen}>
-            <button type="button" className="bk-fs-close" onClick={closeFullscreen} aria-label="Close fullscreen">
+          <div className="bk-fs-overlay" onClick={!isZoomed ? closeFullscreen : undefined}>
+            <button type="button" className="bk-fs-close" onClick={closeFullscreen} aria-label="Close">
               <Icon icon="lucide:x" />
             </button>
+            {imageItems.length > 1 && (
+              <>
+                <button type="button" className="bk-fs-nav bk-fs-nav-prev" onClick={(e) => { e.stopPropagation(); navigateFsPrev(); }} aria-label="Previous image">
+                  <Icon icon="lucide:chevron-left" />
+                </button>
+                <button type="button" className="bk-fs-nav bk-fs-nav-next" onClick={(e) => { e.stopPropagation(); navigateFsNext(); }} aria-label="Next image">
+                  <Icon icon="lucide:chevron-right" />
+                </button>
+              </>
+            )}
             <div
-              className="bk-fs-main"
+              className={`bk-fs-main${isZoomed ? " bk-fs-zoomed" : ""}`}
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={handleFsDoubleClick}
+              onWheel={handleFsWheel}
+              onMouseDown={handleFsMouseDown}
+              onMouseMove={handleFsMouseMove}
+              onMouseUp={handleFsMouseUp}
+              onMouseLeave={handleFsMouseUp}
               onTouchStart={handleFsTouchStart}
+              onTouchMove={handleFsTouchMove}
               onTouchEnd={handleFsTouchEnd}
               style={{ touchAction: "none" }}
             >
@@ -2765,24 +2876,38 @@ const ProductDetail = () => {
                 className="bk-fs-image"
                 draggable={false}
                 onLoad={() => setFsImageLoaded(true)}
+                style={{ transform: `translate(${fsPan.x}px, ${fsPan.y}px) scale(${fsZoom})` }}
               />
+              {isZoomed && (
+                <button type="button" className="bk-fs-zoom-reset" onClick={(e) => { e.stopPropagation(); resetZoom(); }} aria-label="Reset zoom" title="Reset zoom">
+                  <Icon icon="lucide:zoom-out" />
+                </button>
+              )}
             </div>
-            {imageItems.length > 1 && (
+            {/* Thumbnail strip: images + videos */}
+            {visibleMedia.length > 1 && (
               <div className="bk-fs-strip" onClick={(e) => e.stopPropagation()}>
-                {imageItems.map((item, i) => {
-                  const globalIdx = visibleMedia.indexOf(item);
-                  return (
-                    <button
-                      key={item.url}
-                      type="button"
-                      className={`bk-fs-thumb${globalIdx === fullscreenIdx ? " active" : ""}`}
-                      onClick={() => setFullscreenIdx(globalIdx)}
-                      aria-label={`Image ${i + 1}`}
-                    >
-                      <img src={imgUrl(item.url, 200)} alt="" />
-                    </button>
-                  );
-                })}
+                {visibleMedia.map((item, globalIdx) => (
+                  <button
+                    key={item.url}
+                    type="button"
+                    className={`bk-fs-thumb${globalIdx === fullscreenIdx ? " active" : ""}${item.type === "video" ? " bk-fs-thumb-video" : ""}`}
+                    onClick={() => {
+                      if (item.type === "video") {
+                        closeFullscreen();
+                        setActiveImageIndex(globalIdx);
+                      } else {
+                        resetZoom();
+                        setFullscreenIdx(globalIdx);
+                      }
+                    }}
+                    aria-label={item.type === "video" ? "Play video" : `Image ${globalIdx + 1}`}
+                  >
+                    {item.type === "video"
+                      ? <span className="bk-fs-thumb-play-icon"><Icon icon="lucide:play" /></span>
+                      : <img src={imgUrl(item.url, 200)} alt="" />}
+                  </button>
+                ))}
               </div>
             )}
           </div>
