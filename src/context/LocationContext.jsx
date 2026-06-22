@@ -6,15 +6,40 @@ const LS_ASKED   = "bk_location_asked";    // "1" once the browser prompt has be
 
 const LocationContext = createContext(null);
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+
 async function reverseGeocodeToPin(lat, lon) {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-    { headers: { "Accept-Language": "en" } },
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  const postcode = (data?.address?.postcode || "").replace(/\s/g, "");
-  return /^\d{6}$/.test(postcode) ? postcode : null;
+  // Mapbox Geocoding API — uses the existing project token
+  if (MAPBOX_TOKEN) {
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=postcode&access_token=${MAPBOX_TOKEN}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const postcode = (data?.features?.[0]?.text || "").replace(/\s/g, "");
+        if (/^\d{6}$/.test(postcode)) return postcode;
+      }
+    } catch {
+      // fall through to BigDataCloud
+    }
+  }
+
+  // BigDataCloud fallback — free, no API key
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const postcode = (data?.postcode || "").replace(/\s/g, "");
+      if (/^\d{6}$/.test(postcode)) return postcode;
+    }
+  } catch {
+    // both failed
+  }
+
+  return null;
 }
 
 export function LocationProvider({ children }) {
@@ -79,4 +104,6 @@ export function LocationProvider({ children }) {
   );
 }
 
-export const useDeliveryLocation = () => useContext(LocationContext);
+const FALLBACK = { pincode: "", locationSource: null, locationLoading: false, setPincode: () => {}, clearPincode: () => {} };
+
+export const useDeliveryLocation = () => useContext(LocationContext) ?? FALLBACK;
