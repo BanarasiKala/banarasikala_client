@@ -116,7 +116,7 @@ const PLYR_OPTIONS = {
   resetOnEnd: true,
   keyboard: { focused: false, global: false },
   tooltips: { controls: false, seek: true },
-  fullscreen: { enabled: true, fallback: true, iosNative: true },
+  fullscreen: { enabled: true, fallback: true, iosNative: false },
 };
 
 const SHIPPING_RETURN_HIGHLIGHTS = [
@@ -153,6 +153,7 @@ ImageSlide.displayName = "ImageSlide";
 
 const VideoSlide = memo(({ src, isActive }) => {
   const plyrRef = useRef(null);
+  const containerRef = useRef(null);
   const isActiveRef = useRef(isActive);
   const [isBuffering, setIsBuffering] = useState(true);
 
@@ -168,6 +169,20 @@ const VideoSlide = memo(({ src, isActive }) => {
     }
   }, [isActive]);
 
+  // Pause when the carousel scrolls off-screen so the browser doesn't activate PiP.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) {
+        const player = plyrRef.current?.plyr;
+        if (player?.playing) { try { player.pause(); } catch {} }
+      }
+    }, { threshold: 0.1 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // e.currentTarget.plyr is set by Plyr's constructor on the DOM element itself —
   // available as soon as Plyr inits, before react-aptor's setState re-render updates the ref.
   const handleCanPlay = useCallback((e) => {
@@ -178,7 +193,7 @@ const VideoSlide = memo(({ src, isActive }) => {
   }, []);
 
   return (
-    <div className="product-main-video-slot">
+    <div className="product-main-video-slot" ref={containerRef}>
       {isBuffering && <div className="bk-carousel-loader bk-carousel-loader--video" aria-hidden="true" />}
       <Plyr
         ref={plyrRef}
@@ -375,6 +390,7 @@ const ProductDetail = () => {
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
   const [fsIsZoomed, setFsIsZoomed] = useState(false);
+  const fsVideoRef = useRef(null);
   const fsImageRef = useRef(null);
   const fsMainRef = useRef(null);
   const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
@@ -403,7 +419,10 @@ const ProductDetail = () => {
   };
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
-  const closeFullscreen = () => { setFullscreenOpen(false); };
+  const closeFullscreen = () => {
+    if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} }
+    setFullscreenOpen(false);
+  };
 
   useEffect(() => {
     if (!fullscreenOpen) return undefined;
@@ -412,6 +431,8 @@ const ProductDetail = () => {
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = "100%";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
     document.body.classList.add("bk-fullscreen-open");
     const onKey = (e) => {
       if (e.key === "Escape") { closeFullscreen(); return; }
@@ -425,6 +446,8 @@ const ProductDetail = () => {
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
+      document.body.style.overscrollBehavior = "";
+      document.documentElement.style.overscrollBehavior = "";
       document.body.classList.remove("bk-fullscreen-open");
       window.scrollTo(0, scrollY);
     };
@@ -2929,13 +2952,16 @@ const ProductDetail = () => {
           };
         };
 
+        const pauseFsVideo = () => { if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} } };
         const navigateFsPrev = () => {
           if (visibleMedia.length <= 1) return;
+          pauseFsVideo();
           resetZoom();
           setFullscreenIdx((fullscreenIdx - 1 + visibleMedia.length) % visibleMedia.length);
         };
         const navigateFsNext = () => {
           if (visibleMedia.length <= 1) return;
+          pauseFsVideo();
           resetZoom();
           setFullscreenIdx((fullscreenIdx + 1) % visibleMedia.length);
         };
@@ -3068,6 +3094,7 @@ const ProductDetail = () => {
               {fsMedia?.type === "video" ? (
                 <video
                   key={fsMedia.url}
+                  ref={fsVideoRef}
                   src={fsMedia.url}
                   autoPlay
                   controls
@@ -3101,7 +3128,7 @@ const ProductDetail = () => {
                     key={item.url}
                     type="button"
                     className={`bk-fs-thumb${globalIdx === fullscreenIdx ? " active" : ""}${item.type === "video" ? " bk-fs-thumb-video" : ""}`}
-                    onClick={() => { resetZoom(); setFullscreenIdx(globalIdx); }}
+                    onClick={() => { pauseFsVideo(); resetZoom(); setFullscreenIdx(globalIdx); }}
                     aria-label={item.type === "video" ? "Play video" : `Image ${globalIdx + 1}`}
                   >
                     {item.type === "video"
