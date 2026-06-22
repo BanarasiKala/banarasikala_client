@@ -225,6 +225,7 @@ const ProductDetail = () => {
   const touchActiveRef = useRef(false);
 
   const resolveSwipe = (dx, dy, didSwipe) => {
+    if (carouselZoomPanRef.current.zoom > 1) return;
     const absDx = Math.abs(dx);
     if (absDx > 50 && absDx > Math.abs(dy)) {
       if (dx < 0 && activeImageIndex < visibleMedia.length - 1) {
@@ -245,13 +246,30 @@ const ProductDetail = () => {
   const handleFrameMouseDown = (e) => {
     if (touchActiveRef.current) return;
     swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false, dragging: true };
+    if (carouselZoomPanRef.current.zoom > 1) {
+      carouselDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, panX: carouselZoomPanRef.current.pan.x, panY: carouselZoomPanRef.current.pan.y };
+    }
   };
   const handleFrameMouseMove = (e) => {
-    if (touchActiveRef.current || !swipeRef.current.dragging) return;
+    if (touchActiveRef.current) return;
+    if (carouselDragRef.current.dragging) {
+      const { zoom } = carouselZoomPanRef.current;
+      const el = frameRef.current;
+      const raw = { x: carouselDragRef.current.panX + e.clientX - carouselDragRef.current.startX, y: carouselDragRef.current.panY + e.clientY - carouselDragRef.current.startY };
+      const maxX = el ? el.clientWidth * (zoom - 1) / 2 : 9999;
+      const maxY = el ? el.clientHeight * (zoom - 1) / 2 : 9999;
+      const newPan = { x: Math.max(-maxX, Math.min(maxX, raw.x)), y: Math.max(-maxY, Math.min(maxY, raw.y)) };
+      carouselZoomPanRef.current = { zoom, pan: newPan };
+      setCarouselPan(newPan);
+      return;
+    }
+    if (!swipeRef.current.dragging) return;
     if (Math.abs(e.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
   };
   const handleFrameMouseUp = (e) => {
-    if (touchActiveRef.current || !swipeRef.current.dragging) return;
+    if (touchActiveRef.current) return;
+    carouselDragRef.current.dragging = false;
+    if (!swipeRef.current.dragging) return;
     swipeRef.current.dragging = false;
     resolveSwipe(
       e.clientX - swipeRef.current.startX,
@@ -263,17 +281,82 @@ const ProductDetail = () => {
   // ── Touch (mobile) ──
   const handleFrameTouchStart = (e) => {
     touchActiveRef.current = true;
+    if (e.touches.length === 2) {
+      const t0 = e.touches[0]; const t1 = e.touches[1];
+      carouselPinchRef.current = {
+        active: true,
+        startDist: Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY),
+        startZoom: carouselZoomPanRef.current.zoom,
+        startPan: { ...carouselZoomPanRef.current.pan },
+        midX: (t0.clientX + t1.clientX) / 2,
+        midY: (t0.clientY + t1.clientY) / 2,
+      };
+      swipeRef.current.dragging = false;
+      carouselDragRef.current.dragging = false;
+      return;
+    }
     const t = e.touches[0];
     swipeRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false, dragging: true };
+    if (carouselZoomPanRef.current.zoom > 1) {
+      carouselDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: carouselZoomPanRef.current.pan.x, panY: carouselZoomPanRef.current.pan.y };
+    }
   };
   const handleFrameTouchMove = (e) => {
+    if (e.touches.length === 2 && carouselPinchRef.current.active) {
+      e.preventDefault();
+      const t0 = e.touches[0]; const t1 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const newZoom = Math.max(1, Math.min(5, carouselPinchRef.current.startZoom * (dist / carouselPinchRef.current.startDist)));
+      const el = frameRef.current;
+      if (newZoom <= 1) {
+        carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+        setCarouselZoom(1); setCarouselPan({ x: 0, y: 0 });
+        return;
+      }
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const zf = newZoom / carouselPinchRef.current.startZoom;
+        const ex = carouselPinchRef.current.midX - (rect.left + rect.width / 2);
+        const ey = carouselPinchRef.current.midY - (rect.top + rect.height / 2);
+        const maxX = el.clientWidth * (newZoom - 1) / 2;
+        const maxY = el.clientHeight * (newZoom - 1) / 2;
+        const newPan = {
+          x: Math.max(-maxX, Math.min(maxX, ex * (1 - zf) + carouselPinchRef.current.startPan.x * zf)),
+          y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + carouselPinchRef.current.startPan.y * zf)),
+        };
+        carouselZoomPanRef.current = { zoom: newZoom, pan: newPan };
+        setCarouselPan(newPan);
+      }
+      setCarouselZoom(newZoom);
+      return;
+    }
+    if (carouselZoomPanRef.current.zoom > 1 && carouselDragRef.current.dragging) {
+      e.preventDefault();
+      const t = e.touches[0];
+      const { zoom } = carouselZoomPanRef.current;
+      const el = frameRef.current;
+      const raw = { x: carouselDragRef.current.panX + t.clientX - carouselDragRef.current.startX, y: carouselDragRef.current.panY + t.clientY - carouselDragRef.current.startY };
+      const maxX = el ? el.clientWidth * (zoom - 1) / 2 : 9999;
+      const maxY = el ? el.clientHeight * (zoom - 1) / 2 : 9999;
+      const newPan = { x: Math.max(-maxX, Math.min(maxX, raw.x)), y: Math.max(-maxY, Math.min(maxY, raw.y)) };
+      carouselZoomPanRef.current = { zoom, pan: newPan };
+      setCarouselPan(newPan);
+      return;
+    }
     if (!swipeRef.current.dragging) return;
     const t = e.touches[0];
     if (Math.abs(t.clientX - swipeRef.current.startX) > 8) swipeRef.current.didSwipe = true;
   };
   const handleFrameTouchEnd = (e) => {
+    carouselPinchRef.current.active = false;
+    carouselDragRef.current.dragging = false;
     if (!swipeRef.current.dragging) return;
     swipeRef.current.dragging = false;
+    if (carouselZoomPanRef.current.zoom > 1) {
+      if (visibleMedia[activeImageIndex]?.type !== "video") e.preventDefault();
+      setTimeout(() => { touchActiveRef.current = false; }, 600);
+      return;
+    }
     const t = e.changedTouches[0];
     resolveSwipe(
       t.clientX - swipeRef.current.startX,
@@ -281,11 +364,7 @@ const ProductDetail = () => {
       swipeRef.current.didSwipe,
     );
     // On image slides, prevent the browser from firing synthetic click/mousedown after touch
-    // (which would re-trigger our carousel handlers). On video slides, skip this so the
-    // synthetic click can reach Plyr's controls; touchActiveRef still guards our own handlers.
-    if (visibleMedia[activeImageIndex]?.type !== "video") {
-      e.preventDefault();
-    }
+    if (visibleMedia[activeImageIndex]?.type !== "video") e.preventDefault();
     setTimeout(() => { touchActiveRef.current = false; }, 600);
   };
 
@@ -300,6 +379,15 @@ const ProductDetail = () => {
   const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
   const fsDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const fsPinchRef = useRef({ active: false, startDist: 0, startZoom: 1, startPan: { x: 0, y: 0 }, midX: 0, midY: 0 });
+
+  // ── Carousel inline zoom ──
+  const [carouselZoom, setCarouselZoom] = useState(1);
+  const [carouselPan, setCarouselPan] = useState({ x: 0, y: 0 });
+  const carouselZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
+  const carouselWrapperRef = useRef(null);
+  const carouselDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
+  const carouselPinchRef = useRef({ active: false });
+  const carouselWheelHandlerRef = useRef(null);
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
   const closeFullscreen = () => { setFullscreenOpen(false); };
@@ -1423,6 +1511,50 @@ const ProductDetail = () => {
     return () => clearInterval(interval);
   }, [deliveryQuote?.deliveryDate]);
 
+  // Reset carousel zoom when the active slide changes
+  useEffect(() => {
+    setCarouselZoom(1);
+    setCarouselPan({ x: 0, y: 0 });
+    carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+    carouselDragRef.current.dragging = false;
+    carouselPinchRef.current.active = false;
+  }, [activeImageIndex]);
+
+  // Non-passive wheel zoom for carousel (React onWheel is passive — preventDefault silently fails)
+  carouselWheelHandlerRef.current = (e) => {
+    if (visibleMedia[activeImageIndex]?.type !== "image") return;
+    e.preventDefault();
+    const { zoom, pan } = carouselZoomPanRef.current;
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const newZoom = Math.max(1, Math.min(5, zoom * factor));
+    const el = frameRef.current;
+    if (newZoom <= 1) {
+      carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+      setCarouselZoom(1); setCarouselPan({ x: 0, y: 0 });
+      return;
+    }
+    if (!el) { carouselZoomPanRef.current = { zoom: newZoom, pan }; setCarouselZoom(newZoom); return; }
+    const rect = el.getBoundingClientRect();
+    const ex = e.clientX - (rect.left + rect.width / 2);
+    const ey = e.clientY - (rect.top + rect.height / 2);
+    const zf = newZoom / zoom;
+    const maxX = el.clientWidth * (newZoom - 1) / 2;
+    const maxY = el.clientHeight * (newZoom - 1) / 2;
+    const newPan = {
+      x: Math.max(-maxX, Math.min(maxX, ex * (1 - zf) + pan.x * zf)),
+      y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + pan.y * zf)),
+    };
+    carouselZoomPanRef.current = { zoom: newZoom, pan: newPan };
+    setCarouselZoom(newZoom); setCarouselPan(newPan);
+  };
+  useLayoutEffect(() => {
+    const el = frameRef.current;
+    if (!el) return undefined;
+    const handler = (e) => carouselWheelHandlerRef.current?.(e);
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [product]);
+
   // Non-passive wheel listener — React's onWheel is passive so e.preventDefault() silently fails.
   // We attach it imperatively so the browser actually stops page scroll while zooming.
   useLayoutEffect(() => {
@@ -1639,29 +1771,35 @@ const ProductDetail = () => {
                 onMouseDown={handleFrameMouseDown}
                 onMouseMove={handleFrameMouseMove}
                 onMouseUp={handleFrameMouseUp}
-                onMouseLeave={() => { if (!touchActiveRef.current) swipeRef.current.dragging = false; }}
+                onMouseLeave={() => { if (!touchActiveRef.current) { swipeRef.current.dragging = false; carouselDragRef.current.dragging = false; } }}
                 onTouchStart={handleFrameTouchStart}
                 onTouchMove={handleFrameTouchMove}
                 onTouchEnd={handleFrameTouchEnd}
-                style={{ cursor: visibleMedia[activeImageIndex]?.type === "video" ? "default" : "zoom-in", touchAction: "pan-y" }}
+                style={{ cursor: visibleMedia[activeImageIndex]?.type === "video" ? "default" : carouselZoom > 1 ? "grab" : "zoom-in", touchAction: carouselZoom > 1 ? "none" : "pan-y" }}
               >
                 {loadingColorId ? <span className="product-image-loader" aria-hidden="true" /> : null}
-                {visibleMedia.length > 0 ? (
-                  <div
-                    className="product-main-image-track"
-                    style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
-                  >
-                    {visibleMedia.map((item, index) => (
-                      item.type === "video" ? (
-                        <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} />
-                      ) : (
-                        <ImageSlide key={item.url} url={imgUrl(item.url)} alt={index === activeImageIndex ? productName : ""} />
-                      )
-                    ))}
-                  </div>
-                ) : mainImage ? (
-                  <ImageSlide url={imgUrl(mainImage)} alt={productName} />
-                ) : null}
+                <div
+                  className="product-carousel-zoom-wrapper"
+                  ref={carouselWrapperRef}
+                  style={carouselZoom > 1 ? { transform: `translate(${carouselPan.x}px, ${carouselPan.y}px) scale(${carouselZoom})` } : undefined}
+                >
+                  {visibleMedia.length > 0 ? (
+                    <div
+                      className="product-main-image-track"
+                      style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+                    >
+                      {visibleMedia.map((item, index) => (
+                        item.type === "video" ? (
+                          <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} />
+                        ) : (
+                          <ImageSlide key={item.url} url={imgUrl(item.url)} alt={index === activeImageIndex ? productName : ""} />
+                        )
+                      ))}
+                    </div>
+                  ) : mainImage ? (
+                    <ImageSlide url={imgUrl(mainImage)} alt={productName} />
+                  ) : null}
+                </div>
                 {isSelectedOutOfStock && (
                   <span className="product-image-stock-badge out">Out of stock</span>
                 )}
@@ -2777,14 +2915,26 @@ const ProductDetail = () => {
         };
 
         const navigateFsPrev = () => {
-          if (imageItems.length <= 1) return;
-          const prev = (currentFsImgIdx - 1 + imageItems.length) % imageItems.length;
-          setFullscreenIdx(visibleMedia.indexOf(imageItems[prev]));
+          if (visibleMedia.length <= 1) return;
+          const prevIdx = (fullscreenIdx - 1 + visibleMedia.length) % visibleMedia.length;
+          if (visibleMedia[prevIdx]?.type === "video") {
+            closeFullscreen();
+            setActiveImageIndex(prevIdx);
+          } else {
+            resetZoom();
+            setFullscreenIdx(prevIdx);
+          }
         };
         const navigateFsNext = () => {
-          if (imageItems.length <= 1) return;
-          const next = (currentFsImgIdx + 1) % imageItems.length;
-          setFullscreenIdx(visibleMedia.indexOf(imageItems[next]));
+          if (visibleMedia.length <= 1) return;
+          const nextIdx = (fullscreenIdx + 1) % visibleMedia.length;
+          if (visibleMedia[nextIdx]?.type === "video") {
+            closeFullscreen();
+            setActiveImageIndex(nextIdx);
+          } else {
+            resetZoom();
+            setFullscreenIdx(nextIdx);
+          }
         };
         fsHandlersRef.current = { prev: navigateFsPrev, next: navigateFsNext };
 
