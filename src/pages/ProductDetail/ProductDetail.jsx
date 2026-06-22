@@ -260,7 +260,7 @@ const ProductDetail = () => {
       const maxY = el ? el.clientHeight * (zoom - 1) / 2 : 9999;
       const newPan = { x: Math.max(-maxX, Math.min(maxX, raw.x)), y: Math.max(-maxY, Math.min(maxY, raw.y)) };
       carouselZoomPanRef.current = { zoom, pan: newPan };
-      setCarouselPan(newPan);
+      applyCarouselTransform();
       return;
     }
     if (!swipeRef.current.dragging) return;
@@ -308,9 +308,11 @@ const ProductDetail = () => {
       const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
       const newZoom = Math.max(1, Math.min(5, carouselPinchRef.current.startZoom * (dist / carouselPinchRef.current.startDist)));
       const el = frameRef.current;
+      const wasZoomed = carouselZoomPanRef.current.zoom > 1;
       if (newZoom <= 1) {
         carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
-        setCarouselZoom(1); setCarouselPan({ x: 0, y: 0 });
+        if (carouselWrapperRef.current) carouselWrapperRef.current.style.transform = "";
+        if (wasZoomed) setCarouselIsZoomed(false);
         return;
       }
       if (el) {
@@ -325,9 +327,9 @@ const ProductDetail = () => {
           y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + carouselPinchRef.current.startPan.y * zf)),
         };
         carouselZoomPanRef.current = { zoom: newZoom, pan: newPan };
-        setCarouselPan(newPan);
+        applyCarouselTransform();
+        if (!wasZoomed) setCarouselIsZoomed(true);
       }
-      setCarouselZoom(newZoom);
       return;
     }
     if (carouselZoomPanRef.current.zoom > 1 && carouselDragRef.current.dragging) {
@@ -340,7 +342,7 @@ const ProductDetail = () => {
       const maxY = el ? el.clientHeight * (zoom - 1) / 2 : 9999;
       const newPan = { x: Math.max(-maxX, Math.min(maxX, raw.x)), y: Math.max(-maxY, Math.min(maxY, raw.y)) };
       carouselZoomPanRef.current = { zoom, pan: newPan };
-      setCarouselPan(newPan);
+      applyCarouselTransform();
       return;
     }
     if (!swipeRef.current.dragging) return;
@@ -372,8 +374,7 @@ const ProductDetail = () => {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
-  const [fsZoom, setFsZoom] = useState(1);
-  const [fsPan, setFsPan] = useState({ x: 0, y: 0 });
+  const [fsIsZoomed, setFsIsZoomed] = useState(false);
   const fsImageRef = useRef(null);
   const fsMainRef = useRef(null);
   const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
@@ -381,13 +382,24 @@ const ProductDetail = () => {
   const fsPinchRef = useRef({ active: false, startDist: 0, startZoom: 1, startPan: { x: 0, y: 0 }, midX: 0, midY: 0 });
 
   // ── Carousel inline zoom ──
-  const [carouselZoom, setCarouselZoom] = useState(1);
-  const [carouselPan, setCarouselPan] = useState({ x: 0, y: 0 });
+  const [carouselIsZoomed, setCarouselIsZoomed] = useState(false);
   const carouselZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
   const carouselWrapperRef = useRef(null);
   const carouselDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const carouselPinchRef = useRef({ active: false });
   const carouselWheelHandlerRef = useRef(null);
+
+  // Apply zoom/pan directly to DOM — bypasses React re-renders so zooming is always silky.
+  const applyFsTransform = () => {
+    if (!fsImageRef.current) return;
+    const { zoom, pan } = fsZoomPanRef.current;
+    fsImageRef.current.style.transform = zoom <= 1 ? "" : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
+  };
+  const applyCarouselTransform = () => {
+    if (!carouselWrapperRef.current) return;
+    const { zoom, pan } = carouselZoomPanRef.current;
+    carouselWrapperRef.current.style.transform = zoom <= 1 ? "" : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
+  };
 
   const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
   const closeFullscreen = () => { setFullscreenOpen(false); };
@@ -420,9 +432,9 @@ const ProductDetail = () => {
   // Reset loader + zoom when fullscreen opens or the shown image changes.
   useEffect(() => {
     if (!fullscreenOpen) return;
-    setFsZoom(1);
-    setFsPan({ x: 0, y: 0 });
     fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+    setFsIsZoomed(false);
+    if (fsImageRef.current) fsImageRef.current.style.transform = "";
     fsDragRef.current.dragging = false;
     fsPinchRef.current.active = false;
     if (fsImageRef.current?.complete) setFsImageLoaded(true);
@@ -1513,14 +1525,14 @@ const ProductDetail = () => {
 
   // Reset carousel zoom when the active slide changes
   useEffect(() => {
-    setCarouselZoom(1);
-    setCarouselPan({ x: 0, y: 0 });
     carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+    setCarouselIsZoomed(false);
+    if (carouselWrapperRef.current) carouselWrapperRef.current.style.transform = "";
     carouselDragRef.current.dragging = false;
     carouselPinchRef.current.active = false;
   }, [activeImageIndex]);
 
-  // Non-passive wheel zoom for carousel (React onWheel is passive — preventDefault silently fails)
+  // Non-passive wheel zoom for carousel — direct DOM so no React re-render per wheel tick
   carouselWheelHandlerRef.current = (e) => {
     if (visibleMedia[activeImageIndex]?.type !== "image") return;
     e.preventDefault();
@@ -1530,10 +1542,11 @@ const ProductDetail = () => {
     const el = frameRef.current;
     if (newZoom <= 1) {
       carouselZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
-      setCarouselZoom(1); setCarouselPan({ x: 0, y: 0 });
+      if (carouselWrapperRef.current) carouselWrapperRef.current.style.transform = "";
+      if (zoom > 1) setCarouselIsZoomed(false);
       return;
     }
-    if (!el) { carouselZoomPanRef.current = { zoom: newZoom, pan }; setCarouselZoom(newZoom); return; }
+    if (!el) { carouselZoomPanRef.current = { zoom: newZoom, pan }; applyCarouselTransform(); return; }
     const rect = el.getBoundingClientRect();
     const ex = e.clientX - (rect.left + rect.width / 2);
     const ey = e.clientY - (rect.top + rect.height / 2);
@@ -1545,7 +1558,8 @@ const ProductDetail = () => {
       y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + pan.y * zf)),
     };
     carouselZoomPanRef.current = { zoom: newZoom, pan: newPan };
-    setCarouselZoom(newZoom); setCarouselPan(newPan);
+    applyCarouselTransform();
+    if (zoom <= 1) setCarouselIsZoomed(true);
   };
   useLayoutEffect(() => {
     const el = frameRef.current;
@@ -1555,8 +1569,7 @@ const ProductDetail = () => {
     return () => el.removeEventListener("wheel", handler);
   }, [product]);
 
-  // Non-passive wheel listener — React's onWheel is passive so e.preventDefault() silently fails.
-  // We attach it imperatively so the browser actually stops page scroll while zooming.
+  // Non-passive wheel listener for fullscreen — direct DOM transform, no React re-render per tick.
   useLayoutEffect(() => {
     const el = fsMainRef.current;
     if (!el) return undefined;
@@ -1565,13 +1578,13 @@ const ProductDetail = () => {
       const { zoom, pan } = fsZoomPanRef.current;
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
       const newZoom = Math.max(1, Math.min(5, zoom * factor));
+      const wasZoomed = zoom > 1;
       if (newZoom <= 1) {
         fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
-        setFsZoom(1);
-        setFsPan({ x: 0, y: 0 });
+        if (fsImageRef.current) fsImageRef.current.style.transform = "";
+        if (wasZoomed) setFsIsZoomed(false);
         return;
       }
-      // Use container center as anchor — image rect changes with zoom, container rect does not.
       const rect = el.getBoundingClientRect();
       const ex = e.clientX - (rect.left + rect.width / 2);
       const ey = e.clientY - (rect.top + rect.height / 2);
@@ -1583,8 +1596,10 @@ const ProductDetail = () => {
         y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + pan.y * zf)),
       };
       fsZoomPanRef.current = { zoom: newZoom, pan: newPan };
-      setFsZoom(newZoom);
-      setFsPan(newPan);
+      if (fsImageRef.current) {
+        fsImageRef.current.style.transform = `translate(${newPan.x}px, ${newPan.y}px) scale(${newZoom})`;
+      }
+      if (!wasZoomed) setFsIsZoomed(true);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -1775,13 +1790,12 @@ const ProductDetail = () => {
                 onTouchStart={handleFrameTouchStart}
                 onTouchMove={handleFrameTouchMove}
                 onTouchEnd={handleFrameTouchEnd}
-                style={{ cursor: visibleMedia[activeImageIndex]?.type === "video" ? "default" : carouselZoom > 1 ? "grab" : "zoom-in", touchAction: carouselZoom > 1 ? "none" : "pan-y" }}
+                style={{ cursor: visibleMedia[activeImageIndex]?.type === "video" ? "default" : carouselIsZoomed ? "grab" : "zoom-in", touchAction: carouselIsZoomed ? "none" : "pan-y" }}
               >
                 {loadingColorId ? <span className="product-image-loader" aria-hidden="true" /> : null}
                 <div
                   className="product-carousel-zoom-wrapper"
                   ref={carouselWrapperRef}
-                  style={carouselZoom > 1 ? { transform: `translate(${carouselPan.x}px, ${carouselPan.y}px) scale(${carouselZoom})` } : undefined}
                 >
                   {visibleMedia.length > 0 ? (
                     <div
@@ -2895,12 +2909,12 @@ const ProductDetail = () => {
         const fsMedia = visibleMedia[fullscreenIdx];
         const imageItems = visibleMedia.filter((m) => m.type === "image");
         const currentFsImgIdx = imageItems.findIndex((item) => visibleMedia.indexOf(item) === fullscreenIdx);
-        const isZoomed = fsZoom > 1;
+        const isZoomed = fsIsZoomed;
 
         const resetZoom = () => {
           fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
-          setFsZoom(1);
-          setFsPan({ x: 0, y: 0 });
+          if (fsImageRef.current) fsImageRef.current.style.transform = "";
+          setFsIsZoomed(false);
         };
 
         const clampPan = (pan, zoom) => {
@@ -2944,41 +2958,44 @@ const ProductDetail = () => {
           if (isZoomed) { resetZoom(); return; }
           const ZOOM = 2.5;
           const rect = fsMainRef.current?.getBoundingClientRect();
-          if (!rect) { setFsZoom(ZOOM); return; }
+          if (!rect) { fsZoomPanRef.current = { zoom: ZOOM, pan: { x: 0, y: 0 } }; applyFsTransform(); setFsIsZoomed(true); return; }
           const ex = e.clientX - (rect.left + rect.width / 2);
           const ey = e.clientY - (rect.top + rect.height / 2);
           const newPan = clampPan({ x: -ex * (ZOOM - 1), y: -ey * (ZOOM - 1) }, ZOOM);
           fsZoomPanRef.current = { zoom: ZOOM, pan: newPan };
-          setFsPan(newPan);
-          setFsZoom(ZOOM);
+          applyFsTransform();
+          setFsIsZoomed(true);
         };
 
         // ── Drag to pan (mouse) ──
         const handleFsMouseDown = (e) => {
           if (!isZoomed) return;
           e.preventDefault();
-          fsDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, panX: fsPan.x, panY: fsPan.y };
+          const { pan } = fsZoomPanRef.current;
+          fsDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y };
         };
         const handleFsMouseMove = (e) => {
           if (!fsDragRef.current.dragging) return;
+          const { zoom } = fsZoomPanRef.current;
           const raw = {
             x: fsDragRef.current.panX + e.clientX - fsDragRef.current.startX,
             y: fsDragRef.current.panY + e.clientY - fsDragRef.current.startY,
           };
-          const clamped = clampPan(raw, fsZoom);
-          fsZoomPanRef.current = { zoom: fsZoom, pan: clamped };
-          setFsPan(clamped);
+          const clamped = clampPan(raw, zoom);
+          fsZoomPanRef.current = { zoom, pan: clamped };
+          applyFsTransform();
         };
         const handleFsMouseUp = () => { fsDragRef.current.dragging = false; };
 
         // ── Touch: swipe (not zoomed) + pan (zoomed) + pinch ──
         const handleFsTouchStart = (e) => {
           if (e.touches.length === 2) {
+            const { zoom, pan } = fsZoomPanRef.current;
             fsPinchRef.current = {
               active: true,
               startDist: Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY),
-              startZoom: fsZoom,
-              startPan: { ...fsPan },
+              startZoom: zoom,
+              startPan: { ...pan },
               midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
               midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
             };
@@ -2989,7 +3006,8 @@ const ProductDetail = () => {
           const t = e.touches[0];
           fsSwipeRef.current = { startX: t.clientX, startY: t.clientY, dragging: true };
           if (isZoomed) {
-            fsDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: fsPan.x, panY: fsPan.y };
+            const { pan } = fsZoomPanRef.current;
+            fsDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: pan.x, panY: pan.y };
           }
         };
         const handleFsTouchMove = (e) => {
@@ -2997,6 +3015,7 @@ const ProductDetail = () => {
             e.preventDefault();
             const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
             const newZoom = Math.max(1, Math.min(5, fsPinchRef.current.startZoom * (dist / fsPinchRef.current.startDist)));
+            const wasZoomed = fsZoomPanRef.current.zoom > 1;
             if (newZoom <= 1) { resetZoom(); return; }
             const rect = fsMainRef.current?.getBoundingClientRect();
             const zf = newZoom / fsPinchRef.current.startZoom;
@@ -3006,21 +3025,22 @@ const ProductDetail = () => {
               const raw = { x: ex * (1 - zf) + fsPinchRef.current.startPan.x * zf, y: ey * (1 - zf) + fsPinchRef.current.startPan.y * zf };
               const clamped = clampPan(raw, newZoom);
               fsZoomPanRef.current = { zoom: newZoom, pan: clamped };
-              setFsPan(clamped);
+              applyFsTransform();
+              if (!wasZoomed) setFsIsZoomed(true);
             }
-            setFsZoom(newZoom);
             return;
           }
           if (isZoomed && fsDragRef.current.dragging) {
             e.preventDefault();
             const t = e.touches[0];
+            const { zoom } = fsZoomPanRef.current;
             const raw = {
               x: fsDragRef.current.panX + t.clientX - fsDragRef.current.startX,
               y: fsDragRef.current.panY + t.clientY - fsDragRef.current.startY,
             };
-            const clamped = clampPan(raw, fsZoom);
-            fsZoomPanRef.current = { zoom: fsZoom, pan: clamped };
-            setFsPan(clamped);
+            const clamped = clampPan(raw, zoom);
+            fsZoomPanRef.current = { zoom, pan: clamped };
+            applyFsTransform();
           }
         };
         const handleFsTouchEnd = (e) => {
@@ -3064,7 +3084,6 @@ const ProductDetail = () => {
                 className="bk-fs-image"
                 draggable={false}
                 onLoad={() => setFsImageLoaded(true)}
-                style={{ transform: `translate(${fsPan.x}px, ${fsPan.y}px) scale(${fsZoom})` }}
               />
               {isZoomed && (
                 <button type="button" className="bk-fs-zoom-reset" onClick={(e) => { e.stopPropagation(); resetZoom(); }} aria-label="Reset zoom" title="Reset zoom">
