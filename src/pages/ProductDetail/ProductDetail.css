@@ -805,6 +805,43 @@
 
 .bk-fs-main.bk-fs-video-mode { cursor: default; }
 
+/* ── Fullscreen video tap wrapper ── */
+.bk-fs-video-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bk-fs-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  font-size: 0;
+}
+
+.bk-fs-play-icon svg { width: 30px; height: 30px; }
+
+.bk-fs-play-icon.is-playing { opacity: 0; }
+
 /* Fullscreen video controls */
 .bk-fs-video-controls {
   display: flex;
@@ -2280,6 +2317,16 @@
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 14px;
   box-shadow: 0 16px 30px rgba(88, 39, 13, 0.1);
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+
+.product-related-card.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 .product-related-media {

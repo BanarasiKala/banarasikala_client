@@ -390,6 +390,7 @@ const ProductDetail = () => {
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
   const [fsIsZoomed, setFsIsZoomed] = useState(false);
+  const [fsVideoPlaying, setFsVideoPlaying] = useState(false);
   const fsVideoRef = useRef(null);
   const fsImageRef = useRef(null);
   const fsMainRef = useRef(null);
@@ -467,6 +468,25 @@ const ProductDetail = () => {
 
   const [relatedHoverId, setRelatedHoverId] = useState(null);
   const [relatedActiveSlides, setRelatedActiveSlides] = useState({});
+  const relatedGridRef = useRef(null);
+
+  useEffect(() => {
+    if (loading || products.length === 0 || !relatedGridRef.current) return undefined;
+    const cards = relatedGridRef.current.querySelectorAll(".product-related-card");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.01, rootMargin: "0px 0px 200px 0px" }
+    );
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [loading, products]);
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
@@ -2289,8 +2309,8 @@ const ProductDetail = () => {
             <div className="product-related-head">
               <h2>More Products</h2>
             </div>
-            <div className="product-related-grid">
-              {products.slice(0, 20).map((item) => {
+            <div className="product-related-grid" ref={relatedGridRef}>
+              {products.slice(0, 20).map((item, index) => {
                 const images = getSortedImages(item);
                 const fallbackImage = getProductCoverImage(item, "https://via.placeholder.com/500x650?text=Banarasi+Kala");
                 const slideImages = images.length ? images : [{ url: fallbackImage }];
@@ -2314,6 +2334,7 @@ const ProductDetail = () => {
                     key={item.id}
                     to={`/product/${item.slug}`}
                     className="product-related-card"
+                    style={{ transitionDelay: `${Math.min(index * 40, 200)}ms` }}
                     onMouseEnter={() => setRelatedHoverId(item.id)}
                     onMouseLeave={() => {
                       setRelatedHoverId((current) => (current === item.id ? null : current));
@@ -2952,7 +2973,10 @@ const ProductDetail = () => {
           };
         };
 
-        const pauseFsVideo = () => { if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} } };
+        const pauseFsVideo = () => {
+          if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} }
+          setFsVideoPlaying(false);
+        };
         const navigateFsPrev = () => {
           if (visibleMedia.length <= 1) return;
           pauseFsVideo();
@@ -3092,15 +3116,32 @@ const ProductDetail = () => {
               style={{ touchAction: "none" }}
             >
               {fsMedia?.type === "video" ? (
-                <video
-                  key={fsMedia.url}
-                  ref={fsVideoRef}
-                  src={fsMedia.url}
-                  autoPlay
-                  controls
-                  playsInline
-                  className="bk-fs-video"
-                />
+                <button
+                  type="button"
+                  className="bk-fs-video-wrap"
+                  aria-label={fsVideoPlaying ? "Pause video" : "Play video"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const vid = fsVideoRef.current;
+                    if (!vid) return;
+                    if (vid.paused) vid.play().catch(() => {}); else vid.pause();
+                  }}
+                >
+                  <video
+                    key={fsMedia.url}
+                    ref={fsVideoRef}
+                    src={fsMedia.url}
+                    autoPlay
+                    playsInline
+                    className="bk-fs-video"
+                    onPlay={() => setFsVideoPlaying(true)}
+                    onPause={() => setFsVideoPlaying(false)}
+                    onEnded={() => setFsVideoPlaying(false)}
+                  />
+                  <span className={`bk-fs-play-icon${fsVideoPlaying ? " is-playing" : ""}`} aria-hidden="true">
+                    <Icon icon={fsVideoPlaying ? "lucide:pause" : "lucide:play"} />
+                  </span>
+                </button>
               ) : (
                 <>
                   {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
