@@ -370,7 +370,7 @@ const ProductDetail = () => {
     setTimeout(() => { touchActiveRef.current = false; }, 600);
   };
 
-  // ── Fullscreen (images only — Plyr handles video fullscreen natively) ──
+  // ── Fullscreen overlay (images: zoom/pan; videos: auto-play in fullscreen) ──
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
@@ -380,6 +380,7 @@ const ProductDetail = () => {
   const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
   const fsDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const fsPinchRef = useRef({ active: false, startDist: 0, startZoom: 1, startPan: { x: 0, y: 0 }, midX: 0, midY: 0 });
+  const fsIsVideoRef = useRef(false);
 
   // ── Carousel inline zoom ──
   const [carouselIsZoomed, setCarouselIsZoomed] = useState(false);
@@ -1574,6 +1575,7 @@ const ProductDetail = () => {
     const el = fsMainRef.current;
     if (!el) return undefined;
     const onWheel = (e) => {
+      if (fsIsVideoRef.current) return;
       e.preventDefault();
       const { zoom, pan } = fsZoomPanRef.current;
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
@@ -2907,8 +2909,7 @@ const ProductDetail = () => {
       {/* ── Fullscreen overlay ── */}
       {fullscreenOpen && (() => {
         const fsMedia = visibleMedia[fullscreenIdx];
-        const imageItems = visibleMedia.filter((m) => m.type === "image");
-        const currentFsImgIdx = imageItems.findIndex((item) => visibleMedia.indexOf(item) === fullscreenIdx);
+        fsIsVideoRef.current = fsMedia?.type === "video";
         const isZoomed = fsIsZoomed;
 
         const resetZoom = () => {
@@ -2930,25 +2931,13 @@ const ProductDetail = () => {
 
         const navigateFsPrev = () => {
           if (visibleMedia.length <= 1) return;
-          const prevIdx = (fullscreenIdx - 1 + visibleMedia.length) % visibleMedia.length;
-          if (visibleMedia[prevIdx]?.type === "video") {
-            closeFullscreen();
-            setActiveImageIndex(prevIdx);
-          } else {
-            resetZoom();
-            setFullscreenIdx(prevIdx);
-          }
+          resetZoom();
+          setFullscreenIdx((fullscreenIdx - 1 + visibleMedia.length) % visibleMedia.length);
         };
         const navigateFsNext = () => {
           if (visibleMedia.length <= 1) return;
-          const nextIdx = (fullscreenIdx + 1) % visibleMedia.length;
-          if (visibleMedia[nextIdx]?.type === "video") {
-            closeFullscreen();
-            setActiveImageIndex(nextIdx);
-          } else {
-            resetZoom();
-            setFullscreenIdx(nextIdx);
-          }
+          resetZoom();
+          setFullscreenIdx((fullscreenIdx + 1) % visibleMedia.length);
         };
         fsHandlersRef.current = { prev: navigateFsPrev, next: navigateFsNext };
 
@@ -3064,31 +3053,44 @@ const ProductDetail = () => {
             </button>
             <div
               ref={fsMainRef}
-              className={`bk-fs-main${isZoomed ? " bk-fs-zoomed" : ""}`}
+              className={`bk-fs-main${isZoomed ? " bk-fs-zoomed" : ""}${fsMedia?.type === "video" ? " bk-fs-video-mode" : ""}`}
               onClick={(e) => e.stopPropagation()}
-              onDoubleClick={handleFsDoubleClick}
-              onMouseDown={handleFsMouseDown}
-              onMouseMove={handleFsMouseMove}
-              onMouseUp={handleFsMouseUp}
-              onMouseLeave={handleFsMouseUp}
+              onDoubleClick={fsMedia?.type !== "video" ? handleFsDoubleClick : undefined}
+              onMouseDown={fsMedia?.type !== "video" ? handleFsMouseDown : undefined}
+              onMouseMove={fsMedia?.type !== "video" ? handleFsMouseMove : undefined}
+              onMouseUp={fsMedia?.type !== "video" ? handleFsMouseUp : undefined}
+              onMouseLeave={fsMedia?.type !== "video" ? handleFsMouseUp : undefined}
               onTouchStart={handleFsTouchStart}
               onTouchMove={handleFsTouchMove}
               onTouchEnd={handleFsTouchEnd}
               style={{ touchAction: "none" }}
             >
-              {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
-              <img
-                ref={fsImageRef}
-                src={imgUrl(fsMedia?.url, 1400)}
-                alt={productName}
-                className="bk-fs-image"
-                draggable={false}
-                onLoad={() => setFsImageLoaded(true)}
-              />
-              {isZoomed && (
-                <button type="button" className="bk-fs-zoom-reset" onClick={(e) => { e.stopPropagation(); resetZoom(); }} aria-label="Reset zoom" title="Reset zoom">
-                  <Icon icon="lucide:zoom-out" />
-                </button>
+              {fsMedia?.type === "video" ? (
+                <video
+                  key={fsMedia.url}
+                  src={fsMedia.url}
+                  autoPlay
+                  controls
+                  playsInline
+                  className="bk-fs-video"
+                />
+              ) : (
+                <>
+                  {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
+                  <img
+                    ref={fsImageRef}
+                    src={imgUrl(fsMedia?.url, 1400)}
+                    alt={productName}
+                    className="bk-fs-image"
+                    draggable={false}
+                    onLoad={() => setFsImageLoaded(true)}
+                  />
+                  {isZoomed && (
+                    <button type="button" className="bk-fs-zoom-reset" onClick={(e) => { e.stopPropagation(); resetZoom(); }} aria-label="Reset zoom" title="Reset zoom">
+                      <Icon icon="lucide:zoom-out" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
             {/* Thumbnail strip: images + videos */}
@@ -3099,15 +3101,7 @@ const ProductDetail = () => {
                     key={item.url}
                     type="button"
                     className={`bk-fs-thumb${globalIdx === fullscreenIdx ? " active" : ""}${item.type === "video" ? " bk-fs-thumb-video" : ""}`}
-                    onClick={() => {
-                      if (item.type === "video") {
-                        closeFullscreen();
-                        setActiveImageIndex(globalIdx);
-                      } else {
-                        resetZoom();
-                        setFullscreenIdx(globalIdx);
-                      }
-                    }}
+                    onClick={() => { resetZoom(); setFullscreenIdx(globalIdx); }}
                     aria-label={item.type === "video" ? "Play video" : `Image ${globalIdx + 1}`}
                   >
                     {item.type === "video"
