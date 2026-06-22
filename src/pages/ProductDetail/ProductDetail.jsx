@@ -1,5 +1,5 @@
 import { Icon } from "@iconify/react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -296,6 +296,8 @@ const ProductDetail = () => {
   const [fsZoom, setFsZoom] = useState(1);
   const [fsPan, setFsPan] = useState({ x: 0, y: 0 });
   const fsImageRef = useRef(null);
+  const fsMainRef = useRef(null);
+  const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
   const fsDragRef = useRef({ dragging: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const fsPinchRef = useRef({ active: false, startDist: 0, startZoom: 1, startPan: { x: 0, y: 0 }, midX: 0, midY: 0 });
 
@@ -332,6 +334,7 @@ const ProductDetail = () => {
     if (!fullscreenOpen) return;
     setFsZoom(1);
     setFsPan({ x: 0, y: 0 });
+    fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
     fsDragRef.current.dragging = false;
     fsPinchRef.current.active = false;
     if (fsImageRef.current?.complete) setFsImageLoaded(true);
@@ -1420,6 +1423,41 @@ const ProductDetail = () => {
     return () => clearInterval(interval);
   }, [deliveryQuote?.deliveryDate]);
 
+  // Non-passive wheel listener — React's onWheel is passive so e.preventDefault() silently fails.
+  // We attach it imperatively so the browser actually stops page scroll while zooming.
+  useLayoutEffect(() => {
+    const el = fsMainRef.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const { zoom, pan } = fsZoomPanRef.current;
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const newZoom = Math.max(1, Math.min(5, zoom * factor));
+      if (newZoom <= 1) {
+        fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+        setFsZoom(1);
+        setFsPan({ x: 0, y: 0 });
+        return;
+      }
+      // Use container center as anchor — image rect changes with zoom, container rect does not.
+      const rect = el.getBoundingClientRect();
+      const ex = e.clientX - (rect.left + rect.width / 2);
+      const ey = e.clientY - (rect.top + rect.height / 2);
+      const zf = newZoom / zoom;
+      const maxX = el.clientWidth * (newZoom - 1) / 2;
+      const maxY = el.clientHeight * (newZoom - 1) / 2;
+      const newPan = {
+        x: Math.max(-maxX, Math.min(maxX, ex * (1 - zf) + pan.x * zf)),
+        y: Math.max(-maxY, Math.min(maxY, ey * (1 - zf) + pan.y * zf)),
+      };
+      fsZoomPanRef.current = { zoom: newZoom, pan: newPan };
+      setFsZoom(newZoom);
+      setFsPan(newPan);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [fullscreenOpen]);
+
   const specificationRows = product
     ? [
         ["SKU", selectedSku],
@@ -1792,7 +1830,7 @@ const ProductDetail = () => {
                       {orderCountdown && (
                         <p className="product-delivery-urgency-line">
                          {" "}Order within{" "}
-                          git<strong>
+                          <strong>
                             {orderCountdown.hours > 0 ? `${orderCountdown.hours} hr${orderCountdown.hours !== 1 ? "s" : ""} ` : ""}
                             {orderCountdown.mins} min{orderCountdown.mins !== 1 ? "s" : ""}
                           </strong>
@@ -2721,7 +2759,22 @@ const ProductDetail = () => {
         const currentFsImgIdx = imageItems.findIndex((item) => visibleMedia.indexOf(item) === fullscreenIdx);
         const isZoomed = fsZoom > 1;
 
-        const resetZoom = () => { setFsZoom(1); setFsPan({ x: 0, y: 0 }); };
+        const resetZoom = () => {
+          fsZoomPanRef.current = { zoom: 1, pan: { x: 0, y: 0 } };
+          setFsZoom(1);
+          setFsPan({ x: 0, y: 0 });
+        };
+
+        const clampPan = (pan, zoom) => {
+          const el = fsMainRef.current;
+          if (!el || zoom <= 1) return { x: 0, y: 0 };
+          const maxX = el.clientWidth * (zoom - 1) / 2;
+          const maxY = el.clientHeight * (zoom - 1) / 2;
+          return {
+            x: Math.max(-maxX, Math.min(maxX, pan.x)),
+            y: Math.max(-maxY, Math.min(maxY, pan.y)),
+          };
+        };
 
         const navigateFsPrev = () => {
           if (imageItems.length <= 1) return;
@@ -2735,33 +2788,19 @@ const ProductDetail = () => {
         };
         fsHandlersRef.current = { prev: navigateFsPrev, next: navigateFsNext };
 
-        // ── Zoom: double-click ──
+        // ── Zoom: double-click (anchor to container center, not image center) ──
         const handleFsDoubleClick = (e) => {
           e.stopPropagation();
           if (isZoomed) { resetZoom(); return; }
           const ZOOM = 2.5;
-          const rect = fsImageRef.current?.getBoundingClientRect();
+          const rect = fsMainRef.current?.getBoundingClientRect();
           if (!rect) { setFsZoom(ZOOM); return; }
-          const cx = e.clientX - (rect.left + rect.width / 2);
-          const cy = e.clientY - (rect.top + rect.height / 2);
-          setFsPan({ x: -cx * (ZOOM - 1), y: -cy * (ZOOM - 1) });
+          const ex = e.clientX - (rect.left + rect.width / 2);
+          const ey = e.clientY - (rect.top + rect.height / 2);
+          const newPan = clampPan({ x: -ex * (ZOOM - 1), y: -ey * (ZOOM - 1) }, ZOOM);
+          fsZoomPanRef.current = { zoom: ZOOM, pan: newPan };
+          setFsPan(newPan);
           setFsZoom(ZOOM);
-        };
-
-        // ── Zoom: mouse wheel ──
-        const handleFsWheel = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-          const newZoom = Math.max(1, Math.min(5, fsZoom * factor));
-          if (newZoom === 1) { resetZoom(); return; }
-          const rect = fsImageRef.current?.getBoundingClientRect();
-          if (!rect) { setFsZoom(newZoom); return; }
-          const cx = e.clientX - (rect.left + rect.width / 2);
-          const cy = e.clientY - (rect.top + rect.height / 2);
-          const zf = newZoom / fsZoom;
-          setFsPan({ x: cx * (1 - zf) + fsPan.x * zf, y: cy * (1 - zf) + fsPan.y * zf });
-          setFsZoom(newZoom);
         };
 
         // ── Drag to pan (mouse) ──
@@ -2772,10 +2811,13 @@ const ProductDetail = () => {
         };
         const handleFsMouseMove = (e) => {
           if (!fsDragRef.current.dragging) return;
-          setFsPan({
+          const raw = {
             x: fsDragRef.current.panX + e.clientX - fsDragRef.current.startX,
             y: fsDragRef.current.panY + e.clientY - fsDragRef.current.startY,
-          });
+          };
+          const clamped = clampPan(raw, fsZoom);
+          fsZoomPanRef.current = { zoom: fsZoom, pan: clamped };
+          setFsPan(clamped);
         };
         const handleFsMouseUp = () => { fsDragRef.current.dragging = false; };
 
@@ -2805,13 +2847,16 @@ const ProductDetail = () => {
             e.preventDefault();
             const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
             const newZoom = Math.max(1, Math.min(5, fsPinchRef.current.startZoom * (dist / fsPinchRef.current.startDist)));
-            if (newZoom === 1) { resetZoom(); return; }
-            const rect = fsImageRef.current?.getBoundingClientRect();
+            if (newZoom <= 1) { resetZoom(); return; }
+            const rect = fsMainRef.current?.getBoundingClientRect();
+            const zf = newZoom / fsPinchRef.current.startZoom;
             if (rect) {
-              const cx = fsPinchRef.current.midX - (rect.left + rect.width / 2);
-              const cy = fsPinchRef.current.midY - (rect.top + rect.height / 2);
-              const zf = newZoom / fsPinchRef.current.startZoom;
-              setFsPan({ x: cx * (1 - zf) + fsPinchRef.current.startPan.x * zf, y: cy * (1 - zf) + fsPinchRef.current.startPan.y * zf });
+              const ex = fsPinchRef.current.midX - (rect.left + rect.width / 2);
+              const ey = fsPinchRef.current.midY - (rect.top + rect.height / 2);
+              const raw = { x: ex * (1 - zf) + fsPinchRef.current.startPan.x * zf, y: ey * (1 - zf) + fsPinchRef.current.startPan.y * zf };
+              const clamped = clampPan(raw, newZoom);
+              fsZoomPanRef.current = { zoom: newZoom, pan: clamped };
+              setFsPan(clamped);
             }
             setFsZoom(newZoom);
             return;
@@ -2819,10 +2864,13 @@ const ProductDetail = () => {
           if (isZoomed && fsDragRef.current.dragging) {
             e.preventDefault();
             const t = e.touches[0];
-            setFsPan({
+            const raw = {
               x: fsDragRef.current.panX + t.clientX - fsDragRef.current.startX,
               y: fsDragRef.current.panY + t.clientY - fsDragRef.current.startY,
-            });
+            };
+            const clamped = clampPan(raw, fsZoom);
+            fsZoomPanRef.current = { zoom: fsZoom, pan: clamped };
+            setFsPan(clamped);
           }
         };
         const handleFsTouchEnd = (e) => {
@@ -2844,21 +2892,11 @@ const ProductDetail = () => {
             <button type="button" className="bk-fs-close" onClick={closeFullscreen} aria-label="Close">
               <Icon icon="lucide:x" />
             </button>
-            {imageItems.length > 1 && (
-              <>
-                <button type="button" className="bk-fs-nav bk-fs-nav-prev" onClick={(e) => { e.stopPropagation(); navigateFsPrev(); }} aria-label="Previous image">
-                  <Icon icon="lucide:chevron-left" />
-                </button>
-                <button type="button" className="bk-fs-nav bk-fs-nav-next" onClick={(e) => { e.stopPropagation(); navigateFsNext(); }} aria-label="Next image">
-                  <Icon icon="lucide:chevron-right" />
-                </button>
-              </>
-            )}
             <div
+              ref={fsMainRef}
               className={`bk-fs-main${isZoomed ? " bk-fs-zoomed" : ""}`}
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={handleFsDoubleClick}
-              onWheel={handleFsWheel}
               onMouseDown={handleFsMouseDown}
               onMouseMove={handleFsMouseMove}
               onMouseUp={handleFsMouseUp}

@@ -905,28 +905,6 @@
   display: block;
 }
 
-/* ── Nav arrows ── */
-.bk-fs-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(20, 10, 5, 0.55);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.bk-fs-nav:hover { background: rgba(128, 0, 32, 0.75); }
-.bk-fs-nav svg { width: 22px; height: 22px; }
-.bk-fs-nav-prev { left: 14px; }
-.bk-fs-nav-next { right: 14px; }
-
 /* ── Zoom cursor ── */
 .bk-fs-main { cursor: zoom-in; user-select: none; }
 .bk-fs-main.bk-fs-zoomed { cursor: grab; }
