@@ -8,6 +8,7 @@ import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
 import ProductRating from "../../../components/ProductRating";
+import DeliveryBadge from "../../../components/DeliveryBadge";
 import "./NewArrivals.css";
 
 const calcDiscount = (mrp, sell) => {
@@ -254,6 +255,7 @@ const NewArrivals = () => {
                           </div>
                           {mrp > sell && <span className="bk-arrival-mrp"><span className="bk-arrival-mrp-val">{formatMoney(mrp)}</span></span>}
                         </div>
+                        <DeliveryBadge />
                         <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                           Add to Cart
                         </button>

@@ -12,6 +12,7 @@ import { getColorStock, getProductImages } from "../../utils/productMedia";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
+import DeliveryBadge from "../../components/DeliveryBadge";
 import "./Wishlist.css";
 
 const Wishlist = () => {
@@ -417,6 +418,7 @@ const Wishlist = () => {
                             </>
                           )}
                         </div>
+                        {!cardIsOos && <DeliveryBadge />}
                         <div className="wishlist-card-actions">
                           {actionBtn}
                         </div>

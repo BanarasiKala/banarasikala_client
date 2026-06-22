@@ -1383,8 +1383,8 @@ const ProductDetail = () => {
         deliveryDate: formatEstimatedDeliveryDate(estimatedDate),
         deliveryDateObj: estimatedDate,
       });
-      // Persist manually-entered pincodes so other product pages auto-populate
-      if (!pinOverride) saveLocationPin(clean, "manual");
+      // Persist the pincode so other pages auto-populate; keep "gps" source if already set
+      if (!pinOverride) saveLocationPin(clean, locationSource === "gps" ? "gps" : "manual");
     } catch (error) {
       showNotification(error.message || "Unable to check delivery", "warning");
       setDeliveryQuote({ unavailable: true });

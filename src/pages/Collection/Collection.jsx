@@ -10,6 +10,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { getProductCoverImage, getProductImages } from "../../utils/productMedia";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
+import DeliveryBadge from "../../components/DeliveryBadge";
 import "./Collection.css";
 
 const PAGE_SIZE = 20;
@@ -467,6 +468,7 @@ const Collection = () => {
               </div>
               {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
             </div>
+            <DeliveryBadge />
             <button
               type="button"
               className="collection-atc-btn"
