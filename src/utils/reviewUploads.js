@@ -1,10 +1,11 @@
 import api from "./api";
+import compressImage from "./compressImage";
 
 export const MAX_REVIEW_IMAGES = 5;
 
 const uploadToCloudinary = async (file, signatureData) => {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", await compressImage(file, 1200, 0.82));
   form.append("api_key", signatureData.apiKey);
   form.append("timestamp", String(signatureData.timestamp));
   form.append("signature", signatureData.signature);

@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
+import compressImage from "../../utils/compressImage";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
@@ -593,7 +594,7 @@ export default function Profile() {
     setError("");
     try {
       const body = new FormData();
-      body.append("avatar", file);
+      body.append("avatar", await compressImage(file, 500, 0.88));
       const res = await api.post("/api/customers/me/avatar", body, {
         headers: { "Content-Type": "multipart/form-data" },
       });
