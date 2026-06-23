@@ -52,14 +52,14 @@ const SignupGiftPopup = ({ hidden = false }) => {
 
       <span className="bk-signup-gift-kicker">Welcome Gift</span>
       <h2 id="bk-signup-gift-title">₹{SIGNUP_BONUS_AMOUNT} in your wallet</h2>
-      <p>Sign up today and start your first Banarasi Kala order with a little extra joy.</p>
+      <p>Sign up with Banarasi Kala and get ₹{SIGNUP_BONUS_AMOUNT} added to your wallet instantly. A small welcome gift from us.</p>
 
       <Link className="bk-signup-gift-action" to="/login?mode=signup">
         Claim now
         <Icon icon="lucide:arrow-right" />
       </Link>
 
-      <span className="bk-signup-gift-note">Plus complimentary shipping on your first order</span>
+      <span className="bk-signup-gift-note">Valid for new customers only.</span>
     </aside>
   );
 };
