@@ -3181,7 +3181,18 @@ const ProductDetail = () => {
               style={{ touchAction: "none" }}
             >
               {fsMedia?.type === "video" ? (
-                <div className="bk-fs-video-wrap" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="bk-fs-video-wrap"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Let Plyr's own control bar handle its clicks.
+                    if (e.target.closest?.(".plyr__controls")) return;
+                    const player = fsPlayerRef.current;
+                    if (!player) return;
+                    if (player.playing) { try { player.pause(); } catch {} }
+                    else player.play().catch(() => {});
+                  }}
+                >
                   <VideoSlide
                     key={fsMedia.url}
                     src={fsMedia.url}
