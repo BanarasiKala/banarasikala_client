@@ -2612,9 +2612,22 @@
   .product-skeleton-mobile-header {
     display: grid;
     width: min(100%, 430px);
-    gap: 8px;
+    gap: 5px;
     margin: 0 auto 12px;
     padding: 0 6px;
+  }
+
+  /* Match the real mobile header: small title, larger description */
+  .product-skeleton-mobile-header .product-skeleton-line.title {
+    width: 64%;
+    height: 14px;
+    border-radius: 999px;
+  }
+
+  .product-skeleton-mobile-header .product-skeleton-line.medium {
+    width: 88%;
+    height: 20px;
+    border-radius: 999px;
   }
 
   .product-gallery {
