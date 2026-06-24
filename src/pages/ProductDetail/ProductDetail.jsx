@@ -114,9 +114,15 @@ const PLYR_OPTIONS = {
   speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
   muted: true,
   resetOnEnd: true,
+  // We handle click-to-toggle ourselves (see resolveSwipe) so it works
+  // reliably through the carousel's swipe/drag layer.
+  clickToPlay: false,
   keyboard: { focused: false, global: false },
   tooltips: { controls: false, seek: true },
-  fullscreen: { enabled: true, fallback: true, iosNative: false },
+  // iosNative: true → iOS uses the real native video fullscreen. The CSS
+  // fallback fullscreen (iosNative:false) renders against the carousel's
+  // transform ancestor and shows a black screen on mobile.
+  fullscreen: { enabled: true, fallback: true, iosNative: true },
 };
 
 const SHIPPING_RETURN_HIGHLIGHTS = [
@@ -151,7 +157,7 @@ const ImageSlide = memo(({ url, alt }) => {
 });
 ImageSlide.displayName = "ImageSlide";
 
-const VideoSlide = memo(({ src, isActive }) => {
+const VideoSlide = memo(({ src, isActive, activePlayerRef }) => {
   const plyrRef = useRef(null);
   const containerRef = useRef(null);
   const isActiveRef = useRef(isActive);
@@ -163,11 +169,13 @@ const VideoSlide = memo(({ src, isActive }) => {
     // typeof check: the proxy returns h (a function) for .ready; real Plyr returns boolean
     if (!player || typeof player.ready !== "boolean") return;
     if (isActive) {
+      if (activePlayerRef) activePlayerRef.current = player;
       player.play().catch(() => {});
     } else {
+      if (activePlayerRef && activePlayerRef.current === player) activePlayerRef.current = null;
       try { player.pause(); player.currentTime = 0; } catch {}
     }
-  }, [isActive]);
+  }, [isActive, activePlayerRef]);
 
   // Pause when the carousel scrolls off-screen so the browser doesn't activate PiP.
   useEffect(() => {
@@ -189,8 +197,11 @@ const VideoSlide = memo(({ src, isActive }) => {
     setIsBuffering(false);
     if (!isActiveRef.current) return;
     const player = e.currentTarget.plyr ?? plyrRef.current?.plyr;
-    if (player) player.play().catch(() => {});
-  }, []);
+    if (player) {
+      if (activePlayerRef) activePlayerRef.current = player;
+      player.play().catch(() => {});
+    }
+  }, [activePlayerRef]);
 
   return (
     <div className="product-main-video-slot" ref={containerRef}>
@@ -238,6 +249,11 @@ const ProductDetail = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const swipeRef = useRef({ startX: 0, startY: 0, didSwipe: false, dragging: false });
   const touchActiveRef = useRef(false);
+  // Points to the currently-active carousel video's Plyr instance, so a tap
+  // on the video can toggle play/pause (set by VideoSlide when it is active).
+  const activeVideoPlayerRef = useRef(null);
+  // Distinguishes a single tap (play/pause) from a double tap (fullscreen) on video.
+  const videoTapRef = useRef(null);
 
   const resolveSwipe = (dx, dy, didSwipe) => {
     if (carouselZoomPanRef.current.zoom > 1) return;
@@ -252,15 +268,45 @@ const ProductDetail = () => {
         setActiveImageIndex(n);
         if (visibleMedia[n]?.type === "image") setMainImage(visibleMedia[n].url);
       }
-    } else if (!didSwipe && visibleMedia[activeImageIndex]?.type !== "video") {
-      openFullscreen(activeImageIndex);
+    } else if (!didSwipe) {
+      // Ignore taps that landed on the Plyr control bar — let Plyr handle them.
+      if (swipeRef.current.onControls) return;
+      if (visibleMedia[activeImageIndex]?.type === "video") {
+        if (videoTapRef.current) {
+          // Second tap within the window → double tap → real native fullscreen.
+          clearTimeout(videoTapRef.current);
+          videoTapRef.current = null;
+          const player = activeVideoPlayerRef.current;
+          if (player?.fullscreen) {
+            try { player.fullscreen.enter(); } catch { /* ignore */ }
+          } else {
+            // Fallback: fullscreen the raw <video> element directly.
+            const v = player?.media;
+            if (v?.requestFullscreen) v.requestFullscreen().catch(() => {});
+            else if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen(); // iOS
+          }
+        } else {
+          // First tap → wait briefly to see if a second tap follows (double tap).
+          videoTapRef.current = setTimeout(() => {
+            videoTapRef.current = null;
+            const player = activeVideoPlayerRef.current;
+            if (player) {
+              if (player.playing) { try { player.pause(); } catch {} }
+              else player.play().catch(() => {});
+            }
+          }, 400);
+        }
+      } else {
+        openFullscreen(activeImageIndex);
+      }
     }
   };
 
   // ── Mouse (desktop only — blocked on touch devices) ──
   const handleFrameMouseDown = (e) => {
     if (touchActiveRef.current) return;
-    swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false, dragging: true };
+    const onControls = !!e.target.closest?.(".plyr__controls");
+    swipeRef.current = { startX: e.clientX, startY: e.clientY, didSwipe: false, dragging: true, onControls };
     if (carouselZoomPanRef.current.zoom > 1) {
       carouselDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, panX: carouselZoomPanRef.current.pan.x, panY: carouselZoomPanRef.current.pan.y };
     }
@@ -311,7 +357,8 @@ const ProductDetail = () => {
       return;
     }
     const t = e.touches[0];
-    swipeRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false, dragging: true };
+    const onControls = !!e.target.closest?.(".plyr__controls");
+    swipeRef.current = { startX: t.clientX, startY: t.clientY, didSwipe: false, dragging: true, onControls };
     if (carouselZoomPanRef.current.zoom > 1) {
       carouselDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: carouselZoomPanRef.current.pan.x, panY: carouselZoomPanRef.current.pan.y };
     }
@@ -419,7 +466,7 @@ const ProductDetail = () => {
     carouselWrapperRef.current.style.transform = zoom <= 1 ? "" : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
   };
 
-  const openFullscreen = (idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); };
+  const openFullscreen = useCallback((idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); }, []);
   const closeFullscreen = () => {
     if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} }
     setFullscreenOpen(false);
@@ -1855,7 +1902,7 @@ const ProductDetail = () => {
                     >
                       {visibleMedia.map((item, index) => (
                         item.type === "video" ? (
-                          <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} />
+                          <VideoSlide key={item.url} src={item.url} isActive={index === activeImageIndex} activePlayerRef={activeVideoPlayerRef} />
                         ) : (
                           <ImageSlide key={item.url} url={imgUrl(item.url, 1200)} alt={index === activeImageIndex ? productName : ""} />
                         )
