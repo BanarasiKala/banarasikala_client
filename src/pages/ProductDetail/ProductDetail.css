@@ -1020,15 +1020,24 @@
 
 /* ── Video thumb in fullscreen strip ── */
 .bk-fs-thumb.bk-fs-thumb-video {
+  position: relative;
   background: #1a0a05;
-  display: grid;
-  place-items: center;
+}
+.bk-fs-thumb.bk-fs-thumb-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .bk-fs-thumb-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.45);
   display: grid;
   place-items: center;
   color: #fff;
@@ -4631,6 +4640,19 @@
   object-fit: cover;
   display: block;
 }
+.product-thumb-video {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #1a0a05;
+}
+.product-thumb-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .product-thumb-play {
   display: flex;
   align-items: center;
@@ -4639,6 +4661,17 @@
   height: 100%;
   color: #800020;
   font-size: 22px;
+}
+.product-thumb-video .product-thumb-play {
+  position: absolute;
+  inset: 0;
+  width: 26px;
+  height: 26px;
+  margin: auto;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 13px;
 }
 
 /* ── Feature icons row ── */

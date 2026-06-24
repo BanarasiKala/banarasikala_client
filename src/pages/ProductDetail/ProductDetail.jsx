@@ -1872,7 +1872,10 @@ const ProductDetail = () => {
                     aria-label={item.type === "video" ? "View video" : `View image ${index + 1}`}
                   >
                     {item.type === "video" ? (
-                      <span className="product-thumb-play"><Icon icon="lucide:play" /></span>
+                      <span className="product-thumb-video">
+                        <video src={`${item.url}#t=0.1`} muted playsInline preload="metadata" tabIndex={-1} />
+                        <span className="product-thumb-play"><Icon icon="lucide:play" /></span>
+                      </span>
                     ) : (
                       <img src={imgUrl(item.url, 200)} alt="" draggable={false} />
                     )}
@@ -3228,9 +3231,14 @@ const ProductDetail = () => {
                     onClick={() => { pauseFsVideo(); resetZoom(); setFullscreenIdx(globalIdx); }}
                     aria-label={item.type === "video" ? "Play video" : `Image ${globalIdx + 1}`}
                   >
-                    {item.type === "video"
-                      ? <span className="bk-fs-thumb-play-icon"><Icon icon="lucide:play" /></span>
-                      : <img src={imgUrl(item.url, 200)} alt="" />}
+                    {item.type === "video" ? (
+                      <>
+                        <video src={`${item.url}#t=0.1`} muted playsInline preload="metadata" tabIndex={-1} />
+                        <span className="bk-fs-thumb-play-icon"><Icon icon="lucide:play" /></span>
+                      </>
+                    ) : (
+                      <img src={imgUrl(item.url, 200)} alt="" />
+                    )}
                   </button>
                 ))}
               </div>
