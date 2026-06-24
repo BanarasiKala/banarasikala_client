@@ -437,8 +437,8 @@ const ProductDetail = () => {
   const [fullscreenIdx, setFullscreenIdx] = useState(0);
   const [fsImageLoaded, setFsImageLoaded] = useState(false);
   const [fsIsZoomed, setFsIsZoomed] = useState(false);
-  const [fsVideoPlaying, setFsVideoPlaying] = useState(false);
-  const fsVideoRef = useRef(null);
+  // Holds the fullscreen video's Plyr instance (same player as the carousel).
+  const fsPlayerRef = useRef(null);
   const fsImageRef = useRef(null);
   const fsMainRef = useRef(null);
   const fsZoomPanRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
@@ -468,7 +468,7 @@ const ProductDetail = () => {
 
   const openFullscreen = useCallback((idx) => { setFullscreenIdx(idx); setFullscreenOpen(true); }, []);
   const closeFullscreen = () => {
-    if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} }
+    if (fsPlayerRef.current) { try { fsPlayerRef.current.pause(); } catch {} }
     setFullscreenOpen(false);
   };
 
@@ -3037,8 +3037,7 @@ const ProductDetail = () => {
         };
 
         const pauseFsVideo = () => {
-          if (fsVideoRef.current) { try { fsVideoRef.current.pause(); } catch {} }
-          setFsVideoPlaying(false);
+          if (fsPlayerRef.current) { try { fsPlayerRef.current.pause(); } catch {} }
         };
         const navigateFsPrev = () => {
           if (visibleMedia.length <= 1) return;
@@ -3106,7 +3105,9 @@ const ProductDetail = () => {
             return;
           }
           const t = e.touches[0];
-          fsSwipeRef.current = { startX: t.clientX, startY: t.clientY, dragging: true };
+          // Don't treat interactions with the video's Plyr controls as swipes.
+          const onControls = !!e.target.closest?.(".plyr__controls");
+          fsSwipeRef.current = { startX: t.clientX, startY: t.clientY, dragging: true, onControls };
           if (isZoomed) {
             const { pan } = fsZoomPanRef.current;
             fsDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, panX: pan.x, panY: pan.y };
@@ -3151,6 +3152,7 @@ const ProductDetail = () => {
           if (isZoomed) { fsSwipeRef.current.dragging = false; return; }
           if (!fsSwipeRef.current.dragging) return;
           fsSwipeRef.current.dragging = false;
+          if (fsSwipeRef.current.onControls) return;
           const t = e.changedTouches[0];
           const dx = t.clientX - fsSwipeRef.current.startX;
           const dy = t.clientY - fsSwipeRef.current.startY;
@@ -3179,32 +3181,14 @@ const ProductDetail = () => {
               style={{ touchAction: "none" }}
             >
               {fsMedia?.type === "video" ? (
-                <button
-                  type="button"
-                  className="bk-fs-video-wrap"
-                  aria-label={fsVideoPlaying ? "Pause video" : "Play video"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const vid = fsVideoRef.current;
-                    if (!vid) return;
-                    if (vid.paused) vid.play().catch(() => {}); else vid.pause();
-                  }}
-                >
-                  <video
+                <div className="bk-fs-video-wrap" onClick={(e) => e.stopPropagation()}>
+                  <VideoSlide
                     key={fsMedia.url}
-                    ref={fsVideoRef}
                     src={fsMedia.url}
-                    autoPlay
-                    playsInline
-                    className="bk-fs-video"
-                    onPlay={() => setFsVideoPlaying(true)}
-                    onPause={() => setFsVideoPlaying(false)}
-                    onEnded={() => setFsVideoPlaying(false)}
+                    isActive
+                    activePlayerRef={fsPlayerRef}
                   />
-                  <span className={`bk-fs-play-icon${fsVideoPlaying ? " is-playing" : ""}`} aria-hidden="true">
-                    <Icon icon={fsVideoPlaying ? "lucide:pause" : "lucide:play"} />
-                  </span>
-                </button>
+                </div>
               ) : (
                 <>
                   {!fsImageLoaded && <div className="bk-carousel-loader" aria-hidden="true" />}
