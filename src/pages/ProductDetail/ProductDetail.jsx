@@ -1759,26 +1759,19 @@ const ProductDetail = () => {
               </div>
             </div>
             <div className="product-skeleton-info">
-              <span className="product-skeleton-line short" />
-              <span className="product-skeleton-line title" />
-              <span className="product-skeleton-line medium" />
+              {/* breadcrumb */}
+              <span className="product-skeleton-line short product-skeleton-breadcrumb" />
+              {/* product name + rating */}
+              <div className="product-skeleton-name-row">
+                <span className="product-skeleton-line title" />
+                <span className="product-skeleton-shape product-skeleton-rating" />
+              </div>
+              {/* price card */}
               <div className="product-skeleton-price-card">
                 <span className="product-skeleton-line price" />
                 <span className="product-skeleton-line tiny" />
               </div>
-              <div className="product-skeleton-color-card">
-                <span className="product-skeleton-line short" />
-                <div className="product-skeleton-color-pills" aria-hidden="true">
-                  <span className="product-skeleton-shape product-skeleton-color-pill" />
-                  <span className="product-skeleton-shape product-skeleton-color-pill" />
-                  <span className="product-skeleton-shape product-skeleton-color-pill" />
-                </div>
-              </div>
-              <div className="product-skeleton-action-panel" aria-hidden="true">
-                <span className="product-skeleton-shape product-skeleton-qty" />
-                <span className="product-skeleton-shape product-skeleton-add" />
-                <span className="product-skeleton-shape product-skeleton-buy" />
-              </div>
+              {/* feature icons row */}
               <div className="product-skeleton-feature-grid" aria-hidden="true">
                 {[...Array(6)].map((_, index) => (
                   <span key={index} className="product-skeleton-feature">
@@ -1787,7 +1780,24 @@ const ProductDetail = () => {
                   </span>
                 ))}
               </div>
+              {/* delivery check */}
               <span className="product-skeleton-box delivery" />
+              {/* color selector */}
+              <div className="product-skeleton-color-card">
+                <span className="product-skeleton-line short" />
+                <div className="product-skeleton-color-pills" aria-hidden="true">
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                  <span className="product-skeleton-shape product-skeleton-color-pill" />
+                </div>
+              </div>
+              {/* action panel: qty · add · buy */}
+              <div className="product-skeleton-action-panel" aria-hidden="true">
+                <span className="product-skeleton-shape product-skeleton-qty" />
+                <span className="product-skeleton-shape product-skeleton-add" />
+                <span className="product-skeleton-shape product-skeleton-buy" />
+              </div>
+              {/* special offers */}
               <span className="product-skeleton-box offers" />
             </div>
           </div>
