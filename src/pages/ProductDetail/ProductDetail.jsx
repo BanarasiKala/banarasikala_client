@@ -272,11 +272,17 @@ const ProductDetail = () => {
       // Ignore taps that landed on the Plyr control bar — let Plyr handle them.
       if (swipeRef.current.onControls) return;
       if (visibleMedia[activeImageIndex]?.type === "video") {
+        const player = activeVideoPlayerRef.current;
+        // Single click toggles play/pause immediately (no delay).
+        if (player) {
+          if (player.playing) { try { player.pause(); } catch {} }
+          else player.play().catch(() => {});
+        }
+        // A second click within the window → double click → fullscreen.
+        // (The two toggles cancel out, so play state is unchanged.)
         if (videoTapRef.current) {
-          // Second tap within the window → double tap → real native fullscreen.
           clearTimeout(videoTapRef.current);
           videoTapRef.current = null;
-          const player = activeVideoPlayerRef.current;
           if (player?.fullscreen) {
             try { player.fullscreen.enter(); } catch { /* ignore */ }
           } else {
@@ -286,15 +292,7 @@ const ProductDetail = () => {
             else if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen(); // iOS
           }
         } else {
-          // First tap → wait briefly to see if a second tap follows (double tap).
-          videoTapRef.current = setTimeout(() => {
-            videoTapRef.current = null;
-            const player = activeVideoPlayerRef.current;
-            if (player) {
-              if (player.playing) { try { player.pause(); } catch {} }
-              else player.play().catch(() => {});
-            }
-          }, 400);
+          videoTapRef.current = setTimeout(() => { videoTapRef.current = null; }, 400);
         }
       } else {
         openFullscreen(activeImageIndex);
