@@ -99,10 +99,10 @@ const Home = () => {
         <HeroSlider />
 
         <HomeSection variant="why"><WhyChooseUs /></HomeSection>
-        <HomeSection variant="popular"><PopularSarees /></HomeSection>
-        <HomeSection variant="browse"><BrowseCircles /></HomeSection>
         <HomeSection variant="occasion"><OccasionCollections /></HomeSection>
         <HomeSection id="new-arrivals" variant="arrivals"><NewArrivals /></HomeSection>
+        <HomeSection variant="browse"><BrowseCircles /></HomeSection>
+        <HomeSection variant="popular"><PopularSarees /></HomeSection>
         <HomeSection variant="reviews"><ReviewsStory /></HomeSection>
         <HomeSection variant="faq"><FaqSection /></HomeSection>
       </main>
