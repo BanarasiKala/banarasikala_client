@@ -1,8 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { API_ENDPOINTS } from "../config/api";
+import { selectBestCourier } from "../utils/courierSelection";
 
 const LS_PINCODE = "bk_delivery_pincode";
 const LS_SOURCE  = "bk_location_source";   // "gps" | "manual"
 const LS_ASKED   = "bk_location_asked";    // "1" once the browser prompt has been shown
+
+// Cache the courier ETA per pincode so the home/listing cards and the product
+// detail page show the same, accurate "delivery by" date without each card
+// hitting the serviceability API. Refetched at most once every few hours.
+const COURIER_ETD_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const courierEtdCacheKey = (pincode) => `bk_courier_etd_${pincode}`;
 
 const LocationContext = createContext(null);
 
@@ -46,6 +54,7 @@ export function LocationProvider({ children }) {
   const [pincode, setPincodeRaw] = useState(() => localStorage.getItem(LS_PINCODE) || "");
   const [locationSource, setLocationSource] = useState(() => localStorage.getItem(LS_SOURCE) || null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [courierEtd, setCourierEtd] = useState(null);
   const alreadyAsked = useRef(!!localStorage.getItem(LS_ASKED));
 
   const setPincode = useCallback((pin, source = "manual") => {
@@ -97,13 +106,57 @@ export function LocationProvider({ children }) {
     return () => clearTimeout(timer);
   }, []); // runs once on mount
 
+  // Resolve a single courier ETA for the active pincode, cached for a few hours.
+  // Both the listing cards and the product detail page reuse this so the delivery
+  // estimate is consistent and includes real courier transit time.
+  useEffect(() => {
+    if (!/^\d{6}$/.test(pincode)) {
+      setCourierEtd(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadCourierEtd = async () => {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(courierEtdCacheKey(pincode)) || "null");
+        if (cached?.etd && Date.now() - cached.ts < COURIER_ETD_TTL_MS) {
+          if (!cancelled) setCourierEtd(cached.etd);
+          return;
+        }
+      } catch {
+        // ignore malformed cache
+      }
+
+      try {
+        const res = await fetch(`${API_ENDPOINTS.shiprocket}/serviceability?pincode=${pincode}&weight=0.5`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const best = selectBestCourier(data?.data?.available_courier_companies || [], {
+          weightKg: 0.5,
+          requireCod: false,
+        });
+        const etd = best?.etd || null;
+        if (!cancelled && etd) {
+          setCourierEtd(etd);
+          sessionStorage.setItem(courierEtdCacheKey(pincode), JSON.stringify({ etd, ts: Date.now() }));
+        }
+      } catch {
+        // network/serviceability failure — badges fall back to env processing days
+      }
+    };
+
+    loadCourierEtd();
+    return () => { cancelled = true; };
+  }, [pincode]);
+
   return (
-    <LocationContext.Provider value={{ pincode, setPincode, clearPincode, locationSource, locationLoading }}>
+    <LocationContext.Provider value={{ pincode, setPincode, clearPincode, locationSource, locationLoading, courierEtd }}>
       {children}
     </LocationContext.Provider>
   );
 }
 
-const FALLBACK = { pincode: "", locationSource: null, locationLoading: false, setPincode: () => {}, clearPincode: () => {} };
+const FALLBACK = { pincode: "", locationSource: null, locationLoading: false, courierEtd: null, setPincode: () => {}, clearPincode: () => {} };
 
 export const useDeliveryLocation = () => useContext(LocationContext) ?? FALLBACK;

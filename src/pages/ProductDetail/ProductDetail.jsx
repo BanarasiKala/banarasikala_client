@@ -14,6 +14,7 @@ import { LocationPickerModal } from "../Profile/Profile";
 import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
 import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
 import ProductRating from "../../components/ProductRating";
+import DeliveryBadge from "../../components/DeliveryBadge";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
@@ -2454,6 +2455,7 @@ const ProductDetail = () => {
                         </div>
                         {hasDiscount && <span className="product-related-mrp"><span className="product-related-mrp-val">{formatMoney(item.mrp_price)}</span></span>}
                       </div>
+                      <DeliveryBadge processingDays={item.processing_days} />
                       <button
                         type="button"
                         className="product-related-atc-btn"
