@@ -67,7 +67,23 @@ const Checkout = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
-  const checkoutCart = cart.map((item) => {
+  // Honour the items the shopper selected on the cart page (stored as
+  // `${id}-${colorId}` keys). Falls back to the whole cart if nothing was chosen.
+  const [selectedKeys] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem("bk_cart_selected");
+      const arr = raw ? JSON.parse(raw) : null;
+      return Array.isArray(arr) && arr.length ? new Set(arr) : null;
+    } catch {
+      return null;
+    }
+  });
+  const selectedCart = (() => {
+    if (!selectedKeys) return cart;
+    const filtered = cart.filter((item) => selectedKeys.has(`${item.id}-${item.colorId ?? ""}`));
+    return filtered.length ? filtered : cart;
+  })();
+  const checkoutCart = selectedCart.map((item) => {
     const stockInfo = getProductStockInfo(item, item.colorId);
     const isUnavailable = stockInfo.isOutOfStock || Number(item.quantity || 1) > stockInfo.quantity;
     return { ...item, checkoutUnavailable: isUnavailable, checkoutStockInfo: stockInfo };
