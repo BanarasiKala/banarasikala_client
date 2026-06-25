@@ -37,6 +37,15 @@ const formatMoneyShort = (value) => `₹${Number(value || 0).toLocaleString("en-
 
 const itemKey = (item) => `${item.id}-${item.colorId ?? ""}`;
 
+// Short label for what a coupon gives off (fixed amount or percentage).
+const couponDiscountText = (coupon) => {
+  if (coupon.discount_type === "fixed_amount" && Number(coupon.discount_amount) > 0) {
+    return `₹${Number(coupon.discount_amount).toLocaleString("en-IN")} OFF`;
+  }
+  if (Number(coupon.discount_percent) > 0) return `${coupon.discount_percent}% OFF`;
+  return "a discount";
+};
+
 const Cart = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -50,11 +59,14 @@ const Cart = () => {
   } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
-  const { courierEtd } = useDeliveryLocation();
+  const { pincode, courierEtd, setPincode } = useDeliveryLocation();
 
   const [stockAlerts, setStockAlerts] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [selected, setSelected] = useState(() => new Set());
   const [giftWrap, setGiftWrap] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [editingPin, setEditingPin] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const [showGiftTip, setShowGiftTip] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
@@ -99,6 +111,27 @@ const Cart = () => {
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []); // runs on mount only; uses ref so always calls latest version
+
+  // Load coupons and keep only active, in-date ones with a real minimum (> ₹1),
+  // sorted by ascending min purchase — ready for the cart nudge.
+  useEffect(() => {
+    let cancelled = false;
+    api.get(API_ENDPOINTS.coupons)
+      .then((res) => {
+        if (cancelled) return;
+        const now = Date.now();
+        const list = (Array.isArray(res.data) ? res.data : [])
+          .filter((c) => c.is_active !== false)
+          .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
+          .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
+          .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0) }))
+          .filter((c) => c.minPurchase > 1)
+          .sort((a, b) => a.minPurchase - b.minPurchase);
+        setCoupons(list);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Keep the selection in sync with the cart: new items default to selected,
   // de-selected ones stay de-selected, removed ones drop out.
@@ -162,13 +195,34 @@ const Cart = () => {
   const cartGiftCharge = giftWrap ? GIFT_CHARGE : 0;
   const cartTotal = (selectedSubtotal || getSubtotal()) + cartGiftCharge;
 
+  // Coupon nudge: from the active coupons (already filtered/sorted), find the
+  // nearest one the cart hasn't reached yet — "add ₹X more to get ₹Y off".
+  const nextCoupon = coupons.find((c) => c.minPurchase > selectedSubtotal) || null;
+  const unlockedCoupon = coupons.filter((c) => c.minPurchase <= selectedSubtotal).pop() || null;
+  let couponNudge = null;
+  if (nextCoupon) {
+    const more = Math.max(0, nextCoupon.minPurchase - selectedSubtotal);
+    couponNudge = (
+      <>Add <strong>₹{more.toLocaleString("en-IN")}</strong> more to get <strong>{couponDiscountText(nextCoupon)}</strong> ({nextCoupon.code})</>
+    );
+  } else if (unlockedCoupon) {
+    couponNudge = (
+      <><strong>{couponDiscountText(unlockedCoupon)}</strong> unlocked — apply <strong>{unlockedCoupon.code}</strong> at checkout</>
+    );
+  }
+
   // The whole order ships together, so show one consolidated "arrives by" date:
-  // the farthest estimate across the items being bought.
+  // the farthest estimate across the items being bought. This is only meaningful
+  // once we know the courier transit time for the customer's location
+  // (courierEtd); otherwise we prompt for an address instead of guessing.
   const deliveryItems = selectedItems.length ? selectedItems : cart;
-  const farthestDelivery = deliveryItems.reduce((latest, item) => {
-    const date = getEstimatedDeliveryDate(courierEtd, item.processing_days);
-    return !latest || date > latest ? date : latest;
-  }, null);
+  const farthestDelivery = courierEtd
+    ? deliveryItems.reduce((latest, item) => {
+        // getEstimatedDeliveryDate = courier ETA (service availability) + processing days.
+        const date = getEstimatedDeliveryDate(courierEtd, item.processing_days);
+        return !latest || date > latest ? date : latest;
+      }, null)
+    : null;
   const farthestDeliveryLabel = farthestDelivery
     ? farthestDelivery.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
     : null;
@@ -189,9 +243,25 @@ const Cart = () => {
     showNotification(`${item.name} removed from bag`, "success");
   };
 
+  const handlePinSubmit = (e) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(pinInput)) {
+      showNotification("Enter a valid 6-digit pincode.", "warning");
+      return;
+    }
+    // Saves the pincode in the shared location context, which fetches the
+    // courier ETA and reveals the delivery date across the app.
+    setPincode(pinInput, "manual");
+    setEditingPin(false);
+  };
+
   const handleProceed = () => {
     if (selectedItems.length === 0) {
       showNotification("Select at least one item to proceed.", "warning");
+      return;
+    }
+    if (!pincode) {
+      showNotification("Please add your delivery pincode to continue.", "warning");
       return;
     }
     // Carry the chosen items (and gift preference) through to checkout.
@@ -267,12 +337,21 @@ const Cart = () => {
             </div>
             <div className="cart-summary-info">
               <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your bag</strong>
-              <span className="cart-summary-freedelivery">
-                <Icon icon="lucide:truck" />
-                {farthestDeliveryLabel
-                  ? <>FREE Delivery by <strong>{farthestDeliveryLabel}</strong></>
-                  : "FREE Delivery on this order"}
-              </span>
+              {pincode && !editingPin && (
+                <span className="cart-summary-freedelivery">
+                  <Icon icon="lucide:truck" />
+                  {farthestDeliveryLabel
+                    ? <>FREE Delivery by <strong>{farthestDeliveryLabel}</strong></>
+                    : "Checking delivery date…"}
+                  <button
+                    type="button"
+                    className="cart-pin-change"
+                    onClick={() => { setPinInput(pincode); setEditingPin(true); }}
+                  >
+                    · {pincode} <span className="cart-pin-change-label">Change</span>
+                  </button>
+                </span>
+              )}
             </div>
             <div className="cart-summary-amount">
               <span className="cart-summary-amount-label">TOTAL</span>
@@ -280,7 +359,32 @@ const Cart = () => {
             </div>
           </div>
 
-          <button ref={topProceedRef} type="button" className="cart-proceed-btn" onClick={handleProceed} disabled={selectedItems.length === 0}>
+          {(!pincode || editingPin) && (
+            <div className="cart-pin-block">
+              <form className="cart-pin-row" onSubmit={handlePinSubmit}>
+                <Icon icon="lucide:map-pin" className="cart-pin-icon" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="Add pincode to see delivery date"
+                  className="cart-pin-input"
+                  aria-label="Delivery pincode"
+                  autoFocus={editingPin}
+                />
+                {editingPin && pincode && (
+                  <button type="button" className="cart-pin-cancel" onClick={() => { setEditingPin(false); setPinInput(""); }}>
+                    Cancel
+                  </button>
+                )}
+                <button type="submit" className="cart-pin-btn">Check</button>
+              </form>
+              <span className="cart-pin-note">You can change the full address in the next step.</span>
+            </div>
+          )}
+
+          <button ref={topProceedRef} type="button" className="cart-proceed-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
             PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
             <Icon icon="lucide:arrow-right" />
           </button>
@@ -342,14 +446,16 @@ const Cart = () => {
           </div>
         </div>
 
-        {/* ── Coupon row ── */}
-        <Link to="/checkout" className="cart-coupon">
-          <span className="cart-coupon-left">
-            <Icon icon="lucide:tag" />
-            Collect Coupon &amp; Save More
-          </span>
-          <Icon icon="lucide:chevron-right" className="cart-coupon-chevron" />
-        </Link>
+        {/* ── Coupon nudge (dynamic, based on coupon min purchase) ── */}
+        {couponNudge && (
+          <Link to="/checkout" className="cart-coupon">
+            <span className="cart-coupon-left">
+              <Icon icon="lucide:tag" />
+              <span className="cart-coupon-text">{couponNudge}</span>
+            </span>
+            <Icon icon="lucide:chevron-right" className="cart-coupon-chevron" />
+          </Link>
+        )}
 
         {/* ── Stock alerts ── */}
         {stockAlerts.length > 0 && (
@@ -485,7 +591,7 @@ const Cart = () => {
               <span className="cart-stickybar-save">You save {formatMoneyShort(selectedSavings)} on this order!</span>
             )}
           </div>
-          <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0}>
+          <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
             PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
             <Icon icon="lucide:arrow-right" />
           </button>
