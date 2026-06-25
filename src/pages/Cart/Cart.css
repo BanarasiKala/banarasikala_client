@@ -84,18 +84,24 @@
 }
 
 .cart-summary-info strong {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
   color: #3d2817;
 }
 
 .cart-summary-freedelivery {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #138808;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #1a6e1a;
+  white-space: nowrap;
+}
+
+.cart-summary-freedelivery strong {
+  color: #0d4f0d;
+  font-weight: 800;
 }
 
 .cart-summary-amount {
@@ -112,8 +118,8 @@
 }
 
 .cart-summary-amount strong {
-  font-size: 18px;
-  font-weight: 900;
+  font-size: 17px;
+  font-weight: 600;
   color: #46130d;
 }
 
@@ -138,8 +144,10 @@
 }
 
 .cart-proceed-btn {
-  padding: 14px;
-  font-size: 13px;
+  padding: 11px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .cart-proceed-btn:not(:disabled):hover {

@@ -149,6 +149,17 @@ const Cart = () => {
   const extraOffRemaining = Math.max(0, EXTRA_OFF_MIN_ITEMS - totalUnits);
   const extraOffProgress = Math.min(100, (totalUnits / EXTRA_OFF_MIN_ITEMS) * 100);
 
+  // The whole order ships together, so show one consolidated "arrives by" date:
+  // the farthest estimate across the items being bought.
+  const deliveryItems = selectedItems.length ? selectedItems : cart;
+  const farthestDelivery = deliveryItems.reduce((latest, item) => {
+    const date = getEstimatedDeliveryDate(courierEtd, item.processing_days);
+    return !latest || date > latest ? date : latest;
+  }, null);
+  const farthestDeliveryLabel = farthestDelivery
+    ? farthestDelivery.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+    : null;
+
   const handleCartQuantityChange = async (item, nextQuantity) => {
     if (nextQuantity < 1) return;
     const stockInfo = getProductStockInfo(item, item.colorId);
@@ -243,8 +254,10 @@ const Cart = () => {
             <div className="cart-summary-info">
               <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your bag</strong>
               <span className="cart-summary-freedelivery">
-                <Icon icon="lucide:badge-check" />
-                FREE Delivery on this order
+                <Icon icon="lucide:truck" />
+                {farthestDeliveryLabel
+                  ? <>FREE Delivery by <strong>{farthestDeliveryLabel}</strong></>
+                  : "FREE Delivery on this order"}
               </span>
             </div>
             <div className="cart-summary-amount">
@@ -331,12 +344,6 @@ const Cart = () => {
             const sell = Number(item.price || item.selling_price || 0);
             const mrp = Number(item.mrp_price || item.mrp || 0);
             const disc = calcDiscount(mrp, sell);
-            const deliveryDateObj = getEstimatedDeliveryDate(courierEtd, item.processing_days);
-            const deliveryLabel = deliveryDateObj.toLocaleDateString("en-IN", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-            });
 
             return (
               <div key={key} className={`cart-card ${isSelected ? "is-selected" : ""}`}>
@@ -375,11 +382,13 @@ const Cart = () => {
                     </span>
                   )}
 
+                  {/* "Only X left in this color" badge — hidden for now
                   {(stockInfo.isOutOfStock || stockInfo.isLowStock) && (
                     <p className={`cart-stock-note ${stockInfo.isOutOfStock ? "out" : "low"}`}>
                       {stockInfo.colorMessage || stockInfo.badge}
                     </p>
                   )}
+                  */}
 
                   <div className="cart-card-price-row">
                     {stockInfo.isOutOfStock ? (
@@ -391,15 +400,6 @@ const Cart = () => {
                         {mrp > sell && <span className="cart-card-mrp"><span className="cart-card-mrp-val">{formatMoney(mrp)}</span></span>}
                       </div>
                     )}
-                  </div>
-
-                  <div className="cart-card-delivery">
-                    <Icon icon="lucide:truck" className="cart-card-delivery-truck" />
-                    <span>FREE Delivery <strong>by {deliveryLabel}</strong></span>
-                    <span className="cart-card-dot" />
-                    <span className={`cart-card-stockstate ${stockInfo.isOutOfStock ? "out" : "in"}`}>
-                      {stockInfo.isOutOfStock ? "Out of Stock" : "In Stock"}
-                    </span>
                   </div>
 
                   <div className="cart-card-controls">
