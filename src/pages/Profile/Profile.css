@@ -2240,14 +2240,17 @@
 
   .profile-coming-features {
     width: 100%;
-    display: grid;
+    display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    justify-self: stretch;
     column-gap: 8px;
     padding-top: 8px;
     align-items: start;
   }
 
   .profile-coming-features span {
+    width: 100%;
     min-width: 0;
     flex-direction: column;
     justify-content: center;
