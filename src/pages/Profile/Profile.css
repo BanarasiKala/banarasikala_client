@@ -3,9 +3,9 @@
   min-height: calc(100vh - 120px);
   padding: 28px clamp(14px, 4vw, 54px) 64px;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 250, 242, 0.92)),
+    linear-gradient(180deg, rgba(255, 243, 232, 0.9), rgba(255, 232, 210, 0.94)),
     var(--bk-header-bg, none),
-    #fffaf4;
+    #fff0e0;
   color: #2d1b0e;
 }
 
@@ -1412,4 +1412,13 @@
     padding: 12px;
   }
 
+}
+
+/* Google Places Autocomplete dropdown must sit above the full-screen map modal. */
+.pac-container {
+  z-index: 100001 !important;
+  border-radius: 10px;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  box-shadow: 0 16px 36px rgba(88, 39, 13, 0.18);
+  font-family: "Poppins", sans-serif;
 }

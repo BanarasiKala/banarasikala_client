@@ -14,18 +14,20 @@ const courierEtdCacheKey = (pincode) => `bk_courier_etd_${pincode}`;
 
 const LocationContext = createContext(null);
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 async function reverseGeocodeToPin(lat, lon) {
-  // Mapbox Geocoding API — uses the existing project token
-  if (MAPBOX_TOKEN) {
+  // Google Geocoding API — resolve the 6-digit pincode from GPS coordinates.
+  // This pincode drives the courier ETA used for the estimated delivery date.
+  if (GOOGLE_MAPS_API_KEY) {
     try {
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=postcode&access_token=${MAPBOX_TOKEN}`,
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&result_type=postal_code&key=${GOOGLE_MAPS_API_KEY}`,
       );
       if (res.ok) {
         const data = await res.json();
-        const postcode = (data?.features?.[0]?.text || "").replace(/\s/g, "");
+        const components = data?.results?.[0]?.address_components || [];
+        const postcode = (components.find((item) => item.types?.includes("postal_code"))?.long_name || "").replace(/\s/g, "");
         if (/^\d{6}$/.test(postcode)) return postcode;
       }
     } catch {

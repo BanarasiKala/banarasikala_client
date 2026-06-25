@@ -4,8 +4,8 @@ import { imgUrl } from "../../utils/cloudinary";
 import compressImage from "../../utils/compressImage";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
-import { requiredEnv } from "../../utils/env";
 import "./Profile.css";
 
 const SUPPORT_ERROR_MESSAGE = "Something went wrong. Please contact support or try again later.";
@@ -63,73 +63,61 @@ const emptyAddress = {
 };
 
 const ADDRESS_LABEL_OPTIONS = ["Home", "Work", "Other"];
-const MAPBOX_TOKEN = requiredEnv("VITE_MAPBOX_ACCESS_TOKEN");
-const MAPBOX_GL_SCRIPT = "https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js";
-const MAPBOX_GL_CSS = "https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css";
-const DEFAULT_LOCATION = {
-  center: [82.9739, 25.3176],
-  label: "Varanasi, Uttar Pradesh, India",
-};
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+const DEFAULT_CENTER = { lat: 25.3176, lng: 82.9739 }; // Varanasi
 
-let mapboxLoaderPromise;
+let googleMapsLoaderPromise;
 
-const loadMapboxGl = () => {
-  if (window.mapboxgl) return Promise.resolve(window.mapboxgl);
-  if (mapboxLoaderPromise) return mapboxLoaderPromise;
+const loadGoogleMaps = () => {
+  if (window.google?.maps?.places) return Promise.resolve(window.google);
+  if (googleMapsLoaderPromise) return googleMapsLoaderPromise;
 
-  mapboxLoaderPromise = new Promise((resolve, reject) => {
-    if (!document.querySelector(`link[href="${MAPBOX_GL_CSS}"]`)) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = MAPBOX_GL_CSS;
-      document.head.appendChild(link);
-    }
-
-    const existingScript = document.querySelector(`script[src="${MAPBOX_GL_SCRIPT}"]`);
-    if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(window.mapboxgl), { once: true });
-      existingScript.addEventListener("error", reject, { once: true });
+  googleMapsLoaderPromise = new Promise((resolve, reject) => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      reject(new Error("Missing Google Maps API key"));
       return;
     }
-
+    const existing = document.querySelector("script[data-google-maps]");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.google), { once: true });
+      existing.addEventListener("error", reject, { once: true });
+      return;
+    }
     const script = document.createElement("script");
-    script.src = MAPBOX_GL_SCRIPT;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
     script.async = true;
-    script.onload = () => resolve(window.mapboxgl);
+    script.defer = true;
+    script.dataset.googleMaps = "true";
+    script.onload = () => resolve(window.google);
     script.onerror = () => reject(new Error("Map failed to load. Please try again."));
-    document.body.appendChild(script);
+    document.head.appendChild(script);
   });
 
-  return mapboxLoaderPromise;
+  return googleMapsLoaderPromise;
 };
 
-const mapFeatureToAddress = (feature) => {
-  const context = feature?.properties?.context || feature?.context || {};
-  const contextList = Array.isArray(feature?.context) ? feature.context : [];
-  const getContextText = (key) => {
-    if (context[key]?.name) return context[key].name;
-    const found = contextList.find((item) => item.id?.startsWith(`${key}.`));
-    return found?.text || found?.text_en || "";
-  };
-  const properties = feature?.properties || {};
-  const fullAddress = properties.full_address || feature?.place_name || feature?.name || feature?.text || "";
-  const city = getContextText("place") || getContextText("locality") || getContextText("district");
-  const state = getContextText("region");
-  const pincode = getContextText("postcode");
-  const country = getContextText("country") || "India";
-  const streetParts = [
-    properties.address,
-    properties.context?.street?.name || feature?.name || feature?.text,
-  ].filter(Boolean);
+// Map Google address_components (from Geocoder result or a Places result) to our fields.
+const parseGoogleComponents = (place) => {
+  const components = place?.address_components || [];
+  const pick = (type) => components.find((item) => item.types?.includes(type))?.long_name || "";
+  const streetNumber = pick("street_number");
+  const route = pick("route");
+  const sublocality = pick("sublocality_level_1") || pick("sublocality") || pick("neighborhood");
+  const city = pick("locality") || pick("administrative_area_level_3") || pick("administrative_area_level_2");
+  const state = pick("administrative_area_level_1");
+  const pincode = pick("postal_code");
+  const country = pick("country") || "India";
+  const displayName = place?.formatted_address || place?.name || "";
+  const houseBuilding = [streetNumber, route].filter(Boolean).join(" ");
 
   return {
-    house_building: streetParts.join(", ") || feature?.name || fullAddress,
-    area_street: city && !fullAddress.toLowerCase().includes(city.toLowerCase()) ? fullAddress : "",
+    house_building: houseBuilding || place?.name || displayName,
+    area_street: sublocality,
     city,
     state,
     pincode,
     country,
-    displayName: fullAddress,
+    displayName,
   };
 };
 
@@ -137,58 +125,39 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
   const mapNodeRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
-  const searchAbortRef = useRef(null);
-  const skipSearchRef = useRef(false);
-  const userCenterRef = useRef(DEFAULT_LOCATION.center);
-  const [query, setQuery] = useState(initialQuery || "");
+  const geocoderRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const searchInputRef = useRef(null);
   const [selected, setSelected] = useState(null);
-  const [results, setResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState("");
   const canConfirmLocation = Boolean(selected?.center && selected?.displayName);
 
-  const reverseGeocode = async (center) => {
-    if (!MAPBOX_TOKEN) return null;
-    const url = new URL(`https://api.mapbox.com/search/geocode/v6/reverse`);
-    url.searchParams.set("longitude", center[0]);
-    url.searchParams.set("latitude", center[1]);
-    url.searchParams.set("access_token", MAPBOX_TOKEN);
-    url.searchParams.set("country", "in");
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("MAP_REVERSE_FAILED");
-    const data = await response.json();
-    return data.features?.[0] || null;
-  };
-
-  const selectFeature = (feature, zoom = 15) => {
-    const center = feature?.geometry?.coordinates;
-    if (!center) return;
-    const address = mapFeatureToAddress(feature);
-    const nextQuery = address.displayName || address.house_building || feature?.name || "";
-    skipSearchRef.current = true;
-    userCenterRef.current = center;
-    setQuery(nextQuery);
-    setResults([]);
-    setSelected({ center, placeId: feature.id || feature.properties?.mapbox_id || "", ...address });
-    markerRef.current?.setLngLat(center);
-    mapRef.current?.flyTo({ center, zoom, essential: true });
-  };
-
-  const selectCenter = async (center) => {
-    setStatus("");
-    try {
-      const feature = await reverseGeocode(center);
-      if (feature) {
-        selectFeature(feature, 15);
-        return;
-      }
-    } catch {
-      setStatus(getMapFriendlyError());
+  // center is stored as [lng, lat] to match the rest of the address form.
+  const applyPlace = (place, center) => {
+    const address = parseGoogleComponents(place);
+    setSelected({ center, placeId: place?.place_id || "", ...address });
+    if (searchInputRef.current && address.displayName) {
+      searchInputRef.current.value = address.displayName;
     }
-    setSelected(null);
-    markerRef.current?.setLngLat(center);
-    mapRef.current?.flyTo({ center, zoom: 14, essential: true });
+    const latLng = { lat: center[1], lng: center[0] };
+    markerRef.current?.setPosition(latLng);
+    mapRef.current?.panTo(latLng);
+  };
+
+  const reverseGeocode = (latLng) => {
+    if (!geocoderRef.current) return;
+    setStatus("");
+    markerRef.current?.setPosition(latLng);
+    mapRef.current?.panTo(latLng);
+    geocoderRef.current.geocode({ location: latLng }, (results, gStatus) => {
+      if (gStatus === "OK" && results?.[0]) {
+        applyPlace(results[0], [latLng.lng, latLng.lat]);
+      } else {
+        setSelected(null);
+        setStatus(getMapFriendlyError());
+      }
+    });
   };
 
   const handleCurrentLocation = () => {
@@ -200,9 +169,9 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
     setStatus("");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const center = [position.coords.longitude, position.coords.latitude];
-        userCenterRef.current = center;
-        selectCenter(center, "Current location").finally(() => setIsLocating(false));
+        reverseGeocode({ lat: position.coords.latitude, lng: position.coords.longitude });
+        mapRef.current?.setZoom(16);
+        setIsLocating(false);
       },
       () => {
         setStatus("Current location could not be used. Please search or enter the address manually.");
@@ -214,47 +183,57 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
 
   useEffect(() => {
     if (!open) return undefined;
-    setQuery(initialQuery || "");
-    setResults([]);
     setStatus("");
+    setSelected(null);
 
     let cancelled = false;
     const setupMap = async () => {
-      if (!MAPBOX_TOKEN) {
-        setStatus(getMapFriendlyError());
-        return;
-      }
-
       try {
-        const mapboxgl = await loadMapboxGl();
+        const google = await loadGoogleMaps();
         if (cancelled || !mapNodeRef.current) return;
-        mapboxgl.accessToken = MAPBOX_TOKEN;
-        mapRef.current = new mapboxgl.Map({
-          container: mapNodeRef.current,
-          style: "mapbox://styles/mapbox/streets-v12",
-          center: DEFAULT_LOCATION.center,
+
+        geocoderRef.current = new google.maps.Geocoder();
+        mapRef.current = new google.maps.Map(mapNodeRef.current, {
+          center: DEFAULT_CENTER,
           zoom: 12,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
         });
-        mapRef.current.on("moveend", () => {
-          userCenterRef.current = mapRef.current.getCenter().toArray();
+        markerRef.current = new google.maps.Marker({
+          position: DEFAULT_CENTER,
+          map: mapRef.current,
+          draggable: true,
         });
-        mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
-        markerRef.current = new mapboxgl.Marker({ color: "#800020", draggable: true })
-          .setLngLat(DEFAULT_LOCATION.center)
-          .addTo(mapRef.current);
-        markerRef.current.on("dragend", () => selectCenter(markerRef.current.getLngLat().toArray()));
-        mapRef.current.on("click", (event) => selectCenter(event.lngLat.toArray()));
-        mapRef.current.once("load", () => {
-          mapRef.current.resize();
-          if (navigator.geolocation) {
-            handleCurrentLocation();
-          } else {
-            selectCenter(DEFAULT_LOCATION.center, DEFAULT_LOCATION.label);
-          }
-        });
-        window.setTimeout(() => mapRef.current?.resize(), 120);
-      } catch {
-        setStatus(getMapFriendlyError());
+        markerRef.current.addListener("dragend", (event) =>
+          reverseGeocode({ lat: event.latLng.lat(), lng: event.latLng.lng() }),
+        );
+        mapRef.current.addListener("click", (event) =>
+          reverseGeocode({ lat: event.latLng.lat(), lng: event.latLng.lng() }),
+        );
+
+        if (searchInputRef.current) {
+          searchInputRef.current.value = initialQuery || "";
+          autocompleteRef.current = new google.maps.places.Autocomplete(searchInputRef.current, {
+            componentRestrictions: { country: "in" },
+            fields: ["address_components", "geometry", "formatted_address", "name", "place_id"],
+          });
+          autocompleteRef.current.addListener("place_changed", () => {
+            const place = autocompleteRef.current.getPlace();
+            const location = place?.geometry?.location;
+            if (!location) return;
+            applyPlace(place, [location.lng(), location.lat()]);
+            mapRef.current?.setZoom(16);
+          });
+        }
+        // Location permission is requested only when the user taps
+        // "Use current location" — not automatically on open.
+      } catch (err) {
+        setStatus(
+          String(err?.message || "").includes("API key")
+            ? "Map is not configured yet. Please enter the address manually."
+            : getMapFriendlyError(),
+        );
       }
     };
 
@@ -262,55 +241,15 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
 
     return () => {
       cancelled = true;
-      searchAbortRef.current?.abort();
-      mapRef.current?.remove();
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+      autocompleteRef.current = null;
       mapRef.current = null;
       markerRef.current = null;
+      geocoderRef.current = null;
     };
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !MAPBOX_TOKEN) return undefined;
-    const cleanQuery = query.trim();
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      return undefined;
-    }
-    if (cleanQuery.length < 3) {
-      setResults([]);
-      setIsSearching(false);
-      return undefined;
-    }
-
-    const timer = window.setTimeout(async () => {
-      searchAbortRef.current?.abort();
-      const controller = new AbortController();
-      searchAbortRef.current = controller;
-      setIsSearching(true);
-      setStatus("");
-
-      try {
-        const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(cleanQuery)}.json`);
-        url.searchParams.set("access_token", MAPBOX_TOKEN);
-        url.searchParams.set("country", "in");
-        url.searchParams.set("limit", "5");
-        url.searchParams.set("autocomplete", "true");
-        url.searchParams.set("language", "en");
-        url.searchParams.set("types", "poi,address,neighborhood,locality,place,postcode");
-        url.searchParams.set("proximity", userCenterRef.current.join(","));
-        const response = await fetch(url, { signal: controller.signal });
-        if (!response.ok) throw new Error("MAP_SEARCH_FAILED");
-        const data = await response.json();
-        setResults(data.features || []);
-      } catch (err) {
-        if (err.name !== "AbortError") setStatus(getMapFriendlyError());
-      } finally {
-        if (!controller.signal.aborted) setIsSearching(false);
-      }
-    }, 450);
-
-    return () => window.clearTimeout(timer);
-  }, [open, query]);
 
   if (!open) return null;
 
@@ -328,24 +267,12 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
             <div className="profile-map-search">
               <Icon icon="lucide:search" />
               <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                ref={searchInputRef}
+                defaultValue={initialQuery || ""}
                 placeholder="Search area, street or landmark"
                 autoFocus
               />
-              {isSearching ? <Icon icon="lucide:loader-circle" className="profile-spin" /> : null}
             </div>
-
-            {results.length > 0 && (
-              <div className="profile-map-results">
-                {results.map((feature) => (
-                  <button type="button" key={feature.id} onClick={() => selectFeature(feature)}>
-                    <Icon icon="lucide:map-pin" />
-                    <span>{feature.properties?.full_address || feature.place_name || feature.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <button type="button" className="profile-current-location" onClick={handleCurrentLocation} disabled={isLocating}>
@@ -459,6 +386,7 @@ function ProfileMiniModal({ modal, onClose, onConfirm }) {
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [addresses, setAddresses] = useState([]);
@@ -482,20 +410,12 @@ export default function Profile() {
   const profileErrorRef = useRef(null);
   const addressErrorRef = useRef(null);
 
-  const scrollToRef = (ref) => {
-    window.setTimeout(() => {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
-  };
-
   const setProfileInlineError = (message) => {
-    setError(message);
-    scrollToRef(profileErrorRef);
+    showNotification(message, "error");
   };
 
   const setAddressInlineError = (message) => {
-    setAddrError(message);
-    scrollToRef(addressErrorRef);
+    showNotification(message, "error");
   };
 
   useEffect(() => {
@@ -569,8 +489,8 @@ export default function Profile() {
     return () => window.clearTimeout(timer);
   }, [miniModal]);
 
-  const showSuccess = (title, message = "") => {
-    setMiniModal({ type: "success", tone: "success", title, message });
+  const showSuccess = (title) => {
+    showNotification(title, "success");
   };
 
   const refreshAddresses = async () => {
@@ -599,6 +519,7 @@ export default function Profile() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setProfile((prev) => (prev ? { ...prev, avatar_url: res.data.avatar_url } : prev));
+      showNotification("Profile photo updated", "success");
     } catch (err) {
       setProfileInlineError(getFriendlyError(err, "Avatar upload failed. Please try again later."));
     } finally {
@@ -621,7 +542,6 @@ export default function Profile() {
     try {
       const res = await api.put("/api/customers/me", {
         name: form.name,
-        email: form.email,
       });
       const updated = res.data?.customer || res.data;
       setProfile((prev) => {
@@ -868,7 +788,7 @@ export default function Profile() {
               )}
               <label className={`profile-avatar-upload ${uploading ? "is-loading" : ""}`} title="Change photo">
                 <input type="file" accept="image/*" onChange={onPickAvatar} disabled={uploading} />
-                <Icon icon={uploading ? "lucide:loader-circle" : "lucide:camera"} />
+                <Icon icon={uploading ? "lucide:loader-circle" : "lucide:camera"} className={uploading ? "profile-spin" : ""} />
               </label>
             </div>
 
@@ -938,14 +858,6 @@ export default function Profile() {
               <label>
                 <span>Name</span>
                 <input name="name" value={form.name} onChange={onChange} />
-              </label>
-              <label>
-                <span>Email</span>
-                <input name="email" value={form.email} onChange={onChange} type="email" />
-              </label>
-              <label>
-                <span>Phone</span>
-                <input name="phone" value={form.phone} disabled inputMode="tel" />
               </label>
             </div>
           </section>
