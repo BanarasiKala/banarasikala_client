@@ -285,7 +285,7 @@ const Cart = () => {
         {/* ── Coupon row ── */}
         <Link to="/checkout" className="cart-coupon">
           <span className="cart-coupon-left">
-            <Icon icon="lucide:ticket-percent" />
+            <Icon icon="lucide:tag" />
             Collect Coupon &amp; Save More
           </span>
           <Icon icon="lucide:chevron-right" className="cart-coupon-chevron" />
