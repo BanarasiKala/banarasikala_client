@@ -18,6 +18,13 @@ import "./Cart.css";
 // Add up to this many sarees to unlock the extra-off nudge shown in the cart.
 const EXTRA_OFF_MIN_ITEMS = 4;
 
+// Flat charge for gift wrapping + custom message. Mirrors the server's
+// GIFT_CHARGE_AMOUNT (default 159); the backend is authoritative.
+const GIFT_CHARGE = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
+
+// Gift-card message length cap (keeps it card-sized; backend also caps it).
+const GIFT_MESSAGE_MAX = 250;
+
 const calcDiscount = (mrp, sell) => {
   if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
@@ -48,6 +55,7 @@ const Cart = () => {
   const [stockAlerts, setStockAlerts] = useState([]);
   const [selected, setSelected] = useState(() => new Set());
   const [giftWrap, setGiftWrap] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const [showSticky, setShowSticky] = useState(false);
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
@@ -149,6 +157,10 @@ const Cart = () => {
   const extraOffRemaining = Math.max(0, EXTRA_OFF_MIN_ITEMS - totalUnits);
   const extraOffProgress = Math.min(100, (totalUnits / EXTRA_OFF_MIN_ITEMS) * 100);
 
+  // Cart total shown at the top = selected items + the gift charge when enabled.
+  const cartGiftCharge = giftWrap ? GIFT_CHARGE : 0;
+  const cartTotal = (selectedSubtotal || getSubtotal()) + cartGiftCharge;
+
   // The whole order ships together, so show one consolidated "arrives by" date:
   // the farthest estimate across the items being bought.
   const deliveryItems = selectedItems.length ? selectedItems : cart;
@@ -184,6 +196,7 @@ const Cart = () => {
     // Carry the chosen items (and gift preference) through to checkout.
     sessionStorage.setItem("bk_cart_selected", JSON.stringify(selectedItems.map(itemKey)));
     sessionStorage.setItem("bk_cart_gift", giftWrap ? "1" : "0");
+    sessionStorage.setItem("bk_cart_gift_message", giftWrap ? giftMessage.trim() : "");
     navigate("/checkout");
   };
 
@@ -261,8 +274,8 @@ const Cart = () => {
               </span>
             </div>
             <div className="cart-summary-amount">
-              <span className="cart-summary-amount-label">SUBTOTAL</span>
-              <strong>{formatMoney(selectedSubtotal || getSubtotal())}</strong>
+              <span className="cart-summary-amount-label">TOTAL</span>
+              <strong>{formatMoney(cartTotal)}</strong>
             </div>
           </div>
 
@@ -271,11 +284,41 @@ const Cart = () => {
             <Icon icon="lucide:arrow-right" />
           </button>
 
-          <label className="cart-gift">
-            <input type="checkbox" checked={giftWrap} onChange={(e) => setGiftWrap(e.target.checked)} />
-            <span className="cart-gift-box"><Icon icon="lucide:check" /></span>
-            Send as a gift. Include custom message
-          </label>
+          <div className="cart-gift-block">
+            <label className="cart-gift">
+              <input
+                type="checkbox"
+                checked={giftWrap}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setGiftWrap(checked);
+                  if (!checked) setGiftMessage("");
+                }}
+              />
+              <span className="cart-gift-box"><Icon icon="lucide:check" /></span>
+              <span className="cart-gift-text">Send as a gift. Include custom message</span>
+              <span className="cart-gift-charge">+{formatMoneyShort(GIFT_CHARGE)}</span>
+            </label>
+            {giftWrap && (
+              <div className="cart-gift-msg-wrap">
+                <textarea
+                  className="cart-gift-input"
+                  value={giftMessage}
+                  onChange={(e) => setGiftMessage(e.target.value)}
+                  placeholder="Write your gift message…"
+                  rows={3}
+                  maxLength={GIFT_MESSAGE_MAX}
+                />
+                <div className="cart-gift-msg-foot">
+                  <span className="cart-gift-hint">
+                    <Icon icon="lucide:info" />
+                    Printed on the gift card — keep it personal. No phone numbers or links.
+                  </span>
+                  <span className="cart-gift-count">{giftMessage.length}/{GIFT_MESSAGE_MAX}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Extra-off progress ── */}
@@ -432,8 +475,8 @@ const Cart = () => {
       <div className={`cart-stickybar ${showSticky ? "is-visible" : ""}`}>
         <div className="cart-stickybar-inner">
           <div className="cart-stickybar-left">
-            <span className="cart-stickybar-label">SUBTOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
-            <strong className="cart-stickybar-amount">{formatMoney(selectedSubtotal || getSubtotal())}</strong>
+            <span className="cart-stickybar-label">TOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
+            <strong className="cart-stickybar-amount">{formatMoney(cartTotal)}</strong>
             {selectedSavings > 0 && (
               <span className="cart-stickybar-save">You save {formatMoneyShort(selectedSavings)} on this order!</span>
             )}

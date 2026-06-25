@@ -24,6 +24,7 @@ const COD_MAX_AMOUNT = numberEnv("VITE_COD_MAX_AMOUNT");
 const PREPAID_DISCOUNT_AMOUNT = numberEnv("VITE_PREPAID_DISCOUNT_AMOUNT");
 const COD_FEE_AMOUNT = numberEnv("VITE_COD_FEE_AMOUNT");
 const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
+const GIFT_CHARGE_AMOUNT = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
 const EMPTY_CHECKOUT_ADDRESS = {
   label: "Home",
   name: "",
@@ -83,6 +84,9 @@ const Checkout = () => {
     const filtered = cart.filter((item) => selectedKeys.has(`${item.id}-${item.colorId ?? ""}`));
     return filtered.length ? filtered : cart;
   })();
+  // Gift preference carried over from the cart page.
+  const [isGift] = useState(() => sessionStorage.getItem("bk_cart_gift") === "1");
+  const [giftMessage] = useState(() => sessionStorage.getItem("bk_cart_gift_message") || "");
   const checkoutCart = selectedCart.map((item) => {
     const stockInfo = getProductStockInfo(item, item.colorId);
     const isUnavailable = stockInfo.isOutOfStock || Number(item.quantity || 1) > stockInfo.quantity;
@@ -150,8 +154,9 @@ const Checkout = () => {
   const returnDeliveryDeduction = shippingDiscountReason === "first_order" ? 0 : shippingCharge;
   const paymentFee = payableCart.length > 0 && activePayment === "cod" ? COD_FEE_AMOUNT : 0;
   const platformFee = payableCart.length > 0 ? PLATFORM_FEE_AMOUNT : 0;
+  const giftCharge = payableCart.length > 0 && isGift ? GIFT_CHARGE_AMOUNT : 0;
   const paymentDiscount = payableCart.length > 0 && activePayment === "online" ? Math.min(PREPAID_DISCOUNT_AMOUNT, subtotal + finalShippingCharge) : 0;
-  const orderGrossTotal = Math.max(0, subtotal + finalShippingCharge + paymentFee + platformFee - paymentDiscount);
+  const orderGrossTotal = Math.max(0, subtotal + finalShippingCharge + paymentFee + platformFee + giftCharge - paymentDiscount);
   const effectiveCouponDiscount = Math.min(discountAmount, orderGrossTotal);
   const grossAfterCoupon = Math.max(0, orderGrossTotal - effectiveCouponDiscount);
   const walletUsableAmount = useWallet ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
@@ -522,6 +527,8 @@ const Checkout = () => {
         wallet_amount: walletUsableAmount,
         payment_fee: paymentFee + platformFee,
         payment_discount: paymentDiscount,
+        is_gift: isGift,
+        gift_message: isGift ? giftMessage : null,
         payment_method: activePayment === 'cod' ? 'COD' : 'Prepaid',
         payment_status: activePayment === 'cod' ? 'Pending' : 'Paid',
         items: payableCart.map((item) => ({
@@ -549,6 +556,7 @@ const Checkout = () => {
         subtotal_amount: subtotal,
         discount_amount: effectiveCouponDiscount,
         wallet_amount: walletUsableAmount,
+        is_gift: isGift,
       });
       const razorpayOrder = orderResponse.data;
       if (!orderResponse.status || orderResponse.status >= 400) throw new Error(razorpayOrder.message || "Unable to start payment.");
@@ -723,6 +731,7 @@ const Checkout = () => {
                   ...(unavailableCart.length > 0 ? [{ label: "Unavailable items", value: `${unavailableCart.length} excluded`, tone: "accent" }] : []),
                   { label: "Platform fee", value: `₹${platformFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
                   ...(paymentFee > 0 ? [{ label: "COD charge", value: `₹${paymentFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "accent" }] : []),
+                  ...(giftCharge > 0 ? [{ label: "Gift wrap & message", value: `₹${giftCharge.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "accent" }] : []),
                   { label: "Delivery", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>₹{shippingCharge.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</s>{" "}Free</> : "Free", tone: shippingLoading ? undefined : "success" },
                   ...(paymentDiscount > 0 ? [{ label: "Prepaid discount", value: `-₹${paymentDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "success" }] : []),
                   ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-₹${effectiveCouponDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "success" }] : []),
@@ -908,6 +917,7 @@ const Checkout = () => {
                       ...(paymentDiscount > 0 ? [{ label: "Prepaid payment discount", value: `-₹${paymentDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "success" }] : []),
                       ...(paymentFee > 0 ? [{ label: "COD charge", value: `₹${paymentFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "accent" }] : []),
                       { label: "Platform fee", value: `₹${platformFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+                      ...(giftCharge > 0 ? [{ label: "Gift wrap & message", value: `₹${giftCharge.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "accent" }] : []),
                       ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-₹${walletUsableAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: "success" }] : []),
                     ]}
                     logistics={shippingCharge > 0 ? {
@@ -1024,6 +1034,12 @@ const Checkout = () => {
                       <span className="text-gray-500 uppercase tracking-widest font-bold">Platform fee</span>
                       <span className="font-bold text-[#3D2817]">₹{platformFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
+                    {giftCharge > 0 && (
+                      <div className="flex justify-between items-center text-xs text-[#800020] font-bold">
+                        <span className="uppercase tracking-widest">Gift wrap &amp; message</span>
+                        <span>₹{giftCharge.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
                     {walletUsableAmount > 0 && (
                       <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
                         <span>WALLET USED</span>
