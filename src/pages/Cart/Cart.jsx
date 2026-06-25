@@ -56,6 +56,7 @@ const Cart = () => {
   const [selected, setSelected] = useState(() => new Set());
   const [giftWrap, setGiftWrap] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
+  const [showGiftTip, setShowGiftTip] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
@@ -296,7 +297,16 @@ const Cart = () => {
                 }}
               />
               <span className="cart-gift-box"><Icon icon="lucide:check" /></span>
-              <span className="cart-gift-text">Send as a gift. Include custom message</span>
+              <span className="cart-gift-text">
+                Send as a gift. Include custom message
+                <span
+                  className={`cart-gift-info ${showGiftTip ? "is-open" : ""}`}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGiftTip((v) => !v); }}
+                >
+                  <Icon icon="lucide:info" />
+                  <span className="cart-gift-tip">Printed on the gift card — keep it personal. No phone numbers, links, or vulgar content.</span>
+                </span>
+              </span>
               <span className="cart-gift-charge">+{formatMoneyShort(GIFT_CHARGE)}</span>
             </label>
             {giftWrap && (
@@ -309,13 +319,7 @@ const Cart = () => {
                   rows={3}
                   maxLength={GIFT_MESSAGE_MAX}
                 />
-                <div className="cart-gift-msg-foot">
-                  <span className="cart-gift-hint">
-                    <Icon icon="lucide:info" />
-                    Printed on the gift card — keep it personal. No phone numbers or links.
-                  </span>
-                  <span className="cart-gift-count">{giftMessage.length}/{GIFT_MESSAGE_MAX}</span>
-                </div>
+                <span className="cart-gift-count">{giftMessage.length}/{GIFT_MESSAGE_MAX}</span>
               </div>
             )}
           </div>
