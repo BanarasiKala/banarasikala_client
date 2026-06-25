@@ -77,11 +77,6 @@
   line-height: 1.55;
 }
 
-/* The "View all FAQs" toggle is only needed on mobile, where the list is long. */
-.bk-faq-toggle {
-  display: none;
-}
-
 @media (max-width: 768px) {
   .bk-faq-shell {
     padding: 20px 14px 24px;
@@ -100,37 +95,5 @@
     min-height: 36px;
     font-size: 11px;
     padding-inline: 13px;
-  }
-
-  /* Collapsed: only show the first 4 questions to save vertical space. */
-  .bk-faq-grid:not(.show-all) .bk-faq-item:nth-child(n + 5) {
-    display: none;
-  }
-
-  .bk-faq-toggle {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    width: fit-content;
-    margin: 14px auto 0;
-    padding: 8px 16px;
-    color: #d4af37;
-    background: rgba(255, 246, 232, 0.08);
-    border: 1px solid rgba(212, 175, 55, 0.4);
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .bk-faq-toggle[aria-expanded="true"] svg {
-    transform: rotate(180deg);
-  }
-
-  .bk-faq-toggle svg {
-    color: #d4af37;
-    transition: transform 0.2s ease;
   }
 }
