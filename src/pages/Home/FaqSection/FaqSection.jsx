@@ -16,6 +16,7 @@ const FAQ_ITEMS = [
 
 const FaqSection = () => {
   const [openIndex, setOpenIndex] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   const toggleItem = (index) => {
     setOpenIndex((current) => (current === index ? null : index));
@@ -25,7 +26,7 @@ const FaqSection = () => {
     <section className="bk-faq-section" aria-labelledby="faq-title">
       <div className="bk-faq-shell">
         <h2 id="faq-title">Frequently Asked Questions</h2>
-        <div className="bk-faq-grid">
+        <div className={`bk-faq-grid ${showAll ? "show-all" : ""}`}>
           {FAQ_ITEMS.map(([question, answer], index) => {
             const isOpen = openIndex === index;
 
@@ -55,6 +56,17 @@ const FaqSection = () => {
             );
           })}
         </div>
+        <button
+          type="button"
+          className="bk-faq-toggle"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((current) => !current)}
+        >
+          {showAll ? "Show less" : `View all FAQs (${FAQ_ITEMS.length})`}
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
       </div>
     </section>
   );
