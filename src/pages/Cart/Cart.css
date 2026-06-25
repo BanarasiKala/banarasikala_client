@@ -53,7 +53,7 @@
   background: #fff4ea;
   border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px;
   box-shadow: 0 6px 18px rgba(88, 39, 13, 0.06);
   display: flex;
   flex-direction: column;
@@ -318,7 +318,7 @@
   background: #fff4ea;
   border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 10px;
   box-shadow: 0 4px 14px rgba(88, 39, 13, 0.05);
   display: flex;
   flex-direction: column;
@@ -371,7 +371,7 @@
   background: #fff4ea;
   border: 1px dashed rgba(128, 0, 32, 0.3);
   border-radius: 12px;
-  padding: 11px 12px;
+  padding: 10px;
   text-decoration: none;
   box-shadow: 0 4px 14px rgba(88, 39, 13, 0.05);
 }
