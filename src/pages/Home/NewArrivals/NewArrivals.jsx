@@ -35,7 +35,6 @@ const NewArrivals = () => {
     const controller = new AbortController();
     const params = new URLSearchParams({
       status: "active",
-      storeFrontVisibility: "true",
       newArrival: "true",
       limit: "20",
       view: "home",

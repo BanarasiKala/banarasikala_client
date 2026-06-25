@@ -35,7 +35,7 @@ const PopularSarees = () => {
     const controller = new AbortController();
     const params = new URLSearchParams({
       status: "active",
-      storeFrontVisibility: "true",
+      specialCollection: "true",
       limit: "20",
       view: "home",
     });
