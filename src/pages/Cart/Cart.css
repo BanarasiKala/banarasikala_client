@@ -75,6 +75,17 @@
   font-size: 20px;
 }
 
+.cart-summary-bag-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .cart-summary-info {
   flex: 1;
   min-width: 0;

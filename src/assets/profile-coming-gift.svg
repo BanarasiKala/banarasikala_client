@@ -1,0 +1,59 @@
+<svg width="310" height="205" viewBox="0 0 310 205" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="boxFront" x1="111" y1="78" x2="214" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d85242"/>
+      <stop offset="1" stop-color="#8f1020"/>
+    </linearGradient>
+    <linearGradient id="boxSide" x1="203" y1="72" x2="252" y2="151" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ef6252"/>
+      <stop offset="1" stop-color="#a71927"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="127" y1="29" x2="196" y2="125" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe188"/>
+      <stop offset="0.44" stop-color="#f5a932"/>
+      <stop offset="1" stop-color="#b66c10"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="47" y1="125" x2="128" y2="199" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff6e9"/>
+      <stop offset="1" stop-color="#efd8b8"/>
+    </linearGradient>
+    <filter id="softShadow" x="57" y="54" width="196" height="147" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="10"/>
+      <feGaussianBlur stdDeviation="10"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.35 0 0 0 0 0.13 0 0 0 0 0.07 0 0 0 0.2 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+  <g opacity="0.95">
+    <path d="M55 47l5 12 12 5-12 5-5 12-5-12-12-5 12-5 5-12Z" fill="#e6ae47"/>
+    <path d="M13 98l4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" fill="#e6ae47"/>
+    <path d="M237 39l3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" fill="#e6ae47"/>
+    <path d="M276 85l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z" fill="#e6ae47"/>
+    <path d="M295 153l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z" fill="#e6ae47"/>
+    <path d="M91 25l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z" fill="#e6ae47"/>
+  </g>
+  <g filter="url(#softShadow)">
+    <path d="M94 73h113l-16 31H81L94 73Z" fill="#ec594a"/>
+    <path d="M207 73l41 15-23 31-34-15 16-31Z" fill="#f16a52"/>
+    <path d="M81 104h110v75H81v-75Z" fill="url(#boxFront)"/>
+    <path d="M191 104l34 15v61l-34-1v-75Z" fill="url(#boxSide)"/>
+    <path d="M129 73h23v106h-23V73Z" fill="url(#gold)"/>
+    <path d="M177 83l18 7-18 82h-24l24-89Z" fill="#f6b23b" opacity="0.96"/>
+    <path d="M81 104h110l34 15" stroke="#7a0f1b" stroke-opacity="0.22" stroke-width="2"/>
+    <path d="M191 104v75" stroke="#7a0f1b" stroke-opacity="0.18" stroke-width="2"/>
+    <path d="M139 65c-8-23-4-44 11-49 14-4 27 15 32 39-18-6-32-3-43 10Z" fill="url(#gold)"/>
+    <path d="M169 63c16-21 36-31 49-21 13 10 6 33-15 50-8-17-19-26-34-29Z" fill="url(#gold)"/>
+    <path d="M160 67c-20-7-35-21-30-34 5-14 26-12 47 4-14 7-19 17-17 30Z" fill="#f6b23b"/>
+    <path d="M162 68c21-11 43-12 50 1 7 13-8 30-33 38 4-16-2-28-17-39Z" fill="#f4a828"/>
+    <path d="M151 58c9 6 18 7 28 3" stroke="#a8560d" stroke-opacity="0.32" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g>
+    <circle cx="79" cy="153" r="44" fill="url(#badge)" stroke="#fffaf0" stroke-width="2"/>
+    <text x="79" y="145" text-anchor="middle" fill="#6e0018" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">COMING</text>
+    <text x="79" y="168" text-anchor="middle" fill="#6e0018" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">SOON</text>
+  </g>
+</svg>

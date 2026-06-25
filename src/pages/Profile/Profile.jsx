@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
+import comingSoonGift from "../../assets/profile-coming-gift.svg";
 import "./Profile.css";
 
 const SUPPORT_ERROR_MESSAGE = "Something went wrong. Please contact support or try again later.";
@@ -63,6 +64,23 @@ const emptyAddress = {
 };
 
 const ADDRESS_LABEL_OPTIONS = ["Home", "Work", "Other"];
+const getProfileAddressIcon = (label = "") => {
+  const normalized = String(label || "").toLowerCase();
+  if (normalized.includes("work")) return "lucide:briefcase-business";
+  if (normalized.includes("home")) return "lucide:house";
+  return "lucide:map-pin-house";
+};
+
+const getProfileAddressLine = (address = {}) => {
+  const stateLine = [address.state, address.pincode ? `- ${address.pincode}` : ""].filter(Boolean).join(" ");
+  return [
+    address.house_building || address.address_line1,
+    address.area_street || address.address_line2,
+    address.city,
+    stateLine,
+  ].filter(Boolean).join(", ") || "-";
+};
+
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 const DEFAULT_CENTER = { lat: 25.3176, lng: 82.9739 }; // Varanasi
 
@@ -793,7 +811,7 @@ export default function Profile() {
             </div>
 
             <div className="profile-meta">
-              <span className="profile-kicker">Your Account</span>
+              <span className="profile-kicker">Hello,</span>
               {loading && !profile ? (
                 <>
                   <span className="profile-skeleton profile-skeleton-title" />
@@ -810,7 +828,7 @@ export default function Profile() {
                     <span><Icon icon="lucide:mail" />{profile?.email || "-"}</span>
                     <span><Icon icon="lucide:phone" />{profile?.phone || "-"}</span>
                   </div>
-                  <p>Member since {toDateString(profile?.createdAt)}</p>
+                  <p className="profile-member-pill"><Icon icon="lucide:crown" />Member since {toDateString(profile?.createdAt)}</p>
                 </>
               )}
             </div>
@@ -818,7 +836,7 @@ export default function Profile() {
 
           <div className="profile-hero-actions">
             {!isEditing ? (
-              <button type="button" className="profile-btn profile-btn-primary" onClick={() => setIsEditing(true)} disabled={loading && !profile}>
+              <button type="button" className="profile-btn profile-edit-profile-btn" onClick={() => setIsEditing(true)} disabled={loading && !profile}>
                 <Icon icon="lucide:pencil" />
                 Edit Profile
               </button>
@@ -863,38 +881,71 @@ export default function Profile() {
           </section>
         )}
 
-        <section className="profile-quick-grid" aria-label="Account shortcuts">
-          <button type="button" className="profile-quick-card" onClick={() => navigate("/my-orders")}>
-            <Icon icon="lucide:package-check" />
-            <strong>Your Orders</strong>
-            <span>Track, return or reorder</span>
-          </button>
-          <button type="button" className="profile-quick-card" onClick={() => navigate("/wishlist")}>
-            <Icon icon="lucide:heart" />
-            <strong>Wishlist</strong>
-            <span>Saved sarees and picks</span>
-          </button>
-          <button type="button" className="profile-quick-card" onClick={() => navigate("/cart")}>
-            <Icon icon="lucide:shopping-bag" />
-            <strong>Shopping Bag</strong>
-            <span>Continue checkout</span>
-          </button>
-          <button type="button" className="profile-quick-card" onClick={goResetPassword}>
-            <Icon icon="lucide:shield-check" />
-            <strong>Login & Security</strong>
-            <span>Reset password by email OTP</span>
-          </button>
+        <section className="profile-account-section">
+          <h2 className="profile-block-title">My Account</h2>
+          <div className="profile-quick-grid" aria-label="Account shortcuts">
+            <button type="button" className="profile-quick-card" onClick={() => navigate("/my-orders")}>
+              <span className="profile-quick-icon"><Icon icon="lucide:package" /></span>
+              <span className="profile-quick-copy">
+                <strong>Your Orders</strong>
+                <span>Track, return or reorder</span>
+              </span>
+              <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />
+            </button>
+            <button type="button" className="profile-quick-card" onClick={() => navigate("/wishlist")}>
+              <span className="profile-quick-icon"><Icon icon="lucide:heart" /></span>
+              <span className="profile-quick-copy">
+                <strong>Wishlist</strong>
+                <span>Saved sarees and picks</span>
+              </span>
+              <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />
+            </button>
+            <button type="button" className="profile-quick-card" onClick={() => navigate("/cart")}>
+              <span className="profile-quick-icon"><Icon icon="lucide:shopping-bag" /></span>
+              <span className="profile-quick-copy">
+                <strong>Shopping Bag</strong>
+                <span>Continue checkout</span>
+              </span>
+              <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />
+            </button>
+            <button type="button" className="profile-quick-card" onClick={goResetPassword}>
+              <span className="profile-quick-icon"><Icon icon="lucide:shield-check" /></span>
+              <span className="profile-quick-copy">
+                <strong>Login & Security</strong>
+                <span>Reset password by email OTP</span>
+              </span>
+              <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />
+            </button>
+          </div>
+        </section>
+
+        <section className="profile-coming-panel" aria-label="Upcoming account benefits">
+          <div className="profile-coming-art" aria-hidden="true">
+            <img src={comingSoonGift} alt="" />
+          </div>
+          <div className="profile-coming-copy">
+            <h2>Exciting Features Coming Soon!</h2>
+            <p>We're working on something special for you. Stay tuned!</p>
+          </div>
+          <div className="profile-coming-features">
+            <span><Icon icon="lucide:medal" />Rewards</span>
+            <span><Icon icon="lucide:ticket-percent" />Offers</span>
+            <span><Icon icon="lucide:gem" />Exclusive Benefits</span>
+          </div>
         </section>
 
         <div className="profile-grid">
           <section className="profile-panel profile-panel-wide">
-            <div className="profile-section-title profile-section-title-row">
-              <Icon icon="lucide:map-pin-house" />
-              <div>
-                <h2>Your Addresses</h2>
-                <p>Save up to 3 delivery addresses for faster checkout.</p>
-              </div>
-              <span className="profile-count-pill">{addresses.length}/3 saved</span>
+            <div className="profile-address-heading-row">
+              <h2 className="profile-block-title">My Addresses</h2>
+              {addresses.length < 3 || editingAddressId ? (
+                <button type="button" className="profile-add-address-trigger" onClick={() => setShowAddressForm(true)}>
+                  <Icon icon="lucide:plus" />
+                  <span>Add New Address</span>
+                </button>
+              ) : (
+                <span className="profile-count-pill">{addresses.length}/3 saved</span>
+              )}
             </div>
 
             {addrError && <p className="profile-error" ref={addressErrorRef}>{addrError}</p>}
@@ -909,40 +960,40 @@ export default function Profile() {
                 <>
                   {addresses.map((address) => (
                     <article className="profile-address" key={address.id}>
-                      <div className="profile-address-main">
-                        <strong>
-                          {address.label || "Address"}
-                          {address.is_default ? <span className="profile-badge">Default</span> : null}
-                        </strong>
-                        <div className="profile-address-person">
-                          {address.name || "-"} <span>{address.phone || "-"}</span>
+                      <div className="profile-address-content">
+                        <span className="profile-address-icon">
+                          <Icon icon={getProfileAddressIcon(address.label)} />
+                        </span>
+                        <div className="profile-address-main">
+                          <strong>
+                            {address.label || "Address"}
+                            {address.is_default ? <span className="profile-badge">Default</span> : null}
+                          </strong>
+                          <p className="profile-address-person">{address.name || "-"}</p>
+                          <p>{getProfileAddressLine(address)}</p>
+                          <p>{address.country || "India"}</p>
+                          <p>Phone: {address.phone || "-"}</p>
+                          {address.alternate_phone ? <p>Alternate: {address.alternate_phone}</p> : null}
+                          {address.landmark ? <p>Landmark: {address.landmark}</p> : null}
+                          {address.map_address ? (
+                            <p className="profile-map-address-line">
+                              <Icon icon="lucide:map-pin" />
+                              Map: {address.map_address}
+                            </p>
+                          ) : null}
                         </div>
-                        {address.alternate_phone ? <p>Alternate: {address.alternate_phone}</p> : null}
-                        <p>
-                          {address.house_building || address.address_line1}
-                          {address.area_street || address.address_line2 ? `, ${address.area_street || address.address_line2}` : ""}
-                          {address.city ? `, ${address.city}` : ""}
-                          {address.state ? `, ${address.state}` : ""}
-                          {address.pincode ? ` - ${address.pincode}` : ""}
-                        </p>
-                        {address.landmark ? <p>Landmark: {address.landmark}</p> : null}
-                        {address.map_address ? (
-                          <p className="profile-map-address-line">
-                            <Icon icon="lucide:map-pin" />
-                            Map: {address.map_address}
-                          </p>
-                        ) : null}
                       </div>
                       <div className="profile-address-actions">
-                        <button type="button" className="profile-btn" onClick={() => onEditAddress(address)}>
-                          Edit
+                        <button type="button" className="profile-address-action" onClick={() => onSetDefault(address)}>
+                          <Icon icon="lucide:star" />
+                          <span>Set as Default</span>
                         </button>
-                        {!address.is_default && (
-                          <button type="button" className="profile-btn" onClick={() => onSetDefault(address)}>
-                            Set Default
-                          </button>
-                        )}
-                        <button type="button" className="profile-btn" onClick={() => onDeleteAddress(address.id)}>
+                        <button type="button" className="profile-address-action" onClick={() => onEditAddress(address)}>
+                          <Icon icon="lucide:pencil" />
+                          <span>Edit</span>
+                        </button>
+                        <button type="button" className="profile-address-action" onClick={() => onDeleteAddress(address.id)}>
+                          <Icon icon="lucide:trash-2" />
                           {deletingAddressId === address.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
@@ -953,14 +1004,8 @@ export default function Profile() {
               )}
             </div>
 
-            {addresses.length < 3 || editingAddressId ? (
+            {(addresses.length < 3 || editingAddressId) && showAddressForm ? (
               <div className="profile-address-form">
-                {!showAddressForm ? (
-                  <button type="button" className="profile-add-address-trigger" onClick={() => setShowAddressForm(true)}>
-                    <Icon icon="lucide:plus-circle" />
-                    <span>Add new address</span>
-                  </button>
-                ) : (
                   <div className="profile-address-modal" role="dialog" aria-modal="true" aria-label={editingAddressId ? "Edit address" : "Add new address"}>
                     <div className="profile-address-modal-card">
                       <button type="button" className="profile-address-modal-close" onClick={resetAddressForm} aria-label="Close address form">
@@ -1113,12 +1158,20 @@ export default function Profile() {
                 </div>
                     </div>
                   </div>
-                )}
               </div>
-            ) : (
+            ) : addresses.length >= 3 && !editingAddressId ? (
               <p className="profile-empty-text">You reached the maximum of 3 saved addresses.</p>
-            )}
+            ) : null}
           </section>
+
+          <button type="button" className="profile-help-card" onClick={() => navigate("/contact")}>
+            <span className="profile-help-icon"><Icon icon="lucide:headphones" /></span>
+            <span className="profile-help-copy">
+              <strong>Need help?</strong>
+              <span>Our customer support team is here to help you.</span>
+            </span>
+            <Icon className="profile-help-arrow" icon="lucide:chevron-right" />
+          </button>
         </div>
       </section>
       <LocationPickerModal

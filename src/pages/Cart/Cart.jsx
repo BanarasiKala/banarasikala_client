@@ -333,7 +333,12 @@ const Cart = () => {
         <div className="cart-summary">
           <div className="cart-summary-top">
             <div className="cart-summary-bag">
-              <Icon icon="lucide:shopping-bag" />
+              <svg className="cart-summary-bag-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7.25 8.35h9.5c.86 0 1.59.65 1.69 1.51l.92 8.2A2.15 2.15 0 0 1 17.22 20.45H6.78a2.15 2.15 0 0 1-2.14-2.39l.92-8.2c.1-.86.83-1.51 1.69-1.51Z" />
+                <path d="M8.9 8.35V6.9a3.1 3.1 0 0 1 6.2 0v1.45" />
+                <path d="M9.45 11.35h.01" />
+                <path d="M14.55 11.35h.01" />
+              </svg>
             </div>
             <div className="cart-summary-info">
               <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your bag</strong>
