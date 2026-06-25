@@ -75,6 +75,12 @@ const Checkout = () => {
   const payableCart = checkoutCart.filter((item) => !item.checkoutUnavailable);
   const unavailableCart = checkoutCart.filter((item) => item.checkoutUnavailable);
   const subtotal = payableCart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
+  // Slowest item determines the order's processing time. -1 means no item has a
+  // per-product value, so the delivery estimate falls back to the env default.
+  const maxProcessingDays = payableCart.reduce((max, item) => {
+    const days = Number(item.processing_days);
+    return Number.isFinite(days) && days > max ? days : max;
+  }, -1);
   const isProductCodAllowed = payableCart.length > 0 && payableCart.every(item => Array.isArray(item.payment_options) && item.payment_options.includes("cod"));
   const isCodAllowed = isProductCodAllowed && subtotal <= COD_MAX_AMOUNT;
   const [activePayment, setActivePayment] = useState("online");
@@ -440,7 +446,7 @@ const Checkout = () => {
 
         if (!cancelled) {
           setShippingCharge(selectedCourier?.rate || 0);
-          setShippingDeliveryDate(selectedCourier?.etd ? formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedCourier.etd)) : null);
+          setShippingDeliveryDate(selectedCourier?.etd ? formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedCourier.etd, maxProcessingDays >= 0 ? maxProcessingDays : undefined)) : null);
           setSelectedShippingCourier(selectedCourier || null);
         }
       } catch (error) {
@@ -460,7 +466,7 @@ const Checkout = () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [formData.pincode, payableCart.length, totalWeightKg, activePayment, subtotal]);
+  }, [formData.pincode, payableCart.length, totalWeightKg, activePayment, subtotal, maxProcessingDays]);
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();

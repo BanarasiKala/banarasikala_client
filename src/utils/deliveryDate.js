@@ -1,6 +1,21 @@
-import { numberEnv } from "./env";
+const DEFAULT_PROCESSING_DAYS = 4;
 
-const ORDER_PROCESSING_DAYS = numberEnv("VITE_ORDER_PROCESSING_DAYS");
+// Site-wide fallback. Reads VITE_ORDER_PROCESSING_DAYS but never throws:
+// if it is missing/invalid, the default (4) is used instead.
+const envProcessingDays = () => {
+  const value = Number(import.meta.env.VITE_ORDER_PROCESSING_DAYS);
+  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_PROCESSING_DAYS;
+};
+
+// Resolve the processing days for a product: per-product value when set,
+// otherwise the env fallback, otherwise the default (4).
+export const resolveProcessingDays = (productDays) => {
+  if (productDays !== null && productDays !== undefined && productDays !== "") {
+    const value = Number(productDays);
+    if (Number.isFinite(value) && value >= 0) return value;
+  }
+  return envProcessingDays();
+};
 
 export const addDays = (date, days) => {
   const next = new Date(date);
@@ -24,7 +39,7 @@ export const getShiprocketEtaDate = (eta) => {
   return null;
 };
 
-export const getEstimatedDeliveryDate = (eta) => {
+export const getEstimatedDeliveryDate = (eta, processingDays) => {
   const shiprocketDate = getShiprocketEtaDate(eta);
-  return addDays(shiprocketDate || new Date(), ORDER_PROCESSING_DAYS);
+  return addDays(shiprocketDate || new Date(), resolveProcessingDays(processingDays));
 };

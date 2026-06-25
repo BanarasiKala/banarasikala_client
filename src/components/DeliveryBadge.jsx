@@ -4,12 +4,12 @@ import { getEstimatedDeliveryDate } from "../utils/deliveryDate";
 
 // Shown only when the user has granted GPS location access.
 // Uses local date math (no API call) so it's safe to render inside any product card.
-export default function DeliveryBadge() {
+export default function DeliveryBadge({ processingDays }) {
   const { pincode, locationSource } = useDeliveryLocation();
 
   if (!pincode) return null;
 
-  const date = getEstimatedDeliveryDate();
+  const date = getEstimatedDeliveryDate(undefined, processingDays);
   const formatted = date.toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",

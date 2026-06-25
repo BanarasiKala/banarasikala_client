@@ -468,7 +468,7 @@ const Collection = () => {
               </div>
               {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
             </div>
-            <DeliveryBadge />
+            <DeliveryBadge processingDays={product.processing_days} />
             <button
               type="button"
               className="collection-atc-btn"

@@ -937,7 +937,7 @@ const ProductDetail = () => {
         if (!cancelled) {
           setBuyNowShipping(selected ? {
             ...selected,
-            deliveryDate: formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selected.etd)),
+            deliveryDate: formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selected.etd, product?.processing_days)),
           } : { unavailable: true, message: "Delivery is not possible at this location right now." });
         }
       } catch (error) {
@@ -1579,7 +1579,7 @@ const ProductDetail = () => {
         setDeliveryQuote({ unavailable: true });
         return;
       }
-      const estimatedDate = getEstimatedDeliveryDate(selectedOption.etd);
+      const estimatedDate = getEstimatedDeliveryDate(selectedOption.etd, product?.processing_days);
       setDeliveryQuote({
         option: selectedOption,
         deliveryDate: formatEstimatedDeliveryDate(estimatedDate),

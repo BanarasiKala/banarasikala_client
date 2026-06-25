@@ -418,7 +418,7 @@ const Wishlist = () => {
                             </>
                           )}
                         </div>
-                        {!cardIsOos && <DeliveryBadge />}
+                        {!cardIsOos && <DeliveryBadge processingDays={item.processing_days} />}
                         <div className="wishlist-card-actions">
                           {actionBtn}
                         </div>

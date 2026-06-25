@@ -256,7 +256,7 @@ const PopularSarees = () => {
                         </div>
                         {mrp > sell && <span className="bk-popular-mrp"><span className="bk-popular-mrp-val">{formatMoney(mrp)}</span></span>}
                       </div>
-                      <DeliveryBadge />
+                      <DeliveryBadge processingDays={product.processing_days} />
                       <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                         Add to Cart
                       </button>

@@ -254,7 +254,7 @@ const NewArrivals = () => {
                           </div>
                           {mrp > sell && <span className="bk-arrival-mrp"><span className="bk-arrival-mrp-val">{formatMoney(mrp)}</span></span>}
                         </div>
-                        <DeliveryBadge />
+                        <DeliveryBadge processingDays={product.processing_days} />
                         <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                           Add to Cart
                         </button>
