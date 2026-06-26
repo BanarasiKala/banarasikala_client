@@ -712,7 +712,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const confirmAddressLine = selectedAddress ? getCheckoutAddressLine(selectedAddress) : formData.address;
 
   return (
-    <div className="ckw">
+    <div className={`ckw${wizardStep === "payment" ? " ckw--payment" : ""}`}>
       <div className="ckw-header">
         <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
           <Icon icon="lucide:arrow-left" />
@@ -1046,6 +1046,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 {shippingLoading ? "…" : "CONTINUE"}
               </button>
             </div>
+            <div className="ckw-pay-footer-spacer" />
           </>
         ) : (
           <>
