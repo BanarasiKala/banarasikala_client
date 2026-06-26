@@ -142,9 +142,9 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   // offered only up to the COD cap (VITE_COD_MAX_AMOUNT); larger orders are
   // prepaid only (mirrors the cart rule).
   const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT;
-  const [activePayment, setActivePayment] = useState("online");
+  const [activePayment, setActivePayment] = useState(null);
   // When paying online, which Razorpay method to open to (upi | card | netbanking | emi | wallet).
-  const [onlineMethod, setOnlineMethod] = useState("gpay");
+  const [onlineMethod, setOnlineMethod] = useState(null);
   const [loading, setLoading] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [shippingCharge, setShippingCharge] = useState(0);
@@ -201,6 +201,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const grossAfterCoupon = Math.max(0, orderGrossTotal - effectiveCouponDiscount);
   const walletUsableAmount = useWallet ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
   const total = Math.max(0, grossAfterCoupon - walletUsableAmount);
+  // Cart-page total: everything included except payment-method-specific fee/discount.
+  const cartPageTotal = Math.max(0, subtotal + finalShippingCharge + platformFee + giftCharge - discountAmount - walletUsableAmount);
   const totalWeightKg = payableCart.reduce((sum, item) => {
     const qty = Math.max(1, Number(item.quantity || 1));
     const raw = Number(item.weight || 0);
@@ -880,12 +882,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <Icon icon="lucide:chevron-right" className="ckw-deliver-summary-chev" />
             </button>
 
-            <div className="ckw-pay-total-bar">
-              <span className="ckw-pay-total-items">{selectedUnits} {selectedUnits === 1 ? "item" : "items"}</span>
-              <span className="ckw-pay-total-sep" />
-              <span className="ckw-pay-total-label">Order Total</span>
-              <span className="ckw-pay-total-amt">{money(total)}</span>
-            </div>
 
             {PREPAID_DISCOUNT_AMOUNT > 0 && (
               <div className="ckw-pay-offer-banner">
@@ -1010,14 +1006,46 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </div>
 
 
-            <button
-              type="button"
-              className="ckw-continue"
-              disabled={shippingLoading || payableCart.length === 0}
-              onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            >
-              {shippingLoading ? "CHECKING DELIVERY…" : `CONTINUE · ${money(total)}`}
-            </button>
+            <div className="ckw-pay-footer">
+              <div className="ckw-pay-footer-summary">
+                <div className="ckw-pay-footer-row">
+                  <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
+                  <span>{money(cartPageTotal)}</span>
+                </div>
+                {activePayment === "online" && paymentDiscount > 0 && (
+                  <div className="ckw-pay-footer-row ckw-pay-footer-saving">
+                    <span>Online discount</span>
+                    <span>-{money(paymentDiscount)}</span>
+                  </div>
+                )}
+                {activePayment === "cod" && paymentFee > 0 && (
+                  <div className="ckw-pay-footer-row ckw-pay-footer-cod">
+                    <span>COD charge</span>
+                    <span>+{money(paymentFee)}</span>
+                  </div>
+                )}
+                {effectiveCouponDiscount > 0 && (
+                  <div className="ckw-pay-footer-row ckw-pay-footer-saving">
+                    <span>Coupon ({appliedCoupon?.code})</span>
+                    <span>-{money(effectiveCouponDiscount)}</span>
+                  </div>
+                )}
+                {activePayment && (
+                  <div className="ckw-pay-footer-row ckw-pay-footer-total">
+                    <span>Order Total</span>
+                    <span>{money(total)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="ckw-continue"
+                disabled={shippingLoading || payableCart.length === 0 || !activePayment}
+                onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              >
+                {shippingLoading ? "…" : "CONTINUE"}
+              </button>
+            </div>
           </>
         ) : (
           <>

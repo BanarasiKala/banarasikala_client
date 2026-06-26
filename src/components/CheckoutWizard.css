@@ -1130,44 +1130,70 @@
 }
 
 /* Continue button */
-.ckw-pay-total-bar {
+/* ── Payment step sticky footer ─────────────────────────────────────────── */
+.ckw-pay-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 1px solid rgba(128, 0, 32, 0.14);
-  border-radius: 12px;
+  flex-direction: column;
+  margin: 8px -6px 0;
   background: #fff1e6;
+  border-top: 1px solid rgba(128, 0, 32, 0.14);
+  box-shadow: 0 -6px 20px rgba(74, 12, 12, 0.12);
 }
 
-.ckw-pay-total-items {
-  font-size: 12px;
-  font-weight: 500;
+.ckw-pay-footer-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px 8px;
+}
+
+.ckw-pay-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 400;
   color: #6a564a;
 }
 
-.ckw-pay-total-sep {
-  flex: 1;
-}
-
-.ckw-pay-total-label {
-  font-size: 12px;
+.ckw-pay-footer-row span:last-child {
   font-weight: 500;
-  color: #46130d;
+  color: #2a1a12;
 }
 
-.ckw-pay-total-amt {
+.ckw-pay-footer-saving,
+.ckw-pay-footer-saving span:last-child {
+  color: #107a46;
+}
+
+.ckw-pay-footer-cod,
+.ckw-pay-footer-cod span:last-child {
+  color: #c0392b;
+}
+
+.ckw-pay-footer-total {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(128, 0, 32, 0.2);
+  font-size: 13px;
+  font-weight: 500;
+  color: #2a1a12;
+}
+
+.ckw-pay-footer-total span:last-child {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: #6b0f17;
 }
 
 .ckw-continue {
   width: 100%;
-  margin-top: 4px;
-  padding: 16px;
+  margin: 0;
+  padding: 14px 16px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 0;
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
   color: #fff;
   font-size: 14px;
@@ -1175,6 +1201,7 @@
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: filter 0.15s ease;
+  box-shadow: none;
 }
 
 .ckw-continue:not(:disabled):hover {
