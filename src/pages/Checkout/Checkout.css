@@ -1256,6 +1256,9 @@
 }
 
 .checkout-page .profile-map-bottom .profile-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     justify-self: center;
     min-width: min(260px, 100%);
     border: 1px solid rgba(199, 146, 48, 0.28);
