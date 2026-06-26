@@ -17,6 +17,12 @@ import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
 import "../pages/Checkout/Checkout.css";
 import "./CheckoutWizard.css";
+import logoUpi from "../assets/logos/upi.png";
+import logoCards from "../assets/logos/cards.png";
+import logoNetBanking from "../assets/logos/netBanking.png";
+import logoEmi from "../assets/logos/emi.png";
+import logoWallets from "../assets/logos/wallets.png";
+import logoCod from "../assets/logos/cod.png";
 
 const PACKAGING_WEIGHT_KG = numberEnv("VITE_PACKAGING_WEIGHT_KG");
 const COD_MAX_AMOUNT = numberEnv("VITE_COD_MAX_AMOUNT");
@@ -923,7 +929,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Other UPI Apps</span>
                   <span className="ckw-pay-sub">Paytm, BHIM &amp; more</span>
                 </span>
-                <img src="/src/assets/logos/upi.png" alt="UPI" className="ckw-pay-logo-img" />
+                <img src={logoUpi} alt="UPI" className="ckw-pay-logo-img" />
               </button>
             </div>
 
@@ -939,7 +945,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Credit or Debit Card</span>
                   <span className="ckw-pay-sub">Visa, Mastercard, RuPay &amp; Amex</span>
                 </span>
-                <img src="/src/assets/logos/cards.png" alt="Cards" className="ckw-pay-logo-img" />
+                <img src={logoCards} alt="Cards" className="ckw-pay-logo-img" />
               </button>
             </div>
 
@@ -955,7 +961,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Net Banking</span>
                   <span className="ckw-pay-sub">All major banks supported</span>
                 </span>
-                <img src="/src/assets/logos/netBanking.png" alt="Net Banking" className="ckw-pay-logo-img" />
+                <img src={logoNetBanking} alt="Net Banking" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -967,7 +973,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">EMI</span>
                   <span className="ckw-pay-sub">Easy installments on cards</span>
                 </span>
-                <img src="/src/assets/logos/emi.png" alt="EMI" className="ckw-pay-logo-img" />
+                <img src={logoEmi} alt="EMI" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -979,7 +985,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Wallets</span>
                   <span className="ckw-pay-sub">Paytm, Mobikwik, Freecharge &amp; more</span>
                 </span>
-                <img src="/src/assets/logos/wallets.png" alt="Wallets" className="ckw-pay-logo-img" />
+                <img src={logoWallets} alt="Wallets" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -999,7 +1005,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                     {isCodAllowed ? "Pay with cash when your order arrives" : "This order is prepaid only"}
                   </span>
                 </span>
-                <img src="/src/assets/logos/cod.png" alt="Cash on Delivery" className="ckw-pay-logo-img" />
+                <img src={logoCod} alt="Cash on Delivery" className="ckw-pay-logo-img" />
               </button>
             </div>
 
