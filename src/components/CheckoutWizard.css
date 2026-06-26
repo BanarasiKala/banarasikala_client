@@ -1148,7 +1148,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 16px 8px;
+  padding: 8px 14px 6px;
 }
 
 .ckw-pay-footer-row {
@@ -1192,7 +1192,7 @@
 .ckw-continue {
   width: 100%;
   margin: 0;
-  padding: 14px 16px;
+  padding: 10px 14px calc(8px + env(safe-area-inset-bottom, 0px));
   border: 0;
   border-radius: 0;
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
