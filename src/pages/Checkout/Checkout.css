@@ -84,27 +84,19 @@
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    background:
-        linear-gradient(rgba(36, 16, 10, 0.58), rgba(36, 16, 10, 0.58)),
-        var(--bk-section-bg),
-        #4b2a20 !important;
-    background-size: 100% 100%, cover, 100% 100%;
-    background-position: center top;
-    backdrop-filter: blur(4px);
+    background: #fdf6ec !important;
     overflow: auto;
     overscroll-behavior: contain;
 }
 
 .checkout-page main {
-    display: grid;
-    place-items: center;
+    display: block;
     min-height: 100%;
-    padding: 18px;
-    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: 0;
 }
 
 .checkout-page-shell {
-    width: min(424px, 100%) !important;
+    width: 100% !important;
     max-width: none;
     margin: 0 auto;
     padding-left: 0 !important;
