@@ -685,47 +685,6 @@ const Cart = () => {
           })}
         </div>
 
-        {/* ── Payment method ── */}
-        <div className="cart-pricecard">
-          <div className="cart-pricecard-head">
-            <Icon icon="lucide:wallet" />
-            <strong>Payment method</strong>
-          </div>
-          <div className="cart-pay-grid">
-            <button
-              type="button"
-              className={`cart-pay-option ${activePayment === "online" ? "is-active" : ""}`}
-              onClick={() => setActivePayment("online")}
-            >
-              <Icon icon="lucide:shield-check" className="cart-pay-icon" />
-              <span className="cart-pay-name">Online Payment</span>
-              <small className="cart-pay-offer">
-                {PREPAID_DISCOUNT > 0 ? `${formatMoneyShort(PREPAID_DISCOUNT)} extra off` : "Pay securely online"}
-              </small>
-            </button>
-            <button
-              type="button"
-              disabled={!isCodAllowed}
-              className={`cart-pay-option ${activePayment === "cod" ? "is-active" : ""}`}
-              onClick={() => {
-                if (isCodAllowed) {
-                  setActivePayment("cod");
-                } else {
-                  showNotification(`Orders above ${formatMoneyShort(COD_MAX)} are prepaid only.`, "warning");
-                }
-              }}
-            >
-              <Icon icon="lucide:banknote" className="cart-pay-icon" />
-              <span className="cart-pay-name">Cash on Delivery</span>
-              <small className="cart-pay-offer">
-                {isCodAllowed
-                  ? `${formatMoneyShort(COD_FEE)} COD charge`
-                  : `Not available above ${formatMoneyShort(COD_MAX)}`}
-              </small>
-            </button>
-          </div>
-        </div>
-
         {/* ── Coupons & offers ── */}
         <div className="cart-pricecard">
           <div className="cart-pricecard-head">

@@ -19,18 +19,18 @@
 
 /* ── Shared checkbox ─────────────────────────────────────────────────── */
 .cart-check {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1.5px solid rgba(128, 0, 32, 0.4);
-  border-radius: 5px;
+  border-radius: 4px;
   background: #fff;
   color: #fff;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
@@ -436,7 +436,7 @@
 
 .cart-progress-row strong {
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 500;
   color: #3d2817;
 }
 
@@ -447,7 +447,7 @@
   background: rgba(128, 0, 32, 0.08);
   color: #800020;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -521,7 +521,7 @@
   border: 0;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: #46130d;
 }
 
@@ -531,7 +531,7 @@
   cursor: pointer;
   color: #800020;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -937,7 +937,7 @@
 
 .cart-stickybar-amount {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
   color: #46130d;
   line-height: 1.1;
 }
@@ -952,6 +952,7 @@
   flex: 1;
   padding: 13px;
   font-size: 11.5px;
+  font-weight: 600;
   letter-spacing: 0.06em;
 }
 
@@ -1132,7 +1133,7 @@
 }
 
 .cart-pricecard-head strong {
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -1234,7 +1235,7 @@
 
 .cart-coupon-applied-info strong {
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 500;
   color: #0c5c35;
 }
 
@@ -1249,7 +1250,7 @@
   background: transparent;
   color: #800020;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -1304,7 +1305,7 @@
   background: #fff;
   color: #800020;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 
@@ -1318,7 +1319,7 @@
 
 .cart-coupon-option-text strong {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
   color: #3d2817;
 }
 
@@ -1372,13 +1373,13 @@
 
 .cart-wallet-info strong {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: #3d2817;
 }
 
 .cart-wallet-info small {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   color: #2f7a55;
 }
 
@@ -1446,18 +1447,18 @@
 }
 
 .cart-price-row > span:last-child {
-  font-weight: 700;
+  font-weight: 500;
   color: #3d2817;
 }
 
 .cart-price-row--save > span {
   color: #107a46 !important;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .cart-price-free {
   color: #107a46 !important;
-  font-weight: 800 !important;
+  font-weight: 500 !important;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1482,7 +1483,7 @@
 
 .cart-price-total span {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: #3d2817;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1490,7 +1491,7 @@
 
 .cart-price-total strong {
   font-size: 17px;
-  font-weight: 900;
+  font-weight: 600;
   color: #800020;
 }
 
