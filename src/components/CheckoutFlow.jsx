@@ -167,6 +167,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [mapOpen, setMapOpen] = useState(false);
   const [addressSaving, setAddressSaving] = useState(false);
   const [deletingAddressId, setDeletingAddressId] = useState(null);
+  const [defaultingAddressId, setDefaultingAddressId] = useState(null);
   const [addrFormErrors, setAddrFormErrors] = useState({});
   const rootRef = useRef(null);
   const orderingRef = useRef(false);
@@ -391,6 +392,23 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       showNotification(error?.response?.data?.message || "Unable to delete address.", "warning");
     } finally {
       setDeletingAddressId(null);
+    }
+  };
+
+  const makeCheckoutAddressDefault = async (address) => {
+    if (!address?.id || address.is_default) return;
+    try {
+      setDefaultingAddressId(String(address.id));
+      await api.put(`/api/addresses/${address.id}`, { is_default: true });
+      setAddresses((prev) => prev.map((a) => ({
+        ...a,
+        is_default: String(a.id) === String(address.id),
+      })));
+      showNotification("Default address updated.", "success");
+    } catch (error) {
+      showNotification(error?.response?.data?.message || "Unable to update default address.", "warning");
+    } finally {
+      setDefaultingAddressId(null);
     }
   };
 
@@ -799,6 +817,17 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                         <button type="button" className="ckw-edit-btn" onClick={() => openAddressModal(address)}>
                           <Icon icon="lucide:pencil" /> EDIT ADDRESS
                         </button>
+                        {!address.is_default && (
+                          <button
+                            type="button"
+                            className="ckw-default-btn"
+                            onClick={() => makeCheckoutAddressDefault(address)}
+                            disabled={String(defaultingAddressId) === String(address.id)}
+                          >
+                            <Icon icon="lucide:star" />
+                            {String(defaultingAddressId) === String(address.id) ? "UPDATING..." : "MAKE THIS DEFAULT ADDRESS"}
+                          </button>
+                        )}
 
                         {isSel && (
                           <div className="ckw-instructions">
