@@ -1048,3 +1048,498 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ── Confirm Order step ────────────────────────────────────────────────── */
+.ckw-agree {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+}
+
+.ckw-agree-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f7e6d6;
+  color: #6b0f17;
+  font-size: 20px;
+}
+
+.ckw-agree p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #5d4435;
+}
+
+.ckw-agree a {
+  color: #6b0f17;
+  font-weight: 700;
+}
+
+/* Gold pay CTA (top + sticky bottom) */
+.ckw-pay-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f3c552, #e2a52e);
+  color: #4a0c0c;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(226, 165, 46, 0.32);
+  transition: filter 0.15s ease;
+}
+
+.ckw-pay-cta svg {
+  font-size: 19px;
+}
+
+.ckw-pay-cta:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+.ckw-pay-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ckw-pay-cta--sticky {
+  position: sticky;
+  bottom: 8px;
+  z-index: 5;
+}
+
+/* Bill */
+.ckw-bill {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+}
+
+.ckw-bill-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #5d4435;
+}
+
+.ckw-bill-row > span:last-child {
+  font-weight: 600;
+  color: #2a1a12;
+}
+
+.ckw-bill-total {
+  margin-top: 4px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(128, 0, 32, 0.12);
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b0f17;
+}
+
+.ckw-bill-total > span:last-child {
+  font-weight: 800;
+  color: #6b0f17;
+}
+
+.ckw-bill-savings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #107a46;
+}
+
+.ckw-bill-savings-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ckw-bill-savings-amt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ckw-bill-saving-line {
+  padding-left: 22px;
+  font-size: 12px;
+  color: #2f7a55;
+}
+
+.ckw-bill-saving-line > span:last-child {
+  color: #107a46;
+  font-weight: 600;
+}
+
+.ckw-bill-order-total {
+  margin-top: 4px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(128, 0, 32, 0.12);
+  font-size: 15px;
+  font-weight: 800;
+  color: #2a1a12;
+}
+
+.ckw-bill-order-total > span:last-child {
+  font-size: 17px;
+  font-weight: 900;
+  color: #6b0f17;
+}
+
+/* Free delivery banner */
+.ckw-prime {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #4a0f0a, #6b0f17, #4a0f0a);
+  color: #f3d39a;
+  text-align: center;
+}
+
+.ckw-prime strong {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+.ckw-prime span {
+  font-size: 11px;
+}
+
+/* Confirm cards (paying with / delivering to) */
+.ckw-confirm-card {
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+  overflow: hidden;
+}
+
+.ckw-confirm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ckw-confirm-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f7e6d6;
+  color: #6b0f17;
+  font-size: 18px;
+}
+
+.ckw-confirm-pin {
+  background: #6b0f17;
+  color: #fff;
+}
+
+.ckw-confirm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ckw-confirm-text small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #8a5a18;
+  text-transform: uppercase;
+}
+
+.ckw-confirm-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-confirm-addr {
+  font-size: 12px;
+  color: #6a564a;
+  line-height: 1.4;
+}
+
+.ckw-confirm-change {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-style: normal;
+  color: #6b0f17;
+}
+
+.ckw-confirm-subrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 0;
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #5d4435;
+}
+
+.ckw-confirm-subrow > svg:first-child {
+  font-size: 17px;
+  color: #6b0f17;
+  flex-shrink: 0;
+}
+
+.ckw-confirm-subrow span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ckw-confirm-subrow > svg:last-child {
+  font-size: 16px;
+  color: #8a5a18;
+  flex-shrink: 0;
+}
+
+/* Wallet toggle row */
+.ckw-wallet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.ckw-wallet-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #6b0f17;
+}
+
+/* Arriving */
+.ckw-arrive {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+}
+
+.ckw-arrive-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #6b0f17;
+  color: #fff;
+  font-size: 20px;
+}
+
+.ckw-arrive-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ckw-arrive-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-arrive-text small {
+  font-size: 12px;
+  color: #107a46;
+  font-weight: 600;
+}
+
+/* Products */
+.ckw-confirm-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ckw-confirm-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+}
+
+.ckw-confirm-item-img {
+  flex-shrink: 0;
+  width: 84px;
+  height: 108px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3e7d6;
+}
+
+.ckw-confirm-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ckw-confirm-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ckw-confirm-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #2a1a12;
+  text-decoration: none;
+}
+
+.ckw-confirm-item-price {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #6b0f17;
+}
+
+.ckw-confirm-item-body small {
+  font-size: 11px;
+  color: #7c6657;
+}
+
+.ckw-confirm-item-body small span {
+  color: #6b0f17;
+  font-weight: 600;
+}
+
+.ckw-confirm-item-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border: 1px solid rgba(128, 0, 32, 0.22);
+  border-radius: 999px;
+}
+
+.ckw-confirm-item-qty button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #6b0f17;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ckw-confirm-item-qty button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ckw-confirm-item-qty span {
+  min-width: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+/* Legal */
+.ckw-legal {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 14px;
+  background: #faf2e6;
+}
+
+.ckw-legal-ico {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: #8a5a18;
+}
+
+.ckw-legal p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #6a564a;
+}
+
+.ckw-legal a {
+  color: #6b0f17;
+  font-weight: 700;
+}
+
+.ckw-legal-back {
+  display: block;
+  margin-top: 4px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #6b0f17;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}

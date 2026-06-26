@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { Fragment, useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { imgUrl } from "../utils/cloudinary";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
@@ -9,10 +10,8 @@ import api from "../utils/api";
 import { validateCheckoutForm } from "../utils/validation";
 import { unwrapApiData } from "../utils/error";
 import { LocationPickerModal } from "../pages/Profile/Profile";
-import CheckoutOrderPanel from "./CheckoutOrderPanel";
 import { getProductStockInfo } from "../utils/stockStatus";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../utils/deliveryDate";
-import { getVariantSku } from "../utils/itemCode";
 import { selectBestCourier } from "../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
@@ -26,6 +25,10 @@ const PREPAID_DISCOUNT_AMOUNT = numberEnv("VITE_PREPAID_DISCOUNT_AMOUNT");
 const COD_FEE_AMOUNT = numberEnv("VITE_COD_FEE_AMOUNT");
 const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
 const GIFT_CHARGE_AMOUNT = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
+
+// Display labels/icons for the chosen online Razorpay method on the confirm step.
+const METHOD_LABELS = { upi: "UPI", card: "Credit / Debit Card", netbanking: "Net Banking", emi: "EMI", wallet: "Wallet" };
+const METHOD_ICONS = { upi: "lucide:smartphone", card: "lucide:credit-card", netbanking: "lucide:landmark", emi: "lucide:calculator", wallet: "lucide:wallet" };
 const EMPTY_CHECKOUT_ADDRESS = {
   label: "Home",
   name: "",
@@ -80,7 +83,7 @@ const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { mini
  *  - redirectOnEmpty: navigate to /cart when the cart empties (standalone only).
  */
 const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false }) => {
-  const { cart, clearCart, appliedCoupon, discountAmount, applyCoupon: cartApplyCoupon, removeCoupon: cartRemoveCoupon } = useCart();
+  const { cart, clearCart, updateQuantity, removeFromCart, appliedCoupon, discountAmount, applyCoupon: cartApplyCoupon, removeCoupon: cartRemoveCoupon } = useCart();
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -117,8 +120,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     return { ...item, checkoutUnavailable: isUnavailable, checkoutStockInfo: stockInfo };
   });
   const payableCart = checkoutCart.filter((item) => !item.checkoutUnavailable);
-  const unavailableCart = checkoutCart.filter((item) => item.checkoutUnavailable);
   const subtotal = payableCart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
+  const selectedUnits = payableCart.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
   // Slowest item determines the order's processing time. -1 means no item has a
   // per-product value, so the delivery estimate falls back to the env default.
   const maxProcessingDays = payableCart.reduce((max, item) => {
@@ -149,12 +152,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [couponPanelOpen, setCouponPanelOpen] = useState(false);
   const [couponModalOpen, setCouponModalOpen] = useState(false);
   const [couponCelebration, setCouponCelebration] = useState(null);
-  const [checkoutStep, setCheckoutStep] = useState("details");
   // Wizard step shown one at a time: "address" → "payment" → "confirm".
   const [wizardStep, setWizardStep] = useState("address");
   const [showInstructions, setShowInstructions] = useState(false);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [promoOpen, setPromoOpen] = useState(false);
+  const [savingsOpen, setSavingsOpen] = useState(true);
   const [addressForm, setAddressForm] = useState(getEmptyCheckoutAddress(user));
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -685,6 +688,24 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const selectOnline = (method) => { setActivePayment("online"); setOnlineMethod(method); };
   const isOnline = (method) => activePayment === "online" && onlineMethod === method;
 
+  // Confirm-step bill: sticker total before savings, then each saving line.
+  const grossBeforeSavings = subtotal + shippingCharge + platformFee + paymentFee + giftCharge;
+  const savingsRows = [
+    ...(shippingCharge > 0 ? [{ label: "Free delivery", amount: shippingCharge }] : []),
+    ...(paymentDiscount > 0 ? [{ label: "Online payment discount", amount: paymentDiscount }] : []),
+    ...(effectiveCouponDiscount > 0 ? [{ label: `Coupon (${appliedCoupon?.code || ""})`, amount: effectiveCouponDiscount }] : []),
+    ...(walletUsableAmount > 0 ? [{ label: "Wallet balance", amount: walletUsableAmount }] : []),
+  ];
+  const savingsTotal = savingsRows.reduce((sum, r) => sum + r.amount, 0);
+  const payMethodLabel = activePayment === "cod" ? "Cash on Delivery" : (METHOD_LABELS[onlineMethod] || "Online Payment");
+  const payMethodIcon = activePayment === "cod" ? "lucide:banknote" : (METHOD_ICONS[onlineMethod] || "lucide:shield-check");
+  const payCtaLabel = loading
+    ? "PROCESSING…"
+    : activePayment === "cod"
+      ? `PLACE ORDER · ${money(total)}`
+      : `PAY ${money(total)}`;
+  const confirmAddressLine = selectedAddress ? getCheckoutAddressLine(selectedAddress) : formData.address;
+
   return (
     <div className="ckw">
       <div className="ckw-promo">
@@ -983,121 +1004,199 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </button>
           </>
         ) : (
-          <div className="checkout-layout">
-            <CheckoutOrderPanel
-              step={checkoutStep}
-          addresses={addresses}
-          selectedAddressId={selectedAddressId}
-          onSelectAddress={selectAddress}
-          addressLoading={addressLoading}
-          onAddAddress={() => openAddressModal()}
-          onEditAddress={openAddressModal}
-          onDeleteAddress={deleteCheckoutAddress}
-          deletingAddressId={deletingAddressId}
-          getAddressLine={getCheckoutAddressLine}
-          user={user}
-          paymentOptions={[
-            {
-              id: "online",
-              icon: "lucide:shield-check",
-              title: "Online Payment",
-              description: `${money(PREPAID_DISCOUNT_AMOUNT)} extra off`,
-              active: activePayment === "online",
-              onSelect: () => setActivePayment("online"),
-            },
-            {
-              id: "cod",
-              icon: "lucide:banknote",
-              title: "Cash on Delivery",
-              description: isCodAllowed ? `${money(COD_FEE_AMOUNT)} COD charge` : subtotal > COD_MAX_AMOUNT ? `Not available above ${money(COD_MAX_AMOUNT)}` : "Unavailable for some items",
-              active: activePayment === "cod",
-              disabled: !isCodAllowed,
-              onSelect: () => {
-                if (isCodAllowed) {
-                  setActivePayment("cod");
-                } else if (subtotal > COD_MAX_AMOUNT) {
-                  showNotification(`COD is available only up to ${money(COD_MAX_AMOUNT)}.`, "warning");
-                } else {
-                  showNotification("Some products in your cart do not support Cash on Delivery.", "warning");
-                }
-              },
-            },
-          ]}
-          reviewItems={checkoutCart.map((item) => ({
-            key: `${item.id}-${item.colorId}-review`,
-            image: item.image_url,
-            name: item.name,
-            meta: `Qty ${item.quantity} x ${money(item.price)}${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName) ? ` - SKU: ${getVariantSku(item, item.colorId, item.selectedColorSlug || item.selectedColorName)}` : ""}`,
-            total: item.checkoutUnavailable ? "Excluded" : money(Number(item.price) * Number(item.quantity || 1)),
-            unavailable: item.checkoutUnavailable,
-            unavailableLabel: item.checkoutStockInfo?.badge || "Unavailable - excluded from total",
-          }))}
-          reviewAddress={{
-            name: formData.fullName,
-            line: [formData.address, formData.city, formData.pincode].filter(Boolean).join(", "),
-            phone: formData.phone,
-          }}
-          reviewPayment={{
-            title: activePayment === "cod" ? "Cash on Delivery" : "Online Payment",
-            description: activePayment === "cod" ? "Pay when your order is delivered." : "Pay securely using Razorpay.",
-          }}
-          onEditDetails={() => setCheckoutStep("details")}
-          summaryProps={{
-            title: "Order Summary",
-            items: checkoutCart.map((item) => ({
-              key: `${item.id}-${item.colorId}`,
-              href: `/product/${item.slug}`,
-              image: item.image_url,
-              name: item.name,
-              meta: `${item.quantity} x ${money(item.price)}`,
-              total: item.checkoutUnavailable ? "Excluded" : money(Number(item.price) * Number(item.quantity || 1)),
-              unavailable: item.checkoutUnavailable,
-              unavailableLabel: item.checkoutStockInfo?.badge || "Unavailable - excluded from total",
-            })),
-            showOffers: true,
-            coupons: availableCoupons,
-            appliedCoupon,
-            couponDiscount: effectiveCouponDiscount,
-            couponCode,
-            setCouponCode,
-            onApplyCoupon: applyCheckoutCoupon,
-            onRemoveCoupon: removeCheckoutCoupon,
-            walletBalance,
-            useWallet,
-            setUseWallet,
-            rows: [
-              { label: "Subtotal", value: money(subtotal) },
-              ...(unavailableCart.length > 0 ? [{ label: "Unavailable items", value: `${unavailableCart.length} excluded`, tone: "accent" }] : []),
-              { label: "Platform fee", value: money(platformFee) },
-              ...(paymentFee > 0 ? [{ label: "COD charge", value: money(paymentFee), tone: "accent" }] : []),
-              ...(giftCharge > 0 ? [{ label: "Gift wrap & message", value: money(giftCharge), tone: "accent" }] : []),
-              { label: "Delivery", value: shippingLoading ? "Calculating..." : shippingCharge > 0 ? <><s>{money(shippingCharge)}</s>{" "}Free</> : "Free", tone: shippingLoading ? undefined : "success" },
-              ...(paymentDiscount > 0 ? [{ label: "Prepaid discount", value: `-${money(paymentDiscount)}`, tone: "success" }] : []),
-              ...(appliedCoupon ? [{ label: `Coupon (${appliedCoupon.code})`, value: `-${money(effectiveCouponDiscount)}`, tone: "success" }] : []),
-              ...(walletUsableAmount > 0 ? [{ label: "Wallet used", value: `-${money(walletUsableAmount)}`, tone: "success" }] : []),
-            ],
-            logistics: null,
-            deliveryPromise: shippingDeliveryDate ? {
-              title: `Arriving ${shippingDeliveryDate}`,
-              subtitle: "Free standard delivery",
-              tooltip: "This is an estimated delivery date. It may change based on courier availability and your location.",
-            } : null,
-            totalLabel: "Total Payable",
-            total,
-            formatMoney: money,
-            action: {
-              label: loading ? "Processing..." : activePayment === "cod" ? "Place COD Order" : "Pay & Place Order",
-              onClick: handlePlaceOrder,
-              disabled: loading || shippingLoading || payableCart.length === 0,
-            },
-            couponModalOpen,
-            setCouponModalOpen,
-            couponCodeOpen: couponPanelOpen,
-            setCouponCodeOpen: setCouponPanelOpen,
-            couponCelebration,
-          }}
-            />
-          </div>
+          <>
+            <div className="ckw-agree">
+              <span className="ckw-agree-ico"><Icon icon="lucide:shield-check" /></span>
+              <p>
+                By placing your order, you agree to Banarasi Kala's{" "}
+                <Link to="/privacy-policy">Privacy Policy</Link> and{" "}
+                <Link to="/terms-conditions">Terms &amp; Conditions</Link>.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="ckw-pay-cta"
+              onClick={handlePlaceOrder}
+              disabled={loading || shippingLoading || payableCart.length === 0}
+            >
+              <Icon icon={payMethodIcon} /> {payCtaLabel}
+            </button>
+
+            <div className="ckw-bill">
+              <div className="ckw-bill-row">
+                <span>Items ({selectedUnits})</span>
+                <span>{money(subtotal)}</span>
+              </div>
+              <div className="ckw-bill-row">
+                <span>Delivery Charges</span>
+                <span>{shippingLoading ? "…" : shippingCharge > 0 ? money(shippingCharge) : "FREE"}</span>
+              </div>
+              <div className="ckw-bill-row">
+                <span>Marketplace Fee</span>
+                <span>{money(platformFee)}</span>
+              </div>
+              {paymentFee > 0 && (
+                <div className="ckw-bill-row"><span>COD Charge</span><span>{money(paymentFee)}</span></div>
+              )}
+              {giftCharge > 0 && (
+                <div className="ckw-bill-row"><span>Gift wrap &amp; message</span><span>{money(giftCharge)}</span></div>
+              )}
+              <div className="ckw-bill-row ckw-bill-total">
+                <span>Total</span>
+                <span>{money(grossBeforeSavings)}</span>
+              </div>
+              {savingsTotal > 0 && (
+                <>
+                  <button type="button" className="ckw-bill-savings" onClick={() => setSavingsOpen((v) => !v)}>
+                    <span className="ckw-bill-savings-label"><Icon icon="lucide:tag" /> Savings ({savingsRows.length})</span>
+                    <span className="ckw-bill-savings-amt">
+                      -{money(savingsTotal)}
+                      <Icon icon={savingsOpen ? "lucide:chevron-up" : "lucide:chevron-down"} />
+                    </span>
+                  </button>
+                  {savingsOpen && savingsRows.map((r) => (
+                    <div className="ckw-bill-row ckw-bill-saving-line" key={r.label}>
+                      <span>{r.label}</span>
+                      <span>-{money(r.amount)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              <div className="ckw-bill-row ckw-bill-order-total">
+                <span>Order Total</span>
+                <span>{money(total)}</span>
+              </div>
+            </div>
+
+            {shippingCharge > 0 && (
+              <div className="ckw-prime">
+                <strong>FREE DELIVERY UNLOCKED</strong>
+                <span>You saved {money(shippingCharge)} on delivery for this order</span>
+              </div>
+            )}
+
+            <div className="ckw-otp">
+              <Icon icon="lucide:shield-check" />
+              <span>One-time password required at time of delivery.</span>
+            </div>
+
+            <div className="ckw-confirm-card">
+              <button type="button" className="ckw-confirm-row" onClick={() => setWizardStep("payment")}>
+                <span className="ckw-confirm-ico"><Icon icon={payMethodIcon} /></span>
+                <span className="ckw-confirm-text">
+                  <small>PAYING WITH</small>
+                  <strong>{payMethodLabel}</strong>
+                </span>
+                <em className="ckw-confirm-change">Change</em>
+              </button>
+              <button
+                type="button"
+                className="ckw-confirm-subrow"
+                onClick={() => { setWizardStep("payment"); setPromoOpen(true); }}
+              >
+                <Icon icon="lucide:tag" />
+                <span>{appliedCoupon ? `${appliedCoupon.code} applied` : "Use a gift card, voucher or promo code"}</span>
+                <Icon icon="lucide:chevron-right" />
+              </button>
+            </div>
+
+            {walletBalance > 0 && (
+              <label className="ckw-confirm-card ckw-wallet-row">
+                <span className="ckw-confirm-ico"><Icon icon="lucide:wallet" /></span>
+                <span className="ckw-confirm-text">
+                  <strong>Use wallet balance</strong>
+                  <small>Available {money(walletBalance)}</small>
+                </span>
+                <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
+              </label>
+            )}
+
+            <div className="ckw-confirm-card">
+              <button type="button" className="ckw-confirm-row" onClick={() => setWizardStep("address")}>
+                <span className="ckw-confirm-ico ckw-confirm-pin"><Icon icon="lucide:map-pin" /></span>
+                <span className="ckw-confirm-text">
+                  <small>DELIVERING TO</small>
+                  <strong>{formData.fullName || user?.name}</strong>
+                  <span className="ckw-confirm-addr">{confirmAddressLine}</span>
+                </span>
+                <em className="ckw-confirm-change">Change</em>
+              </button>
+              <button type="button" className="ckw-confirm-subrow" onClick={() => setWizardStep("address")}>
+                <Icon icon="lucide:clipboard-list" />
+                <span>{deliveryInstructions ? deliveryInstructions : "Add delivery instructions (optional)"}</span>
+                <Icon icon="lucide:chevron-right" />
+              </button>
+            </div>
+
+            {shippingDeliveryDate && (
+              <>
+                <h4 className="ckw-pay-group-label">Arriving {shippingDeliveryDate}</h4>
+                <div className="ckw-arrive">
+                  <span className="ckw-arrive-ico"><Icon icon="lucide:calendar-check" /></span>
+                  <span className="ckw-arrive-text">
+                    <strong>{shippingDeliveryDate}</strong>
+                    <small>FREE Standard Delivery</small>
+                  </span>
+                </div>
+              </>
+            )}
+
+            <div className="ckw-confirm-items">
+              {payableCart.map((item) => (
+                <div className="ckw-confirm-item" key={`${item.id}-${item.colorId}`}>
+                  <Link to={`/product/${item.slug}`} className="ckw-confirm-item-img">
+                    <img src={imgUrl(item.image_url, 200)} alt={item.name} />
+                  </Link>
+                  <div className="ckw-confirm-item-body">
+                    <Link to={`/product/${item.slug}`} className="ckw-confirm-item-name">{item.name}</Link>
+                    <strong className="ckw-confirm-item-price">{money(item.price)}</strong>
+                    <small>Ships from Banarasi Kala</small>
+                    <small>Sold by <span>Banarasi Kala</span></small>
+                    <div className="ckw-confirm-item-qty">
+                      <button
+                        type="button"
+                        onClick={() => (item.quantity > 1 ? updateQuantity(item.id, item.quantity - 1, item.colorId) : removeFromCart(item.id, item.colorId))}
+                        aria-label={item.quantity > 1 ? "Decrease quantity" : "Remove item"}
+                      >
+                        <Icon icon={item.quantity > 1 ? "lucide:minus" : "lucide:trash-2"} />
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.colorId)}
+                        disabled={item.quantity >= (item.checkoutStockInfo?.quantity ?? 99)}
+                        aria-label="Increase quantity"
+                      >
+                        <Icon icon="lucide:plus" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="ckw-legal">
+              <Icon icon="lucide:lock" className="ckw-legal-ico" />
+              <p>
+                When you place your order, we'll email you acknowledging receipt. If you pay using an electronic
+                method (card, net banking or UPI), you'll complete payment securely via Razorpay. Your contract is
+                complete once we receive payment and dispatch your item. For Pay on Delivery (POD), you can pay by
+                cash / UPI / card when you receive your item. See our{" "}
+                <Link to="/return-exchange">Return Policy</Link>.
+                <button type="button" className="ckw-legal-back" onClick={() => navigate("/cart")}>Back to cart</button>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="ckw-pay-cta ckw-pay-cta--sticky"
+              onClick={handlePlaceOrder}
+              disabled={loading || shippingLoading || payableCart.length === 0}
+            >
+              <Icon icon={payMethodIcon} /> {payCtaLabel}
+            </button>
+          </>
         )}
       </div>
 
