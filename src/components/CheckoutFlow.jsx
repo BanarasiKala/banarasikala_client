@@ -290,6 +290,27 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     }));
   };
 
+  const selectDefaultAddress = (addressList = addresses) => {
+    const defaultAddress = addressList.find((address) => address.is_default) || addressList[0];
+    if (defaultAddress) selectAddress(defaultAddress);
+  };
+
+  const goToAddressStep = () => {
+    const currentSelection = addresses.find((address) => String(address.id) === String(selectedAddressId));
+    if (currentSelection) {
+      selectAddress(currentSelection);
+    } else {
+      selectDefaultAddress();
+    }
+    setWizardStep("address");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const selectAddressFromCard = (event, address) => {
+    if (event.target.closest?.("button, textarea, input, select, a")) return;
+    if (String(selectedAddressId) !== String(address.id)) selectAddress(address);
+  };
+
   // Address step → Payment step: lock in the chosen address and advance. If the
   // shopper edited the inline delivery instructions for the address they're
   // delivering to, persist them (best-effort) before moving on.
@@ -316,7 +337,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   // Header back button: step back through the wizard, or out to the cart.
   const handleWizardBack = () => {
     if (wizardStep === "confirm") setWizardStep("payment");
-    else if (wizardStep === "payment") setWizardStep("address");
+    else if (wizardStep === "payment") {
+      goToAddressStep();
+      return;
+    }
     else navigate("/cart");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -404,6 +428,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         ...a,
         is_default: String(a.id) === String(address.id),
       })));
+      selectAddress({ ...address, is_default: true });
       showNotification("Default address updated.", "success");
     } catch (error) {
       showNotification(error?.response?.data?.message || "Unable to update default address.", "warning");
@@ -767,7 +792,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           <>
             {addressLoading && !addresses.length ? (
               <div className="ckw-addr-card ckw-addr-skeleton" aria-label="Loading addresses">
-                <span className="ckw-addr-skeleton-radio" />
                 <div className="ckw-addr-main">
                   <span className="ckw-skeleton-line ckw-skeleton-title" />
                   <span className="ckw-skeleton-line ckw-skeleton-text" />
@@ -787,13 +811,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 {addresses.map((address) => {
                   const isSel = String(selectedAddressId) === String(address.id);
                   return (
-                    <div key={address.id} className={`ckw-addr-card ${isSel ? "is-selected" : ""}`}>
-                      <button
-                        type="button"
-                        className={`ckw-addr-radio ${isSel ? "is-on" : ""}`}
-                        onClick={() => selectAddress(address)}
-                        aria-label="Select this address"
-                      />
+                    <div
+                      key={address.id}
+                      className={`ckw-addr-card ${isSel ? "is-selected" : ""}`}
+                      onClick={(event) => selectAddressFromCard(event, address)}
+                    >
                       <div className="ckw-addr-main">
                         <div className="ckw-addr-name-row">
                           <span className="ckw-addr-name">{address.name || user?.name}</span>
@@ -811,7 +833,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                         <p className="ckw-addr-text">{getCheckoutAddressLine(address)}</p>
                         <span className="ckw-addr-phone">Phone: {address.phone || user?.phone}</span>
 
-                        <button type="button" className="ckw-deliver-btn" onClick={() => deliverToAddress(address)}>
+                        <button
+                          type="button"
+                          className={`ckw-deliver-btn ${isSel ? "is-active" : ""}`}
+                          onClick={() => isSel && deliverToAddress(address)}
+                          disabled={!isSel}
+                        >
                           <Icon icon="lucide:map-pin" /> DELIVER TO THIS ADDRESS
                         </button>
                         <button type="button" className="ckw-edit-btn" onClick={() => openAddressModal(address)}>
@@ -873,7 +900,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           </>
         ) : wizardStep === "payment" ? (
           <>
-            <button type="button" className="ckw-deliver-summary" onClick={() => setWizardStep("address")}>
+            <button type="button" className="ckw-deliver-summary" onClick={goToAddressStep}>
               <span className="ckw-deliver-summary-pin"><Icon icon="lucide:map-pin" /></span>
               <span className="ckw-deliver-summary-text">
                 <strong>
@@ -1149,7 +1176,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             )}
 
             <div className="ckw-confirm-card">
-              <button type="button" className="ckw-confirm-row" onClick={() => setWizardStep("address")}>
+              <button type="button" className="ckw-confirm-row" onClick={goToAddressStep}>
                 <span className="ckw-confirm-ico ckw-confirm-pin"><Icon icon="lucide:map-pin" /></span>
                 <span className="ckw-confirm-text">
                   <small>DELIVERING TO</small>
@@ -1158,7 +1185,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <em className="ckw-confirm-change">Change</em>
               </button>
-              <button type="button" className="ckw-confirm-subrow" onClick={() => setWizardStep("address")}>
+              <button type="button" className="ckw-confirm-subrow" onClick={goToAddressStep}>
                 <Icon icon="lucide:clipboard-list" />
                 <span>{deliveryInstructions ? deliveryInstructions : "Add delivery instructions (optional)"}</span>
                 <Icon icon="lucide:chevron-right" />
