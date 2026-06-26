@@ -15,9 +15,6 @@ import { API_ENDPOINTS } from "../../config/api";
 import { unwrapApiData } from "../../utils/error";
 import "./Cart.css";
 
-// Add up to this many sarees to unlock the extra-off nudge shown in the cart.
-const EXTRA_OFF_MIN_ITEMS = 4;
-
 // Flat charge for gift wrapping + custom message. Mirrors the server's
 // GIFT_CHARGE_AMOUNT (default 159); the backend is authoritative.
 const GIFT_CHARGE = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
@@ -39,11 +36,12 @@ const itemKey = (item) => `${item.id}-${item.colorId ?? ""}`;
 
 // Short label for what a coupon gives off (fixed amount or percentage).
 const couponDiscountText = (coupon) => {
+  if (!coupon) return "";
   if (coupon.discount_type === "fixed_amount" && Number(coupon.discount_amount) > 0) {
     return `₹${Number(coupon.discount_amount).toLocaleString("en-IN")} OFF`;
   }
   if (Number(coupon.discount_percent) > 0) return `${coupon.discount_percent}% OFF`;
-  return "a discount";
+  return "Extra Off";
 };
 
 const Cart = () => {
@@ -113,7 +111,7 @@ const Cart = () => {
   }, []); // runs on mount only; uses ref so always calls latest version
 
   // Load coupons and keep only active, in-date ones with a real minimum (> ₹1),
-  // sorted by ascending min purchase — ready for the cart nudge.
+  // sorted by ascending min purchase — these drive the extra-off progress nudge.
   useEffect(() => {
     let cancelled = false;
     api.get(API_ENDPOINTS.coupons)
@@ -188,28 +186,20 @@ const Cart = () => {
     return sum + (mrp > sell ? (mrp - sell) * Number(item.quantity || 1) : 0);
   }, 0);
 
-  const extraOffRemaining = Math.max(0, EXTRA_OFF_MIN_ITEMS - totalUnits);
-  const extraOffProgress = Math.min(100, (totalUnits / EXTRA_OFF_MIN_ITEMS) * 100);
+  // Extra-off progress, driven by real coupons (sorted by ascending min purchase):
+  // find the nearest coupon the cart hasn't reached yet, and the best one already
+  // unlocked. The progress fills toward the next coupon's minimum.
+  const nextCoupon = coupons.find((c) => c.minPurchase > selectedSubtotal) || null;
+  const unlockedCoupon = coupons.filter((c) => c.minPurchase <= selectedSubtotal).pop() || null;
+  const progressCoupon = nextCoupon || unlockedCoupon;
+  const extraOffRemaining = nextCoupon ? Math.max(0, nextCoupon.minPurchase - selectedSubtotal) : 0;
+  const extraOffProgress = progressCoupon
+    ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
+    : 0;
 
   // Cart total shown at the top = selected items + the gift charge when enabled.
   const cartGiftCharge = giftWrap ? GIFT_CHARGE : 0;
   const cartTotal = (selectedSubtotal || getSubtotal()) + cartGiftCharge;
-
-  // Coupon nudge: from the active coupons (already filtered/sorted), find the
-  // nearest one the cart hasn't reached yet — "add ₹X more to get ₹Y off".
-  const nextCoupon = coupons.find((c) => c.minPurchase > selectedSubtotal) || null;
-  const unlockedCoupon = coupons.filter((c) => c.minPurchase <= selectedSubtotal).pop() || null;
-  let couponNudge = null;
-  if (nextCoupon) {
-    const more = Math.max(0, nextCoupon.minPurchase - selectedSubtotal);
-    couponNudge = (
-      <>Add <strong>₹{more.toLocaleString("en-IN")}</strong> more to get <strong>{couponDiscountText(nextCoupon)}</strong> ({nextCoupon.code})</>
-    );
-  } else if (unlockedCoupon) {
-    couponNudge = (
-      <><strong>{couponDiscountText(unlockedCoupon)}</strong> unlocked — apply <strong>{unlockedCoupon.code}</strong> at checkout</>
-    );
-  }
 
   // The whole order ships together, so show one consolidated "arrives by" date:
   // the farthest estimate across the items being bought. This is only meaningful
@@ -434,32 +424,23 @@ const Cart = () => {
           </div>
         </div>
 
-        {/* ── Extra-off progress ── */}
-        <div className="cart-progress">
-          <div className="cart-progress-row">
-            <strong>
-              {extraOffRemaining > 0
-                ? `Add ${extraOffRemaining} More Saree${extraOffRemaining === 1 ? "" : "s"} & Get 5% Extra Off`
-                : "Yay! You unlocked 5% Extra Off"}
-            </strong>
-            <span className="cart-progress-pill">
-              {extraOffRemaining > 0 ? `${extraOffRemaining} more item${extraOffRemaining === 1 ? "" : "s"} to go` : "Unlocked"}
-            </span>
+        {/* ── Extra-off progress (driven by the nearest applicable coupon) ── */}
+        {progressCoupon && (
+          <div className="cart-progress">
+            <div className="cart-progress-row">
+              <strong>
+                {nextCoupon
+                  ? `Add ${formatMoneyShort(extraOffRemaining)} More & Get ${couponDiscountText(nextCoupon)}`
+                  : `Yay! You unlocked ${couponDiscountText(unlockedCoupon)}`}
+              </strong>
+              <span className="cart-progress-pill">
+                {nextCoupon ? nextCoupon.code : "Unlocked"}
+              </span>
+            </div>
+            <div className="cart-progress-bar">
+              <div className="cart-progress-fill" style={{ width: `${extraOffProgress}%` }} />
+            </div>
           </div>
-          <div className="cart-progress-bar">
-            <div className="cart-progress-fill" style={{ width: `${extraOffProgress}%` }} />
-          </div>
-        </div>
-
-        {/* ── Coupon nudge (dynamic, based on coupon min purchase) ── */}
-        {couponNudge && (
-          <Link to="/checkout" className="cart-coupon">
-            <span className="cart-coupon-left">
-              <Icon icon="lucide:tag" />
-              <span className="cart-coupon-text">{couponNudge}</span>
-            </span>
-            <Icon icon="lucide:chevron-right" className="cart-coupon-chevron" />
-          </Link>
         )}
 
         {/* ── Stock alerts ── */}

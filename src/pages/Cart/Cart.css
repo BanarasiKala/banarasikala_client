@@ -235,7 +235,7 @@
   width: 100%;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6e0016 0%, #9b001f 50%, #6e0016 100%);
+  background: linear-gradient(135deg, #800020, #4b060d);
   color: #fff;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 900;
@@ -460,7 +460,7 @@
 
 .cart-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7b1019, #d5a241);
+  background: linear-gradient(135deg, #800020, #4b060d);
   border-radius: 99px;
   transition: width 0.4s ease;
 }
