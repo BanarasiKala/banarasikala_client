@@ -130,6 +130,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   // prepaid only (mirrors the cart rule).
   const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT;
   const [activePayment, setActivePayment] = useState("online");
+  // When paying online, which Razorpay method to open to (upi | card | netbanking | emi | wallet).
+  const [onlineMethod, setOnlineMethod] = useState("upi");
   const [loading, setLoading] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [shippingCharge, setShippingCharge] = useState(0);
@@ -606,11 +608,16 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         name: "Banarasi Kala",
         description: "Banarasi Kala order",
         order_id: razorpayOrder.id,
-        prefill: buildRazorpayPrefill({
-          name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-        }),
+        prefill: {
+          ...buildRazorpayPrefill({
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+          }),
+          // Open Razorpay straight to the method the shopper picked on the
+          // payment step (upi | card | netbanking | emi | wallet).
+          method: onlineMethod,
+        },
         theme: { color: "#800020" },
         handler: async (response) => {
           setPaymentVerifying(true);
@@ -675,6 +682,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   ];
   const stepIndex = steps.findIndex((s) => s.key === wizardStep);
   const selectedAddress = addresses.find((a) => String(a.id) === String(selectedAddressId)) || null;
+  const selectOnline = (method) => { setActivePayment("online"); setOnlineMethod(method); };
+  const isOnline = (method) => activePayment === "online" && onlineMethod === method;
 
   return (
     <div className="ckw">
@@ -820,43 +829,103 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </button>
 
             <h3 className="ckw-section-label">Select a Payment Method</h3>
+            {PREPAID_DISCOUNT_AMOUNT > 0 && (
+              <div className="ckw-pay-offer-banner">
+                <Icon icon="lucide:badge-percent" />
+                <span>Pay online &amp; save <strong>{money(PREPAID_DISCOUNT_AMOUNT)}</strong> on this order</span>
+              </div>
+            )}
 
-            <button
-              type="button"
-              className={`ckw-pay-option ${activePayment === "online" ? "is-selected" : ""}`}
-              onClick={() => setActivePayment("online")}
-            >
-              <span className={`ckw-pay-radio ${activePayment === "online" ? "is-on" : ""}`} />
-              <span className="ckw-pay-body">
-                <span className="ckw-pay-title-row">
-                  <span className="ckw-pay-title">Pay Online</span>
-                  {PREPAID_DISCOUNT_AMOUNT > 0 && <span className="ckw-pay-offer">SAVE {money(PREPAID_DISCOUNT_AMOUNT)}</span>}
+            <div className="ckw-pay-group">
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("upi") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("upi")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("upi") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">Pay by any UPI App</span>
+                  <span className="ckw-pay-sub">Google Pay, PhonePe, Paytm and more</span>
                 </span>
-                <span className="ckw-pay-sub">UPI, Cards, Net Banking &amp; Wallets · via Razorpay</span>
-              </span>
-              <Icon icon="lucide:shield-check" className="ckw-pay-icon" />
-            </button>
+                <span className="ckw-pay-badge">UPI</span>
+              </button>
+            </div>
 
-            <button
-              type="button"
-              className={`ckw-pay-option ${activePayment === "cod" ? "is-selected" : ""} ${isCodAllowed ? "" : "is-disabled"}`}
-              disabled={!isCodAllowed}
-              onClick={() => { if (isCodAllowed) setActivePayment("cod"); }}
-            >
-              <span className={`ckw-pay-radio ${activePayment === "cod" ? "is-on" : ""}`} />
-              <span className="ckw-pay-body">
-                <span className="ckw-pay-title-row">
-                  <span className="ckw-pay-title">Cash on Delivery</span>
-                  {isCodAllowed
-                    ? <span className="ckw-pay-fee">+{money(COD_FEE_AMOUNT)}</span>
-                    : <span className="ckw-pay-fee is-muted">Not available above {money(COD_MAX_AMOUNT)}</span>}
+            <h4 className="ckw-pay-group-label">Credit &amp; Debit Cards</h4>
+            <div className="ckw-pay-group">
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("card") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("card")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("card") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">Credit or Debit Card</span>
+                  <span className="ckw-pay-sub">Visa, Mastercard, RuPay &amp; Amex</span>
                 </span>
-                <span className="ckw-pay-sub">
-                  {isCodAllowed ? "Pay with cash when your order arrives" : "Orders above the limit are prepaid only"}
+                <Icon icon="lucide:credit-card" className="ckw-pay-icon" />
+              </button>
+            </div>
+
+            <h4 className="ckw-pay-group-label">More Ways to Pay</h4>
+            <div className="ckw-pay-group">
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("netbanking") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("netbanking")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("netbanking") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">Net Banking</span>
+                  <span className="ckw-pay-sub">All major banks supported</span>
                 </span>
-              </span>
-              <Icon icon="lucide:banknote" className="ckw-pay-icon" />
-            </button>
+                <Icon icon="lucide:landmark" className="ckw-pay-icon" />
+              </button>
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("emi") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("emi")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("emi") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">EMI</span>
+                  <span className="ckw-pay-sub">Easy installments on cards</span>
+                </span>
+                <Icon icon="lucide:calculator" className="ckw-pay-icon" />
+              </button>
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("wallet") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("wallet")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("wallet") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">Wallets</span>
+                  <span className="ckw-pay-sub">Paytm, Mobikwik, Freecharge &amp; more</span>
+                </span>
+                <Icon icon="lucide:wallet" className="ckw-pay-icon" />
+              </button>
+              <button
+                type="button"
+                className={`ckw-pay-row ${activePayment === "cod" ? "is-selected" : ""} ${isCodAllowed ? "" : "is-disabled"}`}
+                disabled={!isCodAllowed}
+                onClick={() => { if (isCodAllowed) setActivePayment("cod"); }}
+              >
+                <span className={`ckw-pay-radio ${activePayment === "cod" ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title-row">
+                    <span className="ckw-pay-title">Cash on Delivery</span>
+                    {isCodAllowed
+                      ? <span className="ckw-pay-fee">+{money(COD_FEE_AMOUNT)}</span>
+                      : <span className="ckw-pay-fee is-muted">Above {money(COD_MAX_AMOUNT)} not allowed</span>}
+                  </span>
+                  <span className="ckw-pay-sub">
+                    {isCodAllowed ? "Pay with cash when your order arrives" : "This order is prepaid only"}
+                  </span>
+                </span>
+                <Icon icon="lucide:banknote" className="ckw-pay-icon" />
+              </button>
+            </div>
 
             <div className="ckw-promo-code">
               <button
