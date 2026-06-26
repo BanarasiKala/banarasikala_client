@@ -1108,7 +1108,7 @@
 
 /* ── Price summary & coupons cards ───────────────────────────────────── */
 .cart-pricecard {
-  background: #fff;
+  background: #fff4ea;
   border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 12px;
   padding: 12px;
