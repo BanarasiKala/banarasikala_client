@@ -615,3 +615,358 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ── Payment step ──────────────────────────────────────────────────────── */
+.ckw-deliver-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ckw-deliver-summary-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f7e6d6;
+  color: #6b0f17;
+  font-size: 20px;
+}
+
+.ckw-deliver-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ckw-deliver-summary-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-deliver-summary-text small {
+  font-size: 12px;
+  color: #6a564a;
+  line-height: 1.4;
+}
+
+.ckw-deliver-summary-text em {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  font-style: normal;
+  color: #6b0f17;
+}
+
+.ckw-deliver-summary-chev {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: #8a5a18;
+}
+
+.ckw-section-label {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b0f17;
+}
+
+/* Payment option cards */
+.ckw-pay-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.ckw-pay-option.is-selected {
+  border-color: #6b0f17;
+  background: #fff;
+  box-shadow: 0 0 0 1px #6b0f17 inset, 0 8px 20px rgba(107, 15, 23, 0.1);
+}
+
+.ckw-pay-option.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ckw-pay-radio {
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(128, 0, 32, 0.35);
+  background: #fff;
+}
+
+.ckw-pay-radio.is-on {
+  border-color: #6b0f17;
+}
+
+.ckw-pay-radio.is-on::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #6b0f17;
+}
+
+.ckw-pay-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ckw-pay-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ckw-pay-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-pay-offer {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3f4e8;
+  color: #0c5c35;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.ckw-pay-fee {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a5a18;
+}
+
+.ckw-pay-fee.is-muted {
+  color: #9a8678;
+  font-weight: 600;
+}
+
+.ckw-pay-sub {
+  font-size: 11.5px;
+  color: #6a564a;
+}
+
+.ckw-pay-icon {
+  flex-shrink: 0;
+  font-size: 24px;
+  color: #6b0f17;
+}
+
+/* Gift card / promo code */
+.ckw-promo-code {
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf3;
+  overflow: hidden;
+}
+
+.ckw-promo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px 14px;
+  border: 0;
+  background: transparent;
+  color: #5d140c;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ckw-promo-toggle > svg:first-child {
+  font-size: 18px;
+  color: #6b0f17;
+}
+
+.ckw-promo-toggle span {
+  flex: 1;
+  text-align: left;
+}
+
+.ckw-promo-chev {
+  font-size: 18px;
+  color: #8a5a18;
+  transition: transform 0.18s ease;
+}
+
+.ckw-promo-toggle.is-open .ckw-promo-chev {
+  transform: rotate(180deg);
+}
+
+.ckw-promo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.ckw-promo-entry {
+  display: flex;
+  gap: 8px;
+}
+
+.ckw-promo-entry input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 0, 32, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  color: #2a1a12;
+  text-transform: uppercase;
+}
+
+.ckw-promo-entry input:focus {
+  outline: none;
+  border-color: #6b0f17;
+}
+
+.ckw-promo-entry button {
+  flex-shrink: 0;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #6b0f17;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ckw-promo-applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(16, 122, 70, 0.4);
+  border-radius: 10px;
+  background: rgba(16, 122, 70, 0.06);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0c5c35;
+}
+
+.ckw-promo-applied span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ckw-promo-applied button {
+  border: 0;
+  background: transparent;
+  color: #6b0f17;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ckw-promo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ckw-promo-item-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 10px;
+  background: #fff8f0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ckw-promo-code-tag {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px dashed rgba(128, 0, 32, 0.4);
+  border-radius: 6px;
+  background: #fff;
+  color: #800020;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ckw-promo-code-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ckw-promo-code-text strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-promo-code-text small {
+  font-size: 11px;
+  color: #7c6657;
+}
+
+/* Continue button */
+.ckw-continue {
+  width: 100%;
+  margin-top: 4px;
+  padding: 16px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7a1218, #4a0c0c);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.ckw-continue:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+
+.ckw-continue:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

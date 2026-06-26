@@ -125,8 +125,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     const days = Number(item.processing_days);
     return Number.isFinite(days) && days > max ? days : max;
   }, -1);
-  const isProductCodAllowed = payableCart.length > 0 && payableCart.every(item => Array.isArray(item.payment_options) && item.payment_options.includes("cod"));
-  const isCodAllowed = isProductCodAllowed && subtotal <= COD_MAX_AMOUNT;
+  // Per-product COD is ignored — every product is COD/prepaid eligible. COD is
+  // offered only up to the COD cap (VITE_COD_MAX_AMOUNT); larger orders are
+  // prepaid only (mirrors the cart rule).
+  const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT;
   const [activePayment, setActivePayment] = useState("online");
   const [loading, setLoading] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
@@ -150,6 +152,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [wizardStep, setWizardStep] = useState("address");
   const [showInstructions, setShowInstructions] = useState(false);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [promoOpen, setPromoOpen] = useState(false);
   const [addressForm, setAddressForm] = useState(getEmptyCheckoutAddress(user));
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -671,6 +674,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     { key: "confirm", label: "Confirm Order", icon: "lucide:check-circle" },
   ];
   const stepIndex = steps.findIndex((s) => s.key === wizardStep);
+  const selectedAddress = addresses.find((a) => String(a.id) === String(selectedAddressId)) || null;
 
   return (
     <div className="ckw">
@@ -798,6 +802,115 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
             <button type="button" className="ckw-back-cart" onClick={() => navigate("/cart")}>
               <Icon icon="lucide:arrow-left" /> Back to cart
+            </button>
+          </>
+        ) : wizardStep === "payment" ? (
+          <>
+            <button type="button" className="ckw-deliver-summary" onClick={() => setWizardStep("address")}>
+              <span className="ckw-deliver-summary-pin"><Icon icon="lucide:map-pin" /></span>
+              <span className="ckw-deliver-summary-text">
+                <strong>
+                  Delivering to {formData.fullName || user?.name}
+                  {selectedAddress?.city ? `, ${String(selectedAddress.city).toUpperCase()}` : ""}
+                </strong>
+                <small>{selectedAddress ? getCheckoutAddressLine(selectedAddress) : formData.address}</small>
+                <em>Change delivery address</em>
+              </span>
+              <Icon icon="lucide:chevron-right" className="ckw-deliver-summary-chev" />
+            </button>
+
+            <h3 className="ckw-section-label">Select a Payment Method</h3>
+
+            <button
+              type="button"
+              className={`ckw-pay-option ${activePayment === "online" ? "is-selected" : ""}`}
+              onClick={() => setActivePayment("online")}
+            >
+              <span className={`ckw-pay-radio ${activePayment === "online" ? "is-on" : ""}`} />
+              <span className="ckw-pay-body">
+                <span className="ckw-pay-title-row">
+                  <span className="ckw-pay-title">Pay Online</span>
+                  {PREPAID_DISCOUNT_AMOUNT > 0 && <span className="ckw-pay-offer">SAVE {money(PREPAID_DISCOUNT_AMOUNT)}</span>}
+                </span>
+                <span className="ckw-pay-sub">UPI, Cards, Net Banking &amp; Wallets · via Razorpay</span>
+              </span>
+              <Icon icon="lucide:shield-check" className="ckw-pay-icon" />
+            </button>
+
+            <button
+              type="button"
+              className={`ckw-pay-option ${activePayment === "cod" ? "is-selected" : ""} ${isCodAllowed ? "" : "is-disabled"}`}
+              disabled={!isCodAllowed}
+              onClick={() => { if (isCodAllowed) setActivePayment("cod"); }}
+            >
+              <span className={`ckw-pay-radio ${activePayment === "cod" ? "is-on" : ""}`} />
+              <span className="ckw-pay-body">
+                <span className="ckw-pay-title-row">
+                  <span className="ckw-pay-title">Cash on Delivery</span>
+                  {isCodAllowed
+                    ? <span className="ckw-pay-fee">+{money(COD_FEE_AMOUNT)}</span>
+                    : <span className="ckw-pay-fee is-muted">Not available above {money(COD_MAX_AMOUNT)}</span>}
+                </span>
+                <span className="ckw-pay-sub">
+                  {isCodAllowed ? "Pay with cash when your order arrives" : "Orders above the limit are prepaid only"}
+                </span>
+              </span>
+              <Icon icon="lucide:banknote" className="ckw-pay-icon" />
+            </button>
+
+            <div className="ckw-promo-code">
+              <button
+                type="button"
+                className={`ckw-promo-toggle ${promoOpen ? "is-open" : ""}`}
+                onClick={() => setPromoOpen((v) => !v)}
+              >
+                <Icon icon="lucide:tag" />
+                <span>{appliedCoupon ? `Coupon ${appliedCoupon.code} applied` : "Add Gift Card or Promo Code"}</span>
+                <Icon icon="lucide:chevron-down" className="ckw-promo-chev" />
+              </button>
+              {promoOpen && (
+                <div className="ckw-promo-panel">
+                  {appliedCoupon ? (
+                    <div className="ckw-promo-applied">
+                      <span><Icon icon="lucide:ticket" /> {appliedCoupon.code} — you saved {money(effectiveCouponDiscount)}</span>
+                      <button type="button" onClick={removeCheckoutCoupon}>Remove</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="ckw-promo-entry">
+                        <input
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          placeholder="Enter gift card / promo code"
+                        />
+                        <button type="button" onClick={() => applyCheckoutCoupon()}>Apply</button>
+                      </div>
+                      {availableCoupons.length > 0 && (
+                        <div className="ckw-promo-list">
+                          {availableCoupons.map((c) => (
+                            <button key={c.id || c.code} type="button" className="ckw-promo-item-card" onClick={() => applyCheckoutCoupon(c)}>
+                              <span className="ckw-promo-code-tag">{c.code}</span>
+                              <span className="ckw-promo-code-text">
+                                <strong>{getCouponSavingsText(c)}</strong>
+                                <small>{getCouponSubtext(c)}</small>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="ckw-continue"
+              disabled={shippingLoading || payableCart.length === 0}
+              onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            >
+              {shippingLoading ? "CHECKING DELIVERY…" : "CONTINUE"}
             </button>
           </>
         ) : (
