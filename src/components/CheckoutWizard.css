@@ -9,7 +9,7 @@
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 0;
+  padding: 0 6px;
   background:
     linear-gradient(180deg, rgba(253, 246, 236, 0.68), rgba(253, 246, 236, 0.82)),
     url("../assets/img.jpg"),
@@ -459,7 +459,7 @@
   padding: 9px 10px;
   border: 1px solid rgba(176, 122, 46, 0.34);
   border-radius: 10px;
-  background: #fff8ed;
+  background: #fff1e6;
   color: #7b4b13;
   font-size: 10px;
   font-weight: 600;
@@ -697,12 +697,12 @@
 .ckw-deliver-summary {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 14px 6px;
+  padding: 10px 10px;
   border: 1px solid rgba(128, 0, 32, 0.16);
-  border-radius: 14px;
-  background: #fffaf3;
+  border-radius: 12px;
+  background: #fff1e6;
   text-align: left;
   cursor: pointer;
 }
@@ -712,45 +712,45 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #f7e6d6;
   color: #6b0f17;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .ckw-deliver-summary-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
 
 .ckw-deliver-summary-text strong {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
   color: #2a1a12;
 }
 
 .ckw-deliver-summary-text small {
-  font-size: 12px;
+  font-size: 11px;
   color: #6a564a;
   line-height: 1.4;
 }
 
 .ckw-deliver-summary-text em {
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 700;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 500;
   font-style: normal;
   color: #6b0f17;
 }
 
 .ckw-deliver-summary-chev {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 16px;
   color: #8a5a18;
 }
 
@@ -768,11 +768,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  width: calc(100% - 12px);
+  margin: 0 6px;
   padding: 15px 6px;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
   text-align: left;
   cursor: pointer;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
@@ -864,11 +865,32 @@
   color: #6b0f17;
 }
 
+.ckw-pay-icon-brand {
+  flex-shrink: 0;
+  width: 48px;
+  height: 24px;
+}
+
+.ckw-pay-icon-phonepe {
+  flex-shrink: 0;
+  font-size: 24px;
+  color: #5f259f;
+}
+
+.ckw-pay-logo-img {
+  flex-shrink: 0;
+  width: 48px;
+  height: 24px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 /* Offer banner above the payment methods */
 .ckw-pay-offer-banner {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin: 0 6px;
   padding: 10px 6px;
   border: 1px solid rgba(16, 122, 70, 0.25);
   border-radius: 12px;
@@ -899,7 +921,7 @@
 .ckw-pay-group {
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
   overflow: hidden;
 }
 
@@ -907,14 +929,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  width: calc(100% - 12px);
+  margin: 0 6px;
   padding: 14px 6px;
   border: 0;
   border-bottom: 1px solid rgba(128, 0, 32, 0.1);
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .ckw-pay-row:last-child {
@@ -922,8 +945,12 @@
 }
 
 .ckw-pay-row.is-selected {
-  background: #fff;
-  box-shadow: 0 0 0 1.5px #6b0f17 inset;
+  width: 100%;
+  margin: 0;
+  padding: 14px 12px;
+  background: #fff1e6;
+  border: 2px solid #6b0f17;
+  border-radius: 14px;
 }
 
 .ckw-pay-row.is-disabled {
@@ -946,7 +973,7 @@
 .ckw-promo-code {
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
   overflow: hidden;
 }
 
@@ -954,7 +981,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  width: calc(100% - 12px);
+  margin: 0 6px;
   padding: 15px 6px;
   border: 0;
   background: transparent;
@@ -1068,7 +1096,7 @@
   padding: 10px;
   border: 1px solid rgba(128, 0, 32, 0.14);
   border-radius: 10px;
-  background: #fff8f0;
+  background: #fff1e6;
   text-align: left;
   cursor: pointer;
 }
@@ -1102,6 +1130,38 @@
 }
 
 /* Continue button */
+.ckw-pay-total-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 12px;
+  background: #fff1e6;
+}
+
+.ckw-pay-total-items {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6a564a;
+}
+
+.ckw-pay-total-sep {
+  flex: 1;
+}
+
+.ckw-pay-total-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #46130d;
+}
+
+.ckw-pay-total-amt {
+  font-size: 15px;
+  font-weight: 700;
+  color: #6b0f17;
+}
+
 .ckw-continue {
   width: 100%;
   margin-top: 4px;
@@ -1134,7 +1194,7 @@
   padding: 14px;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
 }
 
 .ckw-agree-ico {
@@ -1209,7 +1269,7 @@
   padding: 16px;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
 }
 
 .ckw-bill-row {
@@ -1321,7 +1381,7 @@
 .ckw-confirm-card {
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
   overflow: hidden;
 }
 
@@ -1449,7 +1509,7 @@
   padding: 14px;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
 }
 
 .ckw-arrive-ico {
@@ -1495,7 +1555,7 @@
   padding: 14px;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 14px;
-  background: #fffaf3;
+  background: #fff1e6;
 }
 
 .ckw-confirm-item-img {

@@ -26,8 +26,10 @@ const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
 const GIFT_CHARGE_AMOUNT = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
 
 // Display labels/icons for the chosen online Razorpay method on the confirm step.
-const METHOD_LABELS = { upi: "UPI", card: "Credit / Debit Card", netbanking: "Net Banking", emi: "EMI", wallet: "Wallet" };
-const METHOD_ICONS = { upi: "lucide:smartphone", card: "lucide:credit-card", netbanking: "lucide:landmark", emi: "lucide:calculator", wallet: "lucide:wallet" };
+const METHOD_LABELS = { gpay: "Google Pay", phonepe: "PhonePe", upi: "Other UPI Apps", card: "Credit / Debit Card", netbanking: "Net Banking", emi: "EMI", wallet: "Wallet" };
+const METHOD_ICONS = { gpay: "logos:google-pay", phonepe: "simple-icons:phonepe", upi: "lucide:smartphone", card: "lucide:credit-card", netbanking: "lucide:landmark", emi: "lucide:calculator", wallet: "lucide:wallet" };
+// UPI sub-methods all map to Razorpay's "upi" method
+const UPI_METHODS = new Set(["gpay", "phonepe", "upi"]);
 
 // Title shown in the header for each wizard step.
 const STEP_TITLES = { address: "Select a Delivery Address", payment: "Select a Payment Method", confirm: "Review Your Order" };
@@ -136,7 +138,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT;
   const [activePayment, setActivePayment] = useState("online");
   // When paying online, which Razorpay method to open to (upi | card | netbanking | emi | wallet).
-  const [onlineMethod, setOnlineMethod] = useState("upi");
+  const [onlineMethod, setOnlineMethod] = useState("gpay");
   const [loading, setLoading] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [shippingCharge, setShippingCharge] = useState(0);
@@ -147,18 +149,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [availableCoupons, setAvailableCoupons] = useState([]);
-  const [couponCode, setCouponCode] = useState(appliedCoupon?.code || "");
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
-  const [couponPanelOpen, setCouponPanelOpen] = useState(false);
-  const [couponModalOpen, setCouponModalOpen] = useState(false);
-  const [couponCelebration, setCouponCelebration] = useState(null);
   // Wizard step shown one at a time: "address" → "payment" → "confirm".
   const [wizardStep, setWizardStep] = useState("address");
   const [showInstructions, setShowInstructions] = useState(false);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
-  const [promoOpen, setPromoOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(true);
   const [addressForm, setAddressForm] = useState(getEmptyCheckoutAddress(user));
   const [editingAddressId, setEditingAddressId] = useState(null);
@@ -206,20 +202,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     return sum + ((productWeightKg + PACKAGING_WEIGHT_KG) * qty);
   }, 0);
 
-  const getCouponSavingsText = (coupon) => {
-    if (!coupon) return "Coupons & offers";
-    const code = String(coupon.code || "").toUpperCase();
-    if (coupon.discount_type === "percentage") return `Save ${Number(coupon.discount_percent || 0)}% with ${code}`;
-    return `Save ${money(coupon.discount_amount)} with ${code}`;
-  };
-
-  const getCouponSubtext = (coupon) => {
-    if (!coupon) return "Choose an offer for this order.";
-    const minAmount = Number(coupon.min_purchase_amount || 0);
-    if (minAmount > subtotal) return `Shop for ${money(minAmount - subtotal)} more to apply`;
-    return coupon.description || "Tap to apply this offer at checkout.";
-  };
-
   useEffect(() => {
     let cancelled = false;
     const loadOrderState = async () => {
@@ -228,11 +210,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         return;
       }
       try {
-        const [ordersRes, addressRes, walletRes, couponRes] = await Promise.all([
+        const [ordersRes, addressRes, walletRes] = await Promise.all([
           api.get("/api/orders/my"),
           api.get("/api/addresses").catch(() => ({ data: [] })),
           api.get("/api/wallet").catch(() => ({ data: { wallet_balance: 0 } })),
-          api.get(API_ENDPOINTS.coupons).catch(() => ({ data: [] })),
         ]);
         if (cancelled) return;
         const ordersData = unwrapApiData(ordersRes.data);
@@ -255,9 +236,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           }));
         }
         setWalletBalance(Number(walletRes.data?.wallet_balance || walletRes.data?.balance || 0));
-        setAvailableCoupons(Array.isArray(couponRes.data)
-          ? couponRes.data.filter((coupon) => coupon.is_active !== false && coupon.user_eligible !== false)
-          : []);
       } catch {
         if (!cancelled) setIsFirstOrder(false);
       } finally {
@@ -483,33 +461,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     }
   };
 
-  const applyCheckoutCoupon = (couponOrCode = couponCode) => {
-    const coupon = typeof couponOrCode === "object"
-      ? couponOrCode
-      : availableCoupons.find((item) => String(item.code).toUpperCase() === String(couponOrCode).trim().toUpperCase());
-    if (!coupon) {
-      showNotification("Coupon not found.", "warning");
-      return;
-    }
-    const rawDiscount = coupon.discount_type === "percentage"
-      ? subtotal * (Number(coupon.discount_percent || 0) / 100)
-      : Number(coupon.discount_amount || 0);
-    const nextDiscount = Math.min(rawDiscount, Number(coupon.max_discount_amount || rawDiscount), subtotal);
-    const applied = cartApplyCoupon(coupon);
-    if (applied) {
-      setCouponCode(coupon.code);
-      setCouponPanelOpen(false);
-      setCouponModalOpen(false);
-      setCouponCelebration({ code: coupon.code, discount: nextDiscount });
-    }
-  };
-
-  const removeCheckoutCoupon = () => {
-    cartRemoveCoupon();
-    setCouponCode("");
-    setCouponCelebration(null);
-  };
-
   useEffect(() => {
     if (redirectOnEmpty && cart.length === 0 && !orderingRef.current) {
       navigate("/cart");
@@ -523,12 +474,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       });
     }
   }, [cart, navigate, redirectOnEmpty, wizardStep]);
-
-  useEffect(() => {
-    if (!couponCelebration) return undefined;
-    const timer = setTimeout(() => setCouponCelebration(null), 2400);
-    return () => clearTimeout(timer);
-  }, [couponCelebration]);
 
   useEffect(() => {
     const cleanPincode = formData.pincode.trim();
@@ -671,7 +616,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           }),
           // Open Razorpay straight to the method the shopper picked on the
           // payment step (upi | card | netbanking | emi | wallet).
-          method: onlineMethod,
+          method: UPI_METHODS.has(onlineMethod) ? "upi" : onlineMethod,
         },
         theme: { color: "#800020" },
         handler: async (response) => {
@@ -760,16 +705,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
   return (
     <div className="ckw">
-      {false && (
-        <div className="ckw-promo">
-        <span className="ckw-promo-item"><Icon icon="lucide:truck" /> Free Delivery on All Orders!</span>
-        <span className="ckw-promo-sep" />
-        <span className="ckw-promo-item"><Icon icon="lucide:gem" /> Grab ₹50 Signup Bonus</span>
-        <span className="ckw-promo-sep" />
-        <span className="ckw-promo-item"><Icon icon="lucide:rotate-ccw" /> Easy Returns</span>
-        </div>
-      )}
-
       <div className="ckw-header">
         <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
           <Icon icon="lucide:arrow-left" />
@@ -939,6 +874,13 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <Icon icon="lucide:chevron-right" className="ckw-deliver-summary-chev" />
             </button>
 
+            <div className="ckw-pay-total-bar">
+              <span className="ckw-pay-total-items">{selectedUnits} {selectedUnits === 1 ? "item" : "items"}</span>
+              <span className="ckw-pay-total-sep" />
+              <span className="ckw-pay-total-label">Order Total</span>
+              <span className="ckw-pay-total-amt">{money(total)}</span>
+            </div>
+
             {PREPAID_DISCOUNT_AMOUNT > 0 && (
               <div className="ckw-pay-offer-banner">
                 <Icon icon="lucide:badge-percent" />
@@ -949,15 +891,39 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             <div className="ckw-pay-group">
               <button
                 type="button"
+                className={`ckw-pay-row ${isOnline("gpay") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("gpay")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("gpay") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">Google Pay</span>
+                  <span className="ckw-pay-sub">Pay instantly via GPay</span>
+                </span>
+                <Icon icon="logos:google-pay" className="ckw-pay-icon-brand" />
+              </button>
+              <button
+                type="button"
+                className={`ckw-pay-row ${isOnline("phonepe") ? "is-selected" : ""}`}
+                onClick={() => selectOnline("phonepe")}
+              >
+                <span className={`ckw-pay-radio ${isOnline("phonepe") ? "is-on" : ""}`} />
+                <span className="ckw-pay-body">
+                  <span className="ckw-pay-title">PhonePe</span>
+                  <span className="ckw-pay-sub">Pay via PhonePe UPI</span>
+                </span>
+                <Icon icon="simple-icons:phonepe" className="ckw-pay-icon-phonepe" />
+              </button>
+              <button
+                type="button"
                 className={`ckw-pay-row ${isOnline("upi") ? "is-selected" : ""}`}
                 onClick={() => selectOnline("upi")}
               >
                 <span className={`ckw-pay-radio ${isOnline("upi") ? "is-on" : ""}`} />
                 <span className="ckw-pay-body">
-                  <span className="ckw-pay-title">Pay by any UPI App</span>
-                  <span className="ckw-pay-sub">Google Pay, PhonePe, Paytm and more</span>
+                  <span className="ckw-pay-title">Other UPI Apps</span>
+                  <span className="ckw-pay-sub">Paytm, BHIM &amp; more</span>
                 </span>
-                <span className="ckw-pay-badge">UPI</span>
+                <img src="/src/assets/logos/upi.png" alt="UPI" className="ckw-pay-logo-img" />
               </button>
             </div>
 
@@ -973,7 +939,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Credit or Debit Card</span>
                   <span className="ckw-pay-sub">Visa, Mastercard, RuPay &amp; Amex</span>
                 </span>
-                <Icon icon="lucide:credit-card" className="ckw-pay-icon" />
+                <img src="/src/assets/logos/cards.png" alt="Cards" className="ckw-pay-logo-img" />
               </button>
             </div>
 
@@ -989,7 +955,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Net Banking</span>
                   <span className="ckw-pay-sub">All major banks supported</span>
                 </span>
-                <Icon icon="lucide:landmark" className="ckw-pay-icon" />
+                <img src="/src/assets/logos/netBanking.png" alt="Net Banking" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -1001,7 +967,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">EMI</span>
                   <span className="ckw-pay-sub">Easy installments on cards</span>
                 </span>
-                <Icon icon="lucide:calculator" className="ckw-pay-icon" />
+                <img src="/src/assets/logos/emi.png" alt="EMI" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -1013,7 +979,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Wallets</span>
                   <span className="ckw-pay-sub">Paytm, Mobikwik, Freecharge &amp; more</span>
                 </span>
-                <Icon icon="lucide:wallet" className="ckw-pay-icon" />
+                <img src="/src/assets/logos/wallets.png" alt="Wallets" className="ckw-pay-logo-img" />
               </button>
               <button
                 type="button"
@@ -1033,55 +999,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                     {isCodAllowed ? "Pay with cash when your order arrives" : "This order is prepaid only"}
                   </span>
                 </span>
-                <Icon icon="lucide:banknote" className="ckw-pay-icon" />
+                <img src="/src/assets/logos/cod.png" alt="Cash on Delivery" className="ckw-pay-logo-img" />
               </button>
             </div>
 
-            <div className="ckw-promo-code">
-              <button
-                type="button"
-                className={`ckw-promo-toggle ${promoOpen ? "is-open" : ""}`}
-                onClick={() => setPromoOpen((v) => !v)}
-              >
-                <Icon icon="lucide:tag" />
-                <span>{appliedCoupon ? `Coupon ${appliedCoupon.code} applied` : "Add Gift Card or Promo Code"}</span>
-                <Icon icon="lucide:chevron-down" className="ckw-promo-chev" />
-              </button>
-              {promoOpen && (
-                <div className="ckw-promo-panel">
-                  {appliedCoupon ? (
-                    <div className="ckw-promo-applied">
-                      <span><Icon icon="lucide:ticket" /> {appliedCoupon.code} — you saved {money(effectiveCouponDiscount)}</span>
-                      <button type="button" onClick={removeCheckoutCoupon}>Remove</button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="ckw-promo-entry">
-                        <input
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          placeholder="Enter gift card / promo code"
-                        />
-                        <button type="button" onClick={() => applyCheckoutCoupon()}>Apply</button>
-                      </div>
-                      {availableCoupons.length > 0 && (
-                        <div className="ckw-promo-list">
-                          {availableCoupons.map((c) => (
-                            <button key={c.id || c.code} type="button" className="ckw-promo-item-card" onClick={() => applyCheckoutCoupon(c)}>
-                              <span className="ckw-promo-code-tag">{c.code}</span>
-                              <span className="ckw-promo-code-text">
-                                <strong>{getCouponSavingsText(c)}</strong>
-                                <small>{getCouponSubtext(c)}</small>
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
 
             <button
               type="button"
@@ -1089,7 +1010,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               disabled={shippingLoading || payableCart.length === 0}
               onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             >
-              {shippingLoading ? "CHECKING DELIVERY…" : "CONTINUE"}
+              {shippingLoading ? "CHECKING DELIVERY…" : `CONTINUE · ${money(total)}`}
             </button>
           </>
         ) : (
@@ -1178,15 +1099,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <strong>{payMethodLabel}</strong>
                 </span>
                 <em className="ckw-confirm-change">Change</em>
-              </button>
-              <button
-                type="button"
-                className="ckw-confirm-subrow"
-                onClick={() => { setWizardStep("payment"); setPromoOpen(true); }}
-              >
-                <Icon icon="lucide:tag" />
-                <span>{appliedCoupon ? `${appliedCoupon.code} applied` : "Use a gift card, voucher or promo code"}</span>
-                <Icon icon="lucide:chevron-right" />
               </button>
             </div>
 
@@ -1419,62 +1331,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-      {couponModalOpen && (
-        <div className="checkout-coupon-modal" role="dialog" aria-modal="true" aria-label="Coupons and offers">
-          <div className="checkout-coupon-modal-card">
-            <button type="button" className="checkout-coupon-modal-close" onClick={() => setCouponModalOpen(false)} aria-label="Close coupons">
-              <Icon icon="lucide:x" />
-            </button>
-            <div className="checkout-coupon-modal-title">
-              <Icon icon="lucide:badge-percent" />
-              <div>
-                <span>Checkout offers</span>
-                <h3>Coupons & offers</h3>
-              </div>
-            </div>
-            <button type="button" className="checkout-manual-coupon" onClick={() => setCouponPanelOpen((open) => !open)}>
-              Have a coupon code?
-              <Icon icon={couponPanelOpen ? "lucide:chevron-up" : "lucide:chevron-down"} />
-            </button>
-            {couponPanelOpen && (
-              <div className="checkout-coupon-panel">
-                <div className="checkout-coupon-entry">
-                  <input
-                    value={couponCode}
-                    onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
-                    placeholder="Coupon code"
-                  />
-                  <button type="button" onClick={() => applyCheckoutCoupon()}>Apply</button>
-                </div>
-              </div>
-            )}
-            {availableCoupons.length > 0 ? (
-              <div className="checkout-coupon-list">
-                {availableCoupons.map((coupon) => (
-                  <button key={coupon.id || coupon.code} type="button" onClick={() => applyCheckoutCoupon(coupon)}>
-                    <span className="checkout-coupon-code">{coupon.code}</span>
-                    <span className="checkout-coupon-detail">
-                      <strong>{getCouponSavingsText(coupon)}</strong>
-                      <small>{getCouponSubtext(coupon)}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="checkout-coupon-empty">No coupons are available right now.</p>
-            )}
-          </div>
-        </div>
-      )}
-      {couponCelebration && (
-        <div className="checkout-coupon-boom" role="status" aria-live="polite">
-          <span><Icon icon="lucide:sparkles" /></span>
-          <div>
-            <strong>Yay! Coupon applied</strong>
-            <p>{couponCelebration.discount > 0 ? `${money(couponCelebration.discount)} off with ${couponCelebration.code}` : `${couponCelebration.code} is active on this order`}</p>
           </div>
         </div>
       )}
