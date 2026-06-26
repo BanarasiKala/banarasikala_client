@@ -844,9 +844,9 @@
 }
 
 .ckw-pay-fee {
-  font-size: 12px;
-  font-weight: 700;
-  color: #8a5a18;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #c0392b;
 }
 
 .ckw-pay-fee.is-muted {
@@ -905,7 +905,7 @@
 }
 
 .ckw-pay-offer-banner strong {
-  font-weight: 800;
+  font-weight: 500;
 }
 
 /* Grouped payment method tiles (card with divided rows) */
