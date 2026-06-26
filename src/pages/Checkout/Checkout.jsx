@@ -216,7 +216,9 @@ const Checkout = () => {
           }));
         }
         setWalletBalance(Number(walletRes.data?.wallet_balance || walletRes.data?.balance || 0));
-        setAvailableCoupons(Array.isArray(couponRes.data) ? couponRes.data.filter((coupon) => coupon.is_active !== false) : []);
+        setAvailableCoupons(Array.isArray(couponRes.data)
+          ? couponRes.data.filter((coupon) => coupon.is_active !== false && coupon.user_eligible !== false)
+          : []);
       } catch {
         if (!cancelled) setIsFirstOrder(false);
       } finally {

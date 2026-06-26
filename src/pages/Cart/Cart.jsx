@@ -120,6 +120,9 @@ const Cart = () => {
         const now = Date.now();
         const list = (Array.isArray(res.data) ? res.data : [])
           .filter((c) => c.is_active !== false)
+          // Drop coupons this shopper has already exhausted (per-user/global limit).
+          // user_eligible is only present for logged-in shoppers; undefined ⇒ keep.
+          .filter((c) => c.user_eligible !== false)
           .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
           .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
           .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0) }))
