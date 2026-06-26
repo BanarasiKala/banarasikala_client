@@ -828,8 +828,8 @@
 }
 
 .ckw-pay-title {
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 400;
   color: #2a1a12;
 }
 
@@ -1158,7 +1158,7 @@
 
 .ckw-pay-total-amt {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   color: #6b0f17;
 }
 
@@ -1171,7 +1171,7 @@
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
   color: #fff;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: filter 0.15s ease;
