@@ -62,12 +62,10 @@
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 .ckw-header {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 16px 2px 14px;
+  gap: 8px;
+  padding: 14px 2px 12px;
   border-bottom: 1px solid rgba(128, 0, 32, 0.08);
 }
 
@@ -85,36 +83,13 @@
   flex-shrink: 0;
 }
 
-.ckw-logo {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.ckw-logo img {
-  height: 56px;
-  width: auto;
-  object-fit: contain;
-}
-
-.ckw-secure {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #5d140c;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.15;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.ckw-secure svg {
-  font-size: 16px;
+.ckw-header-title {
+  margin: 0;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #6b0f17;
 }
 
 /* ── Stepper ───────────────────────────────────────────────────────────── */

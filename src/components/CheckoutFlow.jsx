@@ -15,7 +15,6 @@ import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../utils/
 import { selectBestCourier } from "../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
-import brandLogo from "../assets/vertical_logo.png";
 import "../pages/Checkout/Checkout.css";
 import "./CheckoutWizard.css";
 
@@ -29,6 +28,9 @@ const GIFT_CHARGE_AMOUNT = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 15
 // Display labels/icons for the chosen online Razorpay method on the confirm step.
 const METHOD_LABELS = { upi: "UPI", card: "Credit / Debit Card", netbanking: "Net Banking", emi: "EMI", wallet: "Wallet" };
 const METHOD_ICONS = { upi: "lucide:smartphone", card: "lucide:credit-card", netbanking: "lucide:landmark", emi: "lucide:calculator", wallet: "lucide:wallet" };
+
+// Title shown in the header for each wizard step.
+const STEP_TITLES = { address: "Select a Delivery Address", payment: "Select a Payment Method", confirm: "Review Your Order" };
 const EMPTY_CHECKOUT_ADDRESS = {
   label: "Home",
   name: "",
@@ -720,8 +722,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
           <Icon icon="lucide:arrow-left" />
         </button>
-        <div className="ckw-logo"><img src={brandLogo} alt="Banarasi Kala" /></div>
-        <div className="ckw-secure"><Icon icon="lucide:lock" /><span>Secure<br />Checkout</span></div>
+        <h1 className="ckw-header-title">{STEP_TITLES[wizardStep]}</h1>
       </div>
 
       <div className="ckw-stepper">
@@ -741,7 +742,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       <div className="ckw-body" ref={rootRef}>
         {wizardStep === "address" ? (
           <>
-            <h2 className="ckw-title">Select a Delivery Address</h2>
             <div className="ckw-otp">
               <Icon icon="lucide:shield-check" />
               <span>One-time password required at time of delivery.</span>
@@ -849,7 +849,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <Icon icon="lucide:chevron-right" className="ckw-deliver-summary-chev" />
             </button>
 
-            <h3 className="ckw-section-label">Select a Payment Method</h3>
             {PREPAID_DISCOUNT_AMOUNT > 0 && (
               <div className="ckw-pay-offer-banner">
                 <Icon icon="lucide:badge-percent" />
