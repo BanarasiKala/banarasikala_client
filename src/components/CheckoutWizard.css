@@ -1,0 +1,602 @@
+/* ============================================================================
+   Checkout wizard — 3-step flow (Address → Payment → Confirm Order).
+   Mobile-first single column rendered inside .checkout-page-shell.
+   Class prefix: ckw-
+   ========================================================================== */
+
+.ckw {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  background: #fdf6ec;
+  color: #46130d;
+}
+
+/* ── Top promo bar ─────────────────────────────────────────────────────── */
+.ckw-promo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 -16px;
+  padding: 9px 14px;
+  background: linear-gradient(90deg, #4a0f0a, #6b0f17, #4a0f0a);
+  color: #f3d39a;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ckw-promo-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ckw-promo-item svg {
+  font-size: 14px;
+  color: #e7b76a;
+}
+
+.ckw-promo-sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(243, 211, 154, 0.35);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.ckw-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 2px 14px;
+  border-bottom: 1px solid rgba(128, 0, 32, 0.08);
+}
+
+.ckw-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #5d140c;
+  font-size: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ckw-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ckw-logo img {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.ckw-secure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #5d140c;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ckw-secure svg {
+  font-size: 16px;
+}
+
+/* ── Stepper ───────────────────────────────────────────────────────────── */
+.ckw-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 18px 4px 4px;
+}
+
+.ckw-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  width: 78px;
+}
+
+.ckw-step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(128, 0, 32, 0.28);
+  background: #fdf6ec;
+  color: rgba(128, 0, 32, 0.5);
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.ckw-step.is-active .ckw-step-dot {
+  background: #6b0f17;
+  border-color: #6b0f17;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(107, 15, 23, 0.3);
+}
+
+.ckw-step.is-done .ckw-step-dot {
+  background: #fdf6ec;
+  border-color: #b07a2e;
+  color: #8a5a18;
+}
+
+.ckw-step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(93, 20, 12, 0.55);
+  text-align: center;
+}
+
+.ckw-step.is-active .ckw-step-label {
+  color: #5d140c;
+}
+
+.ckw-step.is-done .ckw-step-label {
+  color: #8a5a18;
+}
+
+.ckw-step-line {
+  flex: 1 1 auto;
+  height: 1.5px;
+  margin-top: 17px;
+  min-width: 18px;
+  max-width: 60px;
+  background: rgba(128, 0, 32, 0.18);
+}
+
+.ckw-step-line.is-done {
+  background: #b07a2e;
+}
+
+/* ── Step body ─────────────────────────────────────────────────────────── */
+.ckw-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 0 18px;
+}
+
+.ckw-title {
+  margin: 8px 0 2px;
+  text-align: center;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #6b0f17;
+  text-transform: uppercase;
+}
+
+.ckw-title-orn {
+  display: block;
+  margin: 4px auto 0;
+  width: 70px;
+  height: 12px;
+  background: center/contain no-repeat;
+  opacity: 0.6;
+  color: #b07a2e;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* OTP banner */
+.ckw-otp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(176, 122, 46, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(120deg, #fdeede, #fbe7cf);
+  font-size: 13px;
+  font-weight: 500;
+  color: #5d140c;
+}
+
+.ckw-otp svg {
+  font-size: 22px;
+  color: #8a5a18;
+  flex-shrink: 0;
+}
+
+/* ── Address list ──────────────────────────────────────────────────────── */
+.ckw-addr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.ckw-addr-head-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #5d140c;
+  text-transform: uppercase;
+}
+
+.ckw-add-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #8a5a18;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ckw-add-link svg {
+  font-size: 16px;
+}
+
+.ckw-addr-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 16px;
+  background: #fffaf3;
+  box-shadow: 0 6px 18px rgba(88, 39, 13, 0.05);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ckw-addr-card.is-selected {
+  border-color: #6b0f17;
+  box-shadow: 0 8px 22px rgba(107, 15, 23, 0.12);
+}
+
+.ckw-addr-radio {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(128, 0, 32, 0.35);
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease;
+}
+
+.ckw-addr-radio.is-on {
+  border-color: #6b0f17;
+}
+
+.ckw-addr-radio.is-on::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b0f17;
+}
+
+.ckw-addr-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ckw-addr-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ckw-addr-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2a1a12;
+}
+
+.ckw-default-badge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f7dfe0;
+  color: #8a1f2b;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.ckw-addr-menu {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #8a5a18;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.ckw-addr-text {
+  margin: 8px 0 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #4a3a30;
+}
+
+.ckw-addr-phone {
+  font-size: 13.5px;
+  color: #4a3a30;
+}
+
+.ckw-deliver-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7a1218, #4a0c0c);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.14s ease;
+}
+
+.ckw-deliver-btn:hover {
+  filter: brightness(1.08);
+}
+
+.ckw-deliver-btn svg {
+  font-size: 17px;
+}
+
+.ckw-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(128, 0, 32, 0.3);
+  border-radius: 12px;
+  background: #fff;
+  color: #6b0f17;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.ckw-edit-btn svg {
+  font-size: 15px;
+}
+
+/* Delivery instructions (collapsible) */
+.ckw-instructions {
+  border-top: 1px dashed rgba(128, 0, 32, 0.16);
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.ckw-instructions-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #5d140c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ckw-instructions-toggle .ckw-instructions-chevron {
+  margin-left: auto;
+  transition: transform 0.18s ease;
+}
+
+.ckw-instructions-toggle.is-open .ckw-instructions-chevron {
+  transform: rotate(180deg);
+}
+
+.ckw-instructions-input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 0, 32, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #2a1a12;
+  resize: vertical;
+}
+
+.ckw-instructions-input:focus {
+  outline: none;
+  border-color: #6b0f17;
+}
+
+/* ── Empty address state ───────────────────────────────────────────────── */
+.ckw-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 34px 20px 26px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 18px;
+  background: #fffaf3;
+}
+
+.ckw-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  height: 110px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(176, 122, 46, 0.45);
+  color: #6b0f17;
+  font-size: 46px;
+}
+
+.ckw-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #6b0f17;
+}
+
+.ckw-empty-sub {
+  font-size: 13px;
+  color: #6a564a;
+  line-height: 1.5;
+  max-width: 260px;
+}
+
+.ckw-empty-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7a1218, #4a0c0c);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.ckw-empty-btn svg {
+  font-size: 18px;
+}
+
+/* ── Back to cart ──────────────────────────────────────────────────────── */
+.ckw-back-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  margin: 8px auto 4px;
+  border: 0;
+  background: transparent;
+  color: #6b0f17;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── Footer (shared) ───────────────────────────────────────────────────── */
+.ckw-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 6px -16px 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(128, 0, 32, 0.08);
+}
+
+.ckw-trust {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.ckw-trust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #6a564a;
+}
+
+.ckw-trust-item svg {
+  font-size: 22px;
+  color: #8a5a18;
+}
+
+.ckw-trust-item strong {
+  color: #2a1a12;
+  font-weight: 700;
+}
+
+.ckw-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(176, 122, 46, 0.28);
+  border-radius: 12px;
+  background: #fbe9d6;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #5d4435;
+}
+
+.ckw-secure-note svg {
+  font-size: 22px;
+  color: #8a5a18;
+  flex-shrink: 0;
+}
+
+.ckw-help {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5d4435;
+}
+
+.ckw-help svg {
+  font-size: 17px;
+  color: #6b0f17;
+}
+
+.ckw-help a {
+  color: #6b0f17;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

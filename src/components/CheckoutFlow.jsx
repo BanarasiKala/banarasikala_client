@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Fragment, useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
@@ -16,7 +16,9 @@ import { getVariantSku } from "../utils/itemCode";
 import { selectBestCourier } from "../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
+import brandLogo from "../assets/vertical_logo.png";
 import "../pages/Checkout/Checkout.css";
+import "./CheckoutWizard.css";
 
 const PACKAGING_WEIGHT_KG = numberEnv("VITE_PACKAGING_WEIGHT_KG");
 const COD_MAX_AMOUNT = numberEnv("VITE_COD_MAX_AMOUNT");
@@ -143,6 +145,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [couponModalOpen, setCouponModalOpen] = useState(false);
   const [couponCelebration, setCouponCelebration] = useState(null);
   const [checkoutStep, setCheckoutStep] = useState("details");
+  // Wizard step shown one at a time: "address" → "payment" → "confirm".
+  const [wizardStep, setWizardStep] = useState("address");
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [addressForm, setAddressForm] = useState(getEmptyCheckoutAddress(user));
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -268,6 +274,21 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       pincode: String(address.pincode || current.pincode || ""),
       phone: address.phone || user?.phone || current.phone,
     }));
+  };
+
+  // Address step → Payment step: lock in the chosen address and advance.
+  const deliverToAddress = (address) => {
+    selectAddress(address);
+    setWizardStep("payment");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Header back button: step back through the wizard, or out to the cart.
+  const handleWizardBack = () => {
+    if (wizardStep === "confirm") setWizardStep("payment");
+    else if (wizardStep === "payment") setWizardStep("address");
+    else navigate("/cart");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resetAddressForm = () => {
@@ -424,7 +445,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         }, index * 100);
       });
     }
-  }, [cart, navigate, redirectOnEmpty]);
+  }, [cart, navigate, redirectOnEmpty, wizardStep]);
 
   useEffect(() => {
     if (!couponCelebration) return undefined;
@@ -627,11 +648,145 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     }
   };
 
+  const steps = [
+    { key: "address", label: "Address", icon: "lucide:map-pin" },
+    { key: "payment", label: "Payment", icon: "lucide:credit-card" },
+    { key: "confirm", label: "Confirm Order", icon: "lucide:check-circle" },
+  ];
+  const stepIndex = steps.findIndex((s) => s.key === wizardStep);
+
   return (
-    <>
-      <div className="checkout-layout" ref={rootRef}>
-        <CheckoutOrderPanel
-          step={checkoutStep}
+    <div className="ckw">
+      <div className="ckw-promo">
+        <span className="ckw-promo-item"><Icon icon="lucide:truck" /> Free Delivery on All Orders!</span>
+        <span className="ckw-promo-sep" />
+        <span className="ckw-promo-item"><Icon icon="lucide:gem" /> Grab ₹50 Signup Bonus</span>
+        <span className="ckw-promo-sep" />
+        <span className="ckw-promo-item"><Icon icon="lucide:rotate-ccw" /> Easy Returns</span>
+      </div>
+
+      <div className="ckw-header">
+        <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
+          <Icon icon="lucide:arrow-left" />
+        </button>
+        <div className="ckw-logo"><img src={brandLogo} alt="Banarasi Kala" /></div>
+        <div className="ckw-secure"><Icon icon="lucide:lock" /><span>Secure<br />Checkout</span></div>
+      </div>
+
+      <div className="ckw-stepper">
+        {steps.map((s, i) => (
+          <Fragment key={s.key}>
+            {i > 0 && <span className={`ckw-step-line ${i <= stepIndex ? "is-done" : ""}`} />}
+            <div className={`ckw-step ${wizardStep === s.key ? "is-active" : ""} ${i < stepIndex ? "is-done" : ""}`}>
+              <span className="ckw-step-dot">
+                {i < stepIndex ? <Icon icon="lucide:check" /> : <Icon icon={s.icon} />}
+              </span>
+              <span className="ckw-step-label">{s.label}</span>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+
+      <div className="ckw-body" ref={rootRef}>
+        {wizardStep === "address" ? (
+          <>
+            <h2 className="ckw-title">Select a Delivery Address</h2>
+            <div className="ckw-otp">
+              <Icon icon="lucide:shield-check" />
+              <span>One-time password required at time of delivery.</span>
+            </div>
+
+            {addressLoading && !addresses.length ? (
+              <div className="ckw-addr-card"><div className="ckw-addr-main">Loading your addresses…</div></div>
+            ) : addresses.length > 0 ? (
+              <>
+                <div className="ckw-addr-head">
+                  <span className="ckw-addr-head-title">All Addresses ({addresses.length})</span>
+                  <button type="button" className="ckw-add-link" onClick={() => openAddressModal()}>
+                    <Icon icon="lucide:plus" /> Add New Address
+                  </button>
+                </div>
+
+                {addresses.map((address) => {
+                  const isSel = String(selectedAddressId) === String(address.id);
+                  return (
+                    <div key={address.id} className={`ckw-addr-card ${isSel ? "is-selected" : ""}`}>
+                      <button
+                        type="button"
+                        className={`ckw-addr-radio ${isSel ? "is-on" : ""}`}
+                        onClick={() => selectAddress(address)}
+                        aria-label="Select this address"
+                      />
+                      <div className="ckw-addr-main">
+                        <div className="ckw-addr-name-row">
+                          <span className="ckw-addr-name">{address.name || user?.name}</span>
+                          {address.is_default && <span className="ckw-default-badge">Default</span>}
+                          <button
+                            type="button"
+                            className="ckw-addr-menu"
+                            onClick={() => deleteCheckoutAddress(address)}
+                            disabled={String(deletingAddressId) === String(address.id)}
+                            aria-label="Delete address"
+                          >
+                            <Icon icon="lucide:trash-2" />
+                          </button>
+                        </div>
+                        <p className="ckw-addr-text">{getCheckoutAddressLine(address)}</p>
+                        <span className="ckw-addr-phone">Phone: {address.phone || user?.phone}</span>
+
+                        <button type="button" className="ckw-deliver-btn" onClick={() => deliverToAddress(address)}>
+                          <Icon icon="lucide:map-pin" /> DELIVER TO THIS ADDRESS
+                        </button>
+                        <button type="button" className="ckw-edit-btn" onClick={() => openAddressModal(address)}>
+                          <Icon icon="lucide:pencil" /> EDIT ADDRESS
+                        </button>
+
+                        {isSel && (
+                          <div className="ckw-instructions">
+                            <button
+                              type="button"
+                              className={`ckw-instructions-toggle ${showInstructions ? "is-open" : ""}`}
+                              onClick={() => setShowInstructions((v) => !v)}
+                            >
+                              <Icon icon="lucide:clipboard-list" /> Add delivery instructions (optional)
+                              <Icon icon="lucide:chevron-down" className="ckw-instructions-chevron" />
+                            </button>
+                            {showInstructions && (
+                              <textarea
+                                className="ckw-instructions-input"
+                                rows={3}
+                                value={deliveryInstructions}
+                                onChange={(e) => setDeliveryInstructions(e.target.value)}
+                                placeholder="E.g. Leave at the door, call on arrival…"
+                                maxLength={250}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <div className="ckw-empty">
+                <span className="ckw-empty-icon"><Icon icon="lucide:map-pin" /></span>
+                <strong className="ckw-empty-title">No delivery address added yet</strong>
+                <span className="ckw-empty-sub">Add your delivery address to continue with your order.</span>
+                <button type="button" className="ckw-empty-btn" onClick={() => openAddressModal()}>
+                  <Icon icon="lucide:plus" /> ADD NEW ADDRESS
+                </button>
+              </div>
+            )}
+
+            <button type="button" className="ckw-back-cart" onClick={() => navigate("/cart")}>
+              <Icon icon="lucide:arrow-left" /> Back to cart
+            </button>
+          </>
+        ) : (
+          <div className="checkout-layout">
+            <CheckoutOrderPanel
+              step={checkoutStep}
           addresses={addresses}
           selectedAddressId={selectedAddressId}
           onSelectAddress={selectAddress}
@@ -742,7 +897,35 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             setCouponCodeOpen: setCouponPanelOpen,
             couponCelebration,
           }}
-        />
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer (shared across all steps) ── */}
+      <div className="ckw-footer">
+        <div className="ckw-trust">
+          <div className="ckw-trust-item">
+            <Icon icon="lucide:shield-check" />
+            <span><strong>Secure Payments</strong><br />You Can Trust</span>
+          </div>
+          <div className="ckw-trust-item">
+            <Icon icon="lucide:rotate-ccw" />
+            <span><strong>Easy Returns</strong><br />Hassle Free</span>
+          </div>
+          <div className="ckw-trust-item">
+            <Icon icon="lucide:badge-check" />
+            <span><strong>100% Authentic</strong><br />Banarasi Sarees</span>
+          </div>
+        </div>
+        <div className="ckw-secure-note">
+          <Icon icon="lucide:lock" />
+          <span>Your payment details are secure and encrypted. We never store your card details.</span>
+        </div>
+        <div className="ckw-help">
+          <Icon icon="lucide:message-circle" />
+          <span>Need help? <Link to="/contact">Contact Us</Link></span>
+        </div>
       </div>
 
       {addressModalOpen && (
@@ -931,7 +1114,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
