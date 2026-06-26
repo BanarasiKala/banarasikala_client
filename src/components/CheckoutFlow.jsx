@@ -352,6 +352,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   };
 
   const openAddressModal = (address = null) => {
+    if (!address && !editingAddressId && addresses.length >= 3) {
+      showNotification("You can save up to 3 addresses only.", "warning");
+      return;
+    }
     if (address) {
       setEditingAddressId(address.id);
       setAddressForm(cleanCheckoutAddress(address));
@@ -803,8 +807,19 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <>
                 <div className="ckw-addr-head">
                   <span className="ckw-addr-head-title">All Addresses ({addresses.length})</span>
-                  <button type="button" className="ckw-add-link" onClick={() => openAddressModal()}>
-                    <Icon icon="lucide:plus" /> Add New Address
+                  <button
+                    type="button"
+                    className="ckw-add-link"
+                    onClick={() => {
+                      if (addresses.length >= 3) {
+                        showNotification("You can save up to 3 addresses only.", "warning");
+                        return;
+                      }
+                      openAddressModal();
+                    }}
+                    disabled={addresses.length >= 3}
+                  >
+                    <Icon icon="lucide:plus" /> {addresses.length >= 3 ? "Address Limit Reached" : "Add New Address"}
                   </button>
                 </div>
 
@@ -888,8 +903,19 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <span className="ckw-empty-icon"><Icon icon="lucide:map-pin" /></span>
                 <strong className="ckw-empty-title">No delivery address</strong>
                 <span className="ckw-empty-sub">Add your delivery address to continue with your order.</span>
-                <button type="button" className="ckw-empty-btn" onClick={() => openAddressModal()}>
-                  <Icon icon="lucide:plus" /> ADD NEW ADDRESS
+                <button
+                  type="button"
+                  className="ckw-empty-btn"
+                  onClick={() => {
+                    if (addresses.length >= 3) {
+                      showNotification("You can save up to 3 addresses only.", "warning");
+                      return;
+                    }
+                    openAddressModal();
+                  }}
+                  disabled={addresses.length >= 3}
+                >
+                  <Icon icon="lucide:plus" /> {addresses.length >= 3 ? "ADDRESS LIMIT REACHED" : "ADD NEW ADDRESS"}
                 </button>
               </div>
             )}
