@@ -279,6 +279,73 @@
   box-shadow: 0 8px 22px rgba(107, 15, 23, 0.12);
 }
 
+.ckw-addr-skeleton {
+  pointer-events: none;
+}
+
+.ckw-addr-skeleton-radio,
+.ckw-skeleton-line,
+.ckw-skeleton-button {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  background: #eadbc8;
+}
+
+.ckw-addr-skeleton-radio::after,
+.ckw-skeleton-line::after,
+.ckw-skeleton-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: ckw-skeleton-shimmer 1.1s ease-in-out infinite;
+}
+
+.ckw-addr-skeleton-radio {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border-radius: 50%;
+}
+
+.ckw-skeleton-line {
+  height: 13px;
+  border-radius: 999px;
+}
+
+.ckw-skeleton-title {
+  width: 42%;
+  height: 15px;
+}
+
+.ckw-skeleton-text {
+  width: 88%;
+  margin-top: 11px;
+}
+
+.ckw-skeleton-text.short {
+  width: 58%;
+  margin-top: 8px;
+}
+
+.ckw-skeleton-button {
+  width: 100%;
+  height: 43px;
+  margin-top: 14px;
+  border-radius: 12px;
+}
+
+@keyframes ckw-skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 .ckw-addr-radio {
   flex-shrink: 0;
   margin-top: 2px;

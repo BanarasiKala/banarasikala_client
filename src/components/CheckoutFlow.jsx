@@ -745,7 +745,15 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         {wizardStep === "address" ? (
           <>
             {addressLoading && !addresses.length ? (
-              <div className="ckw-addr-card"><div className="ckw-addr-main">Loading your addresses…</div></div>
+              <div className="ckw-addr-card ckw-addr-skeleton" aria-label="Loading addresses">
+                <span className="ckw-addr-skeleton-radio" />
+                <div className="ckw-addr-main">
+                  <span className="ckw-skeleton-line ckw-skeleton-title" />
+                  <span className="ckw-skeleton-line ckw-skeleton-text" />
+                  <span className="ckw-skeleton-line ckw-skeleton-text short" />
+                  <span className="ckw-skeleton-button" />
+                </div>
+              </div>
             ) : addresses.length > 0 ? (
               <>
                 <div className="ckw-addr-head">
