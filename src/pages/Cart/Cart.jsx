@@ -10,6 +10,8 @@ import { useDeliveryLocation } from "../../context/LocationContext";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import { getEstimatedDeliveryDate } from "../../utils/deliveryDate";
+import { numberEnv } from "../../utils/env";
+import { selectBestCourier } from "../../utils/courierSelection";
 import api from "../../utils/api";
 import { API_ENDPOINTS } from "../../config/api";
 import { unwrapApiData } from "../../utils/error";
@@ -18,6 +20,21 @@ import "./Cart.css";
 // Flat charge for gift wrapping + custom message. Mirrors the server's
 // GIFT_CHARGE_AMOUNT (default 159); the backend is authoritative.
 const GIFT_CHARGE = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
+
+// Flat platform fee shown in the cart price summary. Mirrors the checkout /
+// server value; the backend remains authoritative at order time.
+const PLATFORM_FEE = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
+
+// Payment-method offers/charges, mirrored from the checkout. Online gets a flat
+// prepaid discount; COD adds a flat fee and is only offered up to COD_MAX
+// (VITE_COD_MAX_AMOUNT, e.g. 4999) — larger orders are prepaid only.
+const PREPAID_DISCOUNT = numberEnv("VITE_PREPAID_DISCOUNT_AMOUNT");
+const COD_FEE = numberEnv("VITE_COD_FEE_AMOUNT");
+const COD_MAX = numberEnv("VITE_COD_MAX_AMOUNT");
+
+// Per-parcel packaging weight added to each item when asking the courier for a
+// shipping rate (mirrors the checkout's calculation).
+const PACKAGING_WEIGHT_KG = numberEnv("VITE_PACKAGING_WEIGHT_KG");
 
 // Gift-card message length cap (keeps it card-sized; backend also caps it).
 const GIFT_MESSAGE_MAX = 250;
@@ -54,6 +71,10 @@ const Cart = () => {
     getSubtotal,
     refreshCart,
     loading,
+    appliedCoupon,
+    discountAmount,
+    applyCoupon,
+    removeCoupon,
   } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
@@ -63,10 +84,16 @@ const Cart = () => {
   const [coupons, setCoupons] = useState([]);
   const [selected, setSelected] = useState(() => new Set());
   const [giftWrap, setGiftWrap] = useState(false);
+  const [activePayment, setActivePayment] = useState("online");
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(false);
+  const [shippingCharge, setShippingCharge] = useState(0);
+  const [shippingLoading, setShippingLoading] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [editingPin, setEditingPin] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const [showGiftTip, setShowGiftTip] = useState(false);
+  const [showDeliveryTip, setShowDeliveryTip] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
@@ -126,13 +153,29 @@ const Cart = () => {
           .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
           .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
           .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0) }))
-          .filter((c) => c.minPurchase > 1)
+          // Keep coupons that carry any real minimum (> 0). Coupons with a tiny
+          // ₹1 minimum (e.g. welcome offers) qualify; only truly no-minimum (0)
+          // coupons are skipped so the progress bar never divides by zero.
+          .filter((c) => c.minPurchase > 0)
           .sort((a, b) => a.minPurchase - b.minPurchase);
         setCoupons(list);
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  // Load the shopper's wallet balance so they can optionally redeem it here.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    let cancelled = false;
+    api.get("/api/wallet")
+      .then((res) => {
+        if (cancelled) return;
+        setWalletBalance(Number(res.data?.wallet_balance || res.data?.balance || 0));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Keep the selection in sync with the cart: new items default to selected,
   // de-selected ones stay de-selected, removed ones drop out.
@@ -188,6 +231,14 @@ const Cart = () => {
     const mrp = Number(item.mrp_price || item.mrp || 0);
     return sum + (mrp > sell ? (mrp - sell) * Number(item.quantity || 1) : 0);
   }, 0);
+  // Billable weight (product + packaging per unit) used to ask the courier for
+  // the real shipping rate that we then show struck-through against "Free".
+  const totalWeightKg = selectedItems.reduce((sum, item) => {
+    const qty = Math.max(1, Number(item.quantity || 1));
+    const raw = Number(item.weight || 0);
+    const productWeightKg = raw > 5 ? raw / 1000 : raw;
+    return sum + ((productWeightKg + PACKAGING_WEIGHT_KG) * qty);
+  }, 0);
 
   // Extra-off progress, driven by real coupons (sorted by ascending min purchase):
   // find the nearest coupon the cart hasn't reached yet, and the best one already
@@ -200,9 +251,75 @@ const Cart = () => {
     ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
     : 0;
 
-  // Cart total shown at the top = selected items + the gift charge when enabled.
+  // Per-product COD availability is ignored for now — every product is treated as
+  // COD/prepaid eligible. COD is offered only up to the COD cap
+  // (VITE_COD_MAX_AMOUNT); orders above it are prepaid only.
+  // const isProductCodAllowed = selectedItems.length > 0
+  //   && selectedItems.every((item) => Array.isArray(item.payment_options) && item.payment_options.includes("cod"));
+  const isCodAllowed = selectedItems.length > 0 && selectedSubtotal <= COD_MAX;
+
+  // Price summary for the selected items. Delivery is free in the cart; the real
+  // shipping is settled in the checkout flow. Coupon discount is capped at the
+  // subtotal. Payment-method offers (prepaid discount / COD fee) follow the
+  // selected method, mirroring the checkout.
   const cartGiftCharge = giftWrap ? GIFT_CHARGE : 0;
-  const cartTotal = (selectedSubtotal || getSubtotal()) + cartGiftCharge;
+  const cartPlatformFee = selectedItems.length > 0 ? PLATFORM_FEE : 0;
+  const cartPaymentFee = selectedItems.length > 0 && activePayment === "cod" ? COD_FEE : 0;
+  const cartPaymentDiscount = selectedItems.length > 0 && activePayment === "online"
+    ? Math.min(PREPAID_DISCOUNT, selectedSubtotal)
+    : 0;
+  const cartCouponDiscount = appliedCoupon ? Math.min(Number(discountAmount || 0), selectedSubtotal) : 0;
+  const cartGrossTotal = Math.max(
+    0,
+    (selectedSubtotal || getSubtotal()) + cartPlatformFee + cartGiftCharge + cartPaymentFee - cartPaymentDiscount - cartCouponDiscount,
+  );
+  // Wallet is redeemed last, capped at the remaining payable amount.
+  const cartWalletUsable = useWallet ? Math.min(Number(walletBalance || 0), cartGrossTotal) : 0;
+  const cartTotal = Math.max(0, cartGrossTotal - cartWalletUsable);
+
+  // Fall back to online payment if COD stops being available (cap exceeded or a
+  // non-COD item is in the selection).
+  useEffect(() => {
+    if (activePayment === "cod" && !isCodAllowed) setActivePayment("online");
+  }, [activePayment, isCodAllowed]);
+
+  // Fetch the real courier rate for the cart's pincode so the delivery row can
+  // show the actual charge struck-through against "Free". Debounced; mirrors the
+  // checkout's serviceability lookup.
+  useEffect(() => {
+    const cleanPincode = String(pincode || "").trim();
+    if (!/^\d{6}$/.test(cleanPincode) || selectedItems.length === 0) {
+      setShippingCharge(0);
+      setShippingLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setShippingLoading(true);
+        const effectiveWeight = Math.max(0.1, Number(totalWeightKg.toFixed(3)));
+        const response = await fetch(
+          `${API_ENDPOINTS.shiprocket}/serviceability?pincode=${encodeURIComponent(cleanPincode)}&weight=${effectiveWeight}&is_cod=${activePayment === "cod" ? 1 : 0}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch shipping rates");
+        const data = await response.json();
+        const couriers = data?.data?.available_courier_companies || [];
+        const best = selectBestCourier(couriers, {
+          weightKg: effectiveWeight,
+          requireCod: activePayment === "cod" && selectedSubtotal <= COD_MAX,
+        });
+        if (!cancelled) setShippingCharge(best?.rate || 0);
+      } catch {
+        if (!cancelled) setShippingCharge(0);
+      } finally {
+        if (!cancelled) setShippingLoading(false);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pincode, selectedItems.length, totalWeightKg, activePayment, selectedSubtotal]);
 
   // The whole order ships together, so show one consolidated "arrives by" date:
   // the farthest estimate across the items being bought. This is only meaningful
@@ -566,6 +683,200 @@ const Cart = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Payment method ── */}
+        <div className="cart-pricecard">
+          <div className="cart-pricecard-head">
+            <Icon icon="lucide:wallet" />
+            <strong>Payment method</strong>
+          </div>
+          <div className="cart-pay-grid">
+            <button
+              type="button"
+              className={`cart-pay-option ${activePayment === "online" ? "is-active" : ""}`}
+              onClick={() => setActivePayment("online")}
+            >
+              <Icon icon="lucide:shield-check" className="cart-pay-icon" />
+              <span className="cart-pay-name">Online Payment</span>
+              <small className="cart-pay-offer">
+                {PREPAID_DISCOUNT > 0 ? `${formatMoneyShort(PREPAID_DISCOUNT)} extra off` : "Pay securely online"}
+              </small>
+            </button>
+            <button
+              type="button"
+              disabled={!isCodAllowed}
+              className={`cart-pay-option ${activePayment === "cod" ? "is-active" : ""}`}
+              onClick={() => {
+                if (isCodAllowed) {
+                  setActivePayment("cod");
+                } else {
+                  showNotification(`Orders above ${formatMoneyShort(COD_MAX)} are prepaid only.`, "warning");
+                }
+              }}
+            >
+              <Icon icon="lucide:banknote" className="cart-pay-icon" />
+              <span className="cart-pay-name">Cash on Delivery</span>
+              <small className="cart-pay-offer">
+                {isCodAllowed
+                  ? `${formatMoneyShort(COD_FEE)} COD charge`
+                  : `Not available above ${formatMoneyShort(COD_MAX)}`}
+              </small>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Coupons & offers ── */}
+        <div className="cart-pricecard">
+          <div className="cart-pricecard-head">
+            <Icon icon="lucide:badge-percent" />
+            <strong>Coupons &amp; offers</strong>
+          </div>
+          {appliedCoupon ? (
+            <div className="cart-coupon-applied">
+              <span className="cart-coupon-applied-info">
+                <Icon icon="lucide:ticket" />
+                <span>
+                  <strong>{appliedCoupon.code} applied</strong>
+                  <small>You saved {formatMoney(cartCouponDiscount)}</small>
+                </span>
+              </span>
+              <button type="button" className="cart-coupon-remove" onClick={removeCoupon}>
+                Remove
+              </button>
+            </div>
+          ) : coupons.length > 0 ? (
+            <div className="cart-coupon-options">
+              {coupons.map((c) => {
+                const locked = c.minPurchase > selectedSubtotal;
+                return (
+                  <button
+                    key={c.id || c.code}
+                    type="button"
+                    className="cart-coupon-option"
+                    onClick={() => applyCoupon(c)}
+                    disabled={locked}
+                  >
+                    <span className="cart-coupon-tag">{c.code}</span>
+                    <span className="cart-coupon-option-text">
+                      <strong>{couponDiscountText(c)}</strong>
+                      {locked
+                        ? <small>Add {formatMoneyShort(c.minPurchase - selectedSubtotal)} more to apply</small>
+                        : <small>{c.description || "Tap to apply this offer"}</small>}
+                    </span>
+                    <Icon icon="lucide:chevron-right" />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="cart-coupon-none">No coupons available right now.</p>
+          )}
+        </div>
+
+        {/* ── Wallet balance ── */}
+        {walletBalance > 0 && (
+          <div className="cart-pricecard">
+            <label className="cart-wallet">
+              <span className="cart-wallet-info">
+                <Icon icon="lucide:wallet" />
+                <span>
+                  <strong>Use wallet balance</strong>
+                  <small>Available {formatMoney(walletBalance)}</small>
+                </span>
+              </span>
+              <span className="cart-wallet-switch">
+                <input
+                  type="checkbox"
+                  checked={useWallet}
+                  onChange={(e) => setUseWallet(e.target.checked)}
+                />
+                <span className="cart-wallet-slider" />
+              </span>
+            </label>
+          </div>
+        )}
+
+        {/* ── Price details ── */}
+        <div className="cart-pricecard">
+          <div className="cart-pricecard-head">
+            <Icon icon="lucide:receipt-text" />
+            <strong>Price details</strong>
+          </div>
+          <div className="cart-price-rows">
+            <div className="cart-price-row">
+              <span>Subtotal ({selectedUnits} item{selectedUnits === 1 ? "" : "s"})</span>
+              <span>{formatMoney(selectedSubtotal)}</span>
+            </div>
+            <div className="cart-price-row">
+              <span>Platform fee</span>
+              <span>{formatMoney(cartPlatformFee)}</span>
+            </div>
+            {cartPaymentFee > 0 && (
+              <div className="cart-price-row">
+                <span>COD charge</span>
+                <span>{formatMoney(cartPaymentFee)}</span>
+              </div>
+            )}
+            {cartGiftCharge > 0 && (
+              <div className="cart-price-row">
+                <span>Gift wrap &amp; message</span>
+                <span>{formatMoney(cartGiftCharge)}</span>
+              </div>
+            )}
+            <div className="cart-price-row">
+              <span>Delivery</span>
+              {shippingLoading ? (
+                <span>Calculating…</span>
+              ) : shippingCharge > 0 ? (
+                <span className="cart-price-free"><s>{formatMoney(shippingCharge)}</s> Free</span>
+              ) : (
+                <span className="cart-price-free">Free</span>
+              )}
+            </div>
+            {cartPaymentDiscount > 0 && (
+              <div className="cart-price-row cart-price-row--save">
+                <span>Prepaid discount</span>
+                <span>-{formatMoney(cartPaymentDiscount)}</span>
+              </div>
+            )}
+            {cartCouponDiscount > 0 && (
+              <div className="cart-price-row cart-price-row--save">
+                <span>Coupon ({appliedCoupon.code})</span>
+                <span>-{formatMoney(cartCouponDiscount)}</span>
+              </div>
+            )}
+            {cartWalletUsable > 0 && (
+              <div className="cart-price-row cart-price-row--save">
+                <span>Wallet used</span>
+                <span>-{formatMoney(cartWalletUsable)}</span>
+              </div>
+            )}
+          </div>
+          <div className="cart-price-total">
+            <span>Total Payable</span>
+            <strong>{formatMoney(cartTotal)}</strong>
+          </div>
+          {selectedSavings + cartCouponDiscount > 0 && (
+            <div className="cart-price-savings">
+              You save {formatMoney(selectedSavings + cartCouponDiscount)} on this order
+            </div>
+          )}
+          {farthestDeliveryLabel && (
+            <div className="cart-delivery-note">
+              <Icon icon="lucide:truck" className="cart-delivery-truck" />
+              <span>Estimated delivery by <strong>{farthestDeliveryLabel}</strong></span>
+              <span
+                className={`cart-delivery-info ${showDeliveryTip ? "is-open" : ""}`}
+                onClick={() => setShowDeliveryTip((v) => !v)}
+              >
+                <Icon icon="lucide:info" />
+                <span className="cart-delivery-tip">
+                  This is an estimated delivery date. It may change based on courier availability and your location.
+                </span>
+              </span>
+            </div>
+          )}
         </div>
 
       </div>
