@@ -1006,47 +1006,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </div>
 
 
-            <div className="ckw-pay-footer">
-              <div className="ckw-pay-footer-summary">
-                <div className="ckw-pay-footer-row">
-                  <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
-                  <span>{money(cartPageTotal)}</span>
-                </div>
-                {activePayment === "online" && paymentDiscount > 0 && (
-                  <div className="ckw-pay-footer-row ckw-pay-footer-saving">
-                    <span>Online discount</span>
-                    <span>-{money(paymentDiscount)}</span>
-                  </div>
-                )}
-                {activePayment === "cod" && paymentFee > 0 && (
-                  <div className="ckw-pay-footer-row ckw-pay-footer-cod">
-                    <span>COD charge</span>
-                    <span>+{money(paymentFee)}</span>
-                  </div>
-                )}
-                {effectiveCouponDiscount > 0 && (
-                  <div className="ckw-pay-footer-row ckw-pay-footer-saving">
-                    <span>Coupon ({appliedCoupon?.code})</span>
-                    <span>-{money(effectiveCouponDiscount)}</span>
-                  </div>
-                )}
-                {activePayment && (
-                  <div className="ckw-pay-footer-row ckw-pay-footer-total">
-                    <span>Order Total</span>
-                    <span>{money(total)}</span>
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className="ckw-continue"
-                disabled={shippingLoading || payableCart.length === 0 || !activePayment}
-                onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              >
-                {shippingLoading ? "…" : "CONTINUE"}
-              </button>
-            </div>
-            <div className="ckw-pay-footer-spacer" />
           </>
         ) : (
           <>
@@ -1235,6 +1194,50 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
           </>
         )}
       </div>
+
+      {/* ── Payment step sticky footer ── */}
+      {wizardStep === "payment" && (
+        <div className="ckw-pay-footer">
+          <div className="ckw-pay-footer-summary">
+            <div className="ckw-pay-footer-row">
+              <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
+              <span>{money(cartPageTotal)}</span>
+            </div>
+            {activePayment === "online" && paymentDiscount > 0 && (
+              <div className="ckw-pay-footer-row ckw-pay-footer-saving">
+                <span>Online discount</span>
+                <span>-{money(paymentDiscount)}</span>
+              </div>
+            )}
+            {activePayment === "cod" && paymentFee > 0 && (
+              <div className="ckw-pay-footer-row ckw-pay-footer-cod">
+                <span>COD charge</span>
+                <span>+{money(paymentFee)}</span>
+              </div>
+            )}
+            {effectiveCouponDiscount > 0 && (
+              <div className="ckw-pay-footer-row ckw-pay-footer-saving">
+                <span>Coupon ({appliedCoupon?.code})</span>
+                <span>-{money(effectiveCouponDiscount)}</span>
+              </div>
+            )}
+            {activePayment && (
+              <div className="ckw-pay-footer-row ckw-pay-footer-total">
+                <span>Order Total</span>
+                <span>{money(total)}</span>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="ckw-continue"
+            disabled={shippingLoading || payableCart.length === 0 || !activePayment}
+            onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          >
+            {shippingLoading ? "…" : "CONTINUE"}
+          </button>
+        </div>
+      )}
 
       {/* ── Footer (shared across all steps) ── */}
       <div className="ckw-footer">

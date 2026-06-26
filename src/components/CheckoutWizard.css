@@ -1131,22 +1131,14 @@
 
 /* Continue button */
 /* ── Payment step sticky footer ─────────────────────────────────────────── */
-.ckw-pay-footer-spacer {
-  flex-shrink: 0;
-  height: 10px;
-}
 
-.ckw--payment .ckw-footer {
-  padding-bottom: calc(18px + 140px + env(safe-area-inset-bottom, 0px));
-}
 .ckw-pay-footer {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  z-index: 10;
   display: flex;
   flex-direction: column;
+  margin: 0 -6px;
   background: #fff1e6;
   border-top: 1px solid rgba(128, 0, 32, 0.14);
   box-shadow: 0 -6px 20px rgba(74, 12, 12, 0.12);
