@@ -710,13 +710,15 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
   return (
     <div className="ckw">
-      <div className="ckw-promo">
+      {false && (
+        <div className="ckw-promo">
         <span className="ckw-promo-item"><Icon icon="lucide:truck" /> Free Delivery on All Orders!</span>
         <span className="ckw-promo-sep" />
         <span className="ckw-promo-item"><Icon icon="lucide:gem" /> Grab ₹50 Signup Bonus</span>
         <span className="ckw-promo-sep" />
         <span className="ckw-promo-item"><Icon icon="lucide:rotate-ccw" /> Easy Returns</span>
-      </div>
+        </div>
+      )}
 
       <div className="ckw-header">
         <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
@@ -742,11 +744,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       <div className="ckw-body" ref={rootRef}>
         {wizardStep === "address" ? (
           <>
-            <div className="ckw-otp">
-              <Icon icon="lucide:shield-check" />
-              <span>One-time password required at time of delivery.</span>
-            </div>
-
             {addressLoading && !addresses.length ? (
               <div className="ckw-addr-card"><div className="ckw-addr-main">Loading your addresses…</div></div>
             ) : addresses.length > 0 ? (
@@ -822,7 +819,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             ) : (
               <div className="ckw-empty">
                 <span className="ckw-empty-icon"><Icon icon="lucide:map-pin" /></span>
-                <strong className="ckw-empty-title">No delivery address added yet</strong>
+                <strong className="ckw-empty-title">No delivery address</strong>
                 <span className="ckw-empty-sub">Add your delivery address to continue with your order.</span>
                 <button type="button" className="ckw-empty-btn" onClick={() => openAddressModal()}>
                   <Icon icon="lucide:plus" /> ADD NEW ADDRESS
@@ -1201,20 +1198,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
       {/* ── Footer (shared across all steps) ── */}
       <div className="ckw-footer">
-        <div className="ckw-trust">
-          <div className="ckw-trust-item">
-            <Icon icon="lucide:shield-check" />
-            <span><strong>Secure Payments</strong><br />You Can Trust</span>
-          </div>
-          <div className="ckw-trust-item">
-            <Icon icon="lucide:rotate-ccw" />
-            <span><strong>Easy Returns</strong><br />Hassle Free</span>
-          </div>
-          <div className="ckw-trust-item">
-            <Icon icon="lucide:badge-check" />
-            <span><strong>100% Authentic</strong><br />Banarasi Sarees</span>
-          </div>
-        </div>
         <div className="ckw-secure-note">
           <Icon icon="lucide:lock" />
           <span>Your payment details are secure and encrypted. We never store your card details.</span>

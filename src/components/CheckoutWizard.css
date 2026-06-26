@@ -7,8 +7,16 @@
 .ckw {
   display: flex;
   flex-direction: column;
-  padding: 0 6px;
-  background: #fdf6ec;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  background:
+    linear-gradient(180deg, rgba(253, 246, 236, 0.68), rgba(253, 246, 236, 0.82)),
+    url("../assets/img.jpg"),
+    #fdf6ec;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+  background-repeat: no-repeat;
   color: #46130d;
 }
 
@@ -64,12 +72,15 @@
 .ckw-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   padding: 14px 2px 12px;
   border-bottom: 1px solid rgba(128, 0, 32, 0.08);
+  position: relative;
 }
 
 .ckw-back {
+  position: absolute;
+  left: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -85,6 +96,9 @@
 
 .ckw-header-title {
   margin: 0;
+  width: 100%;
+  padding: 0 42px;
+  text-align: center;
   font-family: "Cinzel", Georgia, serif;
   font-size: 17px;
   font-weight: 700;
@@ -443,59 +457,61 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
-  padding: 34px 20px 26px;
+  gap: 5px;
+  margin-left: 6px;
+  margin-right: 6px;
+  padding: 22px 16px 18px;
   border: 1px solid rgba(128, 0, 32, 0.16);
-  border-radius: 18px;
-  background: #fffaf3;
+  border-radius: 14px;
+  background: #fff1e6;
 }
 
 .ckw-empty-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 110px;
-  height: 110px;
-  margin-bottom: 12px;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 8px;
   border-radius: 50%;
   border: 1.5px dashed rgba(176, 122, 46, 0.45);
   color: #6b0f17;
-  font-size: 46px;
+  font-size: 31px;
 }
 
 .ckw-empty-title {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: #6b0f17;
 }
 
 .ckw-empty-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: #6a564a;
-  line-height: 1.5;
-  max-width: 260px;
+  line-height: 1.4;
+  max-width: 230px;
 }
 
 .ckw-empty-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  margin-top: 18px;
-  padding: 14px;
+  margin-top: 12px;
+  padding: 11px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
   color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   cursor: pointer;
 }
 
 .ckw-empty-btn svg {
-  font-size: 18px;
+  font-size: 15px;
 }
 
 /* ── Back to cart ──────────────────────────────────────────────────────── */
@@ -519,14 +535,14 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin: 6px -6px 0;
+  margin: 6px 0 0;
   padding: 18px 12px calc(18px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(128, 0, 32, 0.08);
 }
 
 .ckw-trust {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
@@ -574,8 +590,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
   color: #5d4435;
 }
 
@@ -586,9 +603,20 @@
 
 .ckw-help a {
   color: #6b0f17;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .ckw-footer {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ckw-help {
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
 }
 
 /* ── Payment step ──────────────────────────────────────────────────────── */

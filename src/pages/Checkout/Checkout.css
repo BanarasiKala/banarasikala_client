@@ -1302,8 +1302,8 @@
 
 @media (max-width: 640px) {
     .checkout-page main {
-        padding: 10px;
-        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        padding: 0;
+        padding-bottom: 0;
     }
 
     .checkout-page-shell {
