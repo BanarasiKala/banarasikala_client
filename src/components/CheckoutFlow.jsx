@@ -38,6 +38,7 @@ const EMPTY_CHECKOUT_ADDRESS = {
   house_building: "",
   area_street: "",
   landmark: "",
+  delivery_instructions: "",
   map_address: "",
   map_lat: "",
   map_lng: "",
@@ -231,6 +232,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         const defaultAddress = nextAddresses.find((address) => address.is_default) || nextAddresses[0];
         if (defaultAddress) {
           setSelectedAddressId(String(defaultAddress.id));
+          setDeliveryInstructions(defaultAddress.delivery_instructions || "");
           setFormData((current) => ({
             ...current,
             fullName: defaultAddress.name || user?.name || current.fullName,
@@ -265,6 +267,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
   const selectAddress = (address) => {
     setSelectedAddressId(String(address.id));
+    setDeliveryInstructions(address.delivery_instructions || "");
     setFormData((current) => ({
       ...current,
       fullName: address.name || user?.name || current.fullName,
@@ -276,8 +279,22 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     }));
   };
 
-  // Address step → Payment step: lock in the chosen address and advance.
-  const deliverToAddress = (address) => {
+  // Address step → Payment step: lock in the chosen address and advance. If the
+  // shopper edited the inline delivery instructions for the address they're
+  // delivering to, persist them (best-effort) before moving on.
+  const deliverToAddress = async (address) => {
+    const isCurrent = String(selectedAddressId) === String(address.id);
+    const trimmed = deliveryInstructions.trim();
+    if (isCurrent && trimmed !== String(address.delivery_instructions || "").trim()) {
+      try {
+        await api.put(`/api/addresses/${address.id}`, { delivery_instructions: trimmed });
+        setAddresses((prev) => prev.map((a) => (
+          String(a.id) === String(address.id) ? { ...a, delivery_instructions: trimmed } : a
+        )));
+      } catch {
+        // Non-blocking — instructions are a best-effort convenience here.
+      }
+    }
     selectAddress(address);
     setWizardStep("payment");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1022,8 +1039,19 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   </label>
                 </div>
                 <label>
-                  <span>Landmark</span>
-                  <input name="landmark" value={addressForm.landmark} onChange={handleAddressFormChange} />
+                  <span>Landmark (optional)</span>
+                  <input name="landmark" value={addressForm.landmark} onChange={handleAddressFormChange} placeholder="e.g. Near City Mall" />
+                </label>
+                <label>
+                  <span>Delivery instructions (optional)</span>
+                  <textarea
+                    name="delivery_instructions"
+                    rows={2}
+                    maxLength={250}
+                    value={addressForm.delivery_instructions}
+                    onChange={handleAddressFormChange}
+                    placeholder="e.g. Leave at the door, call on arrival…"
+                  />
                 </label>
                 <label className="buy-now-checkbox">
                   <input type="checkbox" name="is_default" checked={addressForm.is_default} onChange={handleAddressFormChange} />
