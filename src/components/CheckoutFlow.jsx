@@ -295,9 +295,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const deliverToAddress = async (address) => {
     const isCurrent = String(selectedAddressId) === String(address.id);
     const trimmed = deliveryInstructions.trim();
+    let nextAddress = address;
     if (isCurrent && trimmed !== String(address.delivery_instructions || "").trim()) {
       try {
         await api.put(`/api/addresses/${address.id}`, { delivery_instructions: trimmed });
+        nextAddress = { ...address, delivery_instructions: trimmed };
         setAddresses((prev) => prev.map((a) => (
           String(a.id) === String(address.id) ? { ...a, delivery_instructions: trimmed } : a
         )));
@@ -305,7 +307,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         // Non-blocking — instructions are a best-effort convenience here.
       }
     }
-    selectAddress(address);
+    selectAddress(nextAddress);
     setWizardStep("payment");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -396,11 +398,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     const form = cleanCheckoutAddress(addressForm);
     const phone = normalizePhone(form.phone);
     const errors = {};
+    if (!form.name.trim()) errors.name = "Receiver name is required.";
     if (!form.house_building.trim()) errors.house_building = "Address is required.";
     if (!form.city.trim()) errors.city = "City is required.";
     if (!form.state.trim()) errors.state = "State is required.";
     if (!form.pincode || !/^\d{6}$/.test(form.pincode)) errors.pincode = "Enter a valid 6-digit pincode.";
-    if (!phone) errors.phone = "Phone is required.";
+    if (!phone) errors.phone = "Receiver phone number is required.";
     else if (!/^[6-9]\d{9}$/.test(phone)) errors.phone = "Enter a valid 10-digit mobile number.";
     if (Object.keys(errors).length > 0) {
       setAddrFormErrors(errors);
@@ -412,8 +415,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       setAddressSaving(true);
       const payload = {
         ...form,
-        name: form.name || user?.name || "",
-        phone: phone || user?.phone || "",
+        name: form.name.trim(),
+        phone,
       };
       const response = editingAddressId
         ? await api.put(`/api/addresses/${editingAddressId}`, payload)
@@ -1224,7 +1227,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </button>
             <div className="buy-now-section-title buy-now-address-modal-title">
               <h3>{editingAddressId ? "Edit address" : "Add new address"}</h3>
-              <span>Required fields are marked with *.</span>
             </div>
 
             <div className="buy-now-location-card">
@@ -1242,7 +1244,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <div className="buy-now-location-actions">
                 <button type="button" onClick={() => setMapOpen(true)}>
                   <Icon icon="lucide:map-pin" />
-                  {addressForm.map_address ? "Change map location" : "Add map location"}
+                  {addressForm.map_address ? "Change location" : "Add new location"}
                 </button>
                 {addressForm.map_address ? (
                   <button
@@ -1259,59 +1261,56 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
             {showAddressForm && (
               <div className="buy-now-address-form">
-                <div className="buy-now-form-row">
-                  <label>
-                    <span>Label</span>
-                    <select name="label" value={addressForm.label} onChange={handleAddressFormChange}>
-                      <option>Home</option>
-                      <option>Work</option>
-                      <option>Other</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Receiver name</span>
-                    <input name="name" value={addressForm.name} onChange={handleAddressFormChange} />
-                  </label>
-                </div>
+                <label>
+                  <span>Label</span>
+                  <select name="label" value={addressForm.label} onChange={handleAddressFormChange}>
+                    <option>Home</option>
+                    <option>Work</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Receiver name *</span>
+                  <input name="name" value={addressForm.name} onChange={handleAddressFormChange} placeholder="Enter receiver name" />
+                  {addrFormErrors.name && <em className="buy-now-field-error">{addrFormErrors.name}</em>}
+                </label>
+                <label>
+                  <span>Receiver phone number *</span>
+                  <div className="buy-now-phone-input">
+                    <span className="buy-now-country-code"><span className="buy-now-flag-india" aria-hidden="true" />+91</span>
+                    <input name="phone" inputMode="tel" maxLength={10} placeholder="10-digit mobile number" value={addressForm.phone} onChange={handleAddressFormChange} />
+                  </div>
+                  {addrFormErrors.phone && <em className="buy-now-field-error">{addrFormErrors.phone}</em>}
+                </label>
                 <label>
                   <span>Flat, House no., Building *</span>
-                  <input name="house_building" value={addressForm.house_building} onChange={handleAddressFormChange} />
+                  <input name="house_building" value={addressForm.house_building} onChange={handleAddressFormChange} placeholder="Flat, house no. or building" />
                   {addrFormErrors.house_building && <em className="buy-now-field-error">{addrFormErrors.house_building}</em>}
                 </label>
                 <label>
                   <span>Area, Street, Sector</span>
-                  <input name="area_street" value={addressForm.area_street} onChange={handleAddressFormChange} />
+                  <input name="area_street" value={addressForm.area_street} onChange={handleAddressFormChange} placeholder="Area, street or sector" />
                 </label>
                 <div className="buy-now-form-row">
                   <label>
                     <span>City *</span>
-                    <input name="city" value={addressForm.city} onChange={handleAddressFormChange} />
+                    <input name="city" value={addressForm.city} onChange={handleAddressFormChange} placeholder="Enter city" />
                     {addrFormErrors.city && <em className="buy-now-field-error">{addrFormErrors.city}</em>}
                   </label>
                   <label>
                     <span>State *</span>
-                    <input name="state" value={addressForm.state} onChange={handleAddressFormChange} />
+                    <input name="state" value={addressForm.state} onChange={handleAddressFormChange} placeholder="Enter state" />
                     {addrFormErrors.state && <em className="buy-now-field-error">{addrFormErrors.state}</em>}
                   </label>
                 </div>
-                <div className="buy-now-form-row">
-                  <label>
-                    <span>Pincode *</span>
-                    <input name="pincode" inputMode="numeric" value={addressForm.pincode} onChange={handleAddressFormChange} />
-                    {addrFormErrors.pincode && <em className="buy-now-field-error">{addrFormErrors.pincode}</em>}
-                  </label>
-                  <label>
-                    <span>Phone *</span>
-                    <div className="buy-now-phone-input">
-                      <span className="buy-now-country-code"><span className="buy-now-flag-india" aria-hidden="true" />+91</span>
-                      <input name="phone" inputMode="tel" maxLength={10} placeholder="10-digit mobile number" value={addressForm.phone} onChange={handleAddressFormChange} />
-                    </div>
-                    {addrFormErrors.phone && <em className="buy-now-field-error">{addrFormErrors.phone}</em>}
-                  </label>
-                </div>
+                <label>
+                  <span>Pincode *</span>
+                  <input name="pincode" inputMode="numeric" value={addressForm.pincode} onChange={handleAddressFormChange} placeholder="6-digit pincode" />
+                  {addrFormErrors.pincode && <em className="buy-now-field-error">{addrFormErrors.pincode}</em>}
+                </label>
                 <label>
                   <span>Landmark (optional)</span>
-                  <input name="landmark" value={addressForm.landmark} onChange={handleAddressFormChange} placeholder="e.g. Near City Mall" />
+                  <input name="landmark" value={addressForm.landmark} onChange={handleAddressFormChange} placeholder="e.g. near city mall" />
                 </label>
                 <label>
                   <span>Delivery instructions (optional)</span>
@@ -1321,7 +1320,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                     maxLength={250}
                     value={addressForm.delivery_instructions}
                     onChange={handleAddressFormChange}
-                    placeholder="e.g. Leave at the door, call on arrival…"
+                    placeholder="e.g. leave at the door, call on arrival..."
                   />
                 </label>
                 <label className="buy-now-checkbox">

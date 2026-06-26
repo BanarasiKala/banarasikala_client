@@ -924,7 +924,7 @@
     z-index: 2147483010;
     display: grid;
     place-items: center;
-    padding: 14px;
+    padding: clamp(28px, 5vh, 52px) 16px;
     overflow: auto;
     background: rgba(45, 27, 14, 0.42);
     backdrop-filter: blur(7px);
@@ -933,7 +933,8 @@
 .buy-now-address-modal-card {
     position: relative;
     width: min(760px, 100%);
-    max-height: min(820px, calc(100vh - 28px));
+    max-height: min(820px, calc(100vh - 72px));
+    max-height: min(820px, calc(100dvh - 72px));
     overflow-y: auto;
     display: grid;
     gap: 12px;
@@ -961,6 +962,8 @@
 }
 
 .buy-now-address-modal-title {
+    display: grid;
+    gap: 3px;
     padding-right: 42px;
 }
 
@@ -969,11 +972,15 @@
     color: #35170f;
     font-size: 20px;
     font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .buy-now-address-modal-title span {
+    display: block;
     color: rgba(53, 23, 15, 0.56);
     font-size: 11px;
+    line-height: 1.35;
 }
 
 .buy-now-location-card {
@@ -1016,6 +1023,10 @@
     gap: 8px;
 }
 
+.buy-now-location-actions {
+    justify-content: flex-start;
+}
+
 .buy-now-location-actions button,
 .buy-now-form-actions button {
     display: inline-flex;
@@ -1031,6 +1042,7 @@
     cursor: pointer;
     font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .buy-now-location-actions button.is-danger {
@@ -1064,7 +1076,8 @@
 }
 
 .buy-now-address-form input,
-.buy-now-address-form select {
+.buy-now-address-form select,
+.buy-now-address-form textarea {
     width: 100%;
     min-height: 38px;
     padding: 0 11px;
@@ -1075,6 +1088,22 @@
     font-size: 13px;
     font-weight: 400;
     outline: none;
+}
+
+.buy-now-address-form textarea {
+    min-height: 74px;
+    padding: 10px 11px;
+    font-family: inherit;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+.buy-now-address-form input::placeholder,
+.buy-now-address-form textarea::placeholder {
+    color: rgba(53, 23, 15, 0.42);
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 1;
 }
 
 .buy-now-checkbox {
@@ -1110,9 +1139,9 @@
     display: flex;
     align-items: center;
     border: 1px solid rgba(53, 23, 15, 0.18);
-    border-radius: 4px;
+    border-radius: 9px;
     overflow: hidden;
-    background: #fff;
+    background: #fffdf8;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -1125,6 +1154,7 @@
     flex: 1;
     min-height: 38px;
     border: 0 !important;
+    background: transparent;
     box-shadow: none !important;
     border-radius: 0 !important;
     padding-left: 8px;
@@ -1168,6 +1198,77 @@
 
 .checkout-page .profile-map-modal {
     z-index: 2147483020;
+    padding: clamp(28px, 5vh, 52px) 16px;
+    place-items: center;
+}
+
+.checkout-page .profile-map-sheet {
+    width: min(760px, calc(100vw - 32px));
+    height: auto;
+    min-height: 0;
+    max-height: min(760px, calc(100vh - 72px));
+    max-height: min(760px, calc(100dvh - 72px));
+    border: 1px solid rgba(128, 0, 32, 0.12);
+    border-radius: 12px;
+}
+
+.checkout-page .profile-map-content {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+}
+
+.checkout-page .profile-map-head button,
+.checkout-page .profile-current-location,
+.checkout-page .profile-map-bottom .profile-btn,
+.checkout-page .profile-map-manual {
+    font-weight: 500;
+}
+
+.checkout-page .profile-map-head h2 {
+    font-weight: 600;
+}
+
+.checkout-page .profile-map-bottom strong {
+    font-weight: 600;
+}
+
+.checkout-page .profile-map-search-area,
+.checkout-page .profile-current-location,
+.checkout-page .profile-map-status {
+    margin: 0;
+}
+
+.checkout-page .profile-current-location {
+    width: 100%;
+}
+
+.checkout-page .profile-map-canvas {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.checkout-page .profile-map-bottom {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    border: 1px solid rgba(128, 0, 32, 0.1);
+    border-radius: 10px;
+}
+
+.checkout-page .profile-map-bottom .profile-btn {
+    justify-self: center;
+    min-width: min(260px, 100%);
+    border: 1px solid rgba(199, 146, 48, 0.28);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #800020, #4b060d);
+    color: #f5cf72;
+    font-family: "Poppins", sans-serif;
+    letter-spacing: 0.04em;
+}
+
+.checkout-page .profile-map-bottom .profile-btn:hover:not(:disabled) {
+    filter: brightness(1.12);
+    transform: translateY(-1px);
 }
 
 .checkout-coupon-modal,
@@ -1317,6 +1418,72 @@
         max-height: calc(100dvh - 20px - env(safe-area-inset-bottom, 0px));
     }
 
+    .buy-now-address-modal {
+        padding: 22px 10px calc(22px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .buy-now-address-modal-card {
+        max-height: calc(100vh - 44px);
+        max-height: calc(100dvh - 44px - env(safe-area-inset-bottom, 0px));
+        padding: 16px;
+    }
+
+    .buy-now-address-modal-title {
+        padding-right: 38px;
+    }
+
+    .buy-now-address-modal-title h3 {
+        font-size: 17px;
+    }
+
+    .buy-now-location-card {
+        gap: 8px;
+    }
+
+    .buy-now-location-actions button {
+        min-height: 32px;
+        padding: 0 9px;
+        font-size: 10.5px;
+    }
+
+    .checkout-page .profile-map-modal {
+        padding: 18px 10px calc(18px + env(safe-area-inset-bottom, 0px));
+        place-items: center;
+    }
+
+    .checkout-page .profile-map-sheet {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: calc(100vh - 36px);
+        max-height: calc(100dvh - 36px - env(safe-area-inset-bottom, 0px));
+        border: 1px solid rgba(128, 0, 32, 0.12);
+        border-radius: 12px;
+    }
+
+    .checkout-page .profile-map-content {
+        padding: 10px;
+        gap: 9px;
+    }
+
+    .checkout-page .profile-map-canvas {
+        height: 36vh;
+        min-height: 240px;
+    }
+
+    .checkout-page .profile-map-bottom {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-page .profile-map-bottom .profile-btn {
+        width: min(260px, 100%);
+        justify-self: center;
+    }
+
+    .checkout-page .profile-map-manual {
+        width: 100%;
+    }
+
     .checkout-layout {
         gap: 12px !important;
         padding: 16px;
@@ -1368,6 +1535,16 @@
 
     .buy-now-address-actions {
         justify-self: start;
+    }
+}
+
+@media (max-width: 380px) {
+    .buy-now-address-modal-title {
+        padding-right: 34px;
+    }
+
+    .buy-now-address-modal-title h3 {
+        font-size: 15px;
     }
 }
 
