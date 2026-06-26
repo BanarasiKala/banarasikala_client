@@ -481,7 +481,7 @@
 
 .ckw-empty-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: #6b0f17;
 }
 
@@ -505,7 +505,7 @@
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
   color: #fff;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.03em;
   cursor: pointer;
 }
@@ -526,7 +526,9 @@
   background: transparent;
   color: #6b0f17;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
