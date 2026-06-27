@@ -873,6 +873,7 @@
 
 .ckw-pay-icon-phonepe {
   flex-shrink: 0;
+  margin-right: 12px;
   font-size: 24px;
   color: #5f259f;
 }
@@ -1320,7 +1321,8 @@
 
 .ckw-pay-cta--sticky {
   position: sticky;
-  bottom: 8px;
+  /* Lift it clear of browser bottom UI bars that overlap on some browsers. */
+  bottom: calc(50px + env(safe-area-inset-bottom, 0px));
   z-index: 5;
 }
 
@@ -1403,14 +1405,22 @@
   color: #800020;
 }
 
+/* Bill card flattens its bottom edge so the free-delivery banner attaches to it. */
+.ckw-bill--attached {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 0;
+}
+
 /* Free delivery banner */
 .ckw-prime {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  margin-top: -14px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 0 0 14px 14px;
   background: linear-gradient(90deg, #4a0f0a, #6b0f17, #4a0f0a);
   color: #f3d39a;
   text-align: center;
@@ -1464,6 +1474,22 @@
 .ckw-confirm-pin {
   background: #6b0f17;
   color: #fff;
+}
+
+.ckw-confirm-ico--phonepe {
+  background: #5f259f;
+  color: #fff;
+}
+
+.ckw-confirm-ico--gpay {
+  background: #fff;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+}
+
+.ckw-confirm-ico-img {
+  width: 20px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .ckw-confirm-text {

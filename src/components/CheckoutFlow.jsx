@@ -17,6 +17,7 @@ import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
 import "../pages/Checkout/Checkout.css";
 import "./CheckoutWizard.css";
+import logoGpay from "../assets/logos/Gpay.png";
 import logoUpi from "../assets/logos/upi.png";
 import logoCards from "../assets/logos/cards.png";
 import logoNetBanking from "../assets/logos/netBanking.png";
@@ -722,7 +723,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       {activePayment === "cod"
         ? <img src={logoCod} alt="" className="ckw-pay-cta-logo" />
         : onlineMethod === "gpay"
-          ? <Icon icon="logos:google-pay" className="ckw-pay-cta-icon-brand" />
+          ? <img src={logoGpay} alt="" className="ckw-pay-cta-logo" />
           : onlineMethod === "phonepe"
             ? <Icon icon="simple-icons:phonepe" className="ckw-pay-cta-icon-phonepe" />
             : onlineMethod === "upi"
@@ -738,8 +739,9 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                       : <Icon icon="lucide:shield-check" className="ckw-pay-cta-icon-brand" />
       }
       <span className="ckw-pay-cta-body">
-        <span className="ckw-pay-cta-amount">{activePayment === "cod" ? `PLACE ORDER · ${money(total)}` : `PAY ${money(total)}`}</span>
-        <span className="ckw-pay-cta-via">with {payMethodLabel}</span>
+        <span className="ckw-pay-cta-amount">
+          {activePayment === "cod" ? "PLACE ORDER" : "PAY"} with {payMethodLabel}
+        </span>
       </span>
     </>
   );
@@ -968,7 +970,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                   <span className="ckw-pay-title">Google Pay</span>
                   <span className="ckw-pay-sub">Pay instantly via GPay</span>
                 </span>
-                <Icon icon="logos:google-pay" className="ckw-pay-icon-brand" />
+                <img src={logoGpay} alt="Google Pay" className="ckw-pay-logo-img" />
               </button>
               {isOnline("gpay") && payInlineSummary}
               <button
@@ -1102,7 +1104,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               {payCtaContent}
             </button>
 
-            <div className="ckw-bill">
+            <div className={`ckw-bill${shippingCharge > 0 ? " ckw-bill--attached" : ""}`}>
               <div className="ckw-bill-row">
                 <span>Subtotal ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
                 <span>{money(subtotal)}</span>
@@ -1175,7 +1177,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
             <div className="ckw-confirm-card">
               <button type="button" className="ckw-confirm-row" onClick={() => setWizardStep("payment")}>
-                <span className="ckw-confirm-ico"><Icon icon={payMethodIcon} /></span>
+                <span className={`ckw-confirm-ico${isOnline("phonepe") ? " ckw-confirm-ico--phonepe" : ""}${isOnline("gpay") ? " ckw-confirm-ico--gpay" : ""}`}>
+                  {isOnline("gpay")
+                    ? <img src={logoGpay} alt="Google Pay" className="ckw-confirm-ico-img" />
+                    : <Icon icon={payMethodIcon} />}
+                </span>
                 <span className="ckw-confirm-text">
                   <small>PAYING WITH</small>
                   <strong>{payMethodLabel}</strong>
