@@ -612,6 +612,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         const dbRes = await api.post("/api/orders", finalOrderData);
         orderingRef.current = true;
         payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
+        if (walletUsableAmount > 0) window.dispatchEvent(new CustomEvent("bk:wallet-used", { detail: { deducted: walletUsableAmount } }));
         navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
         return;
       }
@@ -678,6 +679,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             });
             orderingRef.current = true;
             payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
+            if (walletUsableAmount > 0) window.dispatchEvent(new CustomEvent("bk:wallet-used", { detail: { deducted: walletUsableAmount } }));
             navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
           } catch (error) {
             if (isMountedRef.current) {

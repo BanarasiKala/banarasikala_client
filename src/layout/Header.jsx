@@ -112,8 +112,23 @@ const Header = () => {
 
     loadAccountExtras();
 
+    const onWalletUsed = (e) => {
+      const deducted = Number(e?.detail?.deducted || 0);
+      if (deducted > 0) {
+        setWalletBalance((prev) => Math.max(0, (prev ?? fallbackBalance) - deducted));
+      }
+      api.get("/api/wallet").then((res) => {
+        if (!active) return;
+        setWalletBalance(
+          res.data?.wallet_balance ?? res.data?.balance ?? fallbackBalance
+        );
+      }).catch(() => {});
+    };
+    window.addEventListener("bk:wallet-used", onWalletUsed);
+
     return () => {
       active = false;
+      window.removeEventListener("bk:wallet-used", onWalletUsed);
     };
   }, [user?.id, user?.wallet_balance, user?.walletBalance, user?.referral_code]);
 
