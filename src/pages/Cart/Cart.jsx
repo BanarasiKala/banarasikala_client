@@ -110,13 +110,24 @@ const Cart = () => {
         const res = await api.get(API_ENDPOINTS.cartValidate);
         const issues = unwrapApiData(res.data) || [];
         const alerts = [];
+        const outOfStockKeys = new Set();
         for (const issue of issues) {
           alerts.push(issue);
           if (issue.issue === "quantity_exceeded" && issue.availableStock > 0) {
             updateQuantity(issue.productId, issue.availableStock, issue.colorId);
           }
+          if (issue.issue === "out_of_stock" || issue.availableStock === 0) {
+            outOfStockKeys.add(`${issue.productId}-${issue.colorId ?? ""}`);
+          }
         }
         setStockAlerts(alerts);
+        if (outOfStockKeys.size > 0) {
+          setSelected((prev) => {
+            const next = new Set(prev);
+            outOfStockKeys.forEach((key) => next.delete(key));
+            return next;
+          });
+        }
       } catch {
         setStockAlerts([]);
       } finally {
@@ -181,15 +192,17 @@ const Cart = () => {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Keep the selection in sync with the cart: new items default to selected,
-  // de-selected ones stay de-selected, removed ones drop out.
+  // Keep the selection in sync with the cart: new in-stock items default to
+  // selected, out-of-stock items are never auto-selected, de-selected ones
+  // stay de-selected, and removed ones drop out.
   useEffect(() => {
     setSelected((prev) => {
       const next = new Set();
       cart.forEach((item) => {
         const key = itemKey(item);
         const isNew = !knownKeysRef.current.has(key);
-        if (isNew || prev.has(key)) next.add(key);
+        const inStock = !getProductStockInfo(item, item.colorId).isOutOfStock;
+        if ((isNew && inStock) || prev.has(key)) next.add(key);
       });
       knownKeysRef.current = new Set(cart.map(itemKey));
       return next;
@@ -376,6 +389,16 @@ const Cart = () => {
       showNotification("Please add your delivery pincode to continue.", "warning");
       return;
     }
+    const blockedKeys = new Set(
+      stockAlerts
+        .filter((a) => a.issue === "out_of_stock" || a.availableStock === 0)
+        .map((a) => `${a.productId}-${a.colorId ?? ""}`)
+    );
+    const hasUnavailable = selectedItems.some((item) => blockedKeys.has(itemKey(item)));
+    if (hasUnavailable) {
+      showNotification("Some selected items are out of stock. Please remove them before proceeding.", "error");
+      return;
+    }
     // Carry the chosen items (and gift preference) through to checkout.
     sessionStorage.setItem("bk_cart_selected", JSON.stringify(selectedItems.map(itemKey)));
     sessionStorage.setItem("bk_cart_gift", giftWrap ? "1" : "0");
@@ -470,10 +493,12 @@ const Cart = () => {
                 </span>
               )}
             </div>
-            <div className="cart-summary-amount">
-              <span className="cart-summary-amount-label">TOTAL</span>
-              <strong>{formatMoney(cartTotal)}</strong>
-            </div>
+            {selectedItems.length > 0 && (
+              <div className="cart-summary-amount">
+                <span className="cart-summary-amount-label">TOTAL</span>
+                <strong>{formatMoney(cartTotal)}</strong>
+              </div>
+            )}
           </div>
 
           {(!pincode || editingPin) && (
@@ -643,13 +668,9 @@ const Cart = () => {
                     </span>
                   )}
 
-                  {/* "Only X left in this color" badge — hidden for now
-                  {(stockInfo.isOutOfStock || stockInfo.isLowStock) && (
-                    <p className={`cart-stock-note ${stockInfo.isOutOfStock ? "out" : "low"}`}>
-                      {stockInfo.colorMessage || stockInfo.badge}
-                    </p>
+                  {stockInfo.isOutOfStock && (
+                    <span className="cart-card-oos-badge">Out of Stock</span>
                   )}
-                  */}
 
                   <div className="cart-card-price-row">
                     {stockInfo.isOutOfStock ? (
@@ -688,7 +709,7 @@ const Cart = () => {
         </div>
 
         {/* ── Coupons & offers ── */}
-        <div className="cart-promo">
+        {selectedItems.length > 0 && <div className="cart-promo">
           <button
             type="button"
             className={`cart-promo-toggle ${couponOpen ? "is-open" : ""}`}
@@ -745,10 +766,10 @@ const Cart = () => {
               )}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* ── Wallet balance ── */}
-        {walletBalance > 0 && (
+        {selectedItems.length > 0 && walletBalance > 0 && (
           <div className="cart-pricecard">
             <label className="cart-wallet">
               <span className="cart-wallet-info">
@@ -771,7 +792,7 @@ const Cart = () => {
         )}
 
         {/* ── Price details ── */}
-        <div className="cart-pricecard">
+        {selectedItems.length > 0 && <div className="cart-pricecard">
           <div className="cart-pricecard-head">
             <Icon icon="lucide:receipt-text" />
             <strong>Price details</strong>
@@ -838,17 +859,19 @@ const Cart = () => {
               </span>
             </div>
           )}
-        </div>
+        </div>}
 
       </div>
 
       {/* ── Sticky checkout bar (only when the top button is off-screen) ── */}
       <div className={`cart-stickybar ${showSticky ? "is-visible" : ""}`}>
         <div className="cart-stickybar-inner">
-          <div className="cart-stickybar-left">
-            <span className="cart-stickybar-label">TOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
-            <strong className="cart-stickybar-amount">{formatMoney(cartTotal)}</strong>
-          </div>
+          {selectedItems.length > 0 && (
+            <div className="cart-stickybar-left">
+              <span className="cart-stickybar-label">TOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
+              <strong className="cart-stickybar-amount">{formatMoney(cartTotal)}</strong>
+            </div>
+          )}
           <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
             PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
             <Icon icon="lucide:arrow-right" />

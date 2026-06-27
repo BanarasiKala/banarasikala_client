@@ -611,7 +611,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       if (activePayment === "cod" || total <= 0) {
         const dbRes = await api.post("/api/orders", finalOrderData);
         orderingRef.current = true;
-        clearCart();
+        payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
         navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
         return;
       }
@@ -677,7 +677,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               },
             });
             orderingRef.current = true;
-            clearCart();
+            payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
             navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
           } catch (error) {
             if (isMountedRef.current) {
