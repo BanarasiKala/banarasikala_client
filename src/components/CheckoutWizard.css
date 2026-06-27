@@ -1412,9 +1412,9 @@
 .ckw-confirm-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 14px;
+  padding: 10px 12px;
   border: 0;
   background: transparent;
   text-align: left;
@@ -1426,12 +1426,12 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #f7e6d6;
   color: #6b0f17;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .ckw-confirm-pin {
@@ -1448,29 +1448,29 @@
 }
 
 .ckw-confirm-text small {
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 9.5px;
+  font-weight: 500;
   letter-spacing: 0.06em;
   color: #8a5a18;
   text-transform: uppercase;
 }
 
 .ckw-confirm-text strong {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 400;
   color: #2a1a12;
 }
 
 .ckw-confirm-addr {
-  font-size: 12px;
+  font-size: 11px;
   color: #6a564a;
   line-height: 1.4;
 }
 
 .ckw-confirm-change {
   flex-shrink: 0;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 400;
   font-style: normal;
   color: #6b0f17;
 }
@@ -1480,13 +1480,13 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 13px 14px;
+  padding: 8px 12px;
   border: 0;
   border-top: 1px solid rgba(128, 0, 32, 0.1);
   background: transparent;
   text-align: left;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 11.5px;
   color: #5d4435;
 }
 

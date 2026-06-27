@@ -1094,11 +1094,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </div>
             )}
 
-            <div className="ckw-otp">
-              <Icon icon="lucide:shield-check" />
-              <span>One-time password required at time of delivery.</span>
-            </div>
-
             <div className="ckw-confirm-card">
               <button type="button" className="ckw-confirm-row" onClick={() => setWizardStep("payment")}>
                 <span className="ckw-confirm-ico"><Icon icon={payMethodIcon} /></span>
