@@ -1441,7 +1441,7 @@
 .profile-coming-panel,
 .profile-address,
 .profile-help-card {
-  background: rgba(255, 253, 248, 0.96);
+  background: #fff4ea;
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(74, 33, 12, 0.06);
@@ -1556,9 +1556,7 @@
   gap: 12px;
   padding: 10px 14px;
   color: #fff6ec;
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgba(212, 175, 55, 0.32), transparent 60%),
-    linear-gradient(135deg, #8a001f, #5a0016);
+  background: linear-gradient(135deg, #800020, #4b070d);
   border: 1px solid rgba(212, 175, 55, 0.34);
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(74, 33, 12, 0.14);
@@ -1607,7 +1605,7 @@
   color: #fffaf2;
   font-family: "Cinzel", Georgia, serif;
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.15;
 }
 
@@ -1662,8 +1660,8 @@
   margin: 0;
   color: #6f0017;
   font-family: "Cinzel", Georgia, serif;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.2;
   text-transform: uppercase;
@@ -1677,12 +1675,12 @@
 }
 
 .profile-quick-card {
-  min-height: 72px;
+  min-height: 56px;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 22px;
+  grid-template-columns: 34px minmax(0, 1fr) 18px;
   align-items: center;
   gap: 10px;
-  padding: 11px 16px;
+  padding: 8px 14px;
   color: #241711;
   background: transparent;
   border: 0;
@@ -1696,8 +1694,8 @@
 }
 
 .profile-quick-icon {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   color: #780018;
@@ -1706,34 +1704,34 @@
 }
 
 .profile-quick-icon svg {
-  width: 26px;
-  height: 26px;
+  width: 18px;
+  height: 18px;
   stroke-width: 1.6;
 }
 
 .profile-quick-copy {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .profile-quick-copy strong {
   color: #1f1713;
   font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .profile-quick-copy span {
   color: rgba(31, 23, 19, 0.72);
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 11.5px;
+  line-height: 1.3;
 }
 
 .profile-quick-arrow {
-  width: 21px;
-  height: 21px;
+  width: 17px;
+  height: 17px;
   color: #780018;
   stroke-width: 2;
 }
@@ -1878,7 +1876,7 @@
 }
 
 .profile-address-list {
-  gap: 10px;
+  gap: 8px;
 }
 
 .profile-address {
@@ -1889,9 +1887,9 @@
 
 .profile-address-content {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 12px;
-  padding: 16px 18px 14px;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 7px;
+  padding: 11px 13px 10px;
 }
 
 .profile-address-icon,
@@ -1905,6 +1903,11 @@
   border-radius: 50%;
 }
 
+.profile-address-icon {
+  width: 26px;
+  height: 26px;
+}
+
 .profile-address-icon svg,
 .profile-help-icon svg {
   width: 27px;
@@ -1912,44 +1915,50 @@
   stroke-width: 1.6;
 }
 
+.profile-address-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
 .profile-address-main strong {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   color: #1f1713;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 550;
   line-height: 1.25;
 }
 
 .profile-badge {
   margin-left: 0;
-  padding: 3px 10px;
+  padding: 2px 8px;
   color: #8a5a10;
   background: #fff1c7;
   border: 0;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .profile-address-person {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #1f1713;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .profile-address-main p,
 .profile-empty-text {
   color: #1f1713;
-  font-size: 13px;
-  line-height: 1.42;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .profile-address-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 0;
   justify-content: stretch;
   border-top: 1px dashed rgba(128, 0, 32, 0.13);
@@ -1957,18 +1966,18 @@
 
 .profile-address-action {
   min-width: 0;
-  min-height: 48px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 7px 8px;
   color: #780018;
   background: transparent;
   border: 0;
   border-right: 1px dashed rgba(128, 0, 32, 0.11);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
 }
@@ -1979,8 +1988,8 @@
 
 .profile-address-action svg {
   flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
   stroke-width: 1.9;
 }
 
@@ -2014,7 +2023,7 @@
 
 .profile-help-copy strong {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -2161,18 +2170,18 @@
   }
 
   .profile-quick-card {
-    min-height: 68px;
-    grid-template-columns: 46px minmax(0, 1fr) 18px;
-    padding: 10px 13px;
+    min-height: 52px;
+    grid-template-columns: 32px minmax(0, 1fr) 16px;
+    padding: 8px 12px;
   }
 
   .profile-quick-icon {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
   }
 
   .profile-quick-copy strong {
-    font-size: 14px;
+    font-size: 12.5px;
   }
 
   .profile-coming-panel {
@@ -2201,21 +2210,26 @@
   }
 
   .profile-address-content {
-    grid-template-columns: 52px minmax(0, 1fr);
-    padding: 15px 14px 13px;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 7px;
+    padding: 10px 12px 9px;
   }
 
-  .profile-address-icon,
   .profile-help-icon {
     width: 43px;
     height: 43px;
   }
 
+  .profile-address-icon {
+    width: 26px;
+    height: 26px;
+  }
+
   .profile-address-action {
-    min-height: 44px;
-    gap: 6px;
-    padding: 8px 5px;
-    font-size: 11px;
+    min-height: 38px;
+    gap: 5px;
+    padding: 7px 5px;
+    font-size: 10.5px;
   }
 
   .profile-help-card {
@@ -2234,7 +2248,7 @@
   gap: 10px 22px;
   align-items: center;
   padding: 18px 22px 18px 14px;
-  background: #fffdf9;
+  background: #fff4ea;
 }
 
 .profile-coming-art {

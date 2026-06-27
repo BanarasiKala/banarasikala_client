@@ -1026,10 +1026,12 @@ export default function Profile() {
                         </div>
                       </div>
                       <div className="profile-address-actions">
-                        <button type="button" className="profile-address-action" onClick={() => onSetDefault(address)}>
-                          <Icon icon="lucide:star" />
-                          <span>Set as Default</span>
-                        </button>
+                        {!address.is_default && (
+                          <button type="button" className="profile-address-action" onClick={() => onSetDefault(address)}>
+                            <Icon icon="lucide:star" />
+                            <span>Set as Default</span>
+                          </button>
+                        )}
                         <button type="button" className="profile-address-action" onClick={() => onEditAddress(address)}>
                           <Icon icon="lucide:pencil" />
                           <span>Edit</span>
