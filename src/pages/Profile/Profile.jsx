@@ -570,11 +570,12 @@ export default function Profile() {
   };
 
   const goResetPassword = () => {
-    const email = profile?.email || user?.email || "";
-    const url = new URL("/login", window.location.origin);
-    url.searchParams.set("mode", "forgot");
-    if (email) url.searchParams.set("email", email);
-    navigate(`${url.pathname}${url.search}`);
+    navigate("/reset-password", {
+      state: {
+        email: profile?.email || user?.email || "",
+        phone: profile?.phone || user?.phone || "",
+      },
+    });
   };
 
   const onSave = async () => {

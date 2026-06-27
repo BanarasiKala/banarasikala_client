@@ -31,6 +31,7 @@ const Feedback = lazy(() => import("./pages/Feedback/Feedback"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound/NotFound"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail/VerifyEmail"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword/ResetPassword"));
 const ShippingPolicy = lazy(() => import("./pages/Policy/ShippingPolicy"));
 const ReturnExchange = lazy(() => import("./pages/Policy/ReturnExchange"));
 const RefundPolicy = lazy(() => import("./pages/Policy/RefundPolicy"));
@@ -121,6 +122,7 @@ function App() {
                       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
