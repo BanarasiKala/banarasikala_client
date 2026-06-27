@@ -294,7 +294,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       selectDefaultAddress();
     }
     setWizardStep("address");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const selectAddressFromCard = (event, address) => {
@@ -322,7 +322,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     }
     selectAddress(nextAddress);
     setWizardStep("payment");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Header back button: step back through the wizard, or out to the cart.
@@ -333,7 +333,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       return;
     }
     else navigate("/cart");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetAddressForm = () => {
@@ -700,12 +700,66 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
   const payMethodLabel = activePayment === "cod" ? "Cash on Delivery" : (METHOD_LABELS[onlineMethod] || "Online Payment");
   const payMethodIcon = activePayment === "cod" ? "lucide:banknote" : (METHOD_ICONS[onlineMethod] || "lucide:shield-check");
-  const payCtaLabel = loading
-    ? "PROCESSING…"
-    : activePayment === "cod"
-      ? `PLACE ORDER · ${money(total)}`
-      : `PAY ${money(total)}`;
+  const payCtaContent = loading ? "PROCESSING…" : (
+    <>
+      {activePayment === "cod"
+        ? <img src={logoCod} alt="" className="ckw-pay-cta-logo" />
+        : onlineMethod === "gpay"
+          ? <Icon icon="logos:google-pay" className="ckw-pay-cta-icon-brand" />
+          : onlineMethod === "phonepe"
+            ? <Icon icon="simple-icons:phonepe" className="ckw-pay-cta-icon-phonepe" />
+            : onlineMethod === "upi"
+              ? <img src={logoUpi} alt="" className="ckw-pay-cta-logo" />
+              : onlineMethod === "card"
+                ? <img src={logoCards} alt="" className="ckw-pay-cta-logo" />
+                : onlineMethod === "netbanking"
+                  ? <img src={logoNetBanking} alt="" className="ckw-pay-cta-logo" />
+                  : onlineMethod === "emi"
+                    ? <img src={logoEmi} alt="" className="ckw-pay-cta-logo" />
+                    : onlineMethod === "wallet"
+                      ? <img src={logoWallets} alt="" className="ckw-pay-cta-logo" />
+                      : <Icon icon="lucide:shield-check" className="ckw-pay-cta-icon-brand" />
+      }
+      <span className="ckw-pay-cta-body">
+        <span className="ckw-pay-cta-amount">{activePayment === "cod" ? `PLACE ORDER · ${money(total)}` : `PAY ${money(total)}`}</span>
+        <span className="ckw-pay-cta-via">with {payMethodLabel}</span>
+      </span>
+    </>
+  );
   const confirmAddressLine = selectedAddress ? getCheckoutAddressLine(selectedAddress) : formData.address;
+
+  const payInlineSummary = (
+    <div className="ckw-pay-inline-summary">
+      <div className="ckw-pay-footer-row">
+        <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
+        <span>{money(cartPageTotal)}</span>
+      </div>
+      {activePayment === "online" && paymentDiscount > 0 && (
+        <div className="ckw-pay-footer-row ckw-pay-footer-saving">
+          <span>Online discount</span>
+          <span>-{money(paymentDiscount)}</span>
+        </div>
+      )}
+      {activePayment === "cod" && paymentFee > 0 && (
+        <div className="ckw-pay-footer-row ckw-pay-footer-cod">
+          <span>COD charge</span>
+          <span>+{money(paymentFee)}</span>
+        </div>
+      )}
+      <div className="ckw-pay-footer-row ckw-pay-footer-total">
+        <span>Order Total</span>
+        <span>{money(total)}</span>
+      </div>
+      <button
+        type="button"
+        className="ckw-continue"
+        disabled={shippingLoading || payableCart.length === 0}
+        onClick={() => { setWizardStep("confirm"); document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' }); }}
+      >
+        {shippingLoading ? "…" : "CONTINUE"}
+      </button>
+    </div>
+  );
 
   return (
     <div className={`ckw${wizardStep === "payment" ? " ckw--payment" : ""}`}>
@@ -924,6 +978,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <img src={logoUpi} alt="UPI" className="ckw-pay-logo-img" />
               </button>
             </div>
+            {activePayment === "online" && UPI_METHODS.has(onlineMethod) && payInlineSummary}
 
             <h4 className="ckw-pay-group-label">Credit &amp; Debit Cards</h4>
             <div className="ckw-pay-group">
@@ -940,6 +995,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <img src={logoCards} alt="Cards" className="ckw-pay-logo-img" />
               </button>
             </div>
+            {isOnline("card") && payInlineSummary}
 
             <h4 className="ckw-pay-group-label">More Ways to Pay</h4>
             <div className="ckw-pay-group">
@@ -1000,7 +1056,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <img src={logoCod} alt="Cash on Delivery" className="ckw-pay-logo-img" />
               </button>
             </div>
-
+            {(isOnline("netbanking") || isOnline("emi") || isOnline("wallet") || activePayment === "cod") && payInlineSummary}
 
           </>
         ) : (
@@ -1020,7 +1076,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               onClick={handlePlaceOrder}
               disabled={loading || shippingLoading || payableCart.length === 0}
             >
-              <Icon icon={payMethodIcon} /> {payCtaLabel}
+              {payCtaContent}
             </button>
 
             <div className="ckw-bill">
@@ -1147,37 +1203,33 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             )}
 
             <div className="ckw-confirm-items">
-              {payableCart.map((item) => (
-                <div className="ckw-confirm-item" key={`${item.id}-${item.colorId}`}>
-                  <Link to={`/product/${item.slug}`} className="ckw-confirm-item-img">
-                    <img src={imgUrl(item.image_url, 200)} alt={item.name} />
-                  </Link>
-                  <div className="ckw-confirm-item-body">
-                    <Link to={`/product/${item.slug}`} className="ckw-confirm-item-name">{item.name}</Link>
-                    <strong className="ckw-confirm-item-price">{money(item.price)}</strong>
-                    <small>Ships from Banarasi Kala</small>
-                    <small>Sold by <span>Banarasi Kala</span></small>
-                    <div className="ckw-confirm-item-qty">
-                      <button
-                        type="button"
-                        onClick={() => (item.quantity > 1 ? updateQuantity(item.id, item.quantity - 1, item.colorId) : removeFromCart(item.id, item.colorId))}
-                        aria-label={item.quantity > 1 ? "Decrease quantity" : "Remove item"}
-                      >
-                        <Icon icon={item.quantity > 1 ? "lucide:minus" : "lucide:trash-2"} />
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.colorId)}
-                        disabled={item.quantity >= (item.checkoutStockInfo?.quantity ?? 99)}
-                        aria-label="Increase quantity"
-                      >
-                        <Icon icon="lucide:plus" />
-                      </button>
+              {payableCart.map((item) => {
+                const mrp = Number(item.mrp || 0);
+                const sell = Number(item.price || 0);
+                const disc = mrp > sell ? Math.round((1 - sell / mrp) * 100) : 0;
+                return (
+                  <div className="ckw-confirm-item" key={`${item.id}-${item.colorId}`}>
+                    <Link to={`/product/${item.slug}`} className="ckw-confirm-item-img">
+                      <img src={imgUrl(item.image_url, 200)} alt={item.name} />
+                    </Link>
+                    <div className="ckw-confirm-item-body">
+                      <Link to={`/product/${item.slug}`} className="ckw-confirm-item-name">{item.name}</Link>
+                      {item.selectedColorName && (
+                        <span className="ckw-confirm-item-color">
+                          <span className="ckw-confirm-item-color-dot" style={item.selectedColorHex ? { background: item.selectedColorHex } : {}} />
+                          {item.selectedColorName}
+                        </span>
+                      )}
+                      <div className="ckw-confirm-price-main-row">
+                        {disc > 0 && <em className="ckw-confirm-item-off">-{disc}%</em>}
+                        <span className="ckw-confirm-item-price">{money(sell)}</span>
+                        {mrp > sell && <span className="ckw-confirm-item-mrp"><span className="ckw-confirm-item-mrp-val">{money(mrp)}</span></span>}
+                      </div>
+                      <span className="ckw-confirm-item-qty-label">Qty: {item.quantity}</span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="ckw-legal">
@@ -1198,49 +1250,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               onClick={handlePlaceOrder}
               disabled={loading || shippingLoading || payableCart.length === 0}
             >
-              <Icon icon={payMethodIcon} /> {payCtaLabel}
+              {payCtaContent}
             </button>
           </>
         )}
       </div>
-
-      {/* ── Payment step sticky footer ── */}
-      {wizardStep === "payment" && (
-        <div className="ckw-pay-footer">
-          <div className="ckw-pay-footer-summary">
-            <div className="ckw-pay-footer-row">
-              <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
-              <span>{money(cartPageTotal)}</span>
-            </div>
-            {activePayment === "online" && paymentDiscount > 0 && (
-              <div className="ckw-pay-footer-row ckw-pay-footer-saving">
-                <span>Online discount</span>
-                <span>-{money(paymentDiscount)}</span>
-              </div>
-            )}
-            {activePayment === "cod" && paymentFee > 0 && (
-              <div className="ckw-pay-footer-row ckw-pay-footer-cod">
-                <span>COD charge</span>
-                <span>+{money(paymentFee)}</span>
-              </div>
-            )}
-            {activePayment && (
-              <div className="ckw-pay-footer-row ckw-pay-footer-total">
-                <span>Order Total</span>
-                <span>{money(total)}</span>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            className="ckw-continue"
-            disabled={shippingLoading || payableCart.length === 0 || !activePayment}
-            onClick={() => { setWizardStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-          >
-            {shippingLoading ? "…" : "CONTINUE"}
-          </button>
-        </div>
-      )}
 
       {/* ── Footer (shared across all steps) ── */}
       <div className="ckw-footer">
