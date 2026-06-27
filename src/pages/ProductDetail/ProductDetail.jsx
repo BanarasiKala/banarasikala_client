@@ -2603,6 +2603,7 @@ const ProductDetail = () => {
               <CheckoutFlow
                 selectedItems={buyNowItems}
                 onExit={closeBuyNowModal}
+                showGiftOption
                 couponOverride={{
                   appliedCoupon: appliedBuyNowCoupon,
                   discountAmount: buyNowCouponDiscount,

@@ -15,6 +15,24 @@ class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo });
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // A failed lazy-chunk import (stale assets after a deploy) surfaces here as
+    // a render error. Auto-reload once to fetch the fresh index.html + chunks
+    // instead of showing the error page. Shares the loop guard with main.jsx.
+    const message = error?.message || String(error || '');
+    const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk \S+ failed/i.test(message);
+    if (isChunkError) {
+      try {
+        const KEY = 'bk_chunk_reload_at';
+        const last = Number(sessionStorage.getItem(KEY) || 0);
+        if (Date.now() - last > 10000) {
+          sessionStorage.setItem(KEY, String(Date.now()));
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {

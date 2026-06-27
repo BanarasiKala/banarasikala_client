@@ -1771,6 +1771,116 @@
   color: #7c6657;
 }
 
+/* Gift option (Buy Now flow) */
+.ckw-gift {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  /* Override .ckw-confirm-card's overflow:hidden so the info tooltip can
+     escape above the card instead of being clipped inside it. */
+  overflow: visible;
+}
+
+.ckw-gift-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.ckw-gift-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  accent-color: #6b0f17;
+}
+
+.ckw-gift-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  color: #800020;
+  cursor: help;
+  vertical-align: -2px;
+}
+
+.ckw-gift-info svg {
+  font-size: 13px;
+}
+
+.ckw-gift-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: 220px;
+  max-width: 72vw;
+  padding: 8px 10px;
+  background: #46130d;
+  color: #fff3e0;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(46, 19, 13, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.ckw-gift-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #46130d;
+}
+
+.ckw-gift-info:hover .ckw-gift-tip,
+.ckw-gift-info.is-open .ckw-gift-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ckw-gift-msg {
+  position: relative;
+}
+
+.ckw-gift-msg textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 64px;
+  padding: 10px 12px 22px;
+  border: 1px solid rgba(128, 0, 32, 0.2);
+  border-radius: 10px;
+  background: #fffdf9;
+  color: #46130d;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+}
+
+.ckw-gift-msg textarea:focus {
+  border-color: #800020;
+}
+
+.ckw-gift-count {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-size: 10.5px;
+  color: #9a7c6c;
+}
+
 /* Arriving */
 .ckw-arrive {
   display: flex;

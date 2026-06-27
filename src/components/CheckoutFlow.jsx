@@ -104,7 +104,7 @@ const couponDiscountText = (coupon) => {
  *    sessionStorage by the cart page (standalone /checkout behaviour).
  *  - redirectOnEmpty: navigate to /cart when the cart empties (standalone only).
  */
-const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false, onExit, couponOverride }) => {
+const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false, onExit, couponOverride, showGiftOption = false }) => {
   const { cart, clearCart, updateQuantity, removeFromCart, appliedCoupon, discountAmount, applyCoupon: cartApplyCoupon, removeCoupon: cartRemoveCoupon } = useCart();
   // Coupons normally come from the cart context. The Buy Now flow has no cart, so
   // it passes `couponOverride` with its own validated-coupon state + handlers.
@@ -112,6 +112,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const activeDiscountAmount = couponOverride ? Number(couponOverride.discountAmount || 0) : Number(discountAmount || 0);
   const [couponInput, setCouponInput] = useState("");
   const [couponOpen, setCouponOpen] = useState(false);
+  // Gift toggle/message owned by the wizard (used by the Buy Now flow).
+  const [giftEnabled, setGiftEnabled] = useState(false);
+  const [giftMsg, setGiftMsg] = useState("");
+  const [showGiftTip, setShowGiftTip] = useState(false);
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -139,8 +143,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         const filtered = cart.filter((item) => selectedKeys.has(`${item.id}-${item.colorId ?? ""}`));
         return filtered.length ? filtered : cart;
       })();
-  const isGift = controlled ? Boolean(isGiftProp) : sessionIsGift;
-  const giftMessage = controlled ? (giftMessageProp || "") : sessionGiftMessage;
+  // When showGiftOption is set (Buy Now), the wizard owns the gift toggle/message
+  // itself; otherwise it honours the controlled props (cart) or sessionStorage.
+  const isGift = showGiftOption ? giftEnabled : (controlled ? Boolean(isGiftProp) : sessionIsGift);
+  const giftMessage = showGiftOption ? giftMsg : (controlled ? (giftMessageProp || "") : sessionGiftMessage);
 
   const checkoutCart = selectedCart.map((item) => {
     const stockInfo = getProductStockInfo(item, item.colorId);
@@ -1285,6 +1291,44 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
               </label>
+            )}
+
+            {showGiftOption && (
+              <div className="ckw-confirm-card ckw-gift">
+                <label className="ckw-gift-row">
+                  <span className="ckw-confirm-ico"><Icon icon="lucide:gift" /></span>
+                  <span className="ckw-confirm-text">
+                    <strong>
+                      Send as a gift
+                      <span
+                        className={`ckw-gift-info ${showGiftTip ? "is-open" : ""}`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGiftTip((v) => !v); }}
+                      >
+                        <Icon icon="lucide:info" />
+                        <span className="ckw-gift-tip">Printed on the gift card — keep it personal. No phone numbers, links, or vulgar content.</span>
+                      </span>
+                    </strong>
+                    <small>Include a custom message · +{money(GIFT_CHARGE_AMOUNT)}</small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={giftEnabled}
+                    onChange={(e) => { setGiftEnabled(e.target.checked); if (!e.target.checked) setGiftMsg(""); }}
+                  />
+                </label>
+                {giftEnabled && (
+                  <div className="ckw-gift-msg">
+                    <textarea
+                      value={giftMsg}
+                      onChange={(e) => setGiftMsg(e.target.value)}
+                      placeholder="Write your gift message…"
+                      rows={3}
+                      maxLength={250}
+                    />
+                    <span className="ckw-gift-count">{giftMsg.length}/250</span>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="ckw-confirm-card">
