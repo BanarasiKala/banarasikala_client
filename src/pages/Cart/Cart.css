@@ -919,7 +919,7 @@
   transform: translateY(100%);
   opacity: 0;
   pointer-events: none;
-  transition: transform 0.28s ease, opacity 0.28s ease;
+  transition: transform 0.16s ease-out, opacity 0.16s ease-out;
 }
 
 .cart-stickybar.is-visible {

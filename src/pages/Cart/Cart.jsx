@@ -209,17 +209,31 @@ const Cart = () => {
     });
   }, [cart]);
 
-  // Show the fixed bottom checkout bar only when the in-card proceed button
-  // has scrolled out of view.
+  // Show the fixed bottom checkout bar as soon as the in-card proceed button
+  // slips behind the sticky header (not just when it leaves the raw viewport).
   useEffect(() => {
     const el = topProceedRef.current;
     if (!el) return undefined;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowSticky(!entry.isIntersecting),
-      { threshold: 0 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+
+    let observer;
+    const attach = () => {
+      observer?.disconnect();
+      // Offset the observer's top edge by the sticky header height so the bar
+      // appears the instant the button hides under the header, with no delay.
+      const headerHeight = document.querySelector(".bk-header")?.getBoundingClientRect().height || 0;
+      observer = new IntersectionObserver(
+        ([entry]) => setShowSticky(!entry.isIntersecting),
+        { threshold: 0, rootMargin: `-${Math.round(headerHeight)}px 0px 0px 0px` },
+      );
+      observer.observe(el);
+    };
+
+    attach();
+    window.addEventListener("resize", attach);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", attach);
+    };
   }, [loading, cart.length]);
 
   const toggleSelect = (key) => {
