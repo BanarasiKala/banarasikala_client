@@ -1175,13 +1175,13 @@
   padding-top: 6px;
   border-top: 1px dashed rgba(128, 0, 32, 0.2);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: #2a1a12;
 }
 
 .ckw-pay-footer-total span:last-child {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
   color: #6b0f17;
 }
 
@@ -1194,7 +1194,7 @@
   background: linear-gradient(135deg, #7a1218, #4a0c0c);
   color: #fff;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: filter 0.15s ease;
