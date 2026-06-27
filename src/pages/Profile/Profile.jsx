@@ -955,7 +955,7 @@ export default function Profile() {
               <span className="profile-quick-icon"><Icon icon="lucide:shield-check" /></span>
               <span className="profile-quick-copy">
                 <strong>Login & Security</strong>
-                <span>Reset password by email OTP</span>
+                <span>Reset password by email / mobile OTP</span>
               </span>
               <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />
             </button>
