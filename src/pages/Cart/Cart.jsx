@@ -80,7 +80,9 @@ const Cart = () => {
   const [selected, setSelected] = useState(() => new Set());
   const [giftWrap, setGiftWrap] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [useWallet, setUseWallet] = useState(false);
+  const [useWallet, setUseWallet] = useState(() => {
+    try { return localStorage.getItem("bk_use_wallet") === "1"; } catch { return false; }
+  });
   const [shippingCharge, setShippingCharge] = useState(0);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [pinInput, setPinInput] = useState("");
@@ -161,6 +163,10 @@ const Cart = () => {
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("bk_use_wallet", useWallet ? "1" : "0"); } catch {}
+  }, [useWallet]);
 
   // Load the shopper's wallet balance so they can optionally redeem it here.
   useEffect(() => {

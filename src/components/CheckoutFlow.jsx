@@ -156,7 +156,9 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [addressLoading, setAddressLoading] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [walletBalance, setWalletBalance] = useState(0);
-  const [useWallet, setUseWallet] = useState(false);
+  const [useWallet, setUseWallet] = useState(() => {
+    try { return localStorage.getItem("bk_use_wallet") === "1"; } catch { return false; }
+  });
   // Wizard step shown one at a time: "address" → "payment" → "confirm".
   const [wizardStep, setWizardStep] = useState("address");
   const [showInstructions, setShowInstructions] = useState(false);
@@ -254,6 +256,10 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       cancelled = true;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    try { localStorage.setItem("bk_use_wallet", useWallet ? "1" : "0"); } catch {}
+  }, [useWallet]);
 
   useEffect(() => {
     if (activePayment === "cod" && !isCodAllowed) {
@@ -1032,6 +1038,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <span>Delivery</span>
                 {shippingLoading ? (
                   <span>Calculating…</span>
+                ) : shippingCharge > 0 && finalShippingCharge === 0 ? (
+                  <span className="ckw-bill-free"><s>{money(shippingCharge)}</s> Free</span>
                 ) : finalShippingCharge > 0 ? (
                   <span>{money(finalShippingCharge)}</span>
                 ) : (
@@ -1064,7 +1072,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               )}
               {walletUsableAmount > 0 && (
                 <div className="ckw-bill-row ckw-bill-save">
-                  <span>Wallet used</span>
+                  <span>Wallet balance</span>
                   <span>-{money(walletUsableAmount)}</span>
                 </div>
               )}
@@ -1072,6 +1080,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <span>Total Payable</span>
                 <span>{money(total)}</span>
               </div>
+              {(shippingDiscount + paymentDiscount + effectiveCouponDiscount + walletUsableAmount) > 0 && (
+                <div className="ckw-bill-savings-banner">
+                  You save {money(shippingDiscount + paymentDiscount + effectiveCouponDiscount + walletUsableAmount)} on this order
+                </div>
+              )}
             </div>
 
             {shippingCharge > 0 && (
@@ -1214,12 +1227,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               <div className="ckw-pay-footer-row ckw-pay-footer-cod">
                 <span>COD charge</span>
                 <span>+{money(paymentFee)}</span>
-              </div>
-            )}
-            {effectiveCouponDiscount > 0 && (
-              <div className="ckw-pay-footer-row ckw-pay-footer-saving">
-                <span>Coupon ({appliedCoupon?.code})</span>
-                <span>-{money(effectiveCouponDiscount)}</span>
               </div>
             )}
             {activePayment && (
