@@ -1261,9 +1261,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 complete once we receive payment and dispatch your item. For Pay on Delivery (POD), you can pay by
                 cash / UPI / card when you receive your item. See our{" "}
                 <Link to="/return-exchange">Return Policy</Link>.
-                <button type="button" className="ckw-legal-back" onClick={() => navigate("/cart")}>Back to cart</button>
               </p>
             </div>
+
+            <button type="button" className="ckw-back-cart" onClick={() => navigate("/cart")}>
+              <Icon icon="lucide:arrow-left" /> Back to cart
+            </button>
 
             {!ctaVisible && (
               <button
