@@ -13,6 +13,8 @@ import { getProductStockInfo } from "../../utils/stockStatus";
 import { LocationPickerModal } from "../Profile/Profile";
 import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
 import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
+import CheckoutFlow from "../../components/CheckoutFlow";
+import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
@@ -780,6 +782,23 @@ const ProductDetail = () => {
     if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const buyNowSubtotal = Number(product?.selling_price || 0) * Math.max(1, Number(quantity || 1));
+
+  // Single-item payload (cart-item shape) handed to the shared checkout wizard
+  // so Buy Now renders the exact same address → payment → confirm flow.
+  const buyNowItems = useMemo(() => {
+    if (!product) return [];
+    return [{
+      ...product,
+      quantity,
+      colorId: selectedColorId || null,
+      selectedColorName: selectedColor?.name || "",
+      selectedColorSlug: selectedColor?.slug || "",
+      selectedColorHex: selectedColor?.hex_code || "",
+      price: Number(product.selling_price || product.mrp_price || 0),
+      mrp: Number(product.mrp_price || 0),
+      image_url: mainImage || product.image_url || "",
+    }];
+  }, [product, quantity, selectedColorId, selectedColor, mainImage]);
   const selectedBuyNowAddress = buyNowAddresses.find((address) => String(address.id) === String(selectedBuyNowAddressId));
   const canUsePrepaid = true;
   const isProductCodAllowed = !Array.isArray(product?.payment_options) || product.payment_options.includes("cod");
@@ -2577,6 +2596,26 @@ const ProductDetail = () => {
       )}
 
       {buyNowOpen && (
+        <>
+        <div className="checkout-page relative min-h-screen flex flex-col bg-[#F5F1E8]">
+          <main className="flex-grow">
+            <div className="checkout-page-shell w-full">
+              <CheckoutFlow
+                selectedItems={buyNowItems}
+                onExit={closeBuyNowModal}
+                couponOverride={{
+                  appliedCoupon: appliedBuyNowCoupon,
+                  discountAmount: buyNowCouponDiscount,
+                  applyCoupon: (code) => applyBuyNowCoupon(code),
+                  removeCoupon: removeBuyNowCoupon,
+                  coupons: availableCoupons,
+                  loading: couponLoading,
+                }}
+              />
+            </div>
+          </main>
+        </div>
+        {false && (
         <div className="buy-now-modal" role="dialog" aria-modal="true" aria-label="Buy now checkout">
           <div className={`buy-now-card ${buyNowStep === "payment" ? "is-payment" : "is-details"}`}>
             <div className="buy-now-header">
@@ -3008,6 +3047,8 @@ const ProductDetail = () => {
             </div>
           )}
         </div>
+        )}
+        </>
       )}
       <LocationPickerModal
         open={buyNowMapOpen}

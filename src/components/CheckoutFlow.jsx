@@ -80,6 +80,17 @@ const getCheckoutAddressLine = (address = {}) =>
 const normalizePhone = (value) => String(value || "").replace(/\D/g, "");
 
 const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const moneyShort = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+
+// Matches the cart page's coupon label (fixed amount or percentage off).
+const couponDiscountText = (coupon) => {
+  if (!coupon) return "";
+  if (coupon.discount_type === "fixed_amount" && Number(coupon.discount_amount) > 0) {
+    return `₹${Number(coupon.discount_amount).toLocaleString("en-IN")} OFF`;
+  }
+  if (Number(coupon.discount_percent) > 0) return `${coupon.discount_percent}% OFF`;
+  return "Extra Off";
+};
 
 /**
  * The full one-page checkout experience (delivery address, payment method,
@@ -93,8 +104,14 @@ const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { mini
  *    sessionStorage by the cart page (standalone /checkout behaviour).
  *  - redirectOnEmpty: navigate to /cart when the cart empties (standalone only).
  */
-const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false }) => {
+const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false, onExit, couponOverride }) => {
   const { cart, clearCart, updateQuantity, removeFromCart, appliedCoupon, discountAmount, applyCoupon: cartApplyCoupon, removeCoupon: cartRemoveCoupon } = useCart();
+  // Coupons normally come from the cart context. The Buy Now flow has no cart, so
+  // it passes `couponOverride` with its own validated-coupon state + handlers.
+  const activeAppliedCoupon = couponOverride ? couponOverride.appliedCoupon : appliedCoupon;
+  const activeDiscountAmount = couponOverride ? Number(couponOverride.discountAmount || 0) : Number(discountAmount || 0);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponOpen, setCouponOpen] = useState(false);
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -201,12 +218,12 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const giftCharge = payableCart.length > 0 && isGift ? GIFT_CHARGE_AMOUNT : 0;
   const paymentDiscount = payableCart.length > 0 && activePayment === "online" ? Math.min(PREPAID_DISCOUNT_AMOUNT, subtotal + finalShippingCharge) : 0;
   const orderGrossTotal = Math.max(0, subtotal + finalShippingCharge + paymentFee + platformFee + giftCharge - paymentDiscount);
-  const effectiveCouponDiscount = Math.min(discountAmount, orderGrossTotal);
+  const effectiveCouponDiscount = Math.min(activeDiscountAmount, orderGrossTotal);
   const grossAfterCoupon = Math.max(0, orderGrossTotal - effectiveCouponDiscount);
   const walletUsableAmount = useWallet ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
   const total = Math.max(0, grossAfterCoupon - walletUsableAmount);
   // Cart-page total: everything included except payment-method-specific fee/discount.
-  const cartPageTotal = Math.max(0, subtotal + finalShippingCharge + platformFee + giftCharge - discountAmount - walletUsableAmount);
+  const cartPageTotal = Math.max(0, subtotal + finalShippingCharge + platformFee + giftCharge - effectiveCouponDiscount - walletUsableAmount);
   const totalWeightKg = payableCart.reduce((sum, item) => {
     const qty = Math.max(1, Number(item.quantity || 1));
     const raw = Number(item.weight || 0);
@@ -341,6 +358,13 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
     document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Close the flow: return to the embedding context (Buy Now overlay) when
+  // provided, otherwise fall back to the cart page.
+  const exitFlow = () => {
+    if (onExit) onExit();
+    else navigate("/cart");
+  };
+
   // Header back button: step back through the wizard, or out to the cart.
   const handleWizardBack = () => {
     if (wizardStep === "confirm") setWizardStep("payment");
@@ -348,7 +372,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       goToAddressStep();
       return;
     }
-    else navigate("/cart");
+    else exitFlow();
     document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -591,7 +615,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         shipping_discount_reason: shippingDiscountReason,
         selected_courier_data: selectedShippingCourier?.raw || null,
         total_amount: orderGrossTotal,
-        coupon_code: appliedCoupon?.code || null,
+        coupon_code: activeAppliedCoupon?.code || null,
         discount_amount: effectiveCouponDiscount,
         wallet_amount: walletUsableAmount,
         payment_fee: paymentFee + platformFee,
@@ -932,7 +956,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </div>
             )}
 
-            <button type="button" className="ckw-back-cart" onClick={() => navigate("/cart")}>
+            <button type="button" className="ckw-back-cart" onClick={exitFlow}>
               <Icon icon="lucide:arrow-left" /> Back to cart
             </button>
           </>
@@ -1147,7 +1171,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               )}
               {effectiveCouponDiscount > 0 && (
                 <div className="ckw-bill-row ckw-bill-save">
-                  <span>Coupon ({appliedCoupon?.code})</span>
+                  <span>Coupon ({activeAppliedCoupon?.code})</span>
                   <span>-{money(effectiveCouponDiscount)}</span>
                 </div>
               )}
@@ -1189,6 +1213,68 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <em className="ckw-confirm-change">Change</em>
               </button>
             </div>
+
+            {couponOverride && (
+              <div className="ckw-coupon">
+                <button
+                  type="button"
+                  className={`ckw-coupon-toggle ${couponOpen ? "is-open" : ""}`}
+                  onClick={() => setCouponOpen((v) => !v)}
+                >
+                  <Icon icon="lucide:badge-percent" />
+                  <span>{activeAppliedCoupon ? `Coupon ${activeAppliedCoupon.code} applied` : "Apply coupon or offer"}</span>
+                  <Icon icon="lucide:chevron-down" className="ckw-coupon-chev" />
+                </button>
+                {couponOpen && (
+                  <div className="ckw-coupon-panel">
+                    {activeAppliedCoupon ? (
+                      <div className="ckw-coupon-applied">
+                        <span><Icon icon="lucide:ticket" /> {activeAppliedCoupon.code} — you saved {money(effectiveCouponDiscount)}</span>
+                        <button type="button" onClick={() => { couponOverride.removeCoupon?.(); setCouponInput(""); }}>Remove</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="ckw-coupon-entry">
+                          <input
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            placeholder="Enter coupon code"
+                          />
+                          <button type="button" onClick={() => couponOverride.applyCoupon?.(couponInput.trim())}>Apply</button>
+                        </div>
+                        {(couponOverride.coupons || []).length > 0 ? (
+                          <div className="ckw-coupon-list">
+                            {couponOverride.coupons.map((c) => {
+                              const minPurchase = Number(c.min_purchase_amount || c.minPurchase || 0);
+                              const locked = minPurchase > subtotal;
+                              return (
+                                <button
+                                  key={c.id || c.code}
+                                  type="button"
+                                  className="ckw-coupon-card"
+                                  onClick={() => couponOverride.applyCoupon?.(c.code)}
+                                  disabled={locked || couponOverride.loading}
+                                >
+                                  <span className="ckw-coupon-tag">{c.code}</span>
+                                  <span className="ckw-coupon-text">
+                                    <strong>{couponDiscountText(c)}</strong>
+                                    {locked
+                                      ? <small>Add {moneyShort(minPurchase - subtotal)} more to apply</small>
+                                      : <small>{c.description || "Tap to apply this offer"}</small>}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="ckw-coupon-none">No coupons available right now.</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {walletBalance > 0 && (
               <label className="ckw-confirm-card ckw-wallet-row">
@@ -1272,7 +1358,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </p>
             </div>
 
-            <button type="button" className="ckw-back-cart" onClick={() => navigate("/cart")}>
+            <button type="button" className="ckw-back-cart" onClick={exitFlow}>
               <Icon icon="lucide:arrow-left" /> Back to cart
             </button>
 
