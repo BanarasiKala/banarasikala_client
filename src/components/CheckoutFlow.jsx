@@ -161,7 +161,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const [wizardStep, setWizardStep] = useState("address");
   const [showInstructions, setShowInstructions] = useState(false);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
-  const [savingsOpen, setSavingsOpen] = useState(true);
   const [addressForm, setAddressForm] = useState(getEmptyCheckoutAddress(user));
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -693,15 +692,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const selectOnline = (method) => { setActivePayment("online"); setOnlineMethod(method); };
   const isOnline = (method) => activePayment === "online" && onlineMethod === method;
 
-  // Confirm-step bill: sticker total before savings, then each saving line.
-  const grossBeforeSavings = subtotal + shippingCharge + platformFee + paymentFee + giftCharge;
-  const savingsRows = [
-    ...(shippingCharge > 0 ? [{ label: "Free delivery", amount: shippingCharge }] : []),
-    ...(paymentDiscount > 0 ? [{ label: "Online payment discount", amount: paymentDiscount }] : []),
-    ...(effectiveCouponDiscount > 0 ? [{ label: `Coupon (${appliedCoupon?.code || ""})`, amount: effectiveCouponDiscount }] : []),
-    ...(walletUsableAmount > 0 ? [{ label: "Wallet balance", amount: walletUsableAmount }] : []),
-  ];
-  const savingsTotal = savingsRows.reduce((sum, r) => sum + r.amount, 0);
   const payMethodLabel = activePayment === "cod" ? "Cash on Delivery" : (METHOD_LABELS[onlineMethod] || "Online Payment");
   const payMethodIcon = activePayment === "cod" ? "lucide:banknote" : (METHOD_ICONS[onlineMethod] || "lucide:shield-check");
   const payCtaLabel = loading
@@ -1029,46 +1019,57 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
 
             <div className="ckw-bill">
               <div className="ckw-bill-row">
-                <span>Items ({selectedUnits})</span>
+                <span>Subtotal ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
                 <span>{money(subtotal)}</span>
               </div>
-              <div className="ckw-bill-row">
-                <span>Delivery Charges</span>
-                <span>{shippingLoading ? "…" : shippingCharge > 0 ? money(shippingCharge) : "FREE"}</span>
-              </div>
-              <div className="ckw-bill-row">
-                <span>Marketplace Fee</span>
-                <span>{money(platformFee)}</span>
-              </div>
-              {paymentFee > 0 && (
-                <div className="ckw-bill-row"><span>COD Charge</span><span>{money(paymentFee)}</span></div>
+              {platformFee > 0 && (
+                <div className="ckw-bill-row">
+                  <span>Platform fee</span>
+                  <span>{money(platformFee)}</span>
+                </div>
               )}
+              <div className="ckw-bill-row">
+                <span>Delivery</span>
+                {shippingLoading ? (
+                  <span>Calculating…</span>
+                ) : finalShippingCharge > 0 ? (
+                  <span>{money(finalShippingCharge)}</span>
+                ) : (
+                  <span className="ckw-bill-free">Free</span>
+                )}
+              </div>
               {giftCharge > 0 && (
-                <div className="ckw-bill-row"><span>Gift wrap &amp; message</span><span>{money(giftCharge)}</span></div>
+                <div className="ckw-bill-row">
+                  <span>Gift wrap &amp; message</span>
+                  <span>{money(giftCharge)}</span>
+                </div>
               )}
-              <div className="ckw-bill-row ckw-bill-total">
-                <span>Total</span>
-                <span>{money(grossBeforeSavings)}</span>
-              </div>
-              {savingsTotal > 0 && (
-                <>
-                  <button type="button" className="ckw-bill-savings" onClick={() => setSavingsOpen((v) => !v)}>
-                    <span className="ckw-bill-savings-label"><Icon icon="lucide:tag" /> Savings ({savingsRows.length})</span>
-                    <span className="ckw-bill-savings-amt">
-                      -{money(savingsTotal)}
-                      <Icon icon={savingsOpen ? "lucide:chevron-up" : "lucide:chevron-down"} />
-                    </span>
-                  </button>
-                  {savingsOpen && savingsRows.map((r) => (
-                    <div className="ckw-bill-row ckw-bill-saving-line" key={r.label}>
-                      <span>{r.label}</span>
-                      <span>-{money(r.amount)}</span>
-                    </div>
-                  ))}
-                </>
+              {activePayment === "online" && paymentDiscount > 0 && (
+                <div className="ckw-bill-row ckw-bill-save">
+                  <span>Prepaid discount</span>
+                  <span>-{money(paymentDiscount)}</span>
+                </div>
+              )}
+              {activePayment === "cod" && paymentFee > 0 && (
+                <div className="ckw-bill-row ckw-bill-cod">
+                  <span>COD charge</span>
+                  <span>+{money(paymentFee)}</span>
+                </div>
+              )}
+              {effectiveCouponDiscount > 0 && (
+                <div className="ckw-bill-row ckw-bill-save">
+                  <span>Coupon ({appliedCoupon?.code})</span>
+                  <span>-{money(effectiveCouponDiscount)}</span>
+                </div>
+              )}
+              {walletUsableAmount > 0 && (
+                <div className="ckw-bill-row ckw-bill-save">
+                  <span>Wallet used</span>
+                  <span>-{money(walletUsableAmount)}</span>
+                </div>
               )}
               <div className="ckw-bill-row ckw-bill-order-total">
-                <span>Order Total</span>
+                <span>Total Payable</span>
                 <span>{money(total)}</span>
               </div>
             </div>
