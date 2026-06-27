@@ -146,6 +146,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   // When paying online, which Razorpay method to open to (upi | card | netbanking | emi | wallet).
   const [onlineMethod, setOnlineMethod] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [ctaVisible, setCtaVisible] = useState(true);
+  const ctaRef = useRef(null);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [shippingCharge, setShippingCharge] = useState(0);
   const [shippingDeliveryDate, setShippingDeliveryDate] = useState(null);
@@ -260,6 +262,19 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   useEffect(() => {
     try { localStorage.setItem("bk_use_wallet", useWallet ? "1" : "0"); } catch {}
   }, [useWallet]);
+
+  useEffect(() => {
+    if (wizardStep !== "confirm") return;
+    const el = ctaRef.current;
+    if (!el) return;
+    const root = document.querySelector(".checkout-page");
+    const obs = new IntersectionObserver(
+      ([entry]) => setCtaVisible(entry.isIntersecting),
+      { root, threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [wizardStep]);
 
   useEffect(() => {
     if (activePayment === "cod" && !isCodAllowed) {
@@ -762,7 +777,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   );
 
   return (
-    <div className={`ckw${wizardStep === "payment" ? " ckw--payment" : ""}`}>
+    <div className={`ckw${(wizardStep === "payment" || wizardStep === "confirm") ? " ckw--payment" : ""}`}>
       <div className="ckw-header">
         <button type="button" className="ckw-back" onClick={handleWizardBack} aria-label="Go back">
           <Icon icon="lucide:arrow-left" />
@@ -1076,6 +1091,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
             </div>
 
             <button
+              ref={ctaRef}
               type="button"
               className="ckw-pay-cta"
               onClick={handlePlaceOrder}
@@ -1249,14 +1265,16 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </p>
             </div>
 
-            <button
-              type="button"
-              className="ckw-pay-cta ckw-pay-cta--sticky"
-              onClick={handlePlaceOrder}
-              disabled={loading || shippingLoading || payableCart.length === 0}
-            >
-              {payCtaContent}
-            </button>
+            {!ctaVisible && (
+              <button
+                type="button"
+                className="ckw-pay-cta ckw-pay-cta--sticky"
+                onClick={handlePlaceOrder}
+                disabled={loading || shippingLoading || payableCart.length === 0}
+              >
+                {payCtaContent}
+              </button>
+            )}
           </>
         )}
       </div>
