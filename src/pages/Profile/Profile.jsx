@@ -43,6 +43,9 @@ const toDateString = (value) => {
   });
 };
 
+const formatWalletMoney = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 const emptyAddress = {
   label: "Home",
   name: "",
@@ -407,6 +410,7 @@ export default function Profile() {
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -475,6 +479,25 @@ export default function Profile() {
     load();
     return () => {
       alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const loadWallet = () => {
+      api.get("/api/wallet")
+        .then((res) => {
+          if (!alive) return;
+          setWalletBalance(Number(res.data?.wallet_balance ?? res.data?.balance ?? 0));
+        })
+        .catch(() => {});
+    };
+    loadWallet();
+    const onWalletUsed = () => loadWallet();
+    window.addEventListener("bk:wallet-used", onWalletUsed);
+    return () => {
+      alive = false;
+      window.removeEventListener("bk:wallet-used", onWalletUsed);
     };
   }, []);
 
@@ -880,6 +903,25 @@ export default function Profile() {
             </div>
           </section>
         )}
+
+        <section className="profile-wallet" aria-label="Wallet balance">
+          <div className="profile-wallet-left">
+            <span className="profile-wallet-icon"><Icon icon="lucide:wallet" /></span>
+            <div className="profile-wallet-copy">
+              <span className="profile-wallet-label">Wallet Balance</span>
+              {walletBalance === null ? (
+                <span className="profile-skeleton profile-skeleton-balance" />
+              ) : (
+                <strong className="profile-wallet-amount">{formatWalletMoney(walletBalance)}</strong>
+              )}
+              <span className="profile-wallet-sub">Redeem instantly at checkout</span>
+            </div>
+          </div>
+          <button type="button" className="profile-wallet-cta" onClick={() => navigate("/cart")}>
+            <Icon icon="lucide:shopping-bag" />
+            <span>Shop &amp; Redeem</span>
+          </button>
+        </section>
 
         <section className="profile-account-section">
           <h2 className="profile-block-title">My Account</h2>

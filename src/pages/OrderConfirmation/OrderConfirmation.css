@@ -280,7 +280,7 @@
   background: rgba(128, 0, 32, 0.08);
   color: #800020 !important;
   font-size: 11px !important;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .confirmation-item small {
@@ -328,7 +328,7 @@
 .payment-tags span {
   color: #800020;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .refund-bank-form {
@@ -354,7 +354,7 @@
   border-radius: 8px;
   background: #800020;
   color: #f5c94d;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -380,7 +380,7 @@
   display: block;
   color: #065a3e;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .refund-notice p {
@@ -692,7 +692,7 @@
   border-radius: 9px;
   background: transparent;
   color: #765f52;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -865,7 +865,7 @@
 .cancel-modal-form label {
   color: #401a11;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: left;
 }
 

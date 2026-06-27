@@ -37,7 +37,6 @@ const RatingStars = ({ rating = 0 }) => (
 );
 
 const getBreakdown = (order = {}) => {
-  console.log("Calculating breakdown for order:", order);
   const items = order.OrderItems || [];
   const itemSubtotal = items.reduce((sum, item) => sum + toNumber(item.price) * Math.max(1, toNumber(item.quantity) || 1), 0);
   const subtotal = toNumber(order.subtotal_amount) || itemSubtotal;
