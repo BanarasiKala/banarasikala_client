@@ -1129,14 +1129,15 @@
   color: #7c6657;
 }
 
-/* ── Inline payment summary (appears below selected method group) ─────────── */
+/* ── Inline payment summary (appears inside group, below selected row) ─────── */
 
 .ckw-pay-inline-summary {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px 14px 0;
-  margin-top: 2px;
+  padding: 10px 14px 14px;
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
+  background: rgba(255, 248, 240, 0.6);
 }
 
 .ckw-pay-footer-row {

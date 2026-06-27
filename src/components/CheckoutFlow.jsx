@@ -953,6 +953,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <Icon icon="logos:google-pay" className="ckw-pay-icon-brand" />
               </button>
+              {isOnline("gpay") && payInlineSummary}
               <button
                 type="button"
                 className={`ckw-pay-row ${isOnline("phonepe") ? "is-selected" : ""}`}
@@ -965,6 +966,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <Icon icon="simple-icons:phonepe" className="ckw-pay-icon-phonepe" />
               </button>
+              {isOnline("phonepe") && payInlineSummary}
               <button
                 type="button"
                 className={`ckw-pay-row ${isOnline("upi") ? "is-selected" : ""}`}
@@ -977,8 +979,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoUpi} alt="UPI" className="ckw-pay-logo-img" />
               </button>
+              {isOnline("upi") && payInlineSummary}
             </div>
-            {activePayment === "online" && UPI_METHODS.has(onlineMethod) && payInlineSummary}
 
             <h4 className="ckw-pay-group-label">Credit &amp; Debit Cards</h4>
             <div className="ckw-pay-group">
@@ -994,8 +996,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoCards} alt="Cards" className="ckw-pay-logo-img" />
               </button>
+              {isOnline("card") && payInlineSummary}
             </div>
-            {isOnline("card") && payInlineSummary}
 
             <h4 className="ckw-pay-group-label">More Ways to Pay</h4>
             <div className="ckw-pay-group">
@@ -1011,6 +1013,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoNetBanking} alt="Net Banking" className="ckw-pay-logo-img" />
               </button>
+              {isOnline("netbanking") && payInlineSummary}
               <button
                 type="button"
                 className={`ckw-pay-row ${isOnline("emi") ? "is-selected" : ""}`}
@@ -1023,6 +1026,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoEmi} alt="EMI" className="ckw-pay-logo-img" />
               </button>
+              {isOnline("emi") && payInlineSummary}
               <button
                 type="button"
                 className={`ckw-pay-row ${isOnline("wallet") ? "is-selected" : ""}`}
@@ -1035,6 +1039,7 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoWallets} alt="Wallets" className="ckw-pay-logo-img" />
               </button>
+              {isOnline("wallet") && payInlineSummary}
               <button
                 type="button"
                 className={`ckw-pay-row ${activePayment === "cod" ? "is-selected" : ""} ${isCodAllowed ? "" : "is-disabled"}`}
@@ -1055,8 +1060,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 </span>
                 <img src={logoCod} alt="Cash on Delivery" className="ckw-pay-logo-img" />
               </button>
+              {activePayment === "cod" && payInlineSummary}
             </div>
-            {(isOnline("netbanking") || isOnline("emi") || isOnline("wallet") || activePayment === "cod") && payInlineSummary}
 
           </>
         ) : (
