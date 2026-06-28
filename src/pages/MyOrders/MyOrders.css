@@ -2,8 +2,12 @@
   min-height: 100vh;
   background:
     linear-gradient(rgba(255, 248, 235, 0.9), rgba(255, 248, 235, 0.95)),
-    url("../../assets/header_backgroung.png"),
+    url("../../assets/img.jpg"),
     #fff8eb;
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: #32150f;
 }
 

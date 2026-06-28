@@ -7,6 +7,7 @@ import { useWishlist } from "../../../context/WishlistContext";
 import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
+import { getProductStockInfo } from "../../../utils/stockStatus";
 import ProductRating from "../../../components/ProductRating";
 import DeliveryBadge from "../../../components/DeliveryBadge";
 import "./NewArrivals.css";
@@ -80,6 +81,10 @@ const NewArrivals = () => {
   const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
+    if (getProductStockInfo(product, colorId).isOutOfStock) {
+      showNotification("This product is out of stock.", "error");
+      return;
+    }
     if (!user) {
       localStorage.setItem("bk_pending_cart", JSON.stringify({
         product: {
@@ -184,6 +189,7 @@ const NewArrivals = () => {
                 const sell = Number(product.selling_price || product.price);
                 const mrp = Number(product.mrp_price || product.mrp || 0);
                 const disc = calcDiscount(mrp, sell);
+                const isOutOfStock = getProductStockInfo(product).isOutOfStock;
                 const cover = getProductCoverImage(product);
                 const cardImages = getProductImages(product);
                 const sliderImages = cardImages.length > 0 ? cardImages : [{ url: cover }];
@@ -199,7 +205,7 @@ const NewArrivals = () => {
                 return (
                   <article
                     key={product.id}
-                    className="bk-arrival-card"
+                    className={`bk-arrival-card ${isOutOfStock ? "is-out-of-stock" : ""}`}
                     style={{ transitionDelay: `${Math.min(index * 35, 200)}ms` }}
                   >
                     <Link
@@ -218,6 +224,7 @@ const NewArrivals = () => {
                         onTouchMove={(event) => handleTouchMove(event, product.id)}
                         onTouchEnd={(event) => handleTouchEnd(event, product.id, sliderImages.length)}
                       >
+                        {isOutOfStock && <span className="bk-arrival-stock-badge">Out of stock</span>}
                         <div
                           className="bk-arrival-track"
                           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
@@ -248,13 +255,22 @@ const NewArrivals = () => {
                         {productDescription && <p className="bk-arrival-desc">{productDescription}</p>}
                         <ProductRating product={product} className="bk-arrival-rating" />
                         <div className="bk-arrival-price-row">
-                          <div className="bk-arrival-price-main">
-                            {discountPercent > 0 && <em className="bk-arrival-discount">-{discountPercent}%</em>}
-                            <strong className="bk-arrival-price">{formatMoney(sell)}</strong>
-                          </div>
-                          {mrp > sell && <span className="bk-arrival-mrp"><span className="bk-arrival-mrp-val">{formatMoney(mrp)}</span></span>}
+                          {isOutOfStock ? (
+                            <div className="bk-arrival-price-main">
+                              <span className="bk-arrival-mrp-tag">MRP</span>
+                              <strong className="bk-arrival-price">{formatMoney(mrp > 0 ? mrp : sell)}</strong>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="bk-arrival-price-main">
+                                {discountPercent > 0 && <em className="bk-arrival-discount">-{discountPercent}%</em>}
+                                <strong className="bk-arrival-price">{formatMoney(sell)}</strong>
+                              </div>
+                              {mrp > sell && <span className="bk-arrival-mrp"><span className="bk-arrival-mrp-val">{formatMoney(mrp)}</span></span>}
+                            </>
+                          )}
                         </div>
-                        <DeliveryBadge processingDays={product.processing_days} />
+                        {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
                         <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                           Add to Cart
                         </button>

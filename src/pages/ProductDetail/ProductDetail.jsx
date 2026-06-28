@@ -2142,24 +2142,10 @@ const ProductDetail = () => {
                       >
                         <span style={{ backgroundColor: color.hex_code || "#ccc" }} />
                         <strong>{color.name}</strong>
-                        {/* {isLow && <small>Few left</small>} */}
-                        {isOut && <small>Out</small>}
                       </button>
                     );
                   })}
                 </div>
-                {/*
-                {isSelectedLowStock && (
-                  <div className="product-stock-note low">
-                    {selectedStockInfo.colorMessage}
-                  </div>
-                )}
-                */}
-                {isSelectedOutOfStock && (
-                  <div className={`product-stock-note ${isSelectedOutOfStock ? "out" : "low"}`}>
-                    {selectedStockInfo.colorMessage}
-                  </div>
-                )}
               </div>
             )}
 

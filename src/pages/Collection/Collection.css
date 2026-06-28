@@ -442,8 +442,16 @@
 }
 
 .product-card.out-of-stock .card-img {
-    filter: grayscale(0.42);
-    opacity: 0.8;
+    filter: grayscale(0.25);
+    opacity: 0.82;
+}
+
+.collection-mrp-tag {
+    font-family: "Poppins", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(53, 23, 15, 0.55);
+    letter-spacing: 0.04em;
 }
 
 .card-image-shimmer {
@@ -689,6 +697,15 @@
 .collection-atc-btn:hover {
     filter: brightness(1.12);
     transform: translateY(-1px);
+}
+
+.collection-atc-btn:disabled {
+    background: linear-gradient(135deg, #9a9a9a, #6f6f6f);
+    color: #f1f1f1;
+    border-color: rgba(0, 0, 0, 0.08);
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
 }
 
 /* Pagination */

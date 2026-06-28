@@ -1959,22 +1959,28 @@
 
 .product-color-btn.out {
   position: relative;
-  color: rgba(74, 22, 15, 0.5);
-  background:
-    repeating-linear-gradient(135deg, rgba(128, 0, 32, 0.08) 0 6px, rgba(255, 255, 255, 0.68) 6px 12px);
-  border-color: rgba(128, 0, 32, 0.24);
-  opacity: 0.92;
+  color: rgba(74, 22, 15, 0.55);
+  border-color: rgba(128, 0, 32, 0.2);
+  opacity: 0.85;
 }
 
-.product-color-btn.out::after {
+.product-color-btn.out span {
+  position: relative;
+}
+
+/* Diagonal cut across the color swatch only */
+.product-color-btn.out span::after {
   content: "";
   position: absolute;
-  left: 12px;
-  right: 12px;
+  left: -3px;
+  right: -3px;
   top: 50%;
-  height: 1px;
-  background: rgba(128, 0, 32, 0.52);
-  transform: rotate(-8deg);
+  height: 2px;
+  margin-top: -1px;
+  background: #800020;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+  transform: rotate(-45deg);
   transform-origin: center;
 }
 

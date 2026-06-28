@@ -362,6 +362,10 @@ const Collection = () => {
   const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
+    if (getProductStockInfo(product, colorId).isOutOfStock) {
+      showNotification("This product is out of stock.", "error");
+      return;
+    }
     if (!user) {
       localStorage.setItem("bk_pending_cart", JSON.stringify({
         product: {
@@ -462,13 +466,22 @@ const Collection = () => {
             {productDescription && <p className="collection-desc">{productDescription}</p>}
             <ProductRating product={product} className="collection-product-rating" />
             <div className="price-container">
-              <div className="price-main-row">
-                {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
-                <strong className="selling-price">{formatMoney(sell)}</strong>
-              </div>
-              {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
+              {isOutOfStock ? (
+                <div className="price-main-row">
+                  <span className="collection-mrp-tag">MRP</span>
+                  <strong className="selling-price">{formatMoney(mrp > 0 ? mrp : sell)}</strong>
+                </div>
+              ) : (
+                <>
+                  <div className="price-main-row">
+                    {discountPercent > 0 && <em className="collection-discount">-{discountPercent}%</em>}
+                    <strong className="selling-price">{formatMoney(sell)}</strong>
+                  </div>
+                  {mrp > sell && <span className="mrp-price"><span className="mrp-price-val">{formatMoney(mrp)}</span></span>}
+                </>
+              )}
             </div>
-            <DeliveryBadge processingDays={product.processing_days} />
+            {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
             <button
               type="button"
               className="collection-atc-btn"

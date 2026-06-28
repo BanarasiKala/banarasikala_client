@@ -1,5 +1,5 @@
 ﻿import { Icon } from "@iconify/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../utils/api";
@@ -24,6 +24,26 @@ const formatDate = (value) => {
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
+
+const formatRefundType = (type) => {
+  const t = String(type || "").toLowerCase();
+  if (t.includes("rto")) return "RTO refund";
+  if (t.includes("cancel")) return "Cancellation refund";
+  if (t.includes("return")) return "Return refund";
+  if (t.includes("exchange")) return "Exchange adjustment";
+  return "Refund";
+};
+
+const formatRefundStatus = (status) => {
+  const s = String(status || "").toLowerCase();
+  if (s.includes("complete") || s.includes("processed") || s.includes("success") || s === "refunded") return "Completed";
+  if (s.includes("not_required") || s.includes("not required")) return "Not required";
+  if (s.includes("fail") || s.includes("reject")) return "Failed";
+  if (s.includes("pending") || s.includes("initiat") || s.includes("process")) return "Processing";
+  return status || "Pending";
+};
+
+const isRefundSettled = (status) => /complete|processed|success|refunded/i.test(String(status || ""));
 
 const getItemImage = (item) => item.image_url || item.product_image_url || "";
 const getItemColor = (item) => item.color_name || item.Color?.name || "Selected color";
@@ -463,9 +483,27 @@ export default function OrderConfirmation() {
     branch_name: "",
   });
   const [bankSaving, setBankSaving] = useState(false);
+  const [tracking, setTracking] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   const breakdown = useMemo(() => getBreakdown(order || {}), [order]);
-  const timeline = useMemo(() => buildOrderTimeline(order), [order]);
+  // Live ShipRocket scan activities (only exist once the parcel is picked up and
+  // an AWB is generated). Before that we fall back to the status stepper.
+  const liveActivities = tracking?.tracking?.tracking_data?.shipment_track_activities || [];
+  const hasLiveTracking = liveActivities.length > 0;
+  const timeline = useMemo(
+    () => (hasLiveTracking ? buildTimeline(order, tracking) : buildOrderTimeline(order)),
+    [order, tracking, hasLiveTracking],
+  );
+  const courierName = order?.courier_name
+    || tracking?.tracking?.tracking_data?.shipment_track?.[0]?.courier_name
+    || "";
+  const trackUrl = tracking?.tracking?.tracking_data?.track_url
+    || (order?.shiprocket_awb ? `https://shiprocket.co/tracking/${order.shiprocket_awb}` : "");
+  const refunds = Array.isArray(order?.refunds) ? order.refunds : [];
+  const totalRefunded = refunds
+    .filter((r) => isRefundSettled(r.status))
+    .reduce((sum, r) => sum + toNumber(r.amount), 0);
   const orderActions = useMemo(() => getOrderActions(order), [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -500,6 +538,27 @@ export default function OrderConfirmation() {
       cancelled = true;
     };
   }, [orderId]);
+
+  // Pull live ShipRocket tracking. Returns scan activities once the parcel has
+  // an AWB; before pickup it just reports "not yet dispatched" (handled gracefully).
+  const fetchTracking = useCallback(async () => {
+    if (!orderId) return;
+    setTrackingLoading(true);
+    try {
+      const res = await api.get(`/api/orders/track/${orderId}`);
+      setTracking(res.data);
+    } catch {
+      // Non-blocking: the status stepper still shows.
+    } finally {
+      setTrackingLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    if (order && (order.shiprocket_awb || order.shiprocket_order_id)) {
+      fetchTracking();
+    }
+  }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
 
   const openActionModal = (type = "cancel") => {
     const config = getActionConfig(type);
@@ -708,9 +767,35 @@ export default function OrderConfirmation() {
         <div className="order-confirmation-main">
           <section className="order-panel">
             <div className="order-panel-head">
-              <h2>Shipment timeline</h2>
-              <span>{getCustomerOrderStatusLabel(order.status)}</span>
+              <h2>{hasLiveTracking ? "Live tracking" : "Shipment timeline"}</h2>
+              <div className="order-track-head-right">
+                <span>{getCustomerOrderStatusLabel(order.status)}</span>
+                {(order.shiprocket_awb || order.shiprocket_order_id) && (
+                  <button
+                    type="button"
+                    className="order-track-refresh"
+                    onClick={fetchTracking}
+                    disabled={trackingLoading}
+                    aria-label="Refresh tracking"
+                  >
+                    <Icon icon="lucide:refresh-cw" className={trackingLoading ? "is-spinning" : ""} />
+                    {trackingLoading ? "Refreshing…" : "Refresh"}
+                  </button>
+                )}
+              </div>
             </div>
+
+            {!order.shiprocket_awb && (
+              <div className="order-track-pending">
+                <Icon icon="lucide:package-search" />
+                <span>
+                  {hasLiveTracking
+                    ? "Live tracking is now available."
+                    : "Your order is being prepared. Live tracking will appear here once the courier picks it up and an AWB is generated."}
+                </span>
+              </div>
+            )}
+
             <div className="confirmation-timeline">
               {timeline.map((step, index) => (
                 <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state || "pending"}`}>
@@ -727,10 +812,18 @@ export default function OrderConfirmation() {
                 </div>
               ))}
             </div>
+
             {order.shiprocket_awb && (
               <div className="awb-strip">
-                <span>AWB</span>
-                <strong>{order.shiprocket_awb}</strong>
+                <span className="awb-strip-info">
+                  <small>AWB{courierName ? ` · ${courierName}` : ""}</small>
+                  <strong>{order.shiprocket_awb}</strong>
+                </span>
+                {trackUrl && (
+                  <a className="awb-track-link" href={trackUrl} target="_blank" rel="noopener noreferrer">
+                    Track on courier <Icon icon="lucide:external-link" />
+                  </a>
+                )}
               </div>
             )}
           </section>
@@ -852,6 +945,32 @@ export default function OrderConfirmation() {
                 </div>
               );
             })()}
+
+            {refunds.length > 0 && (
+              <div className="refund-ledger">
+                <div className="refund-ledger-head">
+                  <Icon icon="lucide:receipt-text" />
+                  <strong>Refunds</strong>
+                </div>
+                {refunds.map((r, i) => (
+                  <div key={r.id || `${r.refund_type}-${i}`} className="refund-ledger-row">
+                    <span className="refund-ledger-label">
+                      {formatRefundType(r.refund_type)}
+                      <small className={`refund-ledger-status is-${formatRefundStatus(r.status).toLowerCase().replace(/\s+/g, "-")}`}>
+                        {formatRefundStatus(r.status)}{r.createdAt || r.created_at ? ` · ${formatDate(r.createdAt || r.created_at)}` : ""}
+                      </small>
+                    </span>
+                    <strong>{formatPrice(r.amount)}</strong>
+                  </div>
+                ))}
+                {totalRefunded > 0 && (
+                  <div className="refund-ledger-row refund-ledger-total">
+                    <span>Total refunded</span>
+                    <strong>{formatPrice(totalRefunded)}</strong>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="order-panel">

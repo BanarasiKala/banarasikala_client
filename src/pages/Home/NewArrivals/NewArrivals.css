@@ -146,15 +146,6 @@
   box-shadow: 0 24px 42px rgba(88, 39, 13, 0.21);
 }
 
-.bk-arrival-card.is-out-of-stock {
-  opacity: 0.55;
-  filter: grayscale(0.45);
-}
-
-.bk-arrival-card.is-out-of-stock:hover {
-  opacity: 0.65;
-}
-
 .bk-arrival-oos-stack {
   display: flex;
   flex-direction: column;
@@ -447,6 +438,49 @@
 .bk-arrival-atc-btn:hover {
   filter: brightness(1.12);
   transform: translateY(-1px);
+}
+
+.bk-arrival-atc-btn:disabled {
+  background: linear-gradient(135deg, #9a9a9a, #6f6f6f);
+  color: #f1f1f1;
+  border-color: rgba(0, 0, 0, 0.08);
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+.bk-arrival-stock-badge {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  z-index: 4;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 250, 241, 0.88);
+  color: #7a1023;
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  box-shadow: 0 6px 14px rgba(55, 15, 10, 0.12);
+  backdrop-filter: blur(8px);
+  font-family: "Inter", "Poppins", Arial, sans-serif;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.bk-arrival-card.is-out-of-stock .bk-arrival-image {
+  filter: grayscale(0.25);
+  opacity: 0.82;
+}
+
+.bk-arrival-mrp-tag {
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(53, 23, 15, 0.55);
+  letter-spacing: 0.04em;
 }
 
 .bk-arrival-skeleton {

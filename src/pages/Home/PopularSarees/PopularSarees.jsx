@@ -7,6 +7,7 @@ import { useWishlist } from "../../../context/WishlistContext";
 import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
+import { getProductStockInfo } from "../../../utils/stockStatus";
 import ProductRating from "../../../components/ProductRating";
 import DeliveryBadge from "../../../components/DeliveryBadge";
 import "./PopularSarees.css";
@@ -131,6 +132,10 @@ const PopularSarees = () => {
   const handleAddToCart = async (e, product, colorId) => {
     e.preventDefault();
     e.stopPropagation();
+    if (getProductStockInfo(product, colorId).isOutOfStock) {
+      showNotification("This product is out of stock.", "error");
+      return;
+    }
     if (!user) {
       localStorage.setItem("bk_pending_cart", JSON.stringify({
         product: {
@@ -193,6 +198,7 @@ const PopularSarees = () => {
               const currentColorId = sliderImages[activeIndex]?.color_id || null;
               const liked = isInWishlist(product.id, currentColorId);
               const discountPercent = Number(product.discount_percent || disc);
+              const isOutOfStock = getProductStockInfo(product).isOutOfStock;
               const productDescription =
                 product.short_description ||
                 product.description ||
@@ -201,7 +207,7 @@ const PopularSarees = () => {
               return (
                 <article
                   key={product.id}
-                  className="bk-popular-card"
+                  className={`bk-popular-card ${isOutOfStock ? "is-out-of-stock" : ""}`}
                   style={{ transitionDelay: `${Math.min(index * 40, 200)}ms` }}
                 >
                   <Link
@@ -220,6 +226,7 @@ const PopularSarees = () => {
                       onTouchMove={(event) => handleTouchMove(event, product.id)}
                       onTouchEnd={(event) => handleTouchEnd(event, product.id, sliderImages.length)}
                     >
+                      {isOutOfStock && <span className="bk-popular-stock-badge">Out of stock</span>}
                       <div
                         className="bk-popular-image-track"
                         style={{ transform: `translateX(-${activeIndex * 100}%)` }}
@@ -250,13 +257,22 @@ const PopularSarees = () => {
                       {productDescription && <p className="bk-popular-desc">{productDescription}</p>}
                       <ProductRating product={product} className="bk-popular-rating" />
                       <div className="bk-popular-price-row">
-                        <div className="bk-popular-price-main">
-                          {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
-                          <strong className="bk-popular-price">{formatMoney(sell)}</strong>
-                        </div>
-                        {mrp > sell && <span className="bk-popular-mrp"><span className="bk-popular-mrp-val">{formatMoney(mrp)}</span></span>}
+                        {isOutOfStock ? (
+                          <div className="bk-popular-price-main">
+                            <span className="bk-popular-mrp-tag">MRP</span>
+                            <strong className="bk-popular-price">{formatMoney(mrp > 0 ? mrp : sell)}</strong>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="bk-popular-price-main">
+                              {discountPercent > 0 && <em className="bk-popular-discount">-{discountPercent}%</em>}
+                              <strong className="bk-popular-price">{formatMoney(sell)}</strong>
+                            </div>
+                            {mrp > sell && <span className="bk-popular-mrp"><span className="bk-popular-mrp-val">{formatMoney(mrp)}</span></span>}
+                          </>
+                        )}
                       </div>
-                      <DeliveryBadge processingDays={product.processing_days} />
+                      {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
                       <button type="button" className="bk-popular-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
                         Add to Cart
                       </button>

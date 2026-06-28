@@ -1,5 +1,5 @@
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
+import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "./HeroSlider.css";
@@ -38,9 +38,10 @@ const HERO_SAREES = Object.keys(desktopSlideMap)
 const HeroSlider = () => (
   <div className="bk-hero-wrap">
     <Swiper
-      modules={[Pagination]}
+      modules={[Autoplay, Pagination]}
       slidesPerView={1}
       loop
+      autoplay={{ delay: 4000, disableOnInteraction: false, pauseOnMouseEnter: true }}
       pagination={{ clickable: true }}
       className="hero-swiper bk-hero-swiper"
     >
