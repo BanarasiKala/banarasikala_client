@@ -292,6 +292,38 @@
   font-size: 15px;
 }
 
+/* ── Reverse (return / exchange) pickup tracking ── */
+.reverse-shipment {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px dashed rgba(154, 107, 32, 0.22);
+}
+
+.reverse-shipment:first-of-type {
+  padding-top: 4px;
+  margin-top: 4px;
+  border-top: none;
+}
+
+.reverse-shipment-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.reverse-shipment-head strong {
+  font-size: 13px;
+  color: #3f352e;
+}
+
+.reverse-shipment-head small {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: #9a6b20;
+}
+
 /* ── Refund ledger ── */
 .refund-ledger {
   margin-top: 14px;

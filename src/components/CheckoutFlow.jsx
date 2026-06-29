@@ -37,6 +37,10 @@ const METHOD_LABELS = { gpay: "Google Pay", phonepe: "PhonePe", upi: "Other UPI 
 const METHOD_ICONS = { gpay: "logos:google-pay", phonepe: "simple-icons:phonepe", upi: "lucide:smartphone", card: "lucide:credit-card", netbanking: "lucide:landmark", emi: "lucide:calculator", wallet: "lucide:wallet" };
 // UPI sub-methods all map to Razorpay's "upi" method
 const UPI_METHODS = new Set(["gpay", "phonepe", "upi"]);
+// Maps our GPay/PhonePe choices to Razorpay's UPI intent app codes. When one of
+// these is picked we restrict the checkout to that single app; "upi" and the
+// other methods fall through and show Razorpay's full default selection.
+const UPI_APP_CODES = { gpay: "google_pay", phonepe: "phonepe" };
 
 // Title shown in the header for each wizard step.
 const STEP_TITLES = { address: "Select a Delivery Address", payment: "Select a Payment Method", confirm: "Review Your Order" };
@@ -661,7 +665,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       const razorpayOrder = orderResponse.data;
       if (!orderResponse.status || orderResponse.status >= 400) throw new Error(razorpayOrder.message || "Unable to start payment.");
 
-      const razorpay = new window.Razorpay({
+      const upiAppCode = UPI_APP_CODES[onlineMethod];
+      const razorpayOptions = {
         key: requiredEnv("VITE_RAZORPAY_KEY_ID"),
         amount: razorpayOrder.amount,
         currency: "INR",
@@ -725,7 +730,26 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         modal: {
           ondismiss: () => setLoading(false),
         },
-      });
+      };
+
+      // GPay / PhonePe: lock the Razorpay checkout to that single UPI app only.
+      // Any other choice leaves Razorpay's full default selection visible.
+      if (upiAppCode) {
+        razorpayOptions.config = {
+          display: {
+            blocks: {
+              [onlineMethod]: {
+                name: onlineMethod === "gpay" ? "Pay using Google Pay" : "Pay using PhonePe",
+                instruments: [{ method: "upi", apps: [upiAppCode] }],
+              },
+            },
+            sequence: [`block.${onlineMethod}`],
+            preferences: { show_default_blocks: false },
+          },
+        };
+      }
+
+      const razorpay = new window.Razorpay(razorpayOptions);
       razorpay.open();
     } catch (err) {
       console.error(err);

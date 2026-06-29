@@ -162,10 +162,23 @@ const hasUsableAction = (item, actionType = null) => (item.actions || []).some((
 const hasOrderExchangeHistory = (order) => Boolean(order?.exchange_requested_at)
   || (order?.OrderItems || []).some((item) => hasUsableAction(item, "exchange"));
 
+const hasOrderReturnHistory = (order) => (order?.OrderItems || []).some((item) => hasUsableAction(item, "return"));
+
+// Keep in sync with OrderReturnService.RETURN_WINDOW_DAYS on the backend.
+const RETURN_WINDOW_DAYS = 7;
+const withinReturnWindow = (order) => {
+  if (!order?.delivered_at) return false;
+  const lastDate = new Date(order.delivered_at);
+  lastDate.setDate(lastDate.getDate() + RETURN_WINDOW_DAYS);
+  return Date.now() <= lastDate.getTime();
+};
+
 const getEligibleActionItems = (order, actionType) => {
   const delivered = wasDelivered(order);
   const cancelAllowed = canCancelOrder(order);
   const exchangeUsed = hasOrderExchangeHistory(order);
+  const returnUsed = hasOrderReturnHistory(order);
+  const inReturnWindow = withinReturnWindow(order);
   return (order?.OrderItems || []).filter((item) => {
     const itemStatus = normalizeStatus(item.status);
     if (getActionableQty(item) < 1) return false;
@@ -173,8 +186,14 @@ const getEligibleActionItems = (order, actionType) => {
     if (hasUsableAction(item)) return false;
     if (actionType === "cancel") return cancelAllowed && itemStatus !== "cancelled";
     if (itemStatus === "cancelled") return false;
-    if (actionType === "exchange" && exchangeUsed) return false;
-    if (["return", "exchange"].includes(actionType)) return delivered;
+    if (["return", "exchange"].includes(actionType)) {
+      // Mirror the backend: delivered, inside the 7-day window, and one reverse
+      // flow per order (no exchange-after-return, no return-after-exchange,
+      // exchange only once).
+      if (!delivered || !inReturnWindow) return false;
+      if (actionType === "exchange") return !exchangeUsed && !returnUsed;
+      if (actionType === "return") return !exchangeUsed;
+    }
     return false;
   });
 };
@@ -261,6 +280,17 @@ const buildTimeline = (order, tracking) => {
       icon: "lucide:badge-check",
     },
   ];
+};
+
+// Map a reverse (return/exchange) shipment's ShipRocket scan activities to timeline steps.
+const buildReverseActivities = (shipment) => {
+  const activities = shipment?.tracking?.tracking_data?.shipment_track_activities || [];
+  return activities.map((activity, index) => ({
+    title: activity.activity || "Pickup update",
+    detail: [activity.location, activity.date].filter(Boolean).join(" • "),
+    state: index === 0 ? "current" : "done",
+    icon: index === 0 ? "lucide:radio" : "lucide:circle",
+  }));
 };
 
 const buildOrderTimeline = (order) => {
@@ -500,6 +530,7 @@ export default function OrderConfirmation() {
     || "";
   const trackUrl = tracking?.tracking?.tracking_data?.track_url
     || (order?.shiprocket_awb ? `https://shiprocket.co/tracking/${order.shiprocket_awb}` : "");
+  const reverseShipments = Array.isArray(tracking?.reverse) ? tracking.reverse : [];
   const refunds = Array.isArray(order?.refunds) ? order.refunds : [];
   const totalRefunded = refunds
     .filter((r) => isRefundSettled(r.status))
@@ -827,6 +858,52 @@ export default function OrderConfirmation() {
               </div>
             )}
           </section>
+
+          {reverseShipments.length > 0 && (
+            <section className="order-panel">
+              <div className="order-panel-head">
+                <h2>Return / Exchange tracking</h2>
+                <span>{reverseShipments.length} pickup{reverseShipments.length > 1 ? "s" : ""}</span>
+              </div>
+              {reverseShipments.map((shipment, shipmentIndex) => {
+                const steps = buildReverseActivities(shipment);
+                const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
+                return (
+                  <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
+                    <div className="reverse-shipment-head">
+                      <strong>{label}</strong>
+                      {shipment.awb && <small>AWB · {shipment.awb}</small>}
+                    </div>
+                    {steps.length > 0 ? (
+                      <div className="confirmation-timeline">
+                        {steps.map((step, index) => (
+                          <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state}`}>
+                            <div className="confirmation-step-track">
+                              <span className="confirmation-step-icon"><Icon icon={step.icon} /></span>
+                              {index < steps.length - 1 && <div className="confirmation-step-line" />}
+                            </div>
+                            <div className="confirmation-step-body">
+                              <strong>{step.title}</strong>
+                              <p>{step.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="order-track-pending">
+                        <Icon icon="lucide:package-search" />
+                        <span>
+                          {shipment.source === "unavailable"
+                            ? "Pickup tracking is temporarily unavailable. Please check back shortly."
+                            : "Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel."}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </section>
+          )}
 
           <OrderActivityPanel history={order.status_history} />
 
