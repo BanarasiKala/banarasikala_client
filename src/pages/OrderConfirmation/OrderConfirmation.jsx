@@ -79,11 +79,16 @@ const getBreakdown = (order = {}) => {
   return { subtotal, shippingCharge, shippingDiscount, paymentFee, platformFee, codFee, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
+// An order can be modified (products cancelled / quantities reduced) only while
+// it is still pre-dispatch — pending / processing / order placed. Once it is
+// picked up, shipped, out for delivery, delivered or in RTO it is locked. Mirror
+// of MODIFIABLE_STATUSES in OrderItemActionController on the backend.
+const MODIFIABLE_STATUSES = ["pending", "processing", "order placed", "order_placed"];
 const canCancelOrder = (order) => {
   if (order?.is_modified) return false;
   const rawDate = order?.createdAt || order?.created_at;
   const status = String(order?.status || "").toLowerCase();
-  if (!rawDate || ["cancelled", "seller cancelled", "delivered", "shipped", "out for delivery", "rto delivered", "picked up", "picked_up", "awb assigned", "awb_assigned"].includes(status) || status.startsWith("rto ")) return false;
+  if (!rawDate || !MODIFIABLE_STATUSES.includes(status)) return false;
   const createdAt = new Date(rawDate).getTime();
   return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
 };
@@ -375,7 +380,7 @@ const EXCHANGE_REASONS = [
 const getActionConfig = (type) => {
   if (type === "return") return { title: "Request Return", label: "Return reason", reasons: RETURN_REASONS, button: "Submit Return Request", tone: "primary" };
   if (type === "exchange") return { title: "Request Exchange", label: "Exchange reason", reasons: EXCHANGE_REASONS, button: "Submit Exchange Request", tone: "primary" };
-  return { title: "Cancel Products", label: "Cancellation reason", reasons: CANCEL_REASONS, button: "Submit Cancellation", tone: "danger" };
+  return { title: "Modify your order", label: "Reason for change", reasons: CANCEL_REASONS, button: "Confirm changes", tone: "danger" };
 };
 
 const OrderActivityPanel = ({ history }) => {
@@ -1113,7 +1118,7 @@ export default function OrderConfirmation() {
               {orderActions.canCancel && (
                 <>
                   <button className="cancel-order-btn" type="button" onClick={() => openActionModal("cancel")}>
-                    Cancel products
+                    Modify order
                   </button>
                   {(() => {
                     const rawDate = order.createdAt || order.created_at;
@@ -1123,7 +1128,7 @@ export default function OrderConfirmation() {
                     const hrs = Math.floor(remaining / (1000 * 60 * 60));
                     const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
                     const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                    return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to cancel</p>;
+                    return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to modify</p>;
                   })()}
                 </>
               )}
@@ -1233,7 +1238,7 @@ export default function OrderConfirmation() {
             </button>
             <div className="cancel-modal-header">
               <h3>{getActionConfig(cancelModal.type).title}</h3>
-              <p>{cancelModal.type === "cancel" ? <>Select products and adjust quantities to cancel for <strong>{cancelModal.itemName}</strong>.</> : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}</p>
+              <p>{cancelModal.type === "cancel" ? <>Remove products or reduce quantities for <strong>{cancelModal.itemName}</strong>. You'll be refunded for whatever you take off.</> : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}</p>
             </div>
             
             <form onSubmit={handleModalSubmit} className="cancel-modal-form">
@@ -1383,18 +1388,118 @@ export default function OrderConfirmation() {
 
               {!loadingEstimate && actionEstimate?.totals && (
                 <div className="action-estimate-box">
-                  <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
-                  {cancelModal.type === "return" && (
-                    <>
-                      <div><span>Delivery charge deduction</span><strong>{formatPrice(actionEstimate.totals.forward_shipping_deduction)}</strong></div>
-                      <div><span>Return pickup charge</span><strong>{formatPrice(actionEstimate.totals.reverse_shipping_deduction)}</strong></div>
+                  {cancelModal.type === "cancel" ? (() => {
+                    const isCod = String(order?.payment_method || "").toUpperCase() === "COD";
+                    const bd = actionEstimate.breakdown || {};
+                    const s = actionEstimate.new_order_summary || {};
+                    // Fall back to the per-item total if a breakdown field is
+                    // missing (e.g. an older backend response) so values never
+                    // collapse to ₹0.00.
+                    const cancelledItemsValue = bd.cancelled_items_value ?? actionEstimate.totals.item_amount;
+                    const walletBackNote = actionEstimate.wallet_refund > 0 && (
+                      <p className="action-estimate-note">
+                        <Icon icon="lucide:wallet" />
+                        {formatPrice(actionEstimate.wallet_refund)} of wallet balance will be credited back to your wallet.
+                      </p>
+                    );
+                    const couponNote = actionEstimate.coupon_replaced ? (
+                      <p className="action-estimate-note">
+                        <Icon icon="lucide:badge-percent" />
+                        Coupon {actionEstimate.original_coupon_code} no longer qualifies on the reduced order, so the best available offer <strong>{actionEstimate.applied_coupon_code}</strong> has been applied instead.
+                      </p>
+                    ) : actionEstimate.coupon_removed ? (
                       <p className="action-estimate-note">
                         <Icon icon="lucide:info" />
-                        RTO charge is not included in normal returns. RTO charge applies only when a shipment is returned to seller after failed delivery.
+                        Coupon {actionEstimate.original_coupon_code} no longer qualifies on the reduced order and no other offer applies, so it has been removed.
                       </p>
+                    ) : null;
+
+                    // Full cancellation — refund everything paid (prepaid) or
+                    // nothing left to pay (COD).
+                    if (actionEstimate.is_full_cancellation) {
+                      return isCod ? (
+                        <div className="action-estimate-total">
+                          <span>Amount to pay</span><strong>{formatPrice(0)}</strong>
+                        </div>
+                      ) : (
+                        <>
+                          <div><span>Amount paid</span><strong>{formatPrice(actionEstimate.paid_amount)}</strong></div>
+                          <div className="action-estimate-total">
+                            <span>Total refund</span><strong>{formatPrice(actionEstimate.refund_amount ?? cancelledItemsValue)}</strong>
+                          </div>
+                          {walletBackNote}
+                        </>
+                      );
+                    }
+
+                    // Partial cancel — show the repriced order bill (checkout
+                    // style), then the refund (prepaid) or the new payable (COD).
+                    return (
+                      <>
+                        <span className="action-bill-title">Updated order summary</span>
+                        <div><span>Items subtotal</span><strong>{formatPrice(s.subtotal ?? bd.remaining_items_value)}</strong></div>
+                        {s.platform_fee > 0 && (
+                          <div><span>Platform fee</span><strong>{formatPrice(s.platform_fee)}</strong></div>
+                        )}
+                        {s.delivery > 0 && (
+                          <div><span>Delivery</span><strong>{formatPrice(s.delivery)}</strong></div>
+                        )}
+                        {s.cod_fee > 0 && (
+                          <div><span>COD charge</span><strong>{formatPrice(s.cod_fee)}</strong></div>
+                        )}
+                        {s.gift_charge > 0 && (
+                          <div><span>Gift wrap</span><strong>{formatPrice(s.gift_charge)}</strong></div>
+                        )}
+                        {s.prepaid_discount > 0 && (
+                          <div><span>Prepaid discount</span><strong>-{formatPrice(s.prepaid_discount)}</strong></div>
+                        )}
+                        {s.coupon_discount > 0 && (
+                          <div><span>Coupon{s.coupon_code ? ` (${s.coupon_code})` : ""}</span><strong>-{formatPrice(s.coupon_discount)}</strong></div>
+                        )}
+                        {s.wallet_used > 0 && (
+                          <div><span>Wallet applied</span><strong>-{formatPrice(s.wallet_used)}</strong></div>
+                        )}
+                        <div className="action-estimate-subtotal">
+                          <span>{isCod ? "New total (pay on delivery)" : "New order total"}</span>
+                          <strong>{formatPrice(s.total ?? actionEstimate.remaining_payable)}</strong>
+                        </div>
+                        {couponNote}
+                        {actionEstimate.wallet_preserved && (
+                          <p className="action-estimate-note">
+                            <Icon icon="lucide:wallet" />
+                            Your wallet balance stays applied to the remaining order.
+                          </p>
+                        )}
+                        {!isCod && (
+                          <>
+                            <div><span>Amount paid earlier</span><strong>{formatPrice(actionEstimate.paid_amount)}</strong></div>
+                            <div className="action-estimate-total">
+                              <span>Refund to payment method</span>
+                              <strong>{formatPrice(actionEstimate.refund_amount ?? actionEstimate.totals.estimated_refund_amount)}</strong>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <>
+                      <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
+                      {cancelModal.type === "return" && (
+                        <>
+                          <div><span>Delivery charge deduction</span><strong>{formatPrice(actionEstimate.totals.forward_shipping_deduction)}</strong></div>
+                          <div><span>Return pickup charge</span><strong>{formatPrice(actionEstimate.totals.reverse_shipping_deduction)}</strong></div>
+                          <p className="action-estimate-note">
+                            <Icon icon="lucide:info" />
+                            RTO charge is not included in normal returns. RTO charge applies only when a shipment is returned to seller after failed delivery.
+                          </p>
+                        </>
+                      )}
+                      <div className="action-estimate-total">
+                        <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
+                        <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
+                      </div>
                     </>
                   )}
-                  <div><span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span><strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong></div>
                 </div>
               )}
 

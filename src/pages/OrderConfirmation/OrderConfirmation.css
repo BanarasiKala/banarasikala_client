@@ -1044,6 +1044,36 @@
   color: #4b160e;
 }
 
+.action-estimate-box .action-estimate-total {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(128, 0, 32, 0.25);
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b160e;
+}
+
+.action-estimate-box .action-estimate-total strong {
+  font-size: 16px;
+}
+
+.action-estimate-box .action-bill-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a5a00;
+}
+
+.action-estimate-box .action-estimate-subtotal {
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(128, 0, 32, 0.12);
+  font-weight: 600;
+  color: #4b160e;
+}
+
 .action-estimate-note {
   display: flex;
   align-items: flex-start;
