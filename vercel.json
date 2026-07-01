@@ -27,14 +27,14 @@
       "runtime": "nodejs18.x"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/product/:slug",
-      "destination": "/api/product/:slug"
+      "src": "/product/(?<slug>[^/]+)$",
+      "dest": "/api/product/$slug"
     },
     {
-      "source": "/((?!assets/|.*\\..*).*)",
-      "destination": "/index.html"
+      "src": "/((?!assets/|.*\\..*).*)",
+      "dest": "/index.html"
     }
   ]
 }
