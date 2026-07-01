@@ -545,6 +545,7 @@ const Header = () => {
           </div>
           <Link to="/#new-arrivals" onClick={refreshNavClick("/#new-arrivals")}>New Arrivals</Link>
           <Link to="/collection" onClick={refreshNavClick("/collection")}>Collections</Link>
+          <Link to="/reels" onClick={refreshNavClick("/reels")}>Reels</Link>
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
           <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
         </nav>
@@ -873,6 +874,9 @@ const Header = () => {
             </Link>
             <Link to="/collection" onClick={refreshNavClick("/collection")}>
               Collections
+            </Link>
+            <Link to="/reels" onClick={refreshNavClick("/reels")}>
+              Reels
             </Link>
             <span className="bk-mobile-nav-heading">Variety</span>
             {sareeVarietiesStatus === "loading" && (

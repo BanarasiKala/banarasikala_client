@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatBot from "../components/ChatBot/ChatBot";
+import ReelsFab from "../components/ReelsFab/ReelsFab";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
@@ -70,14 +71,16 @@ const Layout = () => {
   const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const footerlessAuthPages = ["/cart", "/wishlist", "/contact", "/feedback", "/profile"];
   const footerlessPages = ["/cart", "/wishlist", "/my-orders", "/profile"];
-  const chromeHiddenPages = ["/checkout"];
+  const chromeHiddenPages = ["/checkout", "/reels"];
   const hideChrome = chromeHiddenPages.includes(location.pathname);
+  const isImmersive = location.pathname === "/reels";
   const hideFooter =
     hideChrome ||
     location.pathname === "/login" ||
     footerlessPages.includes(location.pathname) ||
     (!user && footerlessAuthPages.includes(location.pathname));
   const isHomePage = location.pathname === "/";
+  const hideReelsFab = hideChrome || location.pathname === "/reels";
   const hideSignupGift = hideChrome || loading || Boolean(user) || location.pathname === "/login";
   const routeRefreshKey = [
     location.pathname,
@@ -105,7 +108,8 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      <ChatBot />
+      {!hideReelsFab && <ReelsFab />}
+      {!isImmersive && <ChatBot />}
     </>
   );
 };

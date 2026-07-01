@@ -3,8 +3,9 @@ import { requiredEnv } from "../utils/env";
 const API_BASE_URL = requiredEnv("VITE_API_URL");
 
 export const API_ENDPOINTS = {
-  base: API_BASE_URL,  
+  base: API_BASE_URL,
   products: `${API_BASE_URL}/api/products`,
+  reels: `${API_BASE_URL}/api/reels`,
   colors: `${API_BASE_URL}/api/colors`,
   materials: `${API_BASE_URL}/api/materials`,
   occasions: `${API_BASE_URL}/api/occasions`,

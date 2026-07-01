@@ -16,6 +16,7 @@ import headerBackground from "./assets/header_backgroung.png";
 import "./App.css";
 
 const Home = lazy(() => import("./pages/Home/Home"));
+const Reels = lazy(() => import("./pages/Reels/Reels"));
 const Collection = lazy(() => import("./pages/Collection/Collection"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart/Cart"));
@@ -61,6 +62,7 @@ function App() {
                   <Routes>
                     <Route element={<Layout />}>
                       <Route path="/" element={<Home />} />
+                      <Route path="/reels" element={<Reels />} />
                       <Route path="/collection" element={<Collection />} />
                       <Route path="/product/:slug" element={<ProductDetail />} />
                       <Route
