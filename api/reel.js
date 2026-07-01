@@ -73,8 +73,10 @@ const getReelPreviewImage = (reel = {}) => {
     reel.thumbnail_url ||
     reel.poster_url ||
     reel.video_poster ||
+    reel.reel_poster ||
+    reel.thumbnail ||
     (Array.isArray(reel.products) && reel.products.length ? getProductCoverImage(reel.products[0]) : "") ||
-    "/logo_transparent_2.png"
+    "/reel_fallback.svg"
   );
 };
 
@@ -102,14 +104,21 @@ const loadIndexHtml = async () => {
 };
 
 const renderReelHtml = (template, reel, pageUrl) => {
-  const title = normalizeText(reel.title || "Banarasi Kala Reel");
-  const description = truncateText(reel.description || reel.caption || "Watch this short reel from Banarasi Kala.");
+  const title = normalizeText(reel.title || reel.caption || "Banarasi Kala Reel");
+  const description = truncateText(
+    reel.description ||
+    reel.caption ||
+    "Watch this short reel video from Banarasi Kala."
+  );
   const imageUrl = toAbsoluteUrl(getReelPreviewImage(reel), pageUrl);
   const videoUrl = toAbsoluteUrl(reel.video_url || reel.videoUrl || "", pageUrl);
+  const titleWithType = title.includes("reel") || title.includes("Reel")
+    ? title
+    : `${title} | Banarasi Kala Reel`;
 
   const metaTags = `
     <meta name="description" content="${escapeHtml(description)}" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:title" content="${escapeHtml(titleWithType)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(imageUrl)}" />
     <meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}" />

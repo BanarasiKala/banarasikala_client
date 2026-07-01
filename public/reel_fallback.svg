@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7e1b4b" />
+      <stop offset="100%" stop-color="#2b0735" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="20" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="80" y="100" width="1040" height="430" rx="40" fill="rgba(255,255,255,0.08)" />
+  <circle cx="600" cy="315" r="120" fill="rgba(255,255,255,0.16)" filter="url(#shadow)" />
+  <circle cx="600" cy="315" r="90" fill="rgba(255,255,255,0.18)" />
+  <polygon points="630,300 630,330 690,315" fill="#fff" opacity="0.95" />
+  <circle cx="600" cy="315" r="52" fill="#8f3b74" />
+  <polygon points="620,300 620,330 680,315" fill="#fff" />
+  <path d="M440 160H760C780 160 796 176 796 196V434C796 454 780 470 760 470H440C420 470 404 454 404 434V196C404 176 420 160 440 160Z" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="4" />
+  <text x="120" y="150" font-family="Poppins, sans-serif" font-weight="700" font-size="64" fill="#fff">Banarasi Kala</text>
+  <text x="120" y="230" font-family="Poppins, sans-serif" font-weight="600" font-size="50" fill="#ffe7f8">Reel Preview</text>
+  <text x="120" y="310" font-family="Poppins, sans-serif" font-size="32" fill="#f0d6ea">Tap to watch the latest styling video</text>
+</svg>
