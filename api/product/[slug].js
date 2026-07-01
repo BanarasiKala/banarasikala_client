@@ -13,7 +13,8 @@ const escapeHtml = (value) => String(value || "")
   .replace(/'/g, "&#39;");
 
 const fetchProduct = async (slug, color) => {
-  const apiUrl = `${process.env.VITE_API_URL}/api/products/${encodeURIComponent(slug)}/detail${color ? `?color=${encodeURIComponent(color)}` : ""}`;
+  const baseApiUrl = process.env.VITE_API_URL || process.env.API_URL || "https://www.banarasikala.com";
+  const apiUrl = `${baseApiUrl.replace(/\/+$/, "")}/api/products/${encodeURIComponent(slug)}/detail${color ? `?color=${encodeURIComponent(color)}` : ""}`;
   const response = await fetch(apiUrl);
   if (!response.ok) return null;
   return response.json();
@@ -53,21 +54,31 @@ const renderProductHtml = (template, product, pageUrl) => {
 };
 
 export default async function handler(req, res) {
-  const { slug } = req.params;
-  const color = req.nextUrl.searchParams.get("color") || null;
-  const pageUrl = `${req.nextUrl.protocol}://${req.nextUrl.host}${req.nextUrl.pathname}${req.nextUrl.search}`;
+  const { slug, color } = req.query || {};
+  const requestedColor = color || null;
+  const protocol = req.headers["x-forwarded-proto"]?.split(",")[0] || "https";
+  const host = req.headers.host;
+  const pageUrl = `${protocol}://${host}${req.url}`;
 
-  const product = await fetchProduct(slug, color);
+  if (!slug) {
+    res.statusCode = 400;
+    return res.end("Missing product slug");
+  }
+
+  const product = await fetchProduct(slug, requestedColor);
   if (!product) {
-    return res.status(404).send("Product not found");
+    res.statusCode = 404;
+    return res.end("Product not found");
   }
 
   const template = await loadIndexHtml();
   if (!template) {
-    return res.status(500).send("Unable to load page template");
+    res.statusCode = 500;
+    return res.end("Unable to load page template");
   }
 
   const html = renderProductHtml(template, product, pageUrl);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  return res.status(200).send(html);
+  res.statusCode = 200;
+  return res.end(html);
 }

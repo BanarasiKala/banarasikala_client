@@ -30,7 +30,7 @@
   ],
   "functions": {
     "api/product/[slug].js": {
-      "runtime": "edge"
+      "runtime": "nodejs18.x"
     }
   },
   "routes": [
