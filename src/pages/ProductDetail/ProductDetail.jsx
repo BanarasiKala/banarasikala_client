@@ -17,6 +17,7 @@ import CheckoutFlow from "../../components/CheckoutFlow";
 import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
+import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
@@ -1864,6 +1865,7 @@ const ProductDetail = () => {
 
   return (
     <div className="product-detail-page" ref={rootRef}>
+      <ProductReelPreview productId={product?.id} />
       <main className="product-detail-shell">
         <div className="product-mobile-header">
           <div className="product-name-rating-row">

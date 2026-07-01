@@ -7,10 +7,7 @@ import "./ReelsFab.css";
 const ReelsFab = () => (
   <Link to="/reels" className="bk-reels-fab" aria-label="Watch shoppable reels">
     <span className="bk-reels-fab-pulse" aria-hidden="true" />
-    <span className="bk-reels-fab-core">
-      <Film className="bk-reels-fab-icon" size={22} strokeWidth={2.2} />
-    </span>
-    <span className="bk-reels-fab-label">Reels</span>
+    <Film className="bk-reels-fab-icon" size={24} strokeWidth={2.2} />
   </Link>
 );
 
