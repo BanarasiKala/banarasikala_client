@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, MessageCircle, Share2, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft } from "lucide-react";
+import { Heart, MessageCircle, Share2, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, Eye } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -139,6 +139,10 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
               <Share2 size={25} />
               <span>Share</span>
             </button>
+            <div className="bk-reel-action bk-reel-views">
+              <Eye size={24} />
+              <span>{reel.view_count ?? 0}</span>
+            </div>
           </div>
 
           {/* Caption + products */}
