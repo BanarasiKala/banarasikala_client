@@ -1,0 +1,74 @@
+/* Fixed-height stage so the rotating lines don't shift the page layout. */
+.bk-social-proof {
+  height: 46px;
+  width: 100%;
+  margin: 12px 0 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.bk-sp-line {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 14px;
+  font-family: "Poppins", sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  animation: bk-sp-in 0.5s cubic-bezier(0.16, 0.84, 0.24, 1);
+}
+.bk-sp-line .bk-sp-text strong {
+  font-weight: 800;
+  font-size: 16px;
+  margin-right: 1px;
+}
+
+.bk-sp-line.is-live {
+  color: #067a4e;
+  background: linear-gradient(120deg, rgba(52, 211, 153, 0.18), rgba(16, 185, 129, 0.1));
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+.bk-sp-line.is-orders {
+  color: #92480a;
+  background: linear-gradient(120deg, rgba(255, 176, 32, 0.2), rgba(255, 122, 0, 0.12));
+  border: 1px solid rgba(255, 176, 32, 0.42);
+}
+
+.bk-sp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bk-sp-emoji { font-size: 16px; line-height: 1; }
+
+.bk-sp-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  animation: bk-sp-pulse 1.4s ease-out infinite;
+}
+
+/* New line slides up into place; the old one is gone (overflow-hidden stage). */
+@keyframes bk-sp-in {
+  0% { opacity: 0; transform: translateY(115%) scale(0.96); }
+  55% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes bk-sp-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-sp-line { animation: none; }
+  .bk-sp-dot { animation: none; }
+}

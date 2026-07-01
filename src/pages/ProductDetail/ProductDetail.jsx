@@ -18,6 +18,7 @@ import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
+import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
@@ -2022,6 +2023,8 @@ const ProductDetail = () => {
               )}
               {!isSelectedOutOfStock && <p>Inclusive of all taxes</p>}
             </div>
+
+            <ProductSocialProof productId={product?.id} />
 
             <div className="product-feature-icons">
               {[
