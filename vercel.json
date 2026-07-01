@@ -28,8 +28,16 @@
       "source": "/product/:slug",
       "destination": "/api/product/:slug"
     },
-    {
-      "source": "/((?!api/|assets/|.*\\..*).*)",
+    {      "source": "/reels",
+      "has": [
+        {
+          "type": "query",
+          "key": "reel"
+        }
+      ],
+      "destination": "/api/reel"
+    },
+    {      "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
