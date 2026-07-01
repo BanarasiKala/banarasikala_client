@@ -22,11 +22,6 @@
       ]
     }
   ],
-  "functions": {
-    "api/product/[slug].js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "routes": [
     {
       "src": "^/product/(?<slug>[^/]+)(?:/)?$",
@@ -38,4 +33,3 @@
     }
   ]
 }
-
