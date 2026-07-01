@@ -22,21 +22,19 @@
       ]
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
-  ],
   "functions": {
     "api/product/[slug].js": {
       "runtime": "nodejs18.x"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/product/(?<slug>[^/]+)$",
-      "dest": "/api/product/$slug"
+      "source": "/product/:slug",
+      "destination": "/api/product/:slug"
+    },
+    {
+      "source": "/((?!assets/|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
