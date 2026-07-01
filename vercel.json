@@ -29,11 +29,11 @@
   },
   "routes": [
     {
-      "src": "/product/(?<slug>[^/]+)$",
+      "src": "^/product/(?<slug>[^/]+)(?:/)?$",
       "dest": "/api/product/$slug"
     },
     {
-      "src": "/((?!assets/|.*\\..*).*)",
+      "src": "^/((?!assets/|.*\\..*).*)$",
       "dest": "/index.html"
     }
   ]
