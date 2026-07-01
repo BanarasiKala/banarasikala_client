@@ -56,6 +56,28 @@ const toAbsoluteUrl = (url, pageUrl) => {
   }
 };
 
+const getProductImages = (product = {}) => {
+  return [...(product.images || []), ...(product.productImages || [])]
+    .map((image) => (typeof image === "string" ? { url: image } : image))
+    .filter((image) => image?.url);
+};
+
+const getProductCoverImage = (product = {}) => {
+  const images = getProductImages(product);
+  const cover = images.find((image) => image.is_cover) || images[0];
+  return cover?.url || product.image_url || product.image || "";
+};
+
+const getReelPreviewImage = (reel = {}) => {
+  return (
+    reel.thumbnail_url ||
+    reel.poster_url ||
+    reel.video_poster ||
+    (Array.isArray(reel.products) && reel.products.length ? getProductCoverImage(reel.products[0]) : "") ||
+    "/logo_transparent_2.png"
+  );
+};
+
 const buildReelPageUrl = (req) => {
   const protocol = req.headers["x-forwarded-proto"]?.split(",")[0] || "https";
   const host = req.headers["x-forwarded-host"]?.split(",")[0] || req.headers.host;
@@ -82,7 +104,7 @@ const loadIndexHtml = async () => {
 const renderReelHtml = (template, reel, pageUrl) => {
   const title = normalizeText(reel.title || "Banarasi Kala Reel");
   const description = truncateText(reel.description || reel.caption || "Watch this short reel from Banarasi Kala.");
-  const imageUrl = toAbsoluteUrl(reel.thumbnail_url || reel.poster_url || reel.video_poster || "/logo_transparent_2.png", pageUrl);
+  const imageUrl = toAbsoluteUrl(getReelPreviewImage(reel), pageUrl);
   const videoUrl = toAbsoluteUrl(reel.video_url || reel.videoUrl || "", pageUrl);
 
   const metaTags = `
