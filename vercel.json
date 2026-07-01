@@ -24,11 +24,11 @@
   ],
   "routes": [
     {
-      "src": "^/product/(?<slug>[^/]+)(?:/)?$",
-      "dest": "/api/product/$slug"
+      "src": "^/product/([^/]+)(?:/)?$",
+      "dest": "/api/product/$1"
     },
     {
-      "src": "^/((?!assets/|.*\\..*).*)$",
+      "src": "^/((?!api/|assets/|.*\\..*).*)$",
       "dest": "/index.html"
     }
   ]
