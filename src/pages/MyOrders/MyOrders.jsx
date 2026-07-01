@@ -19,6 +19,7 @@ const STATUS_CONFIG = {
   Shipped: { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:truck", label: "Shipped" },
   Delivered: { color: "#087a55", bg: "#edfdf5", icon: "lucide:check-circle", label: "Delivered" },
   Cancelled: { color: "#b42318", bg: "#fff0ee", icon: "lucide:x-circle", label: "Cancelled" },
+  "Partially Cancelled": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:file-edit", label: "Modified" },
   "Out For Delivery": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:navigation", label: "Out for delivery" },
   Undelivered: { color: "#9a6200", bg: "#fff6dc", icon: "lucide:triangle-alert", label: "Delivery attempt failed" },
   "RTO Initiated": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:undo-2", label: "Returning to seller" },
@@ -50,6 +51,7 @@ const getStatus = (status) => {
   if (normalized === "picked up" || normalized === "picked_up" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Picked Up"];
   if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return STATUS_CONFIG.Shipped;
   if (normalized === "delivered") return STATUS_CONFIG.Delivered;
+  if (normalized.includes("partial") && normalized.includes("cancel")) return STATUS_CONFIG["Partially Cancelled"];
   if (normalized === "cancelled") return STATUS_CONFIG.Cancelled;
   if (normalized.includes("cancel")) return STATUS_CONFIG.Cancelled;
   if (normalized === "out for delivery" || normalized === "out_for_delivery") return STATUS_CONFIG["Out For Delivery"];
@@ -107,9 +109,16 @@ const canReviewOrderItem = (order, item) => {
   const itemStatus = String(item?.status || "").toLowerCase();
   return isDelivered(order) && !itemStatus.includes("cancel");
 };
+// A partially-cancelled item (some units removed) reads as "Modified"; a fully
+// cancelled item stays "Cancelled".
+const getItemStatusLabel = (status) => {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized.includes("partial") && normalized.includes("cancel")) return "Modified";
+  return status;
+};
 const getItemDisplayStatus = (order, item) => {
   const itemStatus = String(item?.status || "").trim();
-  if (itemStatus && itemStatus.toLowerCase() !== "active") return itemStatus;
+  if (itemStatus && itemStatus.toLowerCase() !== "active") return getItemStatusLabel(itemStatus);
   return getStatus(order?.status).label;
 };
 
@@ -127,6 +136,9 @@ const getOrderFilterGroup = (status = "") => {
   const normalized = String(status || "").toLowerCase();
   if (normalized.includes("exchange")) return "exchange";
   if (normalized.includes("return")) return "return";
+  // A partially-cancelled (modified) order is still active — keep it with the
+  // ordered group, not under Cancelled.
+  if (normalized.includes("partial") && normalized.includes("cancel")) return "ordered";
   if (normalized.includes("cancel")) return "cancelled";
   if (normalized.includes("delivered")) return "delivered";
   if (normalized.includes("ship") || normalized.includes("awb") || normalized.includes("out for delivery")) return "shipped";

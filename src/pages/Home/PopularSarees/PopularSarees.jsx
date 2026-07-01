@@ -6,7 +6,7 @@ import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
-import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
+import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../../utils/productMedia";
 import { getProductStockInfo } from "../../../utils/stockStatus";
 import ProductRating from "../../../components/ProductRating";
 import DeliveryBadge from "../../../components/DeliveryBadge";
@@ -37,13 +37,13 @@ const PopularSarees = () => {
     const params = new URLSearchParams({
       status: "active",
       specialCollection: "true",
-      limit: "20",
+      limit: "10",
       view: "home",
     });
     fetch(`${API_ENDPOINTS.products}?${params.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        const homeProducts = (data.items || data).slice(0, 20);
+        const homeProducts = (data.items || data).slice(0, 10);
         console.log("[Home][Exclusive Picks] products:", homeProducts);
         console.log("[Home][Exclusive Picks] raw response:", data);
         setProducts(homeProducts);
@@ -187,7 +187,7 @@ const PopularSarees = () => {
           </div>
         ) : (
           <div className="bk-popular-showcase">
-            {products.slice(0, 20).map((product, index) => {
+            {products.slice(0, 10).map((product, index) => {
               const sell = Number(product.selling_price);
               const mrp = Number(product.mrp_price);
               const disc = calcDiscount(mrp, sell);
@@ -195,7 +195,7 @@ const PopularSarees = () => {
               const cardImages = getProductImages(product);
               const sliderImages = cardImages.length > 0 ? cardImages : [{ url: img }];
               const activeIndex = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
-              const currentColorId = sliderImages[activeIndex]?.color_id || null;
+              const currentColorId = sliderImages[activeIndex]?.color_id || getDefaultColorId(product);
               const liked = isInWishlist(product.id, currentColorId);
               const discountPercent = Number(product.discount_percent || disc);
               const isOutOfStock = getProductStockInfo(product).isOutOfStock;

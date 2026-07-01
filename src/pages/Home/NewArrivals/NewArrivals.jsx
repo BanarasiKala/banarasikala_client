@@ -6,7 +6,7 @@ import { useCart } from "../../../context/CartContext";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useNotification } from "../../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../../config/api";
-import { getProductCoverImage, getProductImages } from "../../../utils/productMedia";
+import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../../utils/productMedia";
 import { getProductStockInfo } from "../../../utils/stockStatus";
 import ProductRating from "../../../components/ProductRating";
 import DeliveryBadge from "../../../components/DeliveryBadge";
@@ -37,13 +37,13 @@ const NewArrivals = () => {
     const params = new URLSearchParams({
       status: "active",
       newArrival: "true",
-      limit: "20",
+      limit: "10",
       view: "home",
     });
     fetch(`${API_ENDPOINTS.products}?${params.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        const homeProducts = (data.items || data).slice(0, 20);
+        const homeProducts = (data.items || data).slice(0, 10);
         console.log("[Home][New Arrivals] products:", homeProducts);
         console.log("[Home][New Arrivals] raw response:", data);
         setProducts(homeProducts);
@@ -194,7 +194,7 @@ const NewArrivals = () => {
                 const cardImages = getProductImages(product);
                 const sliderImages = cardImages.length > 0 ? cardImages : [{ url: cover }];
                 const activeIndex = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
-                const currentColorId = sliderImages[activeIndex]?.color_id || null;
+                const currentColorId = sliderImages[activeIndex]?.color_id || getDefaultColorId(product);
                 const liked = isInWishlist(product.id, currentColorId);
                 const discountPercent = Number(product.discount_percent || disc);
                 const productDescription =

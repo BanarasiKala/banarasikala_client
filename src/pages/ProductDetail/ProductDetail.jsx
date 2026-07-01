@@ -8,7 +8,7 @@ import { useNotification } from "../../context/NotificationContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { API_ENDPOINTS } from "../../config/api";
 import api from "../../utils/api";
-import { getProductCoverImage, getProductImages } from "../../utils/productMedia";
+import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import { LocationPickerModal } from "../Profile/Profile";
 import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
@@ -1535,7 +1535,7 @@ const ProductDetail = () => {
       navigate("/cart");
       return;
     }
-    const result = await addToCart(relatedItem, 1, relatedItem.selected_color_id || null);
+    const result = await addToCart(relatedItem, 1, relatedItem.selected_color_id || getDefaultColorId(relatedItem));
     if (result?.success) {
       showNotification("Added to bag!", "success");
     } else {

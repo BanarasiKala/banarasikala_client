@@ -7,7 +7,7 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useNotification } from "../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../config/api";
-import { getProductCoverImage, getProductImages } from "../../utils/productMedia";
+import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
@@ -391,7 +391,7 @@ const Collection = () => {
     const productImages = getProductImages(product);
     const sliderImages = productImages.length > 0 ? productImages : [{ url: cover }];
     const activeSlide = Math.min(activeSlides[product.id] || 0, sliderImages.length - 1);
-    const currentColorId = sliderImages[activeSlide]?.color_id || null;
+    const currentColorId = sliderImages[activeSlide]?.color_id || getDefaultColorId(product);
     const imageReady = Boolean(loadedImages[product.id]);
     const stockInfo = getProductStockInfo(product);
     const isOutOfStock = stockInfo.isOutOfStock;

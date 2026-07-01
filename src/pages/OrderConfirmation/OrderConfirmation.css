@@ -1074,6 +1074,16 @@
   color: #4b160e;
 }
 
+.action-estimate-box .action-bill-free {
+  color: #1a7f4b;
+}
+
+.action-estimate-box .action-bill-free s {
+  color: #9a8678;
+  margin-right: 5px;
+  font-weight: 400;
+}
+
 .action-estimate-note {
   display: flex;
   align-items: flex-start;
@@ -1586,4 +1596,40 @@
   width: 100%;
   height: 38px;
   border-radius: 999px;
+}
+
+/* Edit delivery address */
+.order-panel-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.order-panel-head-row h2 {
+  margin: 0;
+}
+.address-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #d8c4a8;
+  color: #800020;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.address-edit-btn:hover {
+  background: #fdf6ee;
+}
+.cancel-modal-form .form-row {
+  display: flex;
+  gap: 12px;
+}
+.cancel-modal-form .form-row .form-group {
+  flex: 1;
 }

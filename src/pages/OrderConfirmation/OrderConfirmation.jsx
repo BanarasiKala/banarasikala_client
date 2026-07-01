@@ -96,7 +96,7 @@ const canCancelOrder = (order) => {
 const getCustomerOrderStatusLabel = (status) => {
   const normalized = String(status || "Pending").toLowerCase();
   if (normalized === "seller cancelled") return "Cancelled by seller";
-  if (normalized.includes("partial") && normalized.includes("cancel")) return "Order updated";
+  if (normalized.includes("partial") && normalized.includes("cancel")) return "Modified";
   if (normalized === "cancel requested") return "Cancellation pending";
   if (normalized.includes("cancel")) return "Cancelled";
   if (normalized === "rto delivered") return "Order returned to seller";
@@ -344,7 +344,7 @@ const buildOrderTimeline = (order) => {
   if (status.includes("partial") && status.includes("cancel")) {
     return [
       { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", state: "done" },
-      { title: "Order updated", detail: `Some items cancelled${order?.modified_at ? ` · ${formatDate(order.modified_at)}` : ""}`, icon: "lucide:file-edit", state: "current" },
+      { title: "Order modified", detail: `Some items removed${order?.modified_at ? ` · ${formatDate(order.modified_at)}` : ""}`, icon: "lucide:file-edit", state: "current" },
       { title: "Remaining items in transit", detail: "The rest of your order will be shipped as scheduled", icon: "lucide:truck", state: "pending" },
     ];
   }
@@ -506,6 +506,9 @@ export default function OrderConfirmation() {
   const [modalSubmitLoading, setModalSubmitLoading] = useState(false);
   const [actionEstimate, setActionEstimate] = useState(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
+  const [addressModal, setAddressModal] = useState({ isOpen: false });
+  const [addressForm, setAddressForm] = useState({ name: "", phone: "", line: "", city: "", state: "", pincode: "" });
+  const [addressSaving, setAddressSaving] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
@@ -623,6 +626,50 @@ export default function OrderConfirmation() {
     setCancelModal({ isOpen: false, type: "cancel", orderId: null, itemName: "", selected: {} });
     setActionEstimate(null);
     setLoadingEstimate(false);
+  };
+
+  const openAddressModal = () => {
+    setAddressForm({
+      name: order?.customer_name || "",
+      phone: order?.phone || "",
+      line: order?.address || "",
+      city: order?.city || "",
+      state: order?.state || "",
+      pincode: order?.pincode || "",
+    });
+    setAddressModal({ isOpen: true });
+  };
+
+  const closeAddressModal = () => {
+    if (addressSaving) return;
+    setAddressModal({ isOpen: false });
+  };
+
+  const submitAddress = async (event) => {
+    event.preventDefault();
+    if (!order?.id) return;
+    setAddressSaving(true);
+    try {
+      await api.patch(`/api/orders/${order.id}/modify`, {
+        address: {
+          name: addressForm.name.trim(),
+          phone: addressForm.phone.trim(),
+          line: addressForm.line.trim(),
+          city: addressForm.city.trim(),
+          state: addressForm.state.trim(),
+          pincode: addressForm.pincode.trim(),
+        },
+        reason: "Delivery address updated by customer",
+      });
+      showNotification("Delivery address updated.", "success");
+      setAddressModal({ isOpen: false });
+      const updated = await api.get(`/api/orders/${order.id}`);
+      setOrder(updated.data);
+    } catch (err) {
+      showNotification(err?.response?.data?.message || "Could not update the address right now.", "error");
+    } finally {
+      setAddressSaving(false);
+    }
   };
 
   const openFeedbackModal = (item) => {
@@ -1056,7 +1103,14 @@ export default function OrderConfirmation() {
           </section>
 
           <section className="order-panel">
-            <h2>Delivery address</h2>
+            <div className="order-panel-head-row">
+              <h2>Delivery address</h2>
+              {canCancelOrder(order) && (
+                <button type="button" className="address-edit-btn" onClick={openAddressModal}>
+                  <Icon icon="lucide:pencil" /> Edit
+                </button>
+              )}
+            </div>
             <p className="address-copy">{order.customer_name}<br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
           </section>
 
@@ -1441,9 +1495,16 @@ export default function OrderConfirmation() {
                         {s.platform_fee > 0 && (
                           <div><span>Platform fee</span><strong>{formatPrice(s.platform_fee)}</strong></div>
                         )}
-                        {s.delivery > 0 && (
-                          <div><span>Delivery</span><strong>{formatPrice(s.delivery)}</strong></div>
-                        )}
+                        <div>
+                          <span>Delivery</span>
+                          {s.delivery > 0 ? (
+                            <strong>{formatPrice(s.delivery)}</strong>
+                          ) : s.delivery_gross > 0 ? (
+                            <strong className="action-bill-free"><s>{formatPrice(s.delivery_gross)}</s> Free</strong>
+                          ) : (
+                            <strong className="action-bill-free">Free</strong>
+                          )}
+                        </div>
                         {s.cod_fee > 0 && (
                           <div><span>COD charge</span><strong>{formatPrice(s.cod_fee)}</strong></div>
                         )}
@@ -1518,6 +1579,64 @@ export default function OrderConfirmation() {
                   disabled={modalSubmitLoading}
                 >
                   {modalSubmitLoading ? "Processing..." : getActionConfig(cancelModal.type).button}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {addressModal.isOpen && (
+        <div className="cancel-modal-overlay">
+          <div className="cancel-modal-container">
+            <button type="button" className="cancel-modal-close" onClick={closeAddressModal} disabled={addressSaving}>
+              <Icon icon="lucide:x" />
+            </button>
+            <div className="cancel-modal-header">
+              <h3>Edit delivery address</h3>
+              <p>Update where <strong>Order {orderNumber}</strong> should be delivered. Available until the order is dispatched.</p>
+            </div>
+
+            <form onSubmit={submitAddress} className="cancel-modal-form">
+              <div className="form-group">
+                <label htmlFor="addr-name">Full name</label>
+                <input id="addr-name" type="text" required value={addressForm.name}
+                  onChange={(e) => setAddressForm((c) => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label htmlFor="addr-phone">Phone</label>
+                <input id="addr-phone" type="tel" required inputMode="numeric" value={addressForm.phone}
+                  onChange={(e) => setAddressForm((c) => ({ ...c, phone: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label htmlFor="addr-line">Address</label>
+                <textarea id="addr-line" required rows={3} value={addressForm.line}
+                  onChange={(e) => setAddressForm((c) => ({ ...c, line: e.target.value }))} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="addr-city">City</label>
+                  <input id="addr-city" type="text" required value={addressForm.city}
+                    onChange={(e) => setAddressForm((c) => ({ ...c, city: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="addr-pincode">Pincode</label>
+                  <input id="addr-pincode" type="text" required inputMode="numeric" value={addressForm.pincode}
+                    onChange={(e) => setAddressForm((c) => ({ ...c, pincode: e.target.value }))} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="addr-state">State</label>
+                <input id="addr-state" type="text" required value={addressForm.state}
+                  onChange={(e) => setAddressForm((c) => ({ ...c, state: e.target.value }))} />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="modal-action-btn secondary" onClick={closeAddressModal} disabled={addressSaving}>
+                  Go Back
+                </button>
+                <button type="submit" className="modal-action-btn primary" disabled={addressSaving}>
+                  {addressSaving ? "Saving..." : "Save address"}
                 </button>
               </div>
             </form>
