@@ -28,50 +28,6 @@ body::-webkit-scrollbar {
   height: 0;
 }
 
-/* Shown while restoring scroll position on back/forward navigation, so the user
-   sees a loader instead of the page jumping from the top down to the saved spot
-   while data/images stream in. Removed once the position has settled. */
-.bk-scroll-restore-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    linear-gradient(rgba(255, 246, 232, 0.9), rgba(255, 246, 232, 0.96)),
-    url("./assets/header_backgroung.png"),
-    #fff6e8;
-  background-size: 100% 100%, cover, 100% 100%;
-  background-position: center top;
-}
-
-.bk-scroll-restore-overlay.is-leaving {
-  animation: bk-scroll-restore-fade 0.22s ease forwards;
-}
-
-.bk-scroll-restore-spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid rgba(128, 0, 32, 0.16);
-  border-top-color: #800020;
-  animation: bk-scroll-restore-spin 0.7s linear infinite;
-}
-
-@keyframes bk-scroll-restore-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes bk-scroll-restore-fade {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
 body :where(*):not(:where(h1, h2, h3, h4, h5, h6, h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
   font-family: "Poppins", sans-serif !important;
 }

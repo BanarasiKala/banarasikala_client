@@ -1,9 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
-
-// Below this offset a restore is visually instant, so we skip the overlay to
-// avoid a needless flash on lightly-scrolled pages.
-const OVERLAY_MIN_OFFSET = 150;
 
 // Scroll positions are keyed by react-router's per-history-entry location.key so
 // that back/forward returns the user to exactly where they were, while forward
@@ -36,8 +32,6 @@ const ScrollToTop = () => {
   const navType = useNavigationType(); // "POP" (back/forward) | "PUSH" | "REPLACE"
   const keyRef = useRef(key);
   const suppressRef = useRef(false); // ignore scroll events caused by our own scrollTo
-  const fadeTimerRef = useRef(0);
-  const [overlay, setOverlay] = useState(null); // null | "active" | "leaving"
 
   useEffect(() => {
     if (!("scrollRestoration" in window.history)) return undefined;
@@ -81,27 +75,28 @@ const ScrollToTop = () => {
       return () => cancelAnimationFrame(id);
     }
 
-    // Back/forward: restore the remembered position. Content (product grids,
-    // images, lazy sections) loads asynchronously and the reserved placeholder
-    // heights are only estimates, so the layout keeps shifting after the first
-    // paint. Re-assert the saved offset on every frame until the document height
-    // has stayed stable for a short spell (settled) — or until we hit a hard
-    // time cap, or the user takes over by scrolling themselves.
+    // Back/forward: restore the remembered position.
+    //
+    // This runs in a layout effect, i.e. BEFORE the browser paints, and the home
+    // page's deferred sections reserve their height up front (contain-intrinsic-
+    // size), so the document is already tall enough here. Scrolling synchronously
+    // now means the very first paint is already parked at the saved offset — the
+    // user never sees the page at the top and never watches it auto-scroll down.
     suppressRef.current = true;
+    const applyScroll = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo({ top: Math.min(saved, Math.max(0, maxScroll)), left: 0, behavior: "instant" });
+    };
+    applyScroll();
+
+    // Content (real product data, images) then streams in and can shift the
+    // layout, so keep re-asserting the offset for a short window until the height
+    // stops changing — or the user takes over by scrolling themselves.
     let cancelled = false;
     let rafId = 0;
     let lastHeight = -1;
     let stableFrames = 0;
     const startTime = performance.now();
-
-    // Cover the viewport with a loader so the user never sees the page sitting at
-    // the top and then jumping down as data streams in — the scrolling happens
-    // behind the overlay and we reveal only once it's settled on the right spot.
-    const useOverlay = saved > OVERLAY_MIN_OFFSET;
-    if (useOverlay) {
-      window.clearTimeout(fadeTimerRef.current);
-      setOverlay("active");
-    }
 
     const finish = () => {
       if (cancelled) return;
@@ -111,10 +106,6 @@ const ScrollToTop = () => {
       window.removeEventListener("touchmove", onUserScroll);
       window.removeEventListener("keydown", onUserScroll);
       suppressRef.current = false;
-      if (useOverlay) {
-        setOverlay("leaving");
-        fadeTimerRef.current = window.setTimeout(() => setOverlay(null), 240);
-      }
     };
 
     // A genuine user gesture means "stop fighting me" — hand control back.
@@ -125,18 +116,16 @@ const ScrollToTop = () => {
     const step = () => {
       if (cancelled) return;
       const height = document.documentElement.scrollHeight;
-      const maxScroll = height - window.innerHeight;
-      window.scrollTo({ top: Math.min(saved, Math.max(0, maxScroll)), left: 0, behavior: "instant" });
+      applyScroll();
 
-      // Settled = height no longer changing AND we can actually reach the offset.
-      if (height === lastHeight && maxScroll >= saved) {
+      if (height === lastHeight) {
         stableFrames += 1;
       } else {
         stableFrames = 0;
       }
       lastHeight = height;
 
-      if (stableFrames >= 8 || performance.now() - startTime > 2500) {
+      if (stableFrames >= 10 || performance.now() - startTime > 1500) {
         finish();
       } else {
         rafId = requestAnimationFrame(step);
@@ -151,17 +140,7 @@ const ScrollToTop = () => {
     return () => finish();
   }, [pathname, search, hash, key, navType, state?.refreshKey]);
 
-  if (!overlay) return null;
-
-  return (
-    <div
-      className={`bk-scroll-restore-overlay${overlay === "leaving" ? " is-leaving" : ""}`}
-      role="status"
-      aria-label="Restoring your place"
-    >
-      <span className="bk-scroll-restore-spinner" />
-    </div>
-  );
+  return null;
 };
 
 export default ScrollToTop;
