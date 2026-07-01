@@ -1,32 +1,11 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
+import { scrollPositions, persistScrollPositions as persist } from "../utils/scrollRestore";
 
-// Scroll positions are keyed by react-router's per-history-entry location.key so
-// that back/forward returns the user to exactly where they were, while forward
-// navigation (product click, nav links) still starts at the top.
-//
-// We mirror the live in-memory map into sessionStorage so positions survive a
-// reload within the same tab (sessionStorage — not localStorage — because these
-// keys are tied to the current browsing session and should be discarded when the
-// tab closes rather than accumulating forever).
-const STORAGE_KEY = "bk_scroll_positions";
-
-const scrollPositions = (() => {
-  try {
-    return new Map(Object.entries(JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}")));
-  } catch {
-    return new Map();
-  }
-})();
-
-const persist = () => {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(scrollPositions)));
-  } catch {
-    /* storage unavailable (private mode / quota) — restoration still works in-memory */
-  }
-};
-
+// Restores scroll position on back/forward (POP) navigation so the user returns
+// to exactly where they were, while forward navigation (product click, nav links)
+// still starts at the top. The shared store lives in utils/scrollRestore so that
+// deferred sections (e.g. the home page) can render eagerly during a restore.
 const ScrollToTop = () => {
   const { pathname, search, hash, key, state } = useLocation();
   const navType = useNavigationType(); // "POP" (back/forward) | "PUSH" | "REPLACE"
@@ -89,19 +68,22 @@ const ScrollToTop = () => {
     };
     applyScroll();
 
-    // Content (real product data, images) then streams in and can shift the
-    // layout, so keep re-asserting the offset for a short window until the height
-    // stops changing — or the user takes over by scrolling themselves.
+    // The tricky part: after mount the real data + images stream in asynchronously
+    // (skeletons get swapped for taller/shorter content), which shifts the layout
+    // *after* the first paint. A fixed frame/time loop stops too early — the page
+    // looks stable during the skeleton phase, then the real data lands and moves
+    // everything. So instead we re-assert the saved offset whenever the document
+    // height actually changes (ResizeObserver), and only give up once the layout
+    // has stopped changing for a beat — or the user scrolls themselves.
     let cancelled = false;
-    let rafId = 0;
-    let lastHeight = -1;
-    let stableFrames = 0;
+    let settleTimer = 0;
     const startTime = performance.now();
 
     const finish = () => {
       if (cancelled) return;
       cancelled = true;
-      cancelAnimationFrame(rafId);
+      window.clearTimeout(settleTimer);
+      resizeObserver.disconnect();
       window.removeEventListener("wheel", onUserScroll);
       window.removeEventListener("touchmove", onUserScroll);
       window.removeEventListener("keydown", onUserScroll);
@@ -113,29 +95,31 @@ const ScrollToTop = () => {
       finish();
     }
 
-    const step = () => {
-      if (cancelled) return;
-      const height = document.documentElement.scrollHeight;
-      applyScroll();
-
-      if (height === lastHeight) {
-        stableFrames += 1;
-      } else {
-        stableFrames = 0;
-      }
-      lastHeight = height;
-
-      if (stableFrames >= 10 || performance.now() - startTime > 1500) {
-        finish();
-      } else {
-        rafId = requestAnimationFrame(step);
-      }
+    // Settle 350ms after the last layout change, with a 4s hard cap so a page
+    // that keeps mutating (e.g. an animation) can never pin the scroll forever.
+    const scheduleSettle = () => {
+      window.clearTimeout(settleTimer);
+      const remaining = 4000 - (performance.now() - startTime);
+      settleTimer = window.setTimeout(finish, Math.max(0, Math.min(350, remaining)));
     };
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (cancelled) return;
+      applyScroll();
+      scheduleSettle();
+    });
+    resizeObserver.observe(document.documentElement);
 
     window.addEventListener("wheel", onUserScroll, { passive: true });
     window.addEventListener("touchmove", onUserScroll, { passive: true });
     window.addEventListener("keydown", onUserScroll);
-    rafId = requestAnimationFrame(step);
+
+    // Re-assert on the next frame too, in case the first layout settles before the
+    // observer is wired up, then arm the settle timer.
+    requestAnimationFrame(() => {
+      if (!cancelled) applyScroll();
+    });
+    scheduleSettle();
 
     return () => finish();
   }, [pathname, search, hash, key, navType, state?.refreshKey]);

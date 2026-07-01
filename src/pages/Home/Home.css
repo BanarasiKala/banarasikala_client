@@ -28,6 +28,16 @@
   contain-intrinsic-size: var(--home-deferred-min-height, 420px);
 }
 
+/* Once a section is actually rendered (notably during a back/forward scroll
+   restore, where every section mounts up front), drop content-visibility so the
+   browser lays it out at its true height instead of the reserved estimate —
+   otherwise tall grids (Exclusive Picks, Browse Circles) stay collapsed and the
+   page is too short to scroll back to the saved position. */
+.home-deferred-section.is-rendered {
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
+}
+
 .home-deferred-section.is-loading {
   min-height: var(--home-deferred-min-height, 360px);
 }

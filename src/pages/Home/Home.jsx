@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigationType } from "react-router-dom";
+import { getSavedScroll } from "../../utils/scrollRestore";
 import headerBackground from "../../assets/header_backgroung.png";
 import FabricStrip from "./FabricStrip/FabricStrip";
 import HeroSlider from "./HeroSlider/HeroSlider";
@@ -16,11 +17,20 @@ const FaqSection = lazy(() => import("./FaqSection/FaqSection"));
 
 const HomeSection = ({ children, id, variant = "default" }) => {
   const ref = useRef(null);
-  const [active, setActive] = useState(false);
+  const navType = useNavigationType();
+  const location = useLocation();
+  // On a back/forward restore to a saved scroll position, render every section
+  // immediately so the page has its true height at first paint and the browser
+  // can land on the exact offset (otherwise the reserved placeholder heights
+  // under-estimate tall grids like Exclusive Picks and the page lands short).
+  const [active, setActive] = useState(
+    () => navType === "POP" && getSavedScroll(location.key) > 0
+  );
 
   useEffect(() => {
+    if (active) return undefined; // already rendered (restore) — no observer needed
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -32,10 +42,14 @@ const HomeSection = ({ children, id, variant = "default" }) => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [active]);
 
   return (
-    <div id={id} ref={ref} className={`home-deferred-section home-deferred-section--${variant}`}>
+    <div
+      id={id}
+      ref={ref}
+      className={`home-deferred-section home-deferred-section--${variant}${active ? " is-rendered" : ""}`}
+    >
       <Suspense fallback={<div className="home-section-loader" aria-hidden="true" />}>
         {active ? children : <div className="home-section-loader" aria-hidden="true" />}
       </Suspense>
