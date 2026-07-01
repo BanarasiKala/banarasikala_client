@@ -24,8 +24,20 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|.*\\..*).*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "functions": {
+    "api/product/[slug].js": {
+      "runtime": "edge"
+    }
+  },
+  "routes": [
+    {
+      "src": "/product/(?<slug>[^/]+)$",
+      "dest": "/api/product/$slug"
     }
   ]
 }
+
