@@ -1729,9 +1729,7 @@ const ProductDetail = () => {
         ["Fabric", product.Material?.name],
         ["Occasion", product.Occasion?.name],
         ["Saree Length", product.length ? `${formatNumber(product.length)} Meter` : ""],
-        ["Saree Width", product.width ? `${formatNumber(product.width)} Meter` : ""],
-        ["Height", product.height ? `${formatNumber(product.height)} cm` : ""],
-        ["Weight", product.weight ? `${formatNumber(product.weight)} kg` : ""],
+        ["Weight", product.weight ? `${formatNumber(Number(product.weight) > 5 ? Number(product.weight) : Number(product.weight) * 1000)} gram` : ""],
         ["Blouse", product.blouse_piece ? "Included" : "Not Included"],
         ["Care", product.care_instructions],
       ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
