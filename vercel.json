@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -22,14 +23,14 @@
       ]
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "^/product/([^/]+)(?:/)?$",
-      "dest": "/api/product/$1"
+      "source": "/product/:slug",
+      "destination": "/api/product/:slug"
     },
     {
-      "src": "^/((?!api/|assets/|.*\\..*).*)$",
-      "dest": "/index.html"
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
