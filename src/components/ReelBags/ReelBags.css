@@ -11,6 +11,16 @@
 
    A visible brass pin sits at the pivot and all three threads tie onto it.
    Only the bags take pointer events. */
+
+/* Animatable swing phase (-1 … 1). Registering it lets keyframes interpolate
+   it smoothly, so each bag's rotation = swing × amplitude, where amplitude
+   can grow with scroll without restarting the animation. */
+@property --bk-swing {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
 .bk-reel-bags {
   position: fixed;
   bottom: 20px; /* whole assembly floats in the bottom-left corner */
@@ -25,7 +35,14 @@
      whole assembly slides down by --bk-bag-drop, so the gathered stack ends
      up fixed in the bottom-left corner instead of hovering mid-screen. */
   --bk-bag-drop: 265px;
-  transform: translateY(calc((1 - var(--bk-bag-ext, 1)) * var(--bk-bag-drop)));
+  /* 0 at the top of the page → 1 when fully reeled in (inherited by bags) */
+  --bk-bag-retract: calc(1 - var(--bk-bag-ext, 1));
+  /* Slides down while docking; also eases 20px right so the wide docked
+     swing never clips past the left screen edge. */
+  transform: translate(
+    calc(var(--bk-bag-retract) * 20px),
+    calc(var(--bk-bag-retract) * var(--bk-bag-drop))
+  );
   will-change: transform;
 }
 
@@ -61,17 +78,35 @@
   transform-origin: 50% 0;
   translate: -50% 0; /* center the unit on the pivot without touching transform */
   will-change: transform;
+  /* rotation = swing phase × amplitude. All bags swing symmetrically left ↔
+     right through straight-down; the amplitude grows with --bk-bag-retract
+     to an identical ±24° once the bags are gathered at the pin, and the
+     phase offsets keep them spread so every card can be seen. */
+  transform: rotate(calc(var(--bk-swing, 0) * var(--bk-amp, 8deg)));
 }
 
-/* Longer pendulums swing slower and shallower (like real ones); negative
-   delays desynchronize the phases. */
-.bk-reel-bag-1 { z-index: 3; animation: bk-bag-swing-1 3.6s ease-in-out -0.8s infinite alternate; }
-.bk-reel-bag-2 { z-index: 2; animation: bk-bag-swing-2 4.6s ease-in-out -2.3s infinite alternate; }
-.bk-reel-bag-3 { z-index: 1; animation: bk-bag-swing-3 5.4s ease-in-out -3.9s infinite alternate; }
+/* Same swing length for all once docked (±24°); different periods and
+   negative delays desynchronize the phases so they don't move as one. */
+.bk-reel-bag-1 {
+  z-index: 3;
+  --bk-amp: calc(11deg + 13deg * var(--bk-bag-retract, 0));
+  animation: bk-bag-swing 3.6s ease-in-out -0.8s infinite alternate;
+}
+.bk-reel-bag-2 {
+  z-index: 2;
+  --bk-amp: calc(10deg + 14deg * var(--bk-bag-retract, 0));
+  animation: bk-bag-swing 4.6s ease-in-out -2.3s infinite alternate;
+}
+.bk-reel-bag-3 {
+  z-index: 1;
+  --bk-amp: calc(9deg + 15deg * var(--bk-bag-retract, 0));
+  animation: bk-bag-swing 5.4s ease-in-out -3.9s infinite alternate;
+}
 
-@keyframes bk-bag-swing-1 { from { transform: rotate(-11deg); } to { transform: rotate(11deg); } }
-@keyframes bk-bag-swing-2 { from { transform: rotate(-8deg);  } to { transform: rotate(8deg);  } }
-@keyframes bk-bag-swing-3 { from { transform: rotate(-6deg);  } to { transform: rotate(6deg);  } }
+@keyframes bk-bag-swing {
+  from { --bk-swing: -1; }
+  to   { --bk-swing: 1; }
+}
 
 /* Thread lengths staggered by 120px (> handle + body ≈ 123px incl. corner
    slack) — this is what keeps the distance rings disjoint while extended.
