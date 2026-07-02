@@ -2,7 +2,6 @@ import { Icon } from "@iconify/react";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatBot from "../components/ChatBot/ChatBot";
-import ReelsFab from "../components/ReelsFab/ReelsFab";
 import ReelBags from "../components/ReelBags/ReelBags";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -81,7 +80,9 @@ const Layout = () => {
     footerlessPages.includes(location.pathname) ||
     (!user && footerlessAuthPages.includes(location.pathname));
   const isHomePage = location.pathname === "/";
-  const hideReelsFab = hideChrome || location.pathname === "/reels";
+  // No reel bags on /reels itself, chrome-hidden pages, or the cart (its
+  // sticky checkout bar owns the bottom of the screen).
+  const hideReelsFab = hideChrome || ["/reels", "/cart"].includes(location.pathname);
   const hideSignupGift = hideChrome || loading || Boolean(user) || location.pathname === "/login";
   const routeRefreshKey = [
     location.pathname,
@@ -109,7 +110,7 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      {!hideReelsFab && (isHomePage ? <ReelBags /> : <ReelsFab />)}
+      {!hideReelsFab && <ReelBags />}
       {!isImmersive && <ChatBot />}
     </>
   );
