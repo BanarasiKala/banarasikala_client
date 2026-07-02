@@ -34,14 +34,14 @@
   /* Scroll transformation: as the threads reel in (--bk-bag-ext 1 → 0) the
      whole assembly slides down by --bk-bag-drop, so the gathered stack ends
      up fixed in the bottom-left corner instead of hovering mid-screen. */
-  --bk-bag-drop: 265px;
+  --bk-bag-drop: 245px;
   /* Permanently docked: threads fully reeled in (ext 0 / retract 1). The
      translate parks the gathered stack at the bottom-left corner, shifted
-     20px right so the ±24° swing never clips past the left screen edge. */
+     26px right so the ±24° swing never clips past the left screen edge. */
   --bk-bag-ext: 0;
   --bk-bag-retract: calc(1 - var(--bk-bag-ext, 1));
   transform: translate(
-    calc(var(--bk-bag-retract) * 20px),
+    calc(var(--bk-bag-retract) * 26px),
     calc(var(--bk-bag-retract) * var(--bk-bag-drop))
   );
 }
@@ -161,7 +161,7 @@
 .bk-reel-bag-body {
   position: relative;
   width: 80px;
-  height: 98px;
+  height: 120px;
   clip-path: polygon(10% 0%, 90% 0%, 100% 88%, 95% 100%, 5% 100%, 0% 88%);
   background: linear-gradient(180deg, #c9963f 0%, #a7762c 100%);
   transition: transform 0.2s ease;
@@ -202,10 +202,10 @@
 }
 
 @media (max-width: 640px) {
-  .bk-reel-bags { bottom: 16px; left: -20px; width: 150px; height: 305px; --bk-bag-drop: 195px; }
+  .bk-reel-bags { bottom: 16px; left: -20px; width: 150px; height: 305px; --bk-bag-drop: 190px; }
   .bk-reel-bag { left: 75px; }
   .bk-reel-bags-pin { left: 75px; width: 11px; height: 11px; }
-  .bk-reel-bag-body { width: 58px; height: 72px; }
+  .bk-reel-bag-body { width: 58px; height: 88px; }
   .bk-reel-bag-handle { width: 30px; height: 16px; border-width: 3px; }
   /* Bag unit ≈ 88px tall on mobile → 92px stagger keeps the rings disjoint */
   .bk-reel-bag-1 .bk-reel-bag-string { height: calc(20px * var(--bk-bag-ext, 1)); }
