@@ -3,6 +3,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import ChatBot from "../components/ChatBot/ChatBot";
 import ReelsFab from "../components/ReelsFab/ReelsFab";
+import ReelBags from "../components/ReelBags/ReelBags";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
@@ -108,7 +109,7 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      {!hideReelsFab && <ReelsFab />}
+      {!hideReelsFab && (isHomePage ? <ReelBags /> : <ReelsFab />)}
       {!isImmersive && <ChatBot />}
     </>
   );

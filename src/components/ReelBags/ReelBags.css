@@ -1,0 +1,161 @@
+/* ── Floating reel bags (home page) ─────────────────────────────────────────
+   Three bags piled on top of one another at the bottom-left (the old
+   ReelsFab spot). Each bag drifts on its own slow, irregular path and takes
+   a turn coming to the front (z-index cycle), so every bag is seen without
+   the pile eating screen space. Only the bags take pointer events. */
+.bk-reel-bags {
+  position: fixed;
+  left: 16px;
+  bottom: 20px;
+  z-index: 998;
+  width: 130px;
+  height: 215px;
+  pointer-events: none;
+}
+
+.bk-reel-bag {
+  pointer-events: auto;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+/* Base pile offsets — overlapping, each peeking out a different way */
+.bk-reel-bag-1 { left: 0;    bottom: 0;    z-index: 3; }
+.bk-reel-bag-2 { left: 26px; bottom: 34px; z-index: 2; }
+.bk-reel-bag-3 { left: 8px;  bottom: 66px; z-index: 1; }
+
+/* Each bag: its own drift path + a phased turn at the front of the pile */
+.bk-reel-bag-1 { animation: bk-bag-drift-1 9s ease-in-out infinite, bk-bag-front 12s linear infinite; }
+.bk-reel-bag-2 { animation: bk-bag-drift-2 11s ease-in-out infinite, bk-bag-front 12s linear -4s infinite; }
+.bk-reel-bag-3 { animation: bk-bag-drift-3 10s ease-in-out infinite, bk-bag-front 12s linear -8s infinite; }
+
+@keyframes bk-bag-drift-1 {
+  0%   { transform: translate(0, 0) rotate(-3deg); }
+  30%  { transform: translate(30px, -16px) rotate(2.5deg); }
+  55%  { transform: translate(10px, -34px) rotate(-2deg); }
+  80%  { transform: translate(38px, -8px) rotate(3deg); }
+  100% { transform: translate(0, 0) rotate(-3deg); }
+}
+@keyframes bk-bag-drift-2 {
+  0%   { transform: translate(0, 0) rotate(2.5deg); }
+  25%  { transform: translate(-20px, 20px) rotate(-3deg); }
+  50%  { transform: translate(14px, 34px) rotate(2deg); }
+  75%  { transform: translate(-12px, -12px) rotate(-2.5deg); }
+  100% { transform: translate(0, 0) rotate(2.5deg); }
+}
+@keyframes bk-bag-drift-3 {
+  0%   { transform: translate(0, 0) rotate(-2deg); }
+  35%  { transform: translate(26px, 26px) rotate(3deg); }
+  60%  { transform: translate(40px, 6px) rotate(-2.5deg); }
+  85%  { transform: translate(8px, 34px) rotate(2deg); }
+  100% { transform: translate(0, 0) rotate(-2deg); }
+}
+
+/* One third of the cycle at the front, then back into the pile */
+@keyframes bk-bag-front {
+  0%, 32%   { z-index: 4; }
+  33%, 100% { z-index: 1; }
+}
+
+.bk-reel-bag:hover { animation-play-state: paused; z-index: 5; }
+.bk-reel-bag:hover .bk-reel-bag-body {
+  transform: scale(1.06);
+  box-shadow: 0 16px 32px rgba(128, 0, 32, 0.45);
+}
+.bk-reel-bag:active .bk-reel-bag-body { transform: scale(0.97); }
+
+/* Short gold thread fading out above the bag — a floating "hanging" hint */
+.bk-reel-bag-string {
+  width: 2px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(167, 118, 44, 0), #a7762c);
+  border-radius: 1px;
+}
+
+/* Knot where the thread ties onto the handle */
+.bk-reel-bag-knot {
+  width: 7px;
+  height: 7px;
+  margin: -3px 0 -2px;
+  border-radius: 50%;
+  background: #a7762c;
+  box-shadow: 0 1px 2px rgba(42, 23, 14, 0.35);
+}
+
+/* Rope handle arching over the bag mouth */
+.bk-reel-bag-handle {
+  width: 30px;
+  height: 15px;
+  border: 3px solid #a7762c;
+  border-bottom: none;
+  border-radius: 15px 15px 0 0;
+  margin-bottom: -2px;
+}
+
+/* Bag body — the reel plays inside, clipped to the bag shape */
+.bk-reel-bag-body {
+  position: relative;
+  width: 74px;
+  height: 96px;
+  border-radius: 5px 5px 13px 13px;
+  overflow: hidden;
+  border: 2px solid #a7762c;
+  background: linear-gradient(160deg, #800020 0%, #a83258 100%);
+  box-shadow: 0 12px 24px rgba(128, 0, 32, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bk-reel-bag-poster,
+.bk-reel-bag-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bk-reel-bag-play {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(42, 23, 14, 0.62);
+  color: #ffd98a;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 640px) {
+  .bk-reel-bags { left: 10px; bottom: 16px; width: 100px; height: 165px; }
+  .bk-reel-bag-body { width: 54px; height: 70px; }
+  .bk-reel-bag-handle { width: 24px; height: 12px; border-width: 2.5px; }
+  .bk-reel-bag-string { height: 12px; }
+  .bk-reel-bag-1 { left: 0;    bottom: 0; }
+  .bk-reel-bag-2 { left: 20px; bottom: 26px; }
+  .bk-reel-bag-3 { left: 6px;  bottom: 50px; }
+  .bk-reel-bag-play { font-size: 0.54rem; padding: 2px 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No motion: the static pile offsets already keep every bag partly visible */
+  .bk-reel-bag { animation: none; }
+}
