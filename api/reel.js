@@ -46,7 +46,7 @@ const removeExistingMeta = (html) => metaKeys.reduce(
     "",
   ),
   html,
-).replace(/\\s*<link\\s+rel=["']canonical["'][^>]*>/gi, "");
+).replace(/\s*<link\s+rel=["']canonical["'][^>]*>/gi, "");
 
 const toAbsoluteUrl = (url, pageUrl) => {
   try {
@@ -54,6 +54,16 @@ const toAbsoluteUrl = (url, pageUrl) => {
   } catch {
     return url || "/logo_transparent_2.png";
   }
+};
+
+// Rebuild the public URL explicitly (/reels?reel=<id>) instead of trusting
+// req.url, which reflects the rewritten /api/reel path on Vercel.
+const buildReelShareUrl = (req, reelId) => {
+  const protocol = req.headers["x-forwarded-proto"]?.split(",")[0] || "https";
+  const host = req.headers["x-forwarded-host"]?.split(",")[0] || req.headers.host;
+  const url = new URL("/reels", `${protocol}://${host}`);
+  url.searchParams.set("reel", reelId);
+  return url.href;
 };
 
 const getProductImages = (product = {}) => {
@@ -76,14 +86,9 @@ const getReelPreviewImage = (reel = {}) => {
     reel.reel_poster ||
     reel.thumbnail ||
     (Array.isArray(reel.products) && reel.products.length ? getProductCoverImage(reel.products[0]) : "") ||
-    "/reel_fallback.svg"
+    // PNG fallback: WhatsApp/iMessage/Facebook scrapers reject SVG previews.
+    "/logo_transparent_2.png"
   );
-};
-
-const buildReelPageUrl = (req) => {
-  const protocol = req.headers["x-forwarded-proto"]?.split(",")[0] || "https";
-  const host = req.headers["x-forwarded-host"]?.split(",")[0] || req.headers.host;
-  return new URL(req.url || "/reels", `${protocol}://${host}`).href;
 };
 
 const fetchReel = async (reelId) => {
@@ -131,7 +136,7 @@ const renderReelHtml = (template, reel, pageUrl) => {
     <meta property="og:video:type" content="video/mp4" />
     <meta property="og:video:width" content="1280" />
     <meta property="og:video:height" content="720" />` : ""}
-    <meta name="twitter:card" content="${videoUrl ? "player" : "summary_large_image"}" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
@@ -169,7 +174,7 @@ export default async function handler(req, res) {
     return res.end("Unable to load page template");
   }
 
-  const pageUrl = buildReelPageUrl(req);
+  const pageUrl = buildReelShareUrl(req, targetId);
   const html = renderReelHtml(template, reel, pageUrl);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.statusCode = 200;

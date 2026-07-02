@@ -330,11 +330,28 @@ export default function Reels() {
     }
   };
 
+  // Confirms the share URL already serves fully rendered OG meta tags (the
+  // serverless /reels?reel= route) before opening the share sheet, so link
+  // scrapers never see a half-ready page. Returns false if meta isn't ready.
+  const ensureShareMetaReady = async (url) => {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      const html = response.ok ? await response.text() : "";
+      if (html.includes('property="og:image"')) return true;
+      showNotification("Share preview is still preparing — try again in a moment.", "info");
+    } catch {
+      showNotification("Could not prepare the share link. Check your connection.", "error");
+    }
+    return false;
+  };
+
   const handleShare = async (reel) => {
     const url = `${window.location.origin}/reels?reel=${reel.id}`;
-    const shareData = { title: reel.title || "Banarasi Kala Reel", text: reel.description || "Watch this reel", url };
+    if (!(await ensureShareMetaReady(url))) return;
     try {
-      if (navigator.share) await navigator.share(shareData);
+      // No `text` field: iOS only renders a rich link preview when the share
+      // payload is a bare URL (text + url is delivered as plain text).
+      if (navigator.share) await navigator.share({ title: reel.title || "Banarasi Kala Reel", url });
       else {
         await navigator.clipboard.writeText(url);
         showNotification("Link copied to clipboard.", "success");

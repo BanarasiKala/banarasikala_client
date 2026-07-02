@@ -1456,11 +1456,28 @@ const ProductDetail = () => {
   };
 
   const handleShare = async () => {
+    const url = window.location.href;
+    // Confirm the serverless /product/:slug route is serving fully rendered
+    // OG meta before opening the share sheet, so link scrapers never see a
+    // half-ready page.
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      const html = response.ok ? await response.text() : "";
+      if (!html.includes('property="og:image"')) {
+        showNotification("Share preview is still preparing — try again in a moment.", "info");
+        return;
+      }
+    } catch {
+      showNotification("Could not prepare the share link. Check your connection.", "error");
+      return;
+    }
     try {
       if (navigator.share) {
-        await navigator.share({ title: productName, text: productName, url: window.location.href });
+        // No `text` field: iOS only renders a rich link preview when the
+        // share payload is a bare URL (text + url is delivered as plain text).
+        await navigator.share({ title: productName, url });
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(url);
         showNotification("Product link copied with selected color!");
       }
     } catch {
