@@ -67,7 +67,6 @@ const ReelBags = () => {
             />
             <span className="bk-reel-bag-play">
               <Play size={11} fill="currentColor" strokeWidth={0} />
-              Reel
             </span>
           </span>
         </button>
