@@ -35,15 +35,15 @@
      whole assembly slides down by --bk-bag-drop, so the gathered stack ends
      up fixed in the bottom-left corner instead of hovering mid-screen. */
   --bk-bag-drop: 265px;
-  /* 0 at the top of the page → 1 when fully reeled in (inherited by bags) */
+  /* Permanently docked: threads fully reeled in (ext 0 / retract 1). The
+     translate parks the gathered stack at the bottom-left corner, shifted
+     20px right so the ±24° swing never clips past the left screen edge. */
+  --bk-bag-ext: 0;
   --bk-bag-retract: calc(1 - var(--bk-bag-ext, 1));
-  /* Slides down while docking; also eases 20px right so the wide docked
-     swing never clips past the left screen edge. */
   transform: translate(
     calc(var(--bk-bag-retract) * 20px),
     calc(var(--bk-bag-retract) * var(--bk-bag-drop))
   );
-  will-change: transform;
 }
 
 /* The pin all three threads hang from */
