@@ -417,9 +417,56 @@
   }
 }
 
+/* ── Share sheet (Instagram-style destination grid) ── */
+.bk-reel-share {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  animation: bk-reel-sheet-up 0.25s ease;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+.bk-reel-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 8px;
+  padding: 20px 16px 8px;
+}
+.bk-reel-share-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+.bk-reel-share-ic {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 28px;
+  transition: transform 0.15s ease;
+}
+.bk-reel-share-ic-muted {
+  background: #efe9dd;
+  color: #2a170e;
+}
+.bk-reel-share-opt:hover .bk-reel-share-ic { transform: scale(1.08); }
+.bk-reel-share-opt:active .bk-reel-share-ic { transform: scale(0.94); }
+
 /* Desktop: round the video column and centre the comments as a floating card */
 @media (min-width: 641px) {
   .bk-reel-video-wrap { border-radius: 16px; }
   .bk-reel-comments-backdrop { align-items: center; }
   .bk-reel-comments { border-radius: 18px; height: 70vh; }
+  .bk-reel-share { border-radius: 18px; }
 }

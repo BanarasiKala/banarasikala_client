@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, MessageCircle, Share2, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, Eye } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, Eye } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -10,7 +11,10 @@ import { getProductStockInfo } from "../../utils/stockStatus";
 import "./Reels.css";
 
 const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
-const authToken = () => localStorage.getItem("accessToken");
+// Token may live in localStorage ("keep me logged in") OR sessionStorage —
+// checking both keeps is_liked/likes working for session-only logins.
+const authToken = () =>
+  localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
 
 let keySeq = 0;
 const asInstance = (reel) => ({ ...reel, _key: `${reel.id}-${keySeq++}` });
@@ -136,7 +140,7 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
               <span>{inter.comment_count}</span>
             </button>
             <button type="button" className="bk-reel-action" onClick={() => onShare(reel)}>
-              <Share2 size={25} />
+              <Send size={25} />
               <span>Share</span>
             </button>
             <div className="bk-reel-action bk-reel-views">
@@ -188,6 +192,7 @@ export default function Reels() {
   const [interactions, setInteractions] = useState({}); // { [id]: { liked, like_count, comment_count } }
 
   const [openReel, setOpenReel] = useState(null);
+  const [shareReel, setShareReel] = useState(null); // reel currently in the share sheet
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -322,7 +327,7 @@ export default function Reels() {
       });
       if (!res.ok) throw new Error();
       setCommentText("");
-      showNotification("Comment submitted — it will appear once approved.", "success");
+      showNotification("Thanks for sharing! Your comment is on its way.", "success");
     } catch {
       showNotification("Could not submit comment.", "error");
     } finally {
@@ -345,8 +350,48 @@ export default function Reels() {
     return false;
   };
 
-  const handleShare = async (reel) => {
-    const url = `${window.location.origin}/reels?reel=${reel.id}`;
+  const shareUrlOf = (reel) => `${window.location.origin}/reels?reel=${reel.id}`;
+
+  // Instagram-style share: the paper-plane button opens a destination sheet.
+  // Opening it also warms the serverless OG route in the background, so link
+  // previews are rendered by the time the user picks a destination.
+  const openShare = (reel) => {
+    setShareReel(reel);
+    fetch(shareUrlOf(reel), { cache: "no-store" }).catch(() => {});
+  };
+
+  const shareToApp = (app) => {
+    if (!shareReel) return;
+    const url = shareUrlOf(shareReel);
+    const title = shareReel.title || "Banarasi Kala Reel";
+    const enc = encodeURIComponent;
+    const targets = {
+      whatsapp: `https://wa.me/?text=${enc(`${title} ${url}`)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`,
+      telegram: `https://t.me/share/url?url=${enc(url)}&text=${enc(title)}`,
+      x: `https://twitter.com/intent/tweet?url=${enc(url)}&text=${enc(title)}`,
+    };
+    if (targets[app]) window.open(targets[app], "_blank", "noopener,noreferrer");
+    setShareReel(null);
+  };
+
+  const copyShareLink = async () => {
+    if (!shareReel) return;
+    try {
+      await navigator.clipboard.writeText(shareUrlOf(shareReel));
+      showNotification("Link copied to clipboard.", "success");
+    } catch {
+      showNotification("Could not copy the link.", "error");
+    }
+    setShareReel(null);
+  };
+
+  // "More" → the OS share sheet (checks the OG meta is ready first).
+  const nativeShare = async () => {
+    if (!shareReel) return;
+    const reel = shareReel;
+    setShareReel(null);
+    const url = shareUrlOf(reel);
     if (!(await ensureShareMetaReady(url))) return;
     try {
       // No `text` field: iOS only renders a rich link preview when the share
@@ -428,7 +473,7 @@ export default function Reels() {
             onToggleMute={() => setMuted((m) => !m)}
             onLike={handleLike}
             onComments={openComments}
-            onShare={handleShare}
+            onShare={openShare}
             onViewProduct={handleViewProduct}
             onAddToCart={handleAddToCart}
           />
@@ -470,6 +515,57 @@ export default function Reels() {
               />
               <button type="button" onClick={submitComment} disabled={posting || !commentText.trim()}>
                 <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareReel && (
+        <div className="bk-reel-comments-backdrop" onClick={() => setShareReel(null)}>
+          <div className="bk-reel-share" onClick={(e) => e.stopPropagation()}>
+            <div className="bk-reel-comments-head">
+              <h4>Share to</h4>
+              <button type="button" onClick={() => setShareReel(null)} aria-label="Close share sheet">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="bk-reel-share-grid">
+              <button type="button" className="bk-reel-share-opt" onClick={() => shareToApp("whatsapp")}>
+                <span className="bk-reel-share-ic" style={{ background: "#25d366" }}>
+                  <Icon icon="mdi:whatsapp" />
+                </span>
+                WhatsApp
+              </button>
+              <button type="button" className="bk-reel-share-opt" onClick={() => shareToApp("facebook")}>
+                <span className="bk-reel-share-ic" style={{ background: "#1877f2" }}>
+                  <Icon icon="mdi:facebook" />
+                </span>
+                Facebook
+              </button>
+              <button type="button" className="bk-reel-share-opt" onClick={() => shareToApp("telegram")}>
+                <span className="bk-reel-share-ic" style={{ background: "#229ed9" }}>
+                  <Icon icon="mdi:telegram" />
+                </span>
+                Telegram
+              </button>
+              <button type="button" className="bk-reel-share-opt" onClick={() => shareToApp("x")}>
+                <span className="bk-reel-share-ic" style={{ background: "#111" }}>
+                  <Icon icon="ri:twitter-x-fill" />
+                </span>
+                X
+              </button>
+              <button type="button" className="bk-reel-share-opt" onClick={copyShareLink}>
+                <span className="bk-reel-share-ic bk-reel-share-ic-muted">
+                  <Icon icon="mdi:link-variant" />
+                </span>
+                Copy link
+              </button>
+              <button type="button" className="bk-reel-share-opt" onClick={nativeShare}>
+                <span className="bk-reel-share-ic bk-reel-share-ic-muted">
+                  <Icon icon="mdi:dots-horizontal" />
+                </span>
+                More
               </button>
             </div>
           </div>
