@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import { API_ENDPOINTS } from "../../config/api";
@@ -9,13 +9,9 @@ import "./ReelBags.css";
 // shared pin at the bottom-left, swinging like pendulums, each playing a live
 // reel inside. Tapping a bag opens that exact reel in the feed. Falls back to
 // the classic ReelsFab when there are no published reels to show.
-// How much scroll (px) it takes to fully reel the threads in.
-const RETRACT_DISTANCE = 350;
-
 const ReelBags = () => {
   const navigate = useNavigate();
   const [reels, setReels] = useState(null); // null = loading
-  const containerRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -32,34 +28,11 @@ const ReelBags = () => {
     };
   }, []);
 
-  // Scroll transformation: --bk-bag-ext goes 1 → 0 over the first
-  // RETRACT_DISTANCE px of scroll. Thread heights scale with it (bags rise
-  // toward the pin) while the whole assembly slides down the same beat —
-  // ending as a compact stack fixed at the bottom-left, still swinging.
-  useEffect(() => {
-    if (!reels || !reels.length) return undefined;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const progress = Math.min(1, Math.max(0, window.scrollY / RETRACT_DISTANCE));
-      containerRef.current?.style.setProperty("--bk-bag-ext", String(1 - progress));
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [reels]);
-
   if (reels === null) return null;
   if (!reels.length) return <ReelsFab />;
 
   return (
-    <div ref={containerRef} className="bk-reel-bags" aria-label="Shoppable reels">
+    <div className="bk-reel-bags" aria-label="Shoppable reels">
       <span className="bk-reel-bags-pin" aria-hidden="true" />
       {reels.map((reel, index) => (
         <button

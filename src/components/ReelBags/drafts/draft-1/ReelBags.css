@@ -19,14 +19,8 @@
   left: -20px;
   z-index: 998;
   width: 190px;
-  height: 395px;
+  height: 370px;
   pointer-events: none;
-  /* Scroll transformation: as the threads reel in (--bk-bag-ext 1 → 0) the
-     whole assembly slides down by --bk-bag-drop, so the gathered stack ends
-     up fixed in the bottom-left corner instead of hovering mid-screen. */
-  --bk-bag-drop: 265px;
-  transform: translateY(calc((1 - var(--bk-bag-ext, 1)) * var(--bk-bag-drop)));
-  will-change: transform;
 }
 
 /* The pin all three threads hang from */
@@ -73,13 +67,11 @@
 @keyframes bk-bag-swing-2 { from { transform: rotate(-8deg);  } to { transform: rotate(8deg);  } }
 @keyframes bk-bag-swing-3 { from { transform: rotate(-6deg);  } to { transform: rotate(6deg);  } }
 
-/* Thread lengths staggered by 120px (> handle + body ≈ 123px incl. corner
-   slack) — this is what keeps the distance rings disjoint while extended.
-   --bk-bag-ext (set from JS) scales every thread by scroll progress:
-   1 = fully extended at the top of the page, 0 = reeled all the way in. */
-.bk-reel-bag-1 .bk-reel-bag-string { height: calc(26px * var(--bk-bag-ext, 1)); }
-.bk-reel-bag-2 .bk-reel-bag-string { height: calc(146px * var(--bk-bag-ext, 1)); }
-.bk-reel-bag-3 .bk-reel-bag-string { height: calc(266px * var(--bk-bag-ext, 1)); }
+/* Thread lengths staggered by 110px (> handle + body ≈ 113px incl. corner
+   slack) — this is what keeps the distance rings disjoint. */
+.bk-reel-bag-1 .bk-reel-bag-string { height: 26px; }
+.bk-reel-bag-2 .bk-reel-bag-string { height: 136px; }
+.bk-reel-bag-3 .bk-reel-bag-string { height: 246px; }
 
 .bk-reel-bag:hover {
   animation-play-state: paused;
@@ -108,11 +100,11 @@
 
 /* Rope handle arching over the bag mouth */
 .bk-reel-bag-handle {
-  width: 40px;
-  height: 22px;
-  border: 4px solid #a7762c;
+  width: 30px;
+  height: 15px;
+  border: 3px solid #a7762c;
   border-bottom: none;
-  border-radius: 20px 20px 0 0;
+  border-radius: 15px 15px 0 0;
   margin-bottom: -2px;
 }
 
@@ -167,15 +159,15 @@
 }
 
 @media (max-width: 640px) {
-  .bk-reel-bags { bottom: 16px; left: -20px; width: 150px; height: 305px; --bk-bag-drop: 195px; }
+  .bk-reel-bags { bottom: 16px; left: -20px; width: 150px; height: 290px; }
   .bk-reel-bag { left: 75px; }
   .bk-reel-bags-pin { left: 75px; width: 11px; height: 11px; }
   .bk-reel-bag-body { width: 58px; height: 72px; }
-  .bk-reel-bag-handle { width: 30px; height: 16px; border-width: 3px; }
-  /* Bag unit ≈ 88px tall on mobile → 92px stagger keeps the rings disjoint */
-  .bk-reel-bag-1 .bk-reel-bag-string { height: calc(20px * var(--bk-bag-ext, 1)); }
-  .bk-reel-bag-2 .bk-reel-bag-string { height: calc(112px * var(--bk-bag-ext, 1)); }
-  .bk-reel-bag-3 .bk-reel-bag-string { height: calc(204px * var(--bk-bag-ext, 1)); }
+  .bk-reel-bag-handle { width: 24px; height: 12px; border-width: 2.5px; }
+  /* Bag unit ≈ 84px tall on mobile → 88px stagger keeps the rings disjoint */
+  .bk-reel-bag-1 .bk-reel-bag-string { height: 20px; }
+  .bk-reel-bag-2 .bk-reel-bag-string { height: 108px; }
+  .bk-reel-bag-3 .bk-reel-bag-string { height: 196px; }
   .bk-reel-bag-play { width: 16px; height: 16px; }
 }
 
