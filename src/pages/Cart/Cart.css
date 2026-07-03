@@ -451,6 +451,22 @@
   white-space: nowrap;
 }
 
+/* Unlocked coupon pill: tappable, shows the code with a copy icon. */
+.cart-progress-pill--copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px dashed rgba(128, 0, 32, 0.35);
+  background: rgba(128, 0, 32, 0.06);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+}
+
+.cart-progress-pill--copy svg {
+  font-size: 12px;
+}
+
 .cart-progress-bar {
   height: 7px;
   background: rgba(128, 0, 32, 0.1);

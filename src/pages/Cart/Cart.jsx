@@ -61,6 +61,8 @@ const Cart = () => {
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
   const topProceedRef = useRef(null);
+  // Last coupon code we toasted an "unlocked" message for (avoids repeats).
+  const toastedUnlockRef = useRef(null);
 
   const checkCartStock = useRef(async () => {});
 
@@ -221,6 +223,23 @@ const Cart = () => {
   const extraOffProgress = progressCoupon
     ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
     : 0;
+
+  // Toast once per coupon tier when the bag crosses its minimum and unlocks it.
+  useEffect(() => {
+    const code = unlockedCoupon?.code || null;
+    if (!code || toastedUnlockRef.current === code) return;
+    toastedUnlockRef.current = code;
+    showNotification(`Coupon ${code} unlocked — ${couponDiscountText(unlockedCoupon)}. Apply it at checkout.`, "success");
+  }, [unlockedCoupon, showNotification]);
+
+  const copyCouponCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      showNotification(`Coupon code ${code} copied.`, "success");
+    } catch {
+      showNotification("Unable to copy the code. Please copy it manually.", "warning");
+    }
+  };
 
   // The whole order ships together, so show one consolidated "arrives by" date:
   // the farthest estimate across the items being bought. This is only meaningful
@@ -429,9 +448,19 @@ const Cart = () => {
                   ? `Add ${formatMoneyShort(extraOffRemaining)} More & Get ${couponDiscountText(nextCoupon)}`
                   : `Yay! You unlocked ${couponDiscountText(unlockedCoupon)}`}
               </strong>
-              <span className="cart-progress-pill">
-                {nextCoupon ? nextCoupon.code : "Unlocked"}
-              </span>
+              {nextCoupon ? (
+                <span className="cart-progress-pill">{nextCoupon.code}</span>
+              ) : (
+                <button
+                  type="button"
+                  className="cart-progress-pill cart-progress-pill--copy"
+                  onClick={() => copyCouponCode(unlockedCoupon.code)}
+                  aria-label={`Copy coupon code ${unlockedCoupon.code}`}
+                >
+                  {unlockedCoupon.code}
+                  <Icon icon="lucide:copy" />
+                </button>
+              )}
             </div>
             <div className="cart-progress-bar">
               <div className="cart-progress-fill" style={{ width: `${extraOffProgress}%` }} />
