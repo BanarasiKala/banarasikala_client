@@ -15,6 +15,8 @@ import "./MyOrders.css";
 const STATUS_CONFIG = {
   "Order Placed": { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:clock-3", label: "Order placed" },
   Pending: { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:clock-3", label: "Order placed" },
+  "Pickup Scheduled": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:calendar-clock", label: "Pickup scheduled" },
+  "Out For Pickup": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:navigation", label: "Courier out for pickup" },
   "Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Picked up" },
   Shipped: { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:truck", label: "Shipped" },
   Delivered: { color: "#087a55", bg: "#edfdf5", icon: "lucide:check-circle", label: "Delivered" },
@@ -48,6 +50,8 @@ const getStatus = (status) => {
   if (normalized === "order placed" || normalized === "order_placed") return STATUS_CONFIG["Order Placed"];
   if (normalized === "pending") return STATUS_CONFIG.Pending;
   if (normalized === "processing") return STATUS_CONFIG["Order Placed"];
+  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return STATUS_CONFIG["Pickup Scheduled"];
+  if (normalized === "out for pickup" || normalized === "out_for_pickup") return STATUS_CONFIG["Out For Pickup"];
   if (normalized === "picked up" || normalized === "picked_up" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Picked Up"];
   if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return STATUS_CONFIG.Shipped;
   if (normalized === "delivered") return STATUS_CONFIG.Delivered;
@@ -87,6 +91,10 @@ const PRE_DELIVERY_STATUSES = new Set([
   "order placed",
   "order_placed",
   "processing",
+  "pickup scheduled",
+  "pickup_scheduled",
+  "out for pickup",
+  "out_for_pickup",
   "picked up",
   "picked_up",
   "awb assigned",

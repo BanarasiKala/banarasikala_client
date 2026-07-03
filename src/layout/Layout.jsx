@@ -80,9 +80,6 @@ const Layout = () => {
     footerlessPages.includes(location.pathname) ||
     (!user && footerlessAuthPages.includes(location.pathname));
   const isHomePage = location.pathname === "/";
-  // No reel bags on /reels itself, chrome-hidden pages, or the cart (its
-  // sticky checkout bar owns the bottom of the screen).
-  const hideReelsFab = hideChrome || ["/reels", "/cart"].includes(location.pathname);
   const hideSignupGift = hideChrome || loading || Boolean(user) || location.pathname === "/login";
   const routeRefreshKey = [
     location.pathname,
@@ -110,7 +107,7 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      {!hideReelsFab && <ReelBags />}
+      {isHomePage && <ReelBags />}
       {!isImmersive && <ChatBot />}
     </>
   );

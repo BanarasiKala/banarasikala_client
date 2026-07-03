@@ -112,6 +112,8 @@ const getCustomerOrderStatusLabel = (status) => {
   if (normalized === "delivered") return "Delivered";
   if (normalized === "out for delivery" || normalized === "out_for_delivery") return "Out for delivery";
   if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return "Shipped";
+  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return "Pickup scheduled";
+  if (normalized === "out for pickup" || normalized === "out_for_pickup") return "Courier out for pickup";
   if (normalized === "picked up" || normalized === "picked_up" || normalized.includes("pickup") || normalized === "awb assigned" || normalized === "awb_assigned") return "Picked up";
   if (normalized === "pending" || normalized === "processing" || normalized === "order placed" || normalized === "order_placed") return "Order placed";
   return status || "Pending";
@@ -124,6 +126,10 @@ const PRE_DELIVERY_STATUSES = new Set([
   "order placed",
   "order_placed",
   "processing",
+  "pickup scheduled",
+  "pickup_scheduled",
+  "out for pickup",
+  "out_for_pickup",
   "picked up",
   "picked_up",
   "awb assigned",
@@ -301,14 +307,15 @@ const buildOrderTimeline = (order) => {
   const forwardSteps = [
     { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", matches: ["pending", "order placed"] },
     { title: "Processing", detail: "Seller is preparing your order", icon: "lucide:package-2", matches: ["processing"] },
-    { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up", "pickup", "awb assigned", "awb_assigned"] },
+    { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["pickup scheduled", "pickup_scheduled", "out for pickup", "out_for_pickup"] },
+    { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up", "awb assigned", "awb_assigned"] },
     { title: "Shipped", detail: order?.shiprocket_awb ? `AWB ${order.shiprocket_awb}` : "Tracking appears after dispatch", icon: "lucide:truck", matches: ["shipped", "in transit"] },
     { title: "Out for delivery", detail: "Courier will attempt delivery at your address", icon: "lucide:navigation", matches: ["out for delivery"] },
     { title: "Delivered", detail: order?.delivered_at ? formatDate(order.delivered_at) : "Final delivery scan pending", icon: "lucide:badge-check", matches: ["delivered"] },
   ];
 
   const rtoSteps = [
-    ...forwardSteps.slice(0, 5),
+    ...forwardSteps.slice(0, 6),
     { title: "Delivery attempt failed", detail: "Courier could not complete delivery", icon: "lucide:triangle-alert", matches: ["undelivered"] },
     { title: "RTO initiated", detail: "Shipment is returning to seller", icon: "lucide:undo-2", matches: ["rto initiated"] },
     { title: "RTO in transit", detail: "Shipment is on the way back", icon: "lucide:truck", matches: ["rto in transit"] },

@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import { API_ENDPOINTS } from "../../config/api";
-import ReelsFab from "../ReelsFab/ReelsFab";
 import "./ReelBags.css";
 
 // Home-page replacement for the ReelsFab: three shopping bags hang from a
 // shared pin at the bottom-left, swinging like pendulums, each playing a live
-// reel inside. Tapping a bag opens that exact reel in the feed. Falls back to
-// the classic ReelsFab when there are no published reels to show.
+// reel inside. Tapping a bag opens that exact reel in the feed.
 // Nudge a paused video back into playback (rejections are fine — e.g. the
 // tab is hidden or the browser wants a gesture; we simply try again on the
 // next pause/visibility signal).
@@ -48,7 +46,7 @@ const ReelBags = () => {
   }, []);
 
   if (reels === null) return null;
-  if (!reels.length) return <ReelsFab />;
+  if (!reels.length) return null;
 
   return (
     <div ref={containerRef} className="bk-reel-bags" aria-label="Shoppable reels">
