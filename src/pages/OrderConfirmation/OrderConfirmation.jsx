@@ -380,26 +380,6 @@ const getActionConfig = (type) => {
   return { title: "Cancel Order", label: "Reason for cancellation", reasons: CANCEL_REASONS, button: "Cancel Entire Order", tone: "danger" };
 };
 
-const OrderActivityPanel = ({ history }) => {
-  if (!Array.isArray(history) || history.length <= 1) return null;
-  return (
-    <section className="order-panel">
-      <div className="order-panel-head">
-        <h2>Order activity</h2>
-      </div>
-      <ol className="order-activity-list">
-        {[...history].reverse().map((entry, i) => (
-          <li key={i} className="order-activity-entry">
-            <span className="order-activity-time">{formatDate(entry.timestamp)}</span>
-            <span className="order-activity-label">{getCustomerOrderStatusLabel(entry.status)}</span>
-            {entry.note && <small className="order-activity-note">{entry.note}</small>}
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-};
-
 const SkLine = ({ w, h = 12, mb = 0 }) => (
   <div className="oc-sk" style={{ width: w, height: h, borderRadius: 5, marginBottom: mb || undefined }} />
 );
@@ -916,8 +896,6 @@ export default function OrderConfirmation() {
               })}
             </section>
           )}
-
-          <OrderActivityPanel history={order.status_history} />
 
           <section className="order-panel">
             <div className="order-panel-head">
