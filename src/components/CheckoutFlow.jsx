@@ -232,6 +232,16 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const grossAfterCoupon = Math.max(0, orderGrossTotal - effectiveCouponDiscount);
   const walletUsableAmount = useWallet ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
   const total = Math.max(0, grossAfterCoupon - walletUsableAmount);
+  // Per-item MRP savings, mirroring the cart page's calculation.
+  const mrpSavings = payableCart.reduce((sum, item) => {
+    const sell = Number(item.price || item.selling_price || 0);
+    const mrp = Number(item.mrp_price || item.mrp || 0);
+    return sum + (mrp > sell ? (mrp - sell) * Number(item.quantity || 1) : 0);
+  }, 0);
+  // Everything the shopper genuinely saves: MRP discount + waived delivery +
+  // prepaid discount (only when paying online) + coupon. Wallet is excluded —
+  // spending your own balance isn't a saving.
+  const totalSavings = mrpSavings + shippingDiscount + paymentDiscount + effectiveCouponDiscount;
   // Cart-page total: everything included except payment-method-specific fee/discount.
   const cartPageTotal = Math.max(0, subtotal + finalShippingCharge + platformFee + giftCharge - effectiveCouponDiscount - walletUsableAmount);
   const totalWeightKg = payableCart.reduce((sum, item) => {
@@ -1215,9 +1225,9 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                 <span>Total Payable</span>
                 <span>{money(total)}</span>
               </div>
-              {(shippingDiscount + paymentDiscount + effectiveCouponDiscount + walletUsableAmount) > 0 && (
+              {totalSavings > 0 && (
                 <div className="ckw-bill-savings-banner">
-                  You save {money(shippingDiscount + paymentDiscount + effectiveCouponDiscount + walletUsableAmount)} on this order
+                  You save {money(totalSavings)} on this order
                 </div>
               )}
             </div>
@@ -1276,19 +1286,22 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
                           <div className="ckw-coupon-list">
                             {couponOverride.coupons.map((c) => {
                               const minPurchase = Number(c.min_purchase_amount || c.minPurchase || 0);
-                              const locked = minPurchase > subtotal;
+                              const used = Boolean(c.exhausted);
+                              const locked = !used && minPurchase > subtotal;
                               return (
                                 <button
                                   key={c.id || c.code}
                                   type="button"
-                                  className="ckw-coupon-card"
+                                  className={`ckw-coupon-card${used ? " is-used" : ""}`}
                                   onClick={() => couponOverride.applyCoupon?.(c.code)}
-                                  disabled={locked || couponOverride.loading}
+                                  disabled={used || locked || couponOverride.loading}
                                 >
                                   <span className="ckw-coupon-tag">{c.code}</span>
                                   <span className="ckw-coupon-text">
                                     <strong>{couponDiscountText(c)}</strong>
-                                    {locked
+                                    {used
+                                      ? <small>You've already used this coupon</small>
+                                      : locked
                                       ? <small>Add {moneyShort(minPurchase - subtotal)} more to apply</small>
                                       : <small>{c.description || "Tap to apply this offer"}</small>}
                                   </span>

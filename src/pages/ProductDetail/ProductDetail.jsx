@@ -1080,7 +1080,14 @@ const ProductDetail = () => {
       setBuyNowAddressForm(defaultAddress ? cleanAddress(defaultAddress) : getEmptyBuyNowAddress(user));
       setIsFirstOrder(!Array.isArray(orderRes) || orderRes.length === 0);
       setWalletBalance(Number(walletRes?.data?.wallet_balance || 0));
-      setAvailableCoupons(Array.isArray(couponRes) ? couponRes.filter((coupon) => coupon?.is_active !== false) : []);
+      // Coupons this shopper has exhausted (per-user or global limit) stay in
+      // the list but flagged, so the UI shows them greyed-out as "already used".
+      setAvailableCoupons(Array.isArray(couponRes)
+        ? couponRes
+          .filter((coupon) => coupon?.is_active !== false)
+          .map((coupon) => ({ ...coupon, exhausted: coupon?.user_eligible === false }))
+          .sort((a, b) => Number(a.exhausted) - Number(b.exhausted))
+        : []);
     } catch (error) {
       showNotification(error?.response?.data?.message || "Unable to load saved addresses.", "warning");
       setBuyNowAddresses([]);

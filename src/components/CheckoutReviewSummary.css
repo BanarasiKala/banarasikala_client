@@ -601,3 +601,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Exhausted coupons stay visible but clearly unusable */
+.crs-coupon-list button.is-used {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+  cursor: not-allowed;
+}

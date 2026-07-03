@@ -75,6 +75,8 @@ const Cart = () => {
 
   const [stockAlerts, setStockAlerts] = useState([]);
   const [coupons, setCoupons] = useState([]);
+  // Coupons this shopper has exhausted — shown greyed-out, never applicable.
+  const [usedCoupons, setUsedCoupons] = useState([]);
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [selected, setSelected] = useState(() => new Set());
@@ -154,14 +156,16 @@ const Cart = () => {
       .then((res) => {
         if (cancelled) return;
         const now = Date.now();
-        // All coupons this shopper is eligible for (active, in-date, not exhausted).
-        // user_eligible is only present for logged-in shoppers; undefined ⇒ keep.
-        const eligible = (Array.isArray(res.data) ? res.data : [])
+        // All active, in-date coupons. user_eligible === false means this
+        // shopper has exhausted the coupon (per-user or global limit) — those
+        // stay visible but greyed-out. The flag only exists for logged-in
+        // shoppers; undefined ⇒ treat as eligible.
+        const rows = (Array.isArray(res.data) ? res.data : [])
           .filter((c) => c.is_active !== false)
-          .filter((c) => c.user_eligible !== false)
           .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
           .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
-          .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0) }));
+          .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0), exhausted: c.user_eligible === false }));
+        const eligible = rows.filter((c) => !c.exhausted);
         // Keep the full eligible set (incl. no-minimum coupons) for typed-code lookup.
         eligibleCouponsRef.current = eligible;
         // The slider/progress nudge only uses coupons with a real minimum (> 0) so
@@ -170,6 +174,7 @@ const Cart = () => {
           .filter((c) => c.minPurchase > 0)
           .sort((a, b) => a.minPurchase - b.minPurchase);
         setCoupons(list);
+        setUsedCoupons(rows.filter((c) => c.exhausted));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -295,8 +300,10 @@ const Cart = () => {
   // Wallet is redeemed last, capped at the remaining payable amount.
   const cartWalletUsable = useWallet ? Math.min(Number(walletBalance || 0), cartGrossTotal) : 0;
   const cartTotal = Math.max(0, cartGrossTotal - cartWalletUsable);
-  // Total the shopper saves: per-item MRP savings + any applied coupon.
-  const cartTotalSavings = selectedSavings + cartCouponDiscount;
+  // Total the shopper saves: per-item MRP savings + any applied coupon + the
+  // real courier charge we waive (delivery is free — the struck-through rate).
+  const cartDeliverySavings = shippingLoading ? 0 : Math.max(0, Number(shippingCharge || 0));
+  const cartTotalSavings = selectedSavings + cartCouponDiscount + cartDeliverySavings;
 
   // Fetch the real courier rate for the cart's pincode so the delivery row can
   // show the actual charge struck-through against "Free". Debounced; mirrors the
@@ -386,7 +393,11 @@ const Cart = () => {
     if (!code) return;
     const match = eligibleCouponsRef.current.find((c) => String(c.code).toUpperCase() === code);
     if (!match) {
-      showNotification("Coupon not found or not eligible for your bag.", "warning");
+      const used = usedCoupons.find((c) => String(c.code).toUpperCase() === code);
+      showNotification(
+        used ? "You have already used this coupon." : "Coupon not found or not eligible for your bag.",
+        "warning",
+      );
       return;
     }
     // applyCoupon (context) handles the min-purchase / item-applicability checks
@@ -750,7 +761,7 @@ const Cart = () => {
                     />
                     <button type="button" onClick={applyCouponByCode}>Apply</button>
                   </div>
-                  {coupons.length > 0 ? (
+                  {(coupons.length > 0 || usedCoupons.length > 0) ? (
                     <div className="cart-promo-list">
                       {coupons.map((c) => {
                         const locked = c.minPurchase > selectedSubtotal;
@@ -772,6 +783,20 @@ const Cart = () => {
                           </button>
                         );
                       })}
+                      {usedCoupons.map((c) => (
+                        <button
+                          key={c.id || c.code}
+                          type="button"
+                          className="cart-promo-item-card is-used"
+                          disabled
+                        >
+                          <span className="cart-promo-tag">{c.code}</span>
+                          <span className="cart-promo-text">
+                            <strong>{couponDiscountText(c)}</strong>
+                            <small>You've already used this coupon</small>
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   ) : (
                     <p className="cart-promo-none">No coupons available right now.</p>

@@ -1776,3 +1776,10 @@
   opacity: 1;
   visibility: visible;
 }
+
+/* Exhausted coupons stay visible but clearly unusable */
+.cart-promo-item-card.is-used {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+  cursor: not-allowed;
+}

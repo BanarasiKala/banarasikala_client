@@ -32,7 +32,9 @@ const CheckoutReviewSummary = ({
   couponCelebration,
 }) => {
   const money = formatMoney || ((value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-  const firstCoupon = coupons[0];
+  // Feature the best coupon the shopper can still use; exhausted ones only
+  // appear greyed-out in the "view all" modal.
+  const firstCoupon = coupons.find((coupon) => !coupon.exhausted) || null;
 
   const getCouponSavingsText = (coupon) => {
     if (!coupon) return "Coupons & offers";
@@ -185,15 +187,24 @@ const CheckoutReviewSummary = ({
             )}
             {coupons.length > 0 ? (
               <div className="crs-coupon-list">
-                {coupons.map((coupon) => (
-                  <button type="button" key={coupon.id || coupon.code} onClick={() => onApplyCoupon?.(coupon)} disabled={couponLoading}>
-                    <span className="crs-coupon-code">{coupon.code}</span>
-                    <span className="crs-coupon-detail">
-                      <strong>{getCouponSavingsText(coupon)}</strong>
-                      <small>{getCouponSubtext(coupon)}</small>
-                    </span>
-                  </button>
-                ))}
+                {coupons.map((coupon) => {
+                  const used = Boolean(coupon.exhausted);
+                  return (
+                    <button
+                      type="button"
+                      key={coupon.id || coupon.code}
+                      className={used ? "is-used" : undefined}
+                      onClick={() => onApplyCoupon?.(coupon)}
+                      disabled={couponLoading || used}
+                    >
+                      <span className="crs-coupon-code">{coupon.code}</span>
+                      <span className="crs-coupon-detail">
+                        <strong>{getCouponSavingsText(coupon)}</strong>
+                        <small>{used ? "You've already used this coupon" : getCouponSubtext(coupon)}</small>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <p className="crs-coupon-empty">No coupons are available right now.</p>
