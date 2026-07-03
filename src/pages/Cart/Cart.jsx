@@ -10,27 +10,10 @@ import { useDeliveryLocation } from "../../context/LocationContext";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import { getEstimatedDeliveryDate } from "../../utils/deliveryDate";
-import { numberEnv } from "../../utils/env";
-import { selectBestCourier } from "../../utils/courierSelection";
 import api from "../../utils/api";
 import { API_ENDPOINTS } from "../../config/api";
 import { unwrapApiData } from "../../utils/error";
 import "./Cart.css";
-
-// Flat charge for gift wrapping + custom message. Mirrors the server's
-// GIFT_CHARGE_AMOUNT (default 159); the backend is authoritative.
-const GIFT_CHARGE = Number(import.meta.env.VITE_GIFT_CHARGE_AMOUNT) || 159;
-
-// Flat platform fee shown in the cart price summary. Mirrors the checkout /
-// server value; the backend remains authoritative at order time.
-const PLATFORM_FEE = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
-
-// Per-parcel packaging weight added to each item when asking the courier for a
-// shipping rate (mirrors the checkout's calculation).
-const PACKAGING_WEIGHT_KG = numberEnv("VITE_PACKAGING_WEIGHT_KG");
-
-// Gift-card message length cap (keeps it card-sized; backend also caps it).
-const GIFT_MESSAGE_MAX = 250;
 
 const calcDiscount = (mrp, sell) => {
   if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
@@ -61,13 +44,8 @@ const Cart = () => {
     cart,
     removeFromCart,
     updateQuantity,
-    getSubtotal,
     refreshCart,
     loading,
-    appliedCoupon,
-    discountAmount,
-    applyCoupon,
-    removeCoupon,
   } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
@@ -75,29 +53,14 @@ const Cart = () => {
 
   const [stockAlerts, setStockAlerts] = useState([]);
   const [coupons, setCoupons] = useState([]);
-  // Coupons this shopper has exhausted — shown greyed-out, never applicable.
-  const [usedCoupons, setUsedCoupons] = useState([]);
-  const [couponOpen, setCouponOpen] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
   const [selected, setSelected] = useState(() => new Set());
-  const [giftWrap, setGiftWrap] = useState(false);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [useWallet, setUseWallet] = useState(() => {
-    try { return localStorage.getItem("bk_use_wallet") === "1"; } catch { return false; }
-  });
-  const [shippingCharge, setShippingCharge] = useState(0);
-  const [shippingLoading, setShippingLoading] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [editingPin, setEditingPin] = useState(false);
-  const [giftMessage, setGiftMessage] = useState("");
-  const [showGiftTip, setShowGiftTip] = useState(false);
   const [showDeliveryTip, setShowDeliveryTip] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
   const topProceedRef = useRef(null);
-  // All active, in-date, eligible coupons (incl. no-minimum) for code lookup.
-  const eligibleCouponsRef = useRef([]);
 
   const checkCartStock = useRef(async () => {});
 
@@ -148,54 +111,31 @@ const Cart = () => {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []); // runs on mount only; uses ref so always calls latest version
 
-  // Load coupons and keep only active, in-date ones with a real minimum (> ₹1),
-  // sorted by ascending min purchase — these drive the extra-off progress nudge.
+  // Load coupons for the extra-off progress nudge: active, in-date, eligible
+  // ones with a real minimum (> 0, so the progress bar never divides by zero),
+  // sorted by ascending min purchase. Applying coupons happens at checkout.
   useEffect(() => {
     let cancelled = false;
     api.get(API_ENDPOINTS.coupons)
       .then((res) => {
         if (cancelled) return;
         const now = Date.now();
-        // All active, in-date coupons. user_eligible === false means this
-        // shopper has exhausted the coupon (per-user or global limit) — those
-        // stay visible but greyed-out. The flag only exists for logged-in
+        // user_eligible === false means this shopper has exhausted the coupon
+        // (per-user or global limit). The flag only exists for logged-in
         // shoppers; undefined ⇒ treat as eligible.
-        const rows = (Array.isArray(res.data) ? res.data : [])
+        const list = (Array.isArray(res.data) ? res.data : [])
           .filter((c) => c.is_active !== false)
           .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
           .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
-          .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0), exhausted: c.user_eligible === false }));
-        const eligible = rows.filter((c) => !c.exhausted);
-        // Keep the full eligible set (incl. no-minimum coupons) for typed-code lookup.
-        eligibleCouponsRef.current = eligible;
-        // The slider/progress nudge only uses coupons with a real minimum (> 0) so
-        // the progress bar never divides by zero.
-        const list = eligible
+          .filter((c) => c.user_eligible !== false)
+          .map((c) => ({ ...c, minPurchase: Number(c.min_purchase_amount || 0) }))
           .filter((c) => c.minPurchase > 0)
           .sort((a, b) => a.minPurchase - b.minPurchase);
         setCoupons(list);
-        setUsedCoupons(rows.filter((c) => c.exhausted));
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem("bk_use_wallet", useWallet ? "1" : "0"); } catch {}
-  }, [useWallet]);
-
-  // Load the shopper's wallet balance so they can optionally redeem it here.
-  useEffect(() => {
-    if (!user?.id) return undefined;
-    let cancelled = false;
-    api.get("/api/wallet")
-      .then((res) => {
-        if (cancelled) return;
-        setWalletBalance(Number(res.data?.wallet_balance || res.data?.balance || 0));
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [user?.id]);
 
   // Keep the selection in sync with the cart: new in-stock items default to
   // selected, out-of-stock items are never auto-selected, de-selected ones
@@ -267,14 +207,6 @@ const Cart = () => {
     const mrp = Number(item.mrp_price || item.mrp || 0);
     return sum + (mrp > sell ? (mrp - sell) * Number(item.quantity || 1) : 0);
   }, 0);
-  // Billable weight (product + packaging per unit) used to ask the courier for
-  // the real shipping rate that we then show struck-through against "Free".
-  const totalWeightKg = selectedItems.reduce((sum, item) => {
-    const qty = Math.max(1, Number(item.quantity || 1));
-    const raw = Number(item.weight || 0);
-    const productWeightKg = raw > 5 ? raw / 1000 : raw;
-    return sum + ((productWeightKg + PACKAGING_WEIGHT_KG) * qty);
-  }, 0);
 
   // Extra-off progress, driven by real coupons (sorted by ascending min purchase):
   // find the nearest coupon the cart hasn't reached yet, and the best one already
@@ -286,62 +218,6 @@ const Cart = () => {
   const extraOffProgress = progressCoupon
     ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
     : 0;
-
-  // Price summary for the selected items. Payment-method charges (COD fee / prepaid
-  // discount) are decided in the checkout flow, so the cart shows only the always-on
-  // charges. Delivery is free here; the coupon discount is capped at the subtotal.
-  const cartGiftCharge = giftWrap ? GIFT_CHARGE : 0;
-  const cartPlatformFee = selectedItems.length > 0 ? PLATFORM_FEE : 0;
-  const cartCouponDiscount = appliedCoupon ? Math.min(Number(discountAmount || 0), selectedSubtotal) : 0;
-  const cartGrossTotal = Math.max(
-    0,
-    (selectedSubtotal || getSubtotal()) + cartPlatformFee + cartGiftCharge - cartCouponDiscount,
-  );
-  // Wallet is redeemed last, capped at the remaining payable amount.
-  const cartWalletUsable = useWallet ? Math.min(Number(walletBalance || 0), cartGrossTotal) : 0;
-  const cartTotal = Math.max(0, cartGrossTotal - cartWalletUsable);
-  // Total the shopper saves: per-item MRP savings + any applied coupon + the
-  // real courier charge we waive (delivery is free — the struck-through rate).
-  const cartDeliverySavings = shippingLoading ? 0 : Math.max(0, Number(shippingCharge || 0));
-  const cartTotalSavings = selectedSavings + cartCouponDiscount + cartDeliverySavings;
-
-  // Fetch the real courier rate for the cart's pincode so the delivery row can
-  // show the actual charge struck-through against "Free". Debounced; mirrors the
-  // checkout's serviceability lookup.
-  useEffect(() => {
-    const cleanPincode = String(pincode || "").trim();
-    if (!/^\d{6}$/.test(cleanPincode) || selectedItems.length === 0) {
-      setShippingCharge(0);
-      setShippingLoading(false);
-      return undefined;
-    }
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        setShippingLoading(true);
-        const effectiveWeight = Math.max(0.1, Number(totalWeightKg.toFixed(3)));
-        const response = await fetch(
-          `${API_ENDPOINTS.shiprocket}/serviceability?pincode=${encodeURIComponent(cleanPincode)}&weight=${effectiveWeight}&is_cod=0`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch shipping rates");
-        const data = await response.json();
-        const couriers = data?.data?.available_courier_companies || [];
-        const best = selectBestCourier(couriers, {
-          weightKg: effectiveWeight,
-          requireCod: false,
-        });
-        if (!cancelled) setShippingCharge(best?.rate || 0);
-      } catch {
-        if (!cancelled) setShippingCharge(0);
-      } finally {
-        if (!cancelled) setShippingLoading(false);
-      }
-    }, 450);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [pincode, selectedItems.length, totalWeightKg]);
 
   // The whole order ships together, so show one consolidated "arrives by" date:
   // the farthest estimate across the items being bought. This is only meaningful
@@ -387,24 +263,6 @@ const Cart = () => {
     setEditingPin(false);
   };
 
-  // Apply a typed coupon code by matching it against the eligible coupons.
-  const applyCouponByCode = () => {
-    const code = couponCode.trim().toUpperCase();
-    if (!code) return;
-    const match = eligibleCouponsRef.current.find((c) => String(c.code).toUpperCase() === code);
-    if (!match) {
-      const used = usedCoupons.find((c) => String(c.code).toUpperCase() === code);
-      showNotification(
-        used ? "You have already used this coupon." : "Coupon not found or not eligible for your bag.",
-        "warning",
-      );
-      return;
-    }
-    // applyCoupon (context) handles the min-purchase / item-applicability checks
-    // and shows its own message if the bag doesn't qualify yet.
-    if (applyCoupon(match)) setCouponCode("");
-  };
-
   const handleProceed = () => {
     if (selectedItems.length === 0) {
       showNotification("Select at least one item to proceed.", "warning");
@@ -424,10 +282,9 @@ const Cart = () => {
       showNotification("Some selected items are out of stock. Please remove them before proceeding.", "error");
       return;
     }
-    // Carry the chosen items (and gift preference) through to checkout.
+    // Carry the chosen items through to checkout. Gift wrap, coupons and wallet
+    // are all chosen inside the checkout flow now.
     sessionStorage.setItem("bk_cart_selected", JSON.stringify(selectedItems.map(itemKey)));
-    sessionStorage.setItem("bk_cart_gift", giftWrap ? "1" : "0");
-    sessionStorage.setItem("bk_cart_gift_message", giftWrap ? giftMessage.trim() : "");
     navigate("/checkout");
   };
 
@@ -520,8 +377,8 @@ const Cart = () => {
             </div>
             {selectedItems.length > 0 && (
               <div className="cart-summary-amount">
-                <span className="cart-summary-amount-label">TOTAL</span>
-                <strong>{formatMoney(cartTotal)}</strong>
+                <span className="cart-summary-amount-label">SUBTOTAL</span>
+                <strong>{formatMoney(selectedSubtotal)}</strong>
               </div>
             )}
           </div>
@@ -555,45 +412,6 @@ const Cart = () => {
             PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
             <Icon icon="lucide:arrow-right" />
           </button>
-
-          <div className="cart-gift-block">
-            <label className="cart-gift">
-              <input
-                type="checkbox"
-                checked={giftWrap}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setGiftWrap(checked);
-                  if (!checked) setGiftMessage("");
-                }}
-              />
-              <span className="cart-gift-box"><Icon icon="lucide:check" /></span>
-              <span className="cart-gift-text">
-                Send as a gift. Include custom message
-                <span
-                  className={`cart-gift-info ${showGiftTip ? "is-open" : ""}`}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGiftTip((v) => !v); }}
-                >
-                  <Icon icon="lucide:info" />
-                  <span className="cart-gift-tip">Printed on the gift card — keep it personal. No phone numbers, links, or vulgar content.</span>
-                </span>
-              </span>
-              <span className="cart-gift-charge">+{formatMoneyShort(GIFT_CHARGE)}</span>
-            </label>
-            {giftWrap && (
-              <div className="cart-gift-msg-wrap">
-                <textarea
-                  className="cart-gift-input"
-                  value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value)}
-                  placeholder="Write your gift message…"
-                  rows={3}
-                  maxLength={GIFT_MESSAGE_MAX}
-                />
-                <span className="cart-gift-count">{giftMessage.length}/{GIFT_MESSAGE_MAX}</span>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ── Extra-off progress (driven by the nearest applicable coupon) ── */}
@@ -733,154 +551,20 @@ const Cart = () => {
           })}
         </div>
 
-        {/* ── Coupons & offers ── */}
-        {selectedItems.length > 0 && <div className="cart-promo">
-          <button
-            type="button"
-            className={`cart-promo-toggle ${couponOpen ? "is-open" : ""}`}
-            onClick={() => setCouponOpen((v) => !v)}
-          >
-            <Icon icon="lucide:badge-percent" />
-            <span>{appliedCoupon ? `Coupon ${appliedCoupon.code} applied` : "Apply coupon or offer"}</span>
-            <Icon icon="lucide:chevron-down" className="cart-promo-chev" />
-          </button>
-          {couponOpen && (
-            <div className="cart-promo-panel">
-              {appliedCoupon ? (
-                <div className="cart-promo-applied">
-                  <span><Icon icon="lucide:ticket" /> {appliedCoupon.code} — you saved {formatMoney(cartCouponDiscount)}</span>
-                  <button type="button" onClick={removeCoupon}>Remove</button>
-                </div>
-              ) : (
-                <>
-                  <div className="cart-promo-entry">
-                    <input
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="Enter coupon code"
-                    />
-                    <button type="button" onClick={applyCouponByCode}>Apply</button>
-                  </div>
-                  {(coupons.length > 0 || usedCoupons.length > 0) ? (
-                    <div className="cart-promo-list">
-                      {coupons.map((c) => {
-                        const locked = c.minPurchase > selectedSubtotal;
-                        return (
-                          <button
-                            key={c.id || c.code}
-                            type="button"
-                            className="cart-promo-item-card"
-                            onClick={() => applyCoupon(c)}
-                            disabled={locked}
-                          >
-                            <span className="cart-promo-tag">{c.code}</span>
-                            <span className="cart-promo-text">
-                              <strong>{couponDiscountText(c)}</strong>
-                              {locked
-                                ? <small>Add {formatMoneyShort(c.minPurchase - selectedSubtotal)} more to apply</small>
-                                : <small>{c.description || "Tap to apply this offer"}</small>}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      {usedCoupons.map((c) => (
-                        <button
-                          key={c.id || c.code}
-                          type="button"
-                          className="cart-promo-item-card is-used"
-                          disabled
-                        >
-                          <span className="cart-promo-tag">{c.code}</span>
-                          <span className="cart-promo-text">
-                            <strong>{couponDiscountText(c)}</strong>
-                            <small>You've already used this coupon</small>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="cart-promo-none">No coupons available right now.</p>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>}
-
-        {/* ── Wallet balance ── */}
-        {selectedItems.length > 0 && walletBalance > 0 && (
-          <div className="cart-pricecard">
-            <label className="cart-wallet">
-              <span className="cart-wallet-info">
-                <Icon icon="lucide:wallet" />
-                <span>
-                  <strong>Use wallet balance</strong>
-                  <small>Available {formatMoney(walletBalance)}</small>
-                </span>
-              </span>
-              <span className="cart-wallet-switch">
-                <input
-                  type="checkbox"
-                  checked={useWallet}
-                  onChange={(e) => setUseWallet(e.target.checked)}
-                />
-                <span className="cart-wallet-slider" />
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* ── Price details ── */}
+        {/* ── Price details (subtotal only — everything else is decided at checkout) ── */}
         {selectedItems.length > 0 && <div className="cart-pricecard">
           <div className="cart-pricecard-head">
             <Icon icon="lucide:receipt-text" />
             <strong>Price details</strong>
           </div>
-          <div className="cart-price-rows">
-            <div className="cart-price-row">
-              <span>Subtotal ({selectedUnits} item{selectedUnits === 1 ? "" : "s"})</span>
-              <span>{formatMoney(selectedSubtotal)}</span>
-            </div>
-            <div className="cart-price-row">
-              <span>Platform fee</span>
-              <span>{formatMoney(cartPlatformFee)}</span>
-            </div>
-            {cartGiftCharge > 0 && (
-              <div className="cart-price-row">
-                <span>Gift wrap &amp; message</span>
-                <span>{formatMoney(cartGiftCharge)}</span>
-              </div>
-            )}
-            <div className="cart-price-row">
-              <span>Delivery</span>
-              {shippingLoading ? (
-                <span>Calculating…</span>
-              ) : shippingCharge > 0 ? (
-                <span className="cart-price-free"><s>{formatMoney(shippingCharge)}</s> Free</span>
-              ) : (
-                <span className="cart-price-free">Free</span>
-              )}
-            </div>
-            {cartCouponDiscount > 0 && (
-              <div className="cart-price-row cart-price-row--save">
-                <span>Coupon ({appliedCoupon.code})</span>
-                <span>-{formatMoney(cartCouponDiscount)}</span>
-              </div>
-            )}
-            {cartWalletUsable > 0 && (
-              <div className="cart-price-row cart-price-row--save">
-                <span>Wallet used</span>
-                <span>-{formatMoney(cartWalletUsable)}</span>
-              </div>
-            )}
-          </div>
           <div className="cart-price-total">
-            <span>Total Payable</span>
-            <strong>{formatMoney(cartTotal)}</strong>
+            <span>Subtotal ({selectedUnits} item{selectedUnits === 1 ? "" : "s"})</span>
+            <strong>{formatMoney(selectedSubtotal)}</strong>
           </div>
-          {cartTotalSavings > 0 && (
+          <p className="cart-price-note">Delivery, coupons, gift wrap and wallet are applied at checkout.</p>
+          {selectedSavings > 0 && (
             <div className="cart-price-savings">
-              You save {formatMoney(cartTotalSavings)} on this order
+              You save {formatMoney(selectedSavings)} on this order
             </div>
           )}
           {farthestDeliveryLabel && (
@@ -907,8 +591,8 @@ const Cart = () => {
         <div className="cart-stickybar-inner">
           {selectedItems.length > 0 && (
             <div className="cart-stickybar-left">
-              <span className="cart-stickybar-label">TOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
-              <strong className="cart-stickybar-amount">{formatMoney(cartTotal)}</strong>
+              <span className="cart-stickybar-label">SUBTOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
+              <strong className="cart-stickybar-amount">{formatMoney(selectedSubtotal)}</strong>
             </div>
           )}
           <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
@@ -916,8 +600,8 @@ const Cart = () => {
             <Icon icon="lucide:arrow-right" />
           </button>
         </div>
-        {cartTotalSavings > 0 && (
-          <span className="cart-stickybar-save">You save {formatMoney(cartTotalSavings)} on this order</span>
+        {selectedSavings > 0 && (
+          <span className="cart-stickybar-save">You save {formatMoney(selectedSavings)} on this order</span>
         )}
         <div className="cart-stickybar-assurance">
           <span><Icon icon="lucide:lock" /> Secure Payments</span>

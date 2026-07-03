@@ -98,17 +98,19 @@ const couponDiscountText = (coupon) => {
 
 /**
  * The full one-page checkout experience (delivery address, payment method,
- * coupons & offers, wallet, price breakdown and order placement). It is rendered
- * both on the standalone /checkout page and embedded below the cart items.
+ * coupons & offers, gift option, wallet, price breakdown and order placement).
+ * It is rendered on the standalone /checkout page (cart flow) and inside the
+ * Buy Now overlay.
  *
  * Props:
- *  - selectedItems / isGift / giftMessage: when provided the flow runs in
- *    "controlled" mode and uses these live values (cart embedding). When omitted
- *    it falls back to the cart selection + gift preference stored in
- *    sessionStorage by the cart page (standalone /checkout behaviour).
+ *  - selectedItems: when provided the flow runs in "controlled" mode and uses
+ *    these live values (Buy Now). When omitted it falls back to the cart
+ *    selection stored in sessionStorage by the cart page (/checkout behaviour).
  *  - redirectOnEmpty: navigate to /cart when the cart empties (standalone only).
+ *  - couponOverride: Buy Now's own coupon state/handlers. When omitted the flow
+ *    fetches the coupon list itself and applies through the cart context.
  */
-const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMessageProp, redirectOnEmpty = false, onExit, couponOverride, showGiftOption = false }) => {
+const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOverride }) => {
   const { cart, clearCart, updateQuantity, removeFromCart, appliedCoupon, discountAmount, applyCoupon: cartApplyCoupon, removeCoupon: cartRemoveCoupon } = useCart();
   // Coupons normally come from the cart context. The Buy Now flow has no cart, so
   // it passes `couponOverride` with its own validated-coupon state + handlers.
@@ -116,7 +118,11 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   const activeDiscountAmount = couponOverride ? Number(couponOverride.discountAmount || 0) : Number(discountAmount || 0);
   const [couponInput, setCouponInput] = useState("");
   const [couponOpen, setCouponOpen] = useState(false);
-  // Gift toggle/message owned by the wizard (used by the Buy Now flow).
+  // Coupon list for the cart flow; Buy Now brings its own via couponOverride.
+  const [cartCoupons, setCartCoupons] = useState([]);
+  const eligibleCartCouponsRef = useRef([]);
+  const hasCouponOverride = Boolean(couponOverride);
+  // Gift toggle/message owned by the wizard (confirm step, both flows).
   const [giftEnabled, setGiftEnabled] = useState(false);
   const [giftMsg, setGiftMsg] = useState("");
   const [showGiftTip, setShowGiftTip] = useState(false);
@@ -137,9 +143,6 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
       return null;
     }
   });
-  const [sessionIsGift] = useState(() => sessionStorage.getItem("bk_cart_gift") === "1");
-  const [sessionGiftMessage] = useState(() => sessionStorage.getItem("bk_cart_gift_message") || "");
-
   const selectedCart = controlled
     ? (selectedItems || [])
     : (() => {
@@ -147,10 +150,8 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
         const filtered = cart.filter((item) => selectedKeys.has(`${item.id}-${item.colorId ?? ""}`));
         return filtered.length ? filtered : cart;
       })();
-  // When showGiftOption is set (Buy Now), the wizard owns the gift toggle/message
-  // itself; otherwise it honours the controlled props (cart) or sessionStorage.
-  const isGift = showGiftOption ? giftEnabled : (controlled ? Boolean(isGiftProp) : sessionIsGift);
-  const giftMessage = showGiftOption ? giftMsg : (controlled ? (giftMessageProp || "") : sessionGiftMessage);
+  const isGift = giftEnabled;
+  const giftMessage = giftMsg;
 
   const checkoutCart = selectedCart.map((item) => {
     const stockInfo = getProductStockInfo(item, item.colorId);
@@ -300,6 +301,50 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
   useEffect(() => {
     try { localStorage.setItem("bk_use_wallet", useWallet ? "1" : "0"); } catch {}
   }, [useWallet]);
+
+  // Cart flow only: load active, in-date coupons. Exhausted ones (per-user or
+  // global limit reached) stay visible but disabled, mirroring Buy Now's list.
+  useEffect(() => {
+    if (hasCouponOverride) return undefined;
+    let cancelled = false;
+    api.get(API_ENDPOINTS.coupons)
+      .then((res) => {
+        if (cancelled) return;
+        const now = Date.now();
+        const rows = (Array.isArray(res.data) ? res.data : [])
+          .filter((c) => c.is_active !== false)
+          .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
+          .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
+          .map((c) => ({ ...c, exhausted: c.user_eligible === false }));
+        eligibleCartCouponsRef.current = rows.filter((c) => !c.exhausted);
+        setCartCoupons(rows);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [hasCouponOverride]);
+
+  // Apply a typed/tapped coupon code through the cart context (cart flow).
+  const applyCartCouponByCode = (code) => {
+    const clean = String(code || "").trim().toUpperCase();
+    if (!clean) return;
+    const match = eligibleCartCouponsRef.current.find((c) => String(c.code).toUpperCase() === clean);
+    if (!match) {
+      const used = cartCoupons.some((c) => c.exhausted && String(c.code).toUpperCase() === clean);
+      showNotification(used ? "You have already used this coupon." : "Coupon not found or not eligible for your bag.", "warning");
+      return;
+    }
+    if (cartApplyCoupon(match)) setCouponInput("");
+  };
+
+  // One shape for the coupon UI: Buy Now's override or the cart-context version.
+  const couponCtl = couponOverride || {
+    appliedCoupon,
+    discountAmount,
+    applyCoupon: applyCartCouponByCode,
+    removeCoupon: cartRemoveCoupon,
+    coupons: cartCoupons,
+    loading: false,
+  };
 
   useEffect(() => {
     if (wizardStep !== "confirm") return;
@@ -1254,70 +1299,68 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </button>
             </div>
 
-            {couponOverride && (
-              <div className="ckw-coupon">
-                <button
-                  type="button"
-                  className={`ckw-coupon-toggle ${couponOpen ? "is-open" : ""}`}
-                  onClick={() => setCouponOpen((v) => !v)}
-                >
-                  <Icon icon="lucide:badge-percent" />
-                  <span>{activeAppliedCoupon ? `Coupon ${activeAppliedCoupon.code} applied` : "Apply coupon or offer"}</span>
-                  <Icon icon="lucide:chevron-down" className="ckw-coupon-chev" />
-                </button>
-                {couponOpen && (
-                  <div className="ckw-coupon-panel">
-                    {activeAppliedCoupon ? (
-                      <div className="ckw-coupon-applied">
-                        <span><Icon icon="lucide:ticket" /> {activeAppliedCoupon.code} — you saved {money(effectiveCouponDiscount)}</span>
-                        <button type="button" onClick={() => { couponOverride.removeCoupon?.(); setCouponInput(""); }}>Remove</button>
+            <div className="ckw-coupon">
+              <button
+                type="button"
+                className={`ckw-coupon-toggle ${couponOpen ? "is-open" : ""}`}
+                onClick={() => setCouponOpen((v) => !v)}
+              >
+                <Icon icon="lucide:badge-percent" />
+                <span>{activeAppliedCoupon ? `Coupon ${activeAppliedCoupon.code} applied` : "Apply coupon or offer"}</span>
+                <Icon icon="lucide:chevron-down" className="ckw-coupon-chev" />
+              </button>
+              {couponOpen && (
+                <div className="ckw-coupon-panel">
+                  {activeAppliedCoupon ? (
+                    <div className="ckw-coupon-applied">
+                      <span><Icon icon="lucide:ticket" /> {activeAppliedCoupon.code} — you saved {money(effectiveCouponDiscount)}</span>
+                      <button type="button" onClick={() => { couponCtl.removeCoupon?.(); setCouponInput(""); }}>Remove</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="ckw-coupon-entry">
+                        <input
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          placeholder="Enter coupon code"
+                        />
+                        <button type="button" onClick={() => couponCtl.applyCoupon?.(couponInput.trim())}>Apply</button>
                       </div>
-                    ) : (
-                      <>
-                        <div className="ckw-coupon-entry">
-                          <input
-                            value={couponInput}
-                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                            placeholder="Enter coupon code"
-                          />
-                          <button type="button" onClick={() => couponOverride.applyCoupon?.(couponInput.trim())}>Apply</button>
+                      {(couponCtl.coupons || []).length > 0 ? (
+                        <div className="ckw-coupon-list">
+                          {couponCtl.coupons.map((c) => {
+                            const minPurchase = Number(c.min_purchase_amount || c.minPurchase || 0);
+                            const used = Boolean(c.exhausted);
+                            const locked = !used && minPurchase > subtotal;
+                            return (
+                              <button
+                                key={c.id || c.code}
+                                type="button"
+                                className={`ckw-coupon-card${used ? " is-used" : ""}`}
+                                onClick={() => couponCtl.applyCoupon?.(c.code)}
+                                disabled={used || locked || couponCtl.loading}
+                              >
+                                <span className="ckw-coupon-tag">{c.code}</span>
+                                <span className="ckw-coupon-text">
+                                  <strong>{couponDiscountText(c)}</strong>
+                                  {used
+                                    ? <small>You've already used this coupon</small>
+                                    : locked
+                                    ? <small>Add {moneyShort(minPurchase - subtotal)} more to apply</small>
+                                    : <small>{c.description || "Tap to apply this offer"}</small>}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
-                        {(couponOverride.coupons || []).length > 0 ? (
-                          <div className="ckw-coupon-list">
-                            {couponOverride.coupons.map((c) => {
-                              const minPurchase = Number(c.min_purchase_amount || c.minPurchase || 0);
-                              const used = Boolean(c.exhausted);
-                              const locked = !used && minPurchase > subtotal;
-                              return (
-                                <button
-                                  key={c.id || c.code}
-                                  type="button"
-                                  className={`ckw-coupon-card${used ? " is-used" : ""}`}
-                                  onClick={() => couponOverride.applyCoupon?.(c.code)}
-                                  disabled={used || locked || couponOverride.loading}
-                                >
-                                  <span className="ckw-coupon-tag">{c.code}</span>
-                                  <span className="ckw-coupon-text">
-                                    <strong>{couponDiscountText(c)}</strong>
-                                    {used
-                                      ? <small>You've already used this coupon</small>
-                                      : locked
-                                      ? <small>Add {moneyShort(minPurchase - subtotal)} more to apply</small>
-                                      : <small>{c.description || "Tap to apply this offer"}</small>}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="ckw-coupon-none">No coupons available right now.</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                      ) : (
+                        <p className="ckw-coupon-none">No coupons available right now.</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             {walletBalance > 0 && (
               <label className="ckw-confirm-card ckw-wallet-row">
@@ -1330,43 +1373,41 @@ const CheckoutFlow = ({ selectedItems, isGift: isGiftProp, giftMessage: giftMess
               </label>
             )}
 
-            {showGiftOption && (
-              <div className="ckw-confirm-card ckw-gift">
-                <label className="ckw-gift-row">
-                  <span className="ckw-confirm-ico"><Icon icon="lucide:gift" /></span>
-                  <span className="ckw-confirm-text">
-                    <strong>
-                      Send as a gift
-                      <span
-                        className={`ckw-gift-info ${showGiftTip ? "is-open" : ""}`}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGiftTip((v) => !v); }}
-                      >
-                        <Icon icon="lucide:info" />
-                        <span className="ckw-gift-tip">Printed on the gift card — keep it personal. No phone numbers, links, or vulgar content.</span>
-                      </span>
-                    </strong>
-                    <small>Include a custom message · +{money(GIFT_CHARGE_AMOUNT)}</small>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={giftEnabled}
-                    onChange={(e) => { setGiftEnabled(e.target.checked); if (!e.target.checked) setGiftMsg(""); }}
+            <div className="ckw-confirm-card ckw-gift">
+              <label className="ckw-gift-row">
+                <span className="ckw-confirm-ico"><Icon icon="lucide:gift" /></span>
+                <span className="ckw-confirm-text">
+                  <strong>
+                    Send as a gift
+                    <span
+                      className={`ckw-gift-info ${showGiftTip ? "is-open" : ""}`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGiftTip((v) => !v); }}
+                    >
+                      <Icon icon="lucide:info" />
+                      <span className="ckw-gift-tip">Printed on the gift card — keep it personal. No phone numbers, links, or vulgar content.</span>
+                    </span>
+                  </strong>
+                  <small>Include a custom message · +{money(GIFT_CHARGE_AMOUNT)}</small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={giftEnabled}
+                  onChange={(e) => { setGiftEnabled(e.target.checked); if (!e.target.checked) setGiftMsg(""); }}
+                />
+              </label>
+              {giftEnabled && (
+                <div className="ckw-gift-msg">
+                  <textarea
+                    value={giftMsg}
+                    onChange={(e) => setGiftMsg(e.target.value)}
+                    placeholder="Write your gift message…"
+                    rows={3}
+                    maxLength={250}
                   />
-                </label>
-                {giftEnabled && (
-                  <div className="ckw-gift-msg">
-                    <textarea
-                      value={giftMsg}
-                      onChange={(e) => setGiftMsg(e.target.value)}
-                      placeholder="Write your gift message…"
-                      rows={3}
-                      maxLength={250}
-                    />
-                    <span className="ckw-gift-count">{giftMsg.length}/250</span>
-                  </div>
-                )}
-              </div>
-            )}
+                  <span className="ckw-gift-count">{giftMsg.length}/250</span>
+                </div>
+              )}
+            </div>
 
             <div className="ckw-confirm-card">
               <button type="button" className="ckw-confirm-row" onClick={goToAddressStep}>
