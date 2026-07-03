@@ -120,7 +120,6 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const [couponOpen, setCouponOpen] = useState(false);
   // Coupon list for the cart flow; Buy Now brings its own via couponOverride.
   const [cartCoupons, setCartCoupons] = useState([]);
-  const eligibleCartCouponsRef = useRef([]);
   const hasCouponOverride = Boolean(couponOverride);
   // Gift toggle/message owned by the wizard (confirm step, both flows).
   const [giftEnabled, setGiftEnabled] = useState(false);
@@ -316,7 +315,6 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
           .filter((c) => !c.valid_from || new Date(c.valid_from).getTime() <= now)
           .filter((c) => !c.valid_until || new Date(c.valid_until).getTime() >= now)
           .map((c) => ({ ...c, exhausted: c.user_eligible === false }));
-        eligibleCartCouponsRef.current = rows.filter((c) => !c.exhausted);
         setCartCoupons(rows);
       })
       .catch(() => {});
@@ -327,7 +325,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const applyCartCouponByCode = (code) => {
     const clean = String(code || "").trim().toUpperCase();
     if (!clean) return;
-    const match = eligibleCartCouponsRef.current.find((c) => String(c.code).toUpperCase() === clean);
+    const match = cartCoupons.find((c) => !c.exhausted && String(c.code).toUpperCase() === clean);
     if (!match) {
       const used = cartCoupons.some((c) => c.exhausted && String(c.code).toUpperCase() === clean);
       showNotification(used ? "You have already used this coupon." : "Coupon not found or not eligible for your bag.", "warning");

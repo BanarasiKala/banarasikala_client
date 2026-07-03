@@ -207,6 +207,9 @@ const Cart = () => {
     const mrp = Number(item.mrp_price || item.mrp || 0);
     return sum + (mrp > sell ? (mrp - sell) * Number(item.quantity || 1) : 0);
   }, 0);
+  // MRP subtotal shown struck-through beside the selling-price subtotal (items
+  // without a higher MRP contribute their selling price).
+  const selectedMrpTotal = selectedSubtotal + selectedSavings;
 
   // Extra-off progress, driven by real coupons (sorted by ascending min purchase):
   // find the nearest coupon the cart hasn't reached yet, and the best one already
@@ -378,7 +381,10 @@ const Cart = () => {
             {selectedItems.length > 0 && (
               <div className="cart-summary-amount">
                 <span className="cart-summary-amount-label">SUBTOTAL</span>
-                <strong>{formatMoney(selectedSubtotal)}</strong>
+                <strong>
+                  {selectedSavings > 0 && <s className="cart-subtotal-mrp">{formatMoney(selectedMrpTotal)}</s>}
+                  {formatMoney(selectedSubtotal)}
+                </strong>
               </div>
             )}
           </div>
@@ -559,7 +565,10 @@ const Cart = () => {
           </div>
           <div className="cart-price-total">
             <span>Subtotal ({selectedUnits} item{selectedUnits === 1 ? "" : "s"})</span>
-            <strong>{formatMoney(selectedSubtotal)}</strong>
+            <strong>
+              {selectedSavings > 0 && <s className="cart-subtotal-mrp">{formatMoney(selectedMrpTotal)}</s>}
+              {formatMoney(selectedSubtotal)}
+            </strong>
           </div>
           <p className="cart-price-note">Delivery, coupons, gift wrap and wallet are applied at checkout.</p>
           {selectedSavings > 0 && (
@@ -592,7 +601,10 @@ const Cart = () => {
           {selectedItems.length > 0 && (
             <div className="cart-stickybar-left">
               <span className="cart-stickybar-label">SUBTOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
-              <strong className="cart-stickybar-amount">{formatMoney(selectedSubtotal)}</strong>
+              <strong className="cart-stickybar-amount">
+                {selectedSavings > 0 && <s className="cart-subtotal-mrp">{formatMoney(selectedMrpTotal)}</s>}
+                {formatMoney(selectedSubtotal)}
+              </strong>
             </div>
           )}
           <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>

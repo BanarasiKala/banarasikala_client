@@ -1712,6 +1712,18 @@
   color: #8a7a6d;
 }
 
+/* MRP subtotal struck through beside the selling-price subtotal (summary card,
+   price details and sticky bar). Sized relative to the price it sits next to. */
+.cart-subtotal-mrp {
+  margin-right: 6px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.72em;
+  font-weight: 400;
+  color: rgba(53, 23, 15, 0.42);
+  text-decoration: line-through;
+  white-space: nowrap;
+}
+
 /* Estimated delivery date + info tooltip at the bottom of the price details. */
 .cart-delivery-note {
   display: flex;
