@@ -196,11 +196,14 @@ const getOrderBreakdown = (order) => {
   };
 };
 
+// Whole-order cancellation only, while the order is still pre-dispatch and
+// within 24 hours. Mirror of CANCELLABLE_STATUSES in OrderController.
+const CANCELLABLE_STATUSES = ["pending", "processing", "order placed", "order_placed", "awb assigned", "awb_assigned"];
 const canCancelOrder = (order) => {
   const rawDate = order?.createdAt || order?.created_at;
   if (!rawDate) return false;
   const status = String(order.status || "").toLowerCase();
-  if (["cancelled", "seller cancelled", "delivered", "shipped", "out for delivery", "rto delivered"].includes(status) || status.startsWith("rto ")) return false;
+  if (!CANCELLABLE_STATUSES.includes(status)) return false;
   const createdAt = new Date(rawDate).getTime();
   if (!Number.isFinite(createdAt)) return false;
   return Date.now() - createdAt <= 24 * 60 * 60 * 1000;
@@ -477,7 +480,7 @@ export default function MyOrders() {
 
   const [actionModal, setActionModal] = useState({
     isOpen: false,
-    type: "cancel_order", // "cancel_order", "cancel_item", "return", "exchange"
+    type: "cancel_order", // "cancel_order" (whole order only), "return", "exchange"
     orderId: null,
     itemId: null,
     itemName: ""
@@ -621,32 +624,17 @@ export default function MyOrders() {
   const handleModalSubmit = async (e) => {
     e.preventDefault();
     setModalSubmitLoading(true);
-    const { type, orderId, itemId, itemName } = actionModal;
+    const { type, orderId } = actionModal;
     const finalReason = actionForm.comments.trim() 
       ? `${actionForm.reason} - ${actionForm.comments.trim()}`
       : actionForm.reason;
 
     try {
-      if (type === "cancel_item") {
-        const currentOrder = orders.find((o) => String(o.id) === String(orderId));
-        const orderItem = (currentOrder?.OrderItems || []).find((i) => String(i.id) === String(itemId));
-        const response = await api.post(`/api/orders/${orderId}/item-actions/cancel`, {
-          actionType: "cancel",
-          items: [{ orderItemId: Number(itemId), quantity: Number(orderItem?.quantity || 1) }],
-          reason: finalReason,
-        });
-        showNotification(response.data?.refund_message || `${itemName} cancelled successfully.`, "success");
-      } else if (type === "cancel_order") {
-        const currentOrder = orders.find((o) => String(o.id) === String(orderId));
-        const activeItems = (currentOrder?.OrderItems || [])
-          .filter((i) => !["Cancelled", "Returned", "Exchanged"].includes(i.status))
-          .map((i) => ({ orderItemId: i.id, quantity: i.quantity }));
-        const response = await api.post(`/api/orders/${orderId}/item-actions/cancel`, {
-          actionType: "cancel",
-          items: activeItems,
-          reason: finalReason,
-        });
-        showNotification(response.data?.refund_message || "Order cancelled successfully.", "success");
+      if (type === "cancel_order") {
+        // Whole-order cancellation — the backend restocks, reverses the ledger
+        // and refunds (gateway + wallet) for prepaid; COD is simply cancelled.
+        const response = await api.post(`/api/orders/${orderId}/cancel`, { reason: finalReason });
+        showNotification(response.data?.refund_message || response.data?.message || "Order cancelled successfully.", "success");
       } else if (type === "return") {
         const response = await api.post("/api/shiprocket/create-return", { orderId, reason: finalReason });
         showNotification(response.data?.refund_message || "Return request submitted successfully.", "success");
@@ -916,34 +904,19 @@ export default function MyOrders() {
         const isCod = bd && String(bd.paymentMethod).toUpperCase() === "COD";
 
         let refundInfo = null;
-        if (bd && (type === "cancel_order" || type === "cancel_item")) {
-          if (type === "cancel_order") {
-            refundInfo = {
-              rows: [
-                ...(bd.payable > 0 ? [{ label: "Paid via payment", value: fmt(bd.payable) }] : []),
-                ...(bd.walletAmount > 0 ? [{ label: "Wallet used", value: fmt(bd.walletAmount) }] : []),
-              ],
-              total: isCod ? 0 : bd.payable + bd.walletAmount,
-              walletRefund: isCod ? 0 : bd.walletAmount,
-              gatewayRefund: isCod ? 0 : bd.payable,
-              isCod,
-            };
-          } else {
-            const item = (currentOrder?.OrderItems || []).find((i) => String(i.id) === String(actionModal.itemId));
-            const itemValue = Number(item?.price || 0) * Number(item?.quantity || 1);
-            const discountRatio = bd.subtotal > 0 ? bd.couponDiscount / bd.subtotal : 0;
-            const itemDiscount = Math.round(itemValue * discountRatio * 100) / 100;
-            const estimatedRefund = Math.max(0, itemValue - itemDiscount);
-            refundInfo = {
-              rows: [
-                { label: "Item value", value: fmt(itemValue) },
-                ...(itemDiscount > 0 ? [{ label: "Coupon adjustment", value: `− ${fmt(itemDiscount)}` }] : []),
-              ],
-              total: isCod ? 0 : estimatedRefund,
-              isCod,
-              isEstimate: true,
-            };
-          }
+        if (bd && type === "cancel_order") {
+          // Whole-order cancel: prepaid refunds everything paid (gateway) plus
+          // wallet money back to the wallet; COD has nothing to refund.
+          refundInfo = {
+            rows: [
+              ...(bd.payable > 0 ? [{ label: "Paid via payment", value: fmt(bd.payable) }] : []),
+              ...(bd.walletAmount > 0 ? [{ label: "Wallet used", value: fmt(bd.walletAmount) }] : []),
+            ],
+            total: isCod ? 0 : bd.payable + bd.walletAmount,
+            walletRefund: isCod ? 0 : bd.walletAmount,
+            gatewayRefund: isCod ? 0 : bd.payable,
+            isCod,
+          };
         }
 
         let modalTitle = "Confirm Cancellation";

@@ -23,7 +23,6 @@ export const API_ENDPOINTS = {
   myOrders: `${API_BASE_URL}/api/orders/my`,
   trackOrder: (orderId) => `${API_BASE_URL}/api/orders/track/${orderId}`,
   cancelOrder: (orderId) => `${API_BASE_URL}/api/orders/${orderId}/cancel`,
-  modifyOrder: (orderId) => `${API_BASE_URL}/api/orders/${orderId}/modify`,
   resolveRto: `${API_BASE_URL}/api/shiprocket/resolve-rto`,
   shiprocket: `${API_BASE_URL}/api/shiprocket`,
   createReturn: `${API_BASE_URL}/api/shiprocket/create-return`,

@@ -79,16 +79,15 @@ const getBreakdown = (order = {}) => {
   return { subtotal, shippingCharge, shippingDiscount, paymentFee, platformFee, codFee, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
-// An order can be modified (products cancelled / quantities reduced) only while
-// it is still pre-dispatch — pending / processing / order placed. Once it is
-// picked up, shipped, out for delivery, delivered or in RTO it is locked. Mirror
-// of MODIFIABLE_STATUSES in OrderItemActionController on the backend.
-const MODIFIABLE_STATUSES = ["pending", "processing", "order placed", "order_placed"];
+// An order can be cancelled (whole order only — no item-level changes) while it
+// is still pre-dispatch — pending / processing / AWB assigned — and within 24
+// hours of placement. Mirror of CANCELLABLE_STATUSES in OrderController on the
+// backend.
+const CANCELLABLE_STATUSES = ["pending", "processing", "order placed", "order_placed", "awb assigned", "awb_assigned"];
 const canCancelOrder = (order) => {
-  if (order?.is_modified) return false;
   const rawDate = order?.createdAt || order?.created_at;
   const status = String(order?.status || "").toLowerCase();
-  if (!rawDate || !MODIFIABLE_STATUSES.includes(status)) return false;
+  if (!rawDate || !CANCELLABLE_STATUSES.includes(status)) return false;
   const createdAt = new Date(rawDate).getTime();
   return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
 };
@@ -180,7 +179,6 @@ const withinReturnWindow = (order) => {
 
 const getEligibleActionItems = (order, actionType) => {
   const delivered = wasDelivered(order);
-  const cancelAllowed = canCancelOrder(order);
   const exchangeUsed = hasOrderExchangeHistory(order);
   const returnUsed = hasOrderReturnHistory(order);
   const inReturnWindow = withinReturnWindow(order);
@@ -189,7 +187,6 @@ const getEligibleActionItems = (order, actionType) => {
     if (getActionableQty(item) < 1) return false;
     if (itemStatus.includes("requested") || itemStatus.includes("initiated")) return false;
     if (hasUsableAction(item)) return false;
-    if (actionType === "cancel") return cancelAllowed && itemStatus !== "cancelled";
     if (itemStatus === "cancelled") return false;
     if (["return", "exchange"].includes(actionType)) {
       // Mirror the backend: delivered, inside the 7-day window, and one reverse
@@ -218,7 +215,7 @@ const getActionLabel = (action) => {
 };
 
 const getOrderActions = (order) => ({
-  canCancel: getEligibleActionItems(order, "cancel").length > 0,
+  canCancel: canCancelOrder(order),
   canReturnExchange: getEligibleActionItems(order, "return").length > 0 || getEligibleActionItems(order, "exchange").length > 0,
 });
 
@@ -380,7 +377,7 @@ const EXCHANGE_REASONS = [
 const getActionConfig = (type) => {
   if (type === "return") return { title: "Request Return", label: "Return reason", reasons: RETURN_REASONS, button: "Submit Return Request", tone: "primary" };
   if (type === "exchange") return { title: "Request Exchange", label: "Exchange reason", reasons: EXCHANGE_REASONS, button: "Submit Exchange Request", tone: "primary" };
-  return { title: "Modify your order", label: "Reason for change", reasons: CANCEL_REASONS, button: "Confirm changes", tone: "danger" };
+  return { title: "Cancel Order", label: "Reason for cancellation", reasons: CANCEL_REASONS, button: "Cancel Entire Order", tone: "danger" };
 };
 
 const OrderActivityPanel = ({ history }) => {
@@ -506,9 +503,6 @@ export default function OrderConfirmation() {
   const [modalSubmitLoading, setModalSubmitLoading] = useState(false);
   const [actionEstimate, setActionEstimate] = useState(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
-  const [addressModal, setAddressModal] = useState({ isOpen: false });
-  const [addressForm, setAddressForm] = useState({ name: "", phone: "", line: "", city: "", state: "", pincode: "" });
-  const [addressSaving, setAddressSaving] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
@@ -601,7 +595,8 @@ export default function OrderConfirmation() {
 
   const openActionModal = (type = "cancel") => {
     const config = getActionConfig(type);
-    const eligibleItems = getEligibleActionItems(order, type);
+    // Cancellation is whole-order — no item selection needed.
+    const eligibleItems = type === "cancel" ? [] : getEligibleActionItems(order, type);
     const selected = eligibleItems.reduce((map, item, index) => ({
       ...map,
       [item.id]: { checked: index === 0, quantity: getActionableQty(item) },
@@ -626,50 +621,6 @@ export default function OrderConfirmation() {
     setCancelModal({ isOpen: false, type: "cancel", orderId: null, itemName: "", selected: {} });
     setActionEstimate(null);
     setLoadingEstimate(false);
-  };
-
-  const openAddressModal = () => {
-    setAddressForm({
-      name: order?.customer_name || "",
-      phone: order?.phone || "",
-      line: order?.address || "",
-      city: order?.city || "",
-      state: order?.state || "",
-      pincode: order?.pincode || "",
-    });
-    setAddressModal({ isOpen: true });
-  };
-
-  const closeAddressModal = () => {
-    if (addressSaving) return;
-    setAddressModal({ isOpen: false });
-  };
-
-  const submitAddress = async (event) => {
-    event.preventDefault();
-    if (!order?.id) return;
-    setAddressSaving(true);
-    try {
-      await api.patch(`/api/orders/${order.id}/modify`, {
-        address: {
-          name: addressForm.name.trim(),
-          phone: addressForm.phone.trim(),
-          line: addressForm.line.trim(),
-          city: addressForm.city.trim(),
-          state: addressForm.state.trim(),
-          pincode: addressForm.pincode.trim(),
-        },
-        reason: "Delivery address updated by customer",
-      });
-      showNotification("Delivery address updated.", "success");
-      setAddressModal({ isOpen: false });
-      const updated = await api.get(`/api/orders/${order.id}`);
-      setOrder(updated.data);
-    } catch (err) {
-      showNotification(err?.response?.data?.message || "Could not update the address right now.", "error");
-    } finally {
-      setAddressSaving(false);
-    }
   };
 
   const openFeedbackModal = (item) => {
@@ -743,7 +694,9 @@ export default function OrderConfirmation() {
     let cancelled = false;
     setActionEstimate(null);
     const loadEstimate = async () => {
-      if (!cancelModal.isOpen || !cancelModal.orderId || !selectedActionItems.length) {
+      // Estimates exist only for return/exchange — a cancel refunds the whole
+      // paid amount, which we already know from the order itself.
+      if (!cancelModal.isOpen || !cancelModal.orderId || cancelModal.type === "cancel" || !selectedActionItems.length) {
         setLoadingEstimate(false);
         return;
       }
@@ -797,19 +750,26 @@ export default function OrderConfirmation() {
       : cancelForm.reason;
 
     try {
-      if (!selectedActionItems.length) {
-        showNotification("Please select at least one product.", "warning");
-        setModalSubmitLoading(false);
-        return;
+      let response;
+      if (type === "cancel") {
+        // Whole-order cancellation. Backend restocks, reverses the ledger and
+        // refunds (gateway + wallet) for prepaid; COD is simply cancelled.
+        response = await api.post(`/api/orders/${orderId}/cancel`, { reason: finalReason });
+        showNotification(response.data?.refund_message || response.data?.message || "Order cancelled successfully.", "success");
+      } else {
+        if (!selectedActionItems.length) {
+          showNotification("Please select at least one product.", "warning");
+          setModalSubmitLoading(false);
+          return;
+        }
+        response = await api.post(`/api/orders/${orderId}/item-actions`, {
+          actionType: type,
+          items: selectedActionItems,
+          reason: finalReason,
+          comments: cancelForm.comments.trim(),
+        });
+        showNotification(response.data?.message || "Request submitted.", "success");
       }
-      const endpoint = type === "cancel" ? `/api/orders/${orderId}/item-actions/cancel` : `/api/orders/${orderId}/item-actions`;
-      const response = await api.post(endpoint, {
-        actionType: type,
-        items: selectedActionItems,
-        reason: finalReason,
-        comments: cancelForm.comments.trim(),
-      });
-      showNotification(response.data?.message || "Request submitted.", "success");
       const updated = await api.get(`/api/orders/${orderId}`);
       setOrder(updated.data || response.data.order || order);
       closeActionModal(true);
@@ -1105,11 +1065,6 @@ export default function OrderConfirmation() {
           <section className="order-panel">
             <div className="order-panel-head-row">
               <h2>Delivery address</h2>
-              {canCancelOrder(order) && (
-                <button type="button" className="address-edit-btn" onClick={openAddressModal}>
-                  <Icon icon="lucide:pencil" /> Edit
-                </button>
-              )}
             </div>
             <p className="address-copy">{order.customer_name}<br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
           </section>
@@ -1161,18 +1116,12 @@ export default function OrderConfirmation() {
             </section>
           )}
 
-          {order.is_modified && !["cancelled", "seller cancelled"].includes(String(order.status || "").toLowerCase()) && (
-            <div className="order-modified-notice">
-              <Icon icon="lucide:lock" />
-              <p>This order has been updated. No further changes are possible.</p>
-            </div>
-          )}
           {Object.values(orderActions).some(Boolean) && (
             <div className="order-action-list order-action-list-standalone">
               {orderActions.canCancel && (
                 <>
                   <button className="cancel-order-btn" type="button" onClick={() => openActionModal("cancel")}>
-                    Modify order
+                    Cancel order
                   </button>
                   {(() => {
                     const rawDate = order.createdAt || order.created_at;
@@ -1182,7 +1131,7 @@ export default function OrderConfirmation() {
                     const hrs = Math.floor(remaining / (1000 * 60 * 60));
                     const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
                     const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                    return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to modify</p>;
+                    return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to cancel</p>;
                   })()}
                 </>
               )}
@@ -1292,7 +1241,7 @@ export default function OrderConfirmation() {
             </button>
             <div className="cancel-modal-header">
               <h3>{getActionConfig(cancelModal.type).title}</h3>
-              <p>{cancelModal.type === "cancel" ? <>Remove products or reduce quantities for <strong>{cancelModal.itemName}</strong>. You'll be refunded for whatever you take off.</> : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}</p>
+              <p>{cancelModal.type === "cancel" ? <>This will cancel <strong>{cancelModal.itemName}</strong> completely — all items below will be cancelled. Individual items cannot be cancelled or changed.</> : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}</p>
             </div>
             
             <form onSubmit={handleModalSubmit} className="cancel-modal-form">
@@ -1334,78 +1283,45 @@ export default function OrderConfirmation() {
               )}
 
               <div className="action-item-picker">
-                {cancelModal.type === "cancel" && (() => {
-                  const eligibleItems = getEligibleActionItems(order, "cancel");
-                  if (eligibleItems.length <= 1) return null;
-                  const totalQty = eligibleItems.reduce((sum, it) => sum + getActionableQty(it), 0);
-                  const allSelected = eligibleItems.every((it) => cancelModal.selected?.[it.id]?.checked);
-                  return (
-                    <div className="action-select-all-row">
-                      <button
-                        type="button"
-                        className="action-select-all-btn"
-                        onClick={() => {
-                          const next = !allSelected;
-                          setCancelModal((current) => ({
-                            ...current,
-                            selected: eligibleItems.reduce((map, it) => ({
-                              ...map,
-                              [it.id]: { checked: next, quantity: getActionableQty(it) },
-                            }), {}),
-                          }));
-                        }}
-                      >
-                        {allSelected ? "Deselect all" : `Select all · ${totalQty} unit${totalQty !== 1 ? "s" : ""}`}
-                      </button>
-                    </div>
-                  );
-                })()}
-                {getEligibleActionItems(order, cancelModal.type).map((item) => {
-                  const sel = cancelModal.selected?.[item.id] || { checked: false, quantity: getActionableQty(item) };
-                  const maxQty = getActionableQty(item);
-                  return (
-                    <div className={`action-item-row${sel.checked ? " is-selected" : ""}`} key={item.id}>
-                      <label className="action-item-check-wrap">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(sel.checked)}
-                          onChange={(event) => setCancelModal((current) => ({
-                            ...current,
-                            selected: {
-                              ...current.selected,
-                              [item.id]: { ...sel, checked: event.target.checked },
-                            },
-                          }))}
-                        />
+                {cancelModal.type === "cancel" ? (
+                  // Whole-order cancel: read-only list of every item being cancelled.
+                  (order.OrderItems || [])
+                    .filter((item) => normalizeStatus(item.status) !== "cancelled")
+                    .map((item) => (
+                      <div className="action-item-row is-selected" key={item.id}>
                         <span className="action-item-info">
                           <strong>{item.product_name}</strong>
-                          <small>{getItemColor(item)}{cancelModal.type !== "cancel" && ` · Qty ${maxQty}`}</small>
+                          <small>{getItemColor(item)} · Qty {item.quantity}</small>
                         </span>
-                      </label>
-                      {cancelModal.type === "cancel" && sel.checked && maxQty > 1 && (
-                        <div className="action-qty-stepper">
-                          <button
-                            type="button"
-                            disabled={sel.quantity <= 1}
-                            onClick={() => setCancelModal((current) => ({
+                      </div>
+                    ))
+                ) : (
+                  getEligibleActionItems(order, cancelModal.type).map((item) => {
+                    const sel = cancelModal.selected?.[item.id] || { checked: false, quantity: getActionableQty(item) };
+                    const maxQty = getActionableQty(item);
+                    return (
+                      <div className={`action-item-row${sel.checked ? " is-selected" : ""}`} key={item.id}>
+                        <label className="action-item-check-wrap">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(sel.checked)}
+                            onChange={(event) => setCancelModal((current) => ({
                               ...current,
-                              selected: { ...current.selected, [item.id]: { ...sel, quantity: Math.max(1, sel.quantity - 1) } },
+                              selected: {
+                                ...current.selected,
+                                [item.id]: { ...sel, checked: event.target.checked },
+                              },
                             }))}
-                          >−</button>
-                          <span>{sel.quantity} / {maxQty}</span>
-                          <button
-                            type="button"
-                            disabled={sel.quantity >= maxQty}
-                            onClick={() => setCancelModal((current) => ({
-                              ...current,
-                              selected: { ...current.selected, [item.id]: { ...sel, quantity: Math.min(maxQty, sel.quantity + 1) } },
-                            }))}
-                          >+</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                          />
+                          <span className="action-item-info">
+                            <strong>{item.product_name}</strong>
+                            <small>{getItemColor(item)} · Qty {maxQty}</small>
+                          </span>
+                        </label>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
               <div className="form-group">
@@ -1433,134 +1349,77 @@ export default function OrderConfirmation() {
                 />
               </div>
 
-              {loadingEstimate && (
+              {cancelModal.type === "cancel" && (() => {
+                // Whole-order cancel: the refund is simply everything paid.
+                // Prepaid → paid amount back to the original payment method and
+                // any wallet money back to the wallet. COD → nothing was paid.
+                const isCod = String(order?.payment_method || "").toUpperCase() === "COD";
+                const paidAmount = toNumber(order.amount_paid) || (isCod ? 0 : breakdown.payable);
+                const walletUsed = toNumber(order.wallet_amount);
+                return (
+                  <div className="action-estimate-box">
+                    {isCod ? (
+                      <>
+                        <div className="action-estimate-total">
+                          <span>Amount to pay</span><strong>{formatPrice(0)}</strong>
+                        </div>
+                        <p className="action-estimate-note">
+                          <Icon icon="lucide:info" />
+                          Cash on Delivery order — nothing has been paid yet, so there is no refund to process.
+                        </p>
+                        {walletUsed > 0 && (
+                          <p className="action-estimate-note">
+                            <Icon icon="lucide:wallet" />
+                            {formatPrice(walletUsed)} of wallet balance will be credited back to your wallet.
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div><span>Amount paid</span><strong>{formatPrice(paidAmount)}</strong></div>
+                        <div className="action-estimate-total">
+                          <span>Refund to original payment method</span><strong>{formatPrice(paidAmount)}</strong>
+                        </div>
+                        {walletUsed > 0 && (
+                          <p className="action-estimate-note">
+                            <Icon icon="lucide:wallet" />
+                            {formatPrice(walletUsed)} of wallet balance will be credited back to your wallet.
+                          </p>
+                        )}
+                        <p className="action-estimate-note">
+                          <Icon icon="lucide:info" />
+                          The refund is processed to your original payment method within 1-2 business days.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {cancelModal.type !== "cancel" && loadingEstimate && (
                 <div className="action-estimate-loading">
                   <div className="action-estimate-spinner"></div>
                   <span>Fetching details...</span>
                 </div>
               )}
 
-              {!loadingEstimate && actionEstimate?.totals && (
+              {cancelModal.type !== "cancel" && !loadingEstimate && actionEstimate?.totals && (
                 <div className="action-estimate-box">
-                  {cancelModal.type === "cancel" ? (() => {
-                    const isCod = String(order?.payment_method || "").toUpperCase() === "COD";
-                    const bd = actionEstimate.breakdown || {};
-                    const s = actionEstimate.new_order_summary || {};
-                    // Fall back to the per-item total if a breakdown field is
-                    // missing (e.g. an older backend response) so values never
-                    // collapse to ₹0.00.
-                    const cancelledItemsValue = bd.cancelled_items_value ?? actionEstimate.totals.item_amount;
-                    const walletBackNote = actionEstimate.wallet_refund > 0 && (
-                      <p className="action-estimate-note">
-                        <Icon icon="lucide:wallet" />
-                        {formatPrice(actionEstimate.wallet_refund)} of wallet balance will be credited back to your wallet.
-                      </p>
-                    );
-                    const couponNote = actionEstimate.coupon_replaced ? (
-                      <p className="action-estimate-note">
-                        <Icon icon="lucide:badge-percent" />
-                        Coupon {actionEstimate.original_coupon_code} no longer qualifies on the reduced order, so the best available offer <strong>{actionEstimate.applied_coupon_code}</strong> has been applied instead.
-                      </p>
-                    ) : actionEstimate.coupon_removed ? (
+                  <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
+                  {cancelModal.type === "return" && (
+                    <>
+                      <div><span>Delivery charge deduction</span><strong>{formatPrice(actionEstimate.totals.forward_shipping_deduction)}</strong></div>
+                      <div><span>Return pickup charge</span><strong>{formatPrice(actionEstimate.totals.reverse_shipping_deduction)}</strong></div>
                       <p className="action-estimate-note">
                         <Icon icon="lucide:info" />
-                        Coupon {actionEstimate.original_coupon_code} no longer qualifies on the reduced order and no other offer applies, so it has been removed.
+                        RTO charge is not included in normal returns. RTO charge applies only when a shipment is returned to seller after failed delivery.
                       </p>
-                    ) : null;
-
-                    // Full cancellation — refund everything paid (prepaid) or
-                    // nothing left to pay (COD).
-                    if (actionEstimate.is_full_cancellation) {
-                      return isCod ? (
-                        <div className="action-estimate-total">
-                          <span>Amount to pay</span><strong>{formatPrice(0)}</strong>
-                        </div>
-                      ) : (
-                        <>
-                          <div><span>Amount paid</span><strong>{formatPrice(actionEstimate.paid_amount)}</strong></div>
-                          <div className="action-estimate-total">
-                            <span>Total refund</span><strong>{formatPrice(actionEstimate.refund_amount ?? cancelledItemsValue)}</strong>
-                          </div>
-                          {walletBackNote}
-                        </>
-                      );
-                    }
-
-                    // Partial cancel — show the repriced order bill (checkout
-                    // style), then the refund (prepaid) or the new payable (COD).
-                    return (
-                      <>
-                        <span className="action-bill-title">Updated order summary</span>
-                        <div><span>Items subtotal</span><strong>{formatPrice(s.subtotal ?? bd.remaining_items_value)}</strong></div>
-                        {s.platform_fee > 0 && (
-                          <div><span>Platform fee</span><strong>{formatPrice(s.platform_fee)}</strong></div>
-                        )}
-                        <div>
-                          <span>Delivery</span>
-                          {s.delivery > 0 ? (
-                            <strong>{formatPrice(s.delivery)}</strong>
-                          ) : s.delivery_gross > 0 ? (
-                            <strong className="action-bill-free"><s>{formatPrice(s.delivery_gross)}</s> Free</strong>
-                          ) : (
-                            <strong className="action-bill-free">Free</strong>
-                          )}
-                        </div>
-                        {s.cod_fee > 0 && (
-                          <div><span>COD charge</span><strong>{formatPrice(s.cod_fee)}</strong></div>
-                        )}
-                        {s.gift_charge > 0 && (
-                          <div><span>Gift wrap</span><strong>{formatPrice(s.gift_charge)}</strong></div>
-                        )}
-                        {s.prepaid_discount > 0 && (
-                          <div><span>Prepaid discount</span><strong>-{formatPrice(s.prepaid_discount)}</strong></div>
-                        )}
-                        {s.coupon_discount > 0 && (
-                          <div><span>Coupon{s.coupon_code ? ` (${s.coupon_code})` : ""}</span><strong>-{formatPrice(s.coupon_discount)}</strong></div>
-                        )}
-                        {s.wallet_used > 0 && (
-                          <div><span>Wallet applied</span><strong>-{formatPrice(s.wallet_used)}</strong></div>
-                        )}
-                        <div className="action-estimate-subtotal">
-                          <span>{isCod ? "New total (pay on delivery)" : "New order total"}</span>
-                          <strong>{formatPrice(s.total ?? actionEstimate.remaining_payable)}</strong>
-                        </div>
-                        {couponNote}
-                        {actionEstimate.wallet_preserved && (
-                          <p className="action-estimate-note">
-                            <Icon icon="lucide:wallet" />
-                            Your wallet balance stays applied to the remaining order.
-                          </p>
-                        )}
-                        {!isCod && (
-                          <>
-                            <div><span>Amount paid earlier</span><strong>{formatPrice(actionEstimate.paid_amount)}</strong></div>
-                            <div className="action-estimate-total">
-                              <span>Refund to payment method</span>
-                              <strong>{formatPrice(actionEstimate.refund_amount ?? actionEstimate.totals.estimated_refund_amount)}</strong>
-                            </div>
-                          </>
-                        )}
-                      </>
-                    );
-                  })() : (
-                    <>
-                      <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
-                      {cancelModal.type === "return" && (
-                        <>
-                          <div><span>Delivery charge deduction</span><strong>{formatPrice(actionEstimate.totals.forward_shipping_deduction)}</strong></div>
-                          <div><span>Return pickup charge</span><strong>{formatPrice(actionEstimate.totals.reverse_shipping_deduction)}</strong></div>
-                          <p className="action-estimate-note">
-                            <Icon icon="lucide:info" />
-                            RTO charge is not included in normal returns. RTO charge applies only when a shipment is returned to seller after failed delivery.
-                          </p>
-                        </>
-                      )}
-                      <div className="action-estimate-total">
-                        <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
-                        <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
-                      </div>
                     </>
                   )}
+                  <div className="action-estimate-total">
+                    <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
+                    <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
+                  </div>
                 </div>
               )}
 
@@ -1579,64 +1438,6 @@ export default function OrderConfirmation() {
                   disabled={modalSubmitLoading}
                 >
                   {modalSubmitLoading ? "Processing..." : getActionConfig(cancelModal.type).button}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {addressModal.isOpen && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal-container">
-            <button type="button" className="cancel-modal-close" onClick={closeAddressModal} disabled={addressSaving}>
-              <Icon icon="lucide:x" />
-            </button>
-            <div className="cancel-modal-header">
-              <h3>Edit delivery address</h3>
-              <p>Update where <strong>Order {orderNumber}</strong> should be delivered. Available until the order is dispatched.</p>
-            </div>
-
-            <form onSubmit={submitAddress} className="cancel-modal-form">
-              <div className="form-group">
-                <label htmlFor="addr-name">Full name</label>
-                <input id="addr-name" type="text" required value={addressForm.name}
-                  onChange={(e) => setAddressForm((c) => ({ ...c, name: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="addr-phone">Phone</label>
-                <input id="addr-phone" type="tel" required inputMode="numeric" value={addressForm.phone}
-                  onChange={(e) => setAddressForm((c) => ({ ...c, phone: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="addr-line">Address</label>
-                <textarea id="addr-line" required rows={3} value={addressForm.line}
-                  onChange={(e) => setAddressForm((c) => ({ ...c, line: e.target.value }))} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="addr-city">City</label>
-                  <input id="addr-city" type="text" required value={addressForm.city}
-                    onChange={(e) => setAddressForm((c) => ({ ...c, city: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="addr-pincode">Pincode</label>
-                  <input id="addr-pincode" type="text" required inputMode="numeric" value={addressForm.pincode}
-                    onChange={(e) => setAddressForm((c) => ({ ...c, pincode: e.target.value }))} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label htmlFor="addr-state">State</label>
-                <input id="addr-state" type="text" required value={addressForm.state}
-                  onChange={(e) => setAddressForm((c) => ({ ...c, state: e.target.value }))} />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="modal-action-btn secondary" onClick={closeAddressModal} disabled={addressSaving}>
-                  Go Back
-                </button>
-                <button type="submit" className="modal-action-btn primary" disabled={addressSaving}>
-                  {addressSaving ? "Saving..." : "Save address"}
                 </button>
               </div>
             </form>
