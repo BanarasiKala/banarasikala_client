@@ -1368,7 +1368,7 @@ const ProductDetail = () => {
       if (buyNowPayment === "cod" || buyNowTotal <= 0) {
         const created = await createBuyNowOrder(orderData);
         showNotification("Order placed successfully.", "success");
-        navigate(`/order-confirmation?orderId=${created.orderId}`);
+        navigate(`/order-placed?orderId=${created.orderId}`);
         return;
       }
 
@@ -1416,7 +1416,7 @@ const ProductDetail = () => {
                 verification: verifyData,
               },
             });
-            navigate(`/order-confirmation?orderId=${created.orderId}`);
+            navigate(`/order-placed?orderId=${created.orderId}`);
           } catch (error) {
             if (isMountedRef.current) {
               setBuyNowProcessing(false);

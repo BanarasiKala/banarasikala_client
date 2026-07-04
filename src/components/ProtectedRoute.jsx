@@ -34,6 +34,12 @@ const protectedCopy = {
     action: "Login to View Order",
     variant: "orders",
   },
+  "/order-placed": {
+    title: "Your order stays private",
+    message: "Login to view this order's details, delivery status, and invoice.",
+    action: "Login to View Order",
+    variant: "orders",
+  },
   "/feedback": {
     title: "Share your Banarasi experience",
     message: "Login to leave feedback for the sarees you have explored.",
