@@ -243,7 +243,11 @@ const Auth = () => {
     if (user) {
       const mode = new URLSearchParams(location.search).get("mode");
       if (mode === "forgot" || activeTab === "forgotPassword" || activeTab === "resetPassword" || activeTab === "phoneVerification") return;
-      navigate(location.state?.from?.pathname || "/", { replace: true });
+      // Preserve the full original location (query + hash), not just the path,
+      // so deep links like /order-confirmation?orderId=123 survive login.
+      const from = location.state?.from;
+      const dest = from ? `${from.pathname}${from.search || ""}${from.hash || ""}` : "/";
+      navigate(dest, { replace: true });
     }
   }, [user, navigate, location, activeTab]);
 
