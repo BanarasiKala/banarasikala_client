@@ -242,8 +242,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   // prepaid discount (only when paying online) + coupon. Wallet is excluded —
   // spending your own balance isn't a saving.
   const totalSavings = mrpSavings + shippingDiscount + paymentDiscount + effectiveCouponDiscount;
-  // Cart-page total: everything included except payment-method-specific fee/discount.
-  const cartPageTotal = Math.max(0, subtotal + finalShippingCharge + platformFee + giftCharge - effectiveCouponDiscount - walletUsableAmount);
+  // Payment-step preview stays anchored to the cart subtotal. Confirm-step-only
+  // choices such as platform fee, coupon, wallet and gift wrap are shown in the
+  // review bill instead of leaking back into "Cart Total".
+  const paymentPreviewTotal = Math.max(0, subtotal + paymentFee - paymentDiscount);
   const totalWeightKg = payableCart.reduce((sum, item) => {
     const qty = Math.max(1, Number(item.quantity || 1));
     const raw = Number(item.weight || 0);
@@ -858,7 +860,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     <div className="ckw-pay-inline-summary">
       <div className="ckw-pay-footer-row">
         <span>Cart Total ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
-        <span>{money(cartPageTotal)}</span>
+        <span>{money(subtotal)}</span>
       </div>
       {activePayment === "online" && paymentDiscount > 0 && (
         <div className="ckw-pay-footer-row ckw-pay-footer-saving">
@@ -874,7 +876,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       )}
       <div className="ckw-pay-footer-row ckw-pay-footer-total">
         <span>Order Total</span>
-        <span>{money(total)}</span>
+        <span>{money(paymentPreviewTotal)}</span>
       </div>
       <button
         type="button"
