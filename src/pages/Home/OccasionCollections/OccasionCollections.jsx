@@ -13,7 +13,7 @@ const OccasionCollections = () => {
     const controller = new AbortController();
     fetch(`${API_ENDPOINTS.occasions}?limit=4`, { signal: controller.signal })
       .then((response) => response.json())
-      .then((data) => setOccasions(Array.isArray(data) ? data.filter((item) => item.image) : []))
+      .then((data) => setOccasions(Array.isArray(data) ? data.filter((item) => item.video || item.image) : []))
       .catch((error) => {
         if (error.name !== "AbortError") setOccasions([]);
       })
@@ -56,7 +56,19 @@ const OccasionCollections = () => {
                 style={{ "--bk-occasion-delay": `${Math.min(index * 90, 360)}ms` }}
                 onClick={() => openOccasion(occasion.id)}
               >
-                <img src={imgUrl(occasion.image, 800)} alt={occasion.name} decoding="async" />
+                {occasion.video ? (
+                  <video
+                    src={occasion.video}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label={occasion.name}
+                  />
+                ) : (
+                  <img src={imgUrl(occasion.image, 800)} alt={occasion.name} decoding="async" />
+                )}
                 <span className="bk-occasion-overlay" />
                 <span className="bk-occasion-name">{occasion.name}</span>
               </button>
