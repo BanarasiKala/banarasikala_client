@@ -481,6 +481,138 @@
   transition: width 0.4s ease;
 }
 
+.cart-best-coupon {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px dashed rgba(16, 122, 70, 0.34);
+  border-radius: 10px;
+  background: rgba(16, 122, 70, 0.06);
+  color: #0c5c35;
+  text-align: left;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+}
+
+.cart-best-coupon-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #107a46;
+  color: #fff;
+  font-size: 16px;
+}
+
+.cart-best-coupon-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cart-best-coupon-text strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0c5c35;
+}
+
+.cart-best-coupon-text small {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #2f7a55;
+  overflow-wrap: anywhere;
+}
+
+.cart-best-coupon-code {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: #fff;
+  color: #800020;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cart-best-coupon-code svg {
+  font-size: 12px;
+}
+
+.cart-unlock-toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1100;
+  width: min(88vw, 340px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf2;
+  color: #35170f;
+  box-shadow: 0 20px 48px rgba(53, 23, 15, 0.24);
+  transform: translate(-50%, -50%);
+  animation: cart-unlock-toast-in 0.22s ease;
+  pointer-events: none;
+}
+
+.cart-unlock-toast-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #800020;
+  color: #ffe7a8;
+  font-size: 21px;
+}
+
+.cart-unlock-toast-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cart-unlock-toast-copy strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #800020;
+}
+
+.cart-unlock-toast-copy small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #5d4435;
+}
+
+@keyframes cart-unlock-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 12px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 /* ── Coupon row ──────────────────────────────────────────────────────── */
 .cart-coupon {
   display: flex;

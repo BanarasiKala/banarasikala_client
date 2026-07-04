@@ -37,6 +37,16 @@ const couponDiscountText = (coupon) => {
   return "Extra Off";
 };
 
+const getCouponEstimatedDiscount = (coupon, subtotal) => {
+  if (!coupon || subtotal <= 0) return 0;
+  if (coupon.discount_type === "fixed_amount") {
+    return Math.min(Number(coupon.discount_amount || 0), subtotal);
+  }
+  const percentDiscount = (subtotal * Number(coupon.discount_percent || 0)) / 100;
+  const cap = Number(coupon.max_discount_amount || 0);
+  return Math.min(cap > 0 ? Math.min(percentDiscount, cap) : percentDiscount, subtotal);
+};
+
 const Cart = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -58,6 +68,7 @@ const Cart = () => {
   const [editingPin, setEditingPin] = useState(false);
   const [showDeliveryTip, setShowDeliveryTip] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
+  const [unlockToast, setUnlockToast] = useState(null);
   const checkingRef = useRef(false);
   const knownKeysRef = useRef(new Set());
   const topProceedRef = useRef(null);
@@ -217,20 +228,31 @@ const Cart = () => {
   // find the nearest coupon the cart hasn't reached yet, and the best one already
   // unlocked. The progress fills toward the next coupon's minimum.
   const nextCoupon = coupons.find((c) => c.minPurchase > selectedSubtotal) || null;
-  const unlockedCoupon = coupons.filter((c) => c.minPurchase <= selectedSubtotal).pop() || null;
-  const progressCoupon = nextCoupon || unlockedCoupon;
+  const unlockedCoupons = coupons.filter((c) => c.minPurchase <= selectedSubtotal);
+  const bestUnlockedCoupon = unlockedCoupons.reduce((best, coupon) => {
+    if (!best) return coupon;
+    const couponDiscount = getCouponEstimatedDiscount(coupon, selectedSubtotal);
+    const bestDiscount = getCouponEstimatedDiscount(best, selectedSubtotal);
+    if (couponDiscount > bestDiscount) return coupon;
+    if (couponDiscount === bestDiscount && Number(coupon.minPurchase || 0) > Number(best.minPurchase || 0)) return coupon;
+    return best;
+  }, null);
+  const bestUnlockedDiscount = getCouponEstimatedDiscount(bestUnlockedCoupon, selectedSubtotal);
+  const progressCoupon = nextCoupon || bestUnlockedCoupon;
   const extraOffRemaining = nextCoupon ? Math.max(0, nextCoupon.minPurchase - selectedSubtotal) : 0;
   const extraOffProgress = progressCoupon
     ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
     : 0;
 
-  // Toast once per coupon tier when the bag crosses its minimum and unlocks it.
+  // Custom centered toast once per best coupon when the bag crosses its minimum.
   useEffect(() => {
-    const code = unlockedCoupon?.code || null;
+    const code = bestUnlockedCoupon?.code || null;
     if (!code || toastedUnlockRef.current === code) return;
     toastedUnlockRef.current = code;
-    showNotification(`Coupon ${code} unlocked — ${couponDiscountText(unlockedCoupon)}. Apply it at checkout.`, "success");
-  }, [unlockedCoupon, showNotification]);
+    setUnlockToast(bestUnlockedCoupon);
+    const timer = window.setTimeout(() => setUnlockToast(null), 3600);
+    return () => window.clearTimeout(timer);
+  }, [bestUnlockedCoupon]);
 
   const copyCouponCode = async (code) => {
     try {
@@ -446,7 +468,7 @@ const Cart = () => {
               <strong>
                 {nextCoupon
                   ? `Add ${formatMoneyShort(extraOffRemaining)} More & Get ${couponDiscountText(nextCoupon)}`
-                  : `Yay! You unlocked ${couponDiscountText(unlockedCoupon)}`}
+                  : `Yay! You unlocked ${couponDiscountText(bestUnlockedCoupon)}`}
               </strong>
               {nextCoupon ? (
                 <span className="cart-progress-pill">{nextCoupon.code}</span>
@@ -454,10 +476,10 @@ const Cart = () => {
                 <button
                   type="button"
                   className="cart-progress-pill cart-progress-pill--copy"
-                  onClick={() => copyCouponCode(unlockedCoupon.code)}
-                  aria-label={`Copy coupon code ${unlockedCoupon.code}`}
+                  onClick={() => copyCouponCode(bestUnlockedCoupon.code)}
+                  aria-label={`Copy coupon code ${bestUnlockedCoupon.code}`}
                 >
-                  {unlockedCoupon.code}
+                  {bestUnlockedCoupon.code}
                   <Icon icon="lucide:copy" />
                 </button>
               )}
@@ -465,6 +487,27 @@ const Cart = () => {
             <div className="cart-progress-bar">
               <div className="cart-progress-fill" style={{ width: `${extraOffProgress}%` }} />
             </div>
+            {bestUnlockedCoupon && (
+              <button
+                type="button"
+                className="cart-best-coupon"
+                onClick={() => copyCouponCode(bestUnlockedCoupon.code)}
+                aria-label={`Copy best coupon code ${bestUnlockedCoupon.code}`}
+              >
+                <span className="cart-best-coupon-icon"><Icon icon="lucide:badge-percent" /></span>
+                <span className="cart-best-coupon-text">
+                  <strong>Best coupon unlocked</strong>
+                  <small>
+                    Use {bestUnlockedCoupon.code} at checkout
+                    {bestUnlockedDiscount > 0 ? ` and save ${formatMoney(bestUnlockedDiscount)}` : ""}
+                  </small>
+                </span>
+                <span className="cart-best-coupon-code">
+                  {bestUnlockedCoupon.code}
+                  <Icon icon="lucide:copy" />
+                </span>
+              </button>
+            )}
           </div>
         )}
 
@@ -623,6 +666,16 @@ const Cart = () => {
         </div>}
 
       </div>
+
+      {unlockToast && (
+        <div className="cart-unlock-toast" role="status" aria-live="polite">
+          <span className="cart-unlock-toast-icon"><Icon icon="lucide:sparkles" /></span>
+          <span className="cart-unlock-toast-copy">
+            <strong>{unlockToast.code} unlocked</strong>
+            <small>Best coupon for your bag. Apply it at checkout.</small>
+          </span>
+        </div>
+      )}
 
       {/* ── Sticky checkout bar (only when the top button is off-screen) ── */}
       <div className={`cart-stickybar ${showSticky ? "is-visible" : ""}`}>
