@@ -580,13 +580,18 @@ export default function OrderConfirmation() {
     }
   }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
 
-  const openActionModal = (type = "cancel") => {
+  // `focusItem` (per-item Return/Exchange buttons) preselects just that item;
+  // without it the first eligible item is preselected (order-level button).
+  const openActionModal = (type = "cancel", focusItem = null) => {
     const config = getActionConfig(type);
     // Cancellation is whole-order — no item selection needed.
     const eligibleItems = type === "cancel" ? [] : getEligibleActionItems(order, type);
     const selected = eligibleItems.reduce((map, item, index) => ({
       ...map,
-      [item.id]: { checked: index === 0, quantity: getActionableQty(item) },
+      [item.id]: {
+        checked: focusItem ? Number(item.id) === Number(focusItem.id) : index === 0,
+        quantity: getActionableQty(item),
+      },
     }), {});
     setCancelModal({
       isOpen: true,
@@ -950,6 +955,27 @@ export default function OrderConfirmation() {
                       </button>
                     </div>
                   )}
+                  {(() => {
+                    // Per-item reverse actions: shown only while this item is
+                    // eligible (delivered, inside the 7-day window, no active request).
+                    const canItemReturn = getEligibleActionItems(order, "return").some((eligible) => Number(eligible.id) === Number(item.id));
+                    const canItemExchange = getEligibleActionItems(order, "exchange").some((eligible) => Number(eligible.id) === Number(item.id));
+                    if (!canItemReturn && !canItemExchange) return null;
+                    return (
+                      <div className="confirmation-item-reverse-cta">
+                        {canItemReturn && (
+                          <button type="button" onClick={() => openActionModal("return", item)}>
+                            <Icon icon="lucide:rotate-ccw" /> Return
+                          </button>
+                        )}
+                        {canItemExchange && (
+                          <button type="button" onClick={() => openActionModal("exchange", item)}>
+                            <Icon icon="lucide:repeat-2" /> Exchange
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {(item.actions || []).some((action) => String(action.action_type || "").toLowerCase() !== "cancel") && (
                     <div className="confirmation-item-actions">
                       {(item.actions || [])
@@ -1237,11 +1263,22 @@ export default function OrderConfirmation() {
                     className={cancelModal.type === "return" ? "active" : ""}
                     onClick={() => {
                       const eligible = getEligibleActionItems(order, "return");
-                      setCancelModal((current) => ({
-                        ...current,
-                        type: "return",
-                        selected: eligible.reduce((map, item, index) => ({ ...map, [item.id]: { checked: index === 0, quantity: getActionableQty(item) } }), {}),
-                      }));
+                      // Keep whatever the shopper already ticked (per-item entry
+                      // included); fall back to the first item when nothing carries over.
+                      setCancelModal((current) => {
+                        const anyKept = eligible.some((item) => current.selected?.[item.id]?.checked);
+                        return {
+                          ...current,
+                          type: "return",
+                          selected: eligible.reduce((map, item, index) => ({
+                            ...map,
+                            [item.id]: {
+                              checked: anyKept ? Boolean(current.selected?.[item.id]?.checked) : index === 0,
+                              quantity: getActionableQty(item),
+                            },
+                          }), {}),
+                        };
+                      });
                       setCancelForm({ reason: RETURN_REASONS[0], comments: "" });
                     }}
                   >
@@ -1253,11 +1290,20 @@ export default function OrderConfirmation() {
                       className={cancelModal.type === "exchange" ? "active" : ""}
                       onClick={() => {
                         const eligible = getEligibleActionItems(order, "exchange");
-                        setCancelModal((current) => ({
-                          ...current,
-                          type: "exchange",
-                          selected: eligible.reduce((map, item, index) => ({ ...map, [item.id]: { checked: index === 0, quantity: getActionableQty(item) } }), {}),
-                        }));
+                        setCancelModal((current) => {
+                          const anyKept = eligible.some((item) => current.selected?.[item.id]?.checked);
+                          return {
+                            ...current,
+                            type: "exchange",
+                            selected: eligible.reduce((map, item, index) => ({
+                              ...map,
+                              [item.id]: {
+                                checked: anyKept ? Boolean(current.selected?.[item.id]?.checked) : index === 0,
+                                quantity: getActionableQty(item),
+                              },
+                            }), {}),
+                          };
+                        });
                         setCancelForm({ reason: EXCHANGE_REASONS[0], comments: "" });
                       }}
                     >
@@ -1391,20 +1437,38 @@ export default function OrderConfirmation() {
               {cancelModal.type !== "cancel" && !loadingEstimate && actionEstimate?.totals && (
                 <div className="action-estimate-box">
                   <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
-                  {cancelModal.type === "return" && (
-                    <>
-                      <div><span>Delivery charge deduction</span><strong>{formatPrice(actionEstimate.totals.forward_shipping_deduction)}</strong></div>
-                      <div><span>Return pickup charge</span><strong>{formatPrice(actionEstimate.totals.reverse_shipping_deduction)}</strong></div>
-                      <p className="action-estimate-note">
-                        <Icon icon="lucide:info" />
-                        RTO charge is not included in normal returns. RTO charge applies only when a shipment is returned to seller after failed delivery.
-                      </p>
-                    </>
+                  {cancelModal.type === "return" && toNumber(actionEstimate.totals.coupon_adjustment) > 0 && (
+                    <div>
+                      <span>Coupon adjustment{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
+                      <strong>-{formatPrice(actionEstimate.totals.coupon_adjustment)}</strong>
+                    </div>
                   )}
                   <div className="action-estimate-total">
                     <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
                     <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
                   </div>
+                  {cancelModal.type === "return" && (
+                    <>
+                      {toNumber(actionEstimate.totals.coupon_adjustment) > 0 && (
+                        <p className="action-estimate-note">
+                          <Icon icon="lucide:badge-percent" />
+                          After this return, the items you keep no longer earn the full coupon discount, so that part is adjusted from the refund.
+                        </p>
+                      )}
+                      {breakdown.walletAmount > 0 && (
+                        <p className="action-estimate-note">
+                          <Icon icon="lucide:wallet" />
+                          The part you paid from your wallet is credited back to your wallet; the rest goes to your original payment method.
+                        </p>
+                      )}
+                      <p className="action-estimate-note">
+                        <Icon icon="lucide:info" />
+                        {String(order?.payment_method || "").toUpperCase() === "COD"
+                          ? "You get back the full amount paid for the returned items. The refund is transferred to your bank account once we receive the item."
+                          : "You get back the full amount paid for the returned items — no delivery or pickup charges are deducted."}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 

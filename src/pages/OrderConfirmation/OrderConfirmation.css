@@ -1225,6 +1225,38 @@
   margin-top: 2px;
 }
 
+/* Per-item Return / Exchange buttons (delivered items inside the 7-day window). */
+.confirmation-item-reverse-cta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.confirmation-item-reverse-cta button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(155, 23, 70, 0.45);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #9b1746;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirmation-item-reverse-cta button svg {
+  font-size: 13px;
+}
+
+.confirmation-item-reverse-cta button:hover {
+  background: rgba(155, 23, 70, 0.06);
+}
+
 .confirmation-item-actions {
   grid-column: 1 / -1;
   display: grid;
