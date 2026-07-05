@@ -102,11 +102,15 @@ const getSortedImages = (targetProduct) => {
   return unique.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
 };
 
-// Urgency countdown: always under one hour — counts down to the top of the
-// next hour and then naturally restarts (never "20 hrs 3 mins").
-const getOrderCutoff = () => {
-  const mins = 59 - new Date().getMinutes();
-  return { hours: 0, mins: Math.max(1, mins) };
+// Urgency countdown: always reads "1 hr X mins", ticking down each minute and
+// wrapping hourly. The minutes phase is seeded per product, so every product
+// shows a different (but stable, same-for-all-visitors) countdown.
+const getOrderCutoff = (seedKey) => {
+  let seed = 0;
+  const key = String(seedKey || "");
+  for (let i = 0; i < key.length; i += 1) seed = (seed * 31 + key.charCodeAt(i)) % 60;
+  const mins = (59 - new Date().getMinutes() + seed) % 60;
+  return { hours: 1, mins: mins || 1 };
 };
 
 const PLYR_OPTIONS = {
@@ -1653,12 +1657,14 @@ const ProductDetail = () => {
   // would cause an infinite loop; we pass locationPincode explicitly so no stale closure.
   }, [locationPincode, locationSource, product?.id, isSelectedOutOfStock]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Tick the "Order within X hrs Y mins" countdown every minute
+  // Tick the "Order within 1 hr X mins" countdown every minute, seeded by the
+  // product so each product shows its own phase.
   useEffect(() => {
     if (!deliveryQuote?.deliveryDate) return undefined;
-    const interval = setInterval(() => setOrderCountdown(getOrderCutoff()), 60000);
+    setOrderCountdown(getOrderCutoff(product?.id));
+    const interval = setInterval(() => setOrderCountdown(getOrderCutoff(product?.id)), 60000);
     return () => clearInterval(interval);
-  }, [deliveryQuote?.deliveryDate]);
+  }, [deliveryQuote?.deliveryDate, product?.id]);
 
   // Reset carousel zoom when the active slide changes
   useEffect(() => {
