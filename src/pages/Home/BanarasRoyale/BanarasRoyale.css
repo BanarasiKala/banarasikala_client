@@ -66,6 +66,33 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  transition: filter 0.35s ease, transform 0.5s ease;
+}
+
+/* While the polaroid is being dragged, the video recedes: dimmed, richer,
+   gently zoomed — and a warm spotlight follows the card. */
+.bk-royale-stage.is-drag-live .bk-royale-media {
+  filter: brightness(0.68) saturate(1.15);
+  transform: scale(1.03);
+}
+
+.bk-royale-spot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    circle 300px at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(255, 216, 150, 0.3),
+    rgba(255, 216, 150, 0.1) 45%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+}
+
+.bk-royale-stage.is-drag-live .bk-royale-spot {
+  opacity: 1;
 }
 
 .bk-royale-scrim {
@@ -86,9 +113,9 @@
   right: clamp(18px, 6vw, 72px);
   width: clamp(150px, 22vw, 240px);
   transform: translateY(-50%);
-  padding: 8px 8px 10px;
+  padding: 4px;
   background: #fffdf8;
-  border-radius: 10px;
+  border-radius: 9px;
   box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
   rotate: 4deg;
   animation: bk-royale-bob 4.5s ease-in-out infinite;
@@ -106,6 +133,17 @@
 .bk-royale-float.is-free {
   transform: none;
   animation: none;
+  /* Rotate/scale/shadow ease smoothly; position (left/top) follows the hand raw. */
+  transition: rotate 0.16s ease-out, scale 0.22s ease, box-shadow 0.25s ease;
+}
+
+/* While in the hand: lifted off the video — bigger, deeper shadow, brighter. */
+.bk-royale-float.is-dragging {
+  cursor: grabbing;
+  scale: 1.08;
+  box-shadow: 0 36px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 244, 216, 0.35);
+  filter: brightness(1.04);
+  z-index: 3;
 }
 
 .bk-royale-float img {
@@ -115,6 +153,12 @@
   object-fit: cover;
   border-radius: 6px;
   animation: bk-royale-img-in 0.6s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-royale-stage.is-drag-live .bk-royale-media {
+    transform: none;
+  }
 }
 
 @keyframes bk-royale-img-in {
