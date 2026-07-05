@@ -1,15 +1,18 @@
 /* ── Banaras in Motion — cinematic reels rail on the home page ────────────
-   A deep maroon band between the cream sections so the live, looping reels
-   grab the eye immediately. */
+   A deep maroon band with the site's brocade texture showing through, gold
+   accents, and cards framed like real reels: gold story ring, action rail,
+   playback progress. */
 
 .bk-motion-section {
   width: 100%;
   padding: 30px 0 36px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 0%, rgba(212, 175, 55, 0.14), transparent 42%),
-    radial-gradient(circle at 88% 100%, rgba(128, 0, 32, 0.55), transparent 55%),
-    linear-gradient(160deg, #2a0a10 0%, #46060f 48%, #200608 100%);
+    radial-gradient(circle at 15% 0%, rgba(212, 175, 55, 0.13), transparent 42%),
+    radial-gradient(circle at 90% 100%, rgba(212, 175, 55, 0.09), transparent 48%),
+    linear-gradient(160deg, rgba(42, 10, 16, 0.93) 0%, rgba(70, 6, 15, 0.9) 48%, rgba(32, 6, 8, 0.95) 100%),
+    var(--bk-section-bg, none) center / cover,
+    #2a0a10;
 }
 
 .bk-motion-shell {
@@ -24,7 +27,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .bk-motion-heading span {
@@ -33,7 +36,7 @@
   color: #d4af37;
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
@@ -46,6 +49,17 @@
   line-height: 0.96;
   text-transform: uppercase;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Gold zari flourish under the title. */
+.bk-motion-heading h2::after {
+  content: "";
+  display: block;
+  width: 76px;
+  height: 2px;
+  margin-top: 9px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #d4af37 0%, rgba(212, 175, 55, 0.25) 70%, transparent 100%);
 }
 
 .bk-motion-all {
@@ -76,9 +90,9 @@
 /* ── Rail ── */
 .bk-motion-rail {
   display: flex;
-  gap: 13px;
+  gap: 14px;
   overflow-x: auto;
-  padding: 6px 2px 14px;
+  padding: 8px 2px 16px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -88,26 +102,66 @@
   display: none;
 }
 
-/* ── Card ── */
+/* ── Card: gold gradient shell around the reel screen ── */
 .bk-motion-card {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(168px, 17vw, 216px);
+  width: clamp(172px, 17vw, 220px);
   aspect-ratio: 9 / 16;
-  border-radius: 16px;
-  overflow: hidden;
+  padding: 2px;
+  border-radius: 19px;
   scroll-snap-align: start;
-  background: #1a0507;
-  border: 1px solid rgba(212, 175, 55, 0.22);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+  background: linear-gradient(
+    130deg,
+    rgba(212, 175, 55, 0.75) 0%,
+    rgba(123, 63, 20, 0.55) 28%,
+    rgba(212, 175, 55, 0.3) 52%,
+    rgba(255, 226, 156, 0.8) 78%,
+    rgba(212, 175, 55, 0.75) 100%
+  );
+  background-size: 260% 260%;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
   text-decoration: none;
-  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
 }
 
+/* The gold frame shimmers like zari when the card is hovered. */
 .bk-motion-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  border-color: rgba(212, 175, 55, 0.65);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55), 0 0 24px rgba(212, 175, 55, 0.18);
+  transform: translateY(-7px) scale(1.02);
+  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.58), 0 0 26px rgba(212, 175, 55, 0.22);
+  animation: bk-motion-ring 2.4s linear infinite;
+}
+
+@keyframes bk-motion-ring {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 260% 50%; }
+}
+
+.bk-motion-card-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 17px;
+  overflow: hidden;
+  background: #1a0507;
+}
+
+/* Silk shine sweep across the reel on hover. */
+.bk-motion-card-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 241, 211, 0.28) 46%, transparent 68%);
+  opacity: 0;
+  transform: translateX(-130%);
+  transition: transform 0.85s ease, opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.bk-motion-card:hover .bk-motion-card-inner::after {
+  opacity: 1;
+  transform: translateX(130%);
 }
 
 .bk-motion-poster,
@@ -122,15 +176,69 @@
 .bk-motion-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(10, 3, 4, 0.34) 0%, transparent 26%, transparent 52%, rgba(10, 3, 4, 0.82) 100%);
+  background: linear-gradient(180deg, rgba(10, 3, 4, 0.42) 0%, transparent 24%, transparent 48%, rgba(10, 3, 4, 0.86) 100%);
   pointer-events: none;
+}
+
+/* ── Reel chrome ── */
+
+/* Brand handle with a spinning gold story ring. */
+.bk-motion-handle {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff3dd;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+.bk-motion-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #ffd97a;
+  font-size: 12px;
+}
+
+.bk-motion-avatar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#d4af37, #7b3f14, #ffe9b8, #d4af37);
+  animation: bk-motion-spin 3.2s linear infinite;
+}
+
+.bk-motion-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #3a0d12;
+}
+
+.bk-motion-avatar svg {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes bk-motion-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Views chip */
 .bk-motion-views {
   position: absolute;
   top: 10px;
-  left: 10px;
+  right: 10px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -138,8 +246,9 @@
   border-radius: 999px;
   background: rgba(10, 3, 4, 0.55);
   backdrop-filter: blur(4px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   color: #ffe9b8;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -147,33 +256,69 @@
   font-size: 12px;
 }
 
-/* Pulsing play badge */
-.bk-motion-play {
+/* Vertical action rail (likes / comments / share) — the reel signature. */
+.bk-motion-actions {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  right: 8px;
+  bottom: 86px;
   display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(212, 175, 55, 0.9);
-  color: #2a0a10;
-  font-size: 13px;
-  animation: bk-motion-pulse 2.4s ease-in-out infinite;
+  gap: 13px;
+  justify-items: center;
 }
 
-@keyframes bk-motion-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55); }
-  55% { box-shadow: 0 0 0 9px rgba(212, 175, 55, 0); }
+.bk-motion-action {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: #fff6e8;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.65));
+}
+
+.bk-motion-action svg {
+  font-size: 19px;
+}
+
+.bk-motion-action b {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffe9b8;
+}
+
+.bk-motion-action.is-liked svg {
+  color: #ff5c7a;
+}
+
+/* Big play button — fades in on hover as the tap-through invitation. */
+.bk-motion-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.92);
+  color: #2a0a10;
+  font-size: 22px;
+  transform: translate(-50%, -50%) scale(0.7);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.bk-motion-card:hover .bk-motion-play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 /* Bottom meta: title + shoppable product chip */
 .bk-motion-meta {
   position: absolute;
   left: 10px;
-  right: 10px;
-  bottom: 10px;
+  right: 34px;
+  bottom: 16px;
   display: grid;
   gap: 7px;
 }
@@ -197,7 +342,8 @@
   min-width: 0;
   padding: 6px 9px;
   border-radius: 9px;
-  background: rgba(255, 250, 240, 0.94);
+  background: rgba(255, 250, 240, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.5);
   color: #46130d;
   font-size: 10.5px;
 }
@@ -224,9 +370,36 @@
   color: #7b001b;
 }
 
+/* Faux playback progress along the bottom edge. */
+.bk-motion-progress {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 7px;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 244, 220, 0.22);
+  overflow: hidden;
+}
+
+.bk-motion-progress i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 42%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ffe9b8, #d4af37);
+  animation: bk-motion-progress-run 5.4s linear infinite;
+}
+
+@keyframes bk-motion-progress-run {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(260%); }
+}
+
 /* ── Loading skeleton ── */
 .bk-motion-skeleton {
-  border-color: rgba(212, 175, 55, 0.12);
   background:
     linear-gradient(110deg, rgba(255, 235, 200, 0.05) 8%, rgba(255, 235, 200, 0.14) 18%, rgba(255, 235, 200, 0.05) 33%),
     #2a0a10;
@@ -239,13 +412,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bk-motion-play {
-    animation: none;
-  }
-
   .bk-motion-card,
   .bk-motion-card:hover {
     transform: none;
+    animation: none;
+  }
+
+  .bk-motion-avatar::before,
+  .bk-motion-progress i {
+    animation: none;
+  }
+
+  .bk-motion-card-inner::after {
+    display: none;
   }
 }
 
@@ -270,6 +449,15 @@
   }
 
   .bk-motion-card {
-    width: 158px;
+    width: 162px;
+  }
+
+  .bk-motion-actions {
+    bottom: 78px;
+    gap: 11px;
+  }
+
+  .bk-motion-action svg {
+    font-size: 17px;
   }
 }

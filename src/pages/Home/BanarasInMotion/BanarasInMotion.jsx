@@ -77,49 +77,76 @@ const BanarasInMotion = () => {
                     className="bk-motion-card"
                     aria-label={`Watch reel${reel.title ? `: ${reel.title}` : ""}`}
                   >
-                    {reel.thumbnail_url && (
-                      <img className="bk-motion-poster" src={reel.thumbnail_url} alt="" loading="lazy" />
-                    )}
-                    <video
-                      className="bk-motion-video"
-                      src={reel.video_url}
-                      poster={reel.thumbnail_url || undefined}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      onLoadedData={(e) => {
-                        const video = e.currentTarget;
-                        if (!document.hidden) setTimeout(() => forcePlay(video), 150);
-                      }}
-                      onError={(e) => {
-                        // Broken video → let the poster underneath show through.
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                    <span className="bk-motion-scrim" aria-hidden="true" />
+                    <span className="bk-motion-card-inner">
+                      {reel.thumbnail_url && (
+                        <img className="bk-motion-poster" src={reel.thumbnail_url} alt="" loading="lazy" />
+                      )}
+                      <video
+                        className="bk-motion-video"
+                        src={reel.video_url}
+                        poster={reel.thumbnail_url || undefined}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        onLoadedData={(e) => {
+                          const video = e.currentTarget;
+                          if (!document.hidden) setTimeout(() => forcePlay(video), 150);
+                        }}
+                        onError={(e) => {
+                          // Broken video → let the poster underneath show through.
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      <span className="bk-motion-scrim" aria-hidden="true" />
 
-                    {Number(reel.view_count) > 0 && (
-                      <span className="bk-motion-views">
-                        <Icon icon="lucide:eye" /> {formatCount(reel.view_count)}
+                      {/* Reel chrome: brand handle with a spinning gold story
+                          ring, views chip, and the vertical action rail. */}
+                      <span className="bk-motion-handle" aria-hidden="true">
+                        <i className="bk-motion-avatar"><Icon icon="lucide:crown" /></i>
+                        banarasikala
                       </span>
-                    )}
-                    <span className="bk-motion-play" aria-hidden="true">
-                      <Icon icon="lucide:play" />
-                    </span>
-
-                    <span className="bk-motion-meta">
-                      {reel.title && <strong>{reel.title}</strong>}
-                      {product && (
-                        <span className="bk-motion-product">
-                          <Icon icon="lucide:shopping-bag" />
-                          <em>{product.name}</em>
-                          {Number(product.selling_price) > 0 && (
-                            <b>₹{Number(product.selling_price).toLocaleString("en-IN")}</b>
-                          )}
+                      {Number(reel.view_count) > 0 && (
+                        <span className="bk-motion-views" aria-hidden="true">
+                          <Icon icon="lucide:eye" /> {formatCount(reel.view_count)}
                         </span>
                       )}
+
+                      <span className="bk-motion-actions" aria-hidden="true">
+                        <span className={`bk-motion-action${reel.is_liked ? " is-liked" : ""}`}>
+                          <Icon icon={reel.is_liked ? "mdi:heart" : "lucide:heart"} />
+                          {Number(reel.like_count) > 0 && <b>{formatCount(reel.like_count)}</b>}
+                        </span>
+                        <span className="bk-motion-action">
+                          <Icon icon="lucide:message-circle" />
+                          {Number(reel.comment_count) > 0 && <b>{formatCount(reel.comment_count)}</b>}
+                        </span>
+                        <span className="bk-motion-action">
+                          <Icon icon="lucide:send" />
+                        </span>
+                      </span>
+
+                      {/* Big play appears on hover, inviting the tap-through. */}
+                      <span className="bk-motion-play" aria-hidden="true">
+                        <Icon icon="lucide:play" />
+                      </span>
+
+                      <span className="bk-motion-meta">
+                        {reel.title && <strong>{reel.title}</strong>}
+                        {product && (
+                          <span className="bk-motion-product">
+                            <Icon icon="lucide:shopping-bag" />
+                            <em>{product.name}</em>
+                            {Number(product.selling_price) > 0 && (
+                              <b>₹{Number(product.selling_price).toLocaleString("en-IN")}</b>
+                            )}
+                          </span>
+                        )}
+                      </span>
+
+                      {/* Faux playback progress — sells the "live reel" feel. */}
+                      <span className="bk-motion-progress" aria-hidden="true"><i /></span>
                     </span>
                   </Link>
                 );
