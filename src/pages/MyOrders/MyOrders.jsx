@@ -50,6 +50,12 @@ const getStatus = (status) => {
   if (normalized === "order placed" || normalized === "order_placed") return STATUS_CONFIG["Order Placed"];
   if (normalized === "pending") return STATUS_CONFIG.Pending;
   if (normalized === "processing") return STATUS_CONFIG["Order Placed"];
+  // RTO / undelivered before the generic Shipped check — "rto in transit"
+  // contains "in transit" and must never read as Shipped.
+  if (normalized === "undelivered") return STATUS_CONFIG.Undelivered;
+  if (normalized === "rto initiated" || normalized === "rto_initiated") return STATUS_CONFIG["RTO Initiated"];
+  if (normalized === "rto in transit" || normalized === "rto_in_transit") return STATUS_CONFIG["RTO In Transit"];
+  if (normalized === "rto delivered" || normalized === "rto_delivered") return STATUS_CONFIG["RTO Delivered"];
   if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return STATUS_CONFIG["Pickup Scheduled"];
   if (normalized === "out for pickup" || normalized === "out_for_pickup") return STATUS_CONFIG["Out For Pickup"];
   if (normalized === "picked up" || normalized === "picked_up" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Picked Up"];
@@ -59,10 +65,6 @@ const getStatus = (status) => {
   if (normalized === "cancelled") return STATUS_CONFIG.Cancelled;
   if (normalized.includes("cancel")) return STATUS_CONFIG.Cancelled;
   if (normalized === "out for delivery" || normalized === "out_for_delivery") return STATUS_CONFIG["Out For Delivery"];
-  if (normalized === "undelivered") return STATUS_CONFIG.Undelivered;
-  if (normalized === "rto initiated" || normalized === "rto_initiated") return STATUS_CONFIG["RTO Initiated"];
-  if (normalized === "rto in transit" || normalized === "rto_in_transit") return STATUS_CONFIG["RTO In Transit"];
-  if (normalized === "rto delivered" || normalized === "rto_delivered") return STATUS_CONFIG["RTO Delivered"];
   if (normalized === "seller cancelled" || normalized === "seller_cancelled") return STATUS_CONFIG["Seller Cancelled"];
   if (normalized.includes("return requested")) return STATUS_CONFIG["Return Requested"];
   if (normalized.includes("return initiated")) return STATUS_CONFIG["Return Initiated"];
@@ -152,6 +154,9 @@ const getOrderFilterGroup = (status = "") => {
   // ordered group, not under Cancelled.
   if (normalized.includes("partial") && normalized.includes("cancel")) return "ordered";
   if (normalized.includes("cancel")) return "cancelled";
+  // RTO before delivered — "rto delivered" contains "delivered" but the
+  // customer never received it; keep it with the in-transit group.
+  if (normalized.includes("rto") || normalized === "undelivered") return "shipped";
   if (normalized.includes("delivered")) return "delivered";
   if (normalized.includes("ship") || normalized.includes("awb") || normalized.includes("out for delivery")) return "shipped";
   return "ordered";

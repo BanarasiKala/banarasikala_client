@@ -229,7 +229,13 @@ const getOrderActions = (order) => ({
 });
 
 const stepState = (status, currentIndex, steps) => {
-  const matchedIndex = steps.findIndex((step) => step.matches.some((match) => status.includes(match)));
+  // Last matching step wins — a broad early match must not shadow a specific
+  // later one (e.g. "rto in transit" contains "in transit", which the Shipped
+  // step also matches; the RTO step further down is the real position).
+  const matchedIndex = steps.reduce(
+    (found, step, index) => (step.matches.some((match) => status.includes(match)) ? index : found),
+    -1,
+  );
   if (matchedIndex === -1) return currentIndex === 0 ? "current" : "pending";
   if (currentIndex < matchedIndex) return "done";
   if (currentIndex === matchedIndex) return "current";
@@ -293,6 +299,51 @@ const buildTimeline = (order, tracking) => {
   ];
 };
 
+// Status-driven steps for the Return / Exchange panel — shown from the moment
+// a request exists until live pickup scans take over.
+const buildReverseStatusTimeline = (order) => {
+  const status = String(order?.status || "").toLowerCase();
+
+  const returnSteps = [
+    { title: "Return initiated", detail: "Return request created", icon: "lucide:rotate-ccw", matches: ["return requested", "return initiated"] },
+    { title: "Out for return pickup", detail: "Courier will collect the parcel", icon: "lucide:navigation", matches: ["out for return pickup", "return pickup scheduled"] },
+    { title: "Return picked up", detail: "Parcel collected by courier", icon: "lucide:package-check", matches: ["return picked up", "return shipped"] },
+    { title: "Return completed", detail: order?.refund_note || "Return completed", icon: "lucide:badge-check", matches: ["return completed", "return delivered"] },
+  ];
+
+  const exchangeSteps = [
+    { title: "Exchange initiated", detail: "Exchange request created", icon: "lucide:repeat-2", matches: ["exchange requested", "exchange initiated"] },
+    { title: "Exchange pickup scheduled", detail: "Courier pickup is being arranged", icon: "lucide:calendar-clock", matches: ["exchange pickup scheduled", "out for exchange pickup"] },
+    { title: "Exchange picked up", detail: "Exchange parcel collected", icon: "lucide:package-check", matches: ["exchange picked up", "exchange shipped"] },
+    { title: "Exchange completed", detail: order?.refund_note || "Exchange completed", icon: "lucide:badge-check", matches: ["exchange completed", "exchange delivered"] },
+  ];
+
+  if (status.includes("exchange")) return buildSteps(status, exchangeSteps);
+  if (status.includes("return")) return buildSteps(status, returnSteps);
+  return [];
+};
+
+// Shared renderer for the Return / Exchange panel timelines (status steps or
+// live courier scans).
+const ReverseStepsTimeline = ({ steps }) => (
+  <div className="confirmation-timeline">
+    {steps.map((step, index) => (
+      <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state || "pending"}`}>
+        <div className="confirmation-step-track">
+          <span className="confirmation-step-icon">
+            {step.state === "done" ? <Icon icon="lucide:check" /> : <Icon icon={step.icon} />}
+          </span>
+          {index < steps.length - 1 && <div className="confirmation-step-line" />}
+        </div>
+        <div className="confirmation-step-body">
+          <strong>{step.title}</strong>
+          <p>{step.detail}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 // Map a reverse (return/exchange) shipment's ShipRocket scan activities to timeline steps.
 const buildReverseActivities = (shipment) => {
   const activities = shipment?.tracking?.tracking_data?.shipment_track_activities || [];
@@ -330,22 +381,12 @@ const buildOrderTimeline = (order) => {
     { title: status === "seller cancelled" ? "Cancelled by seller" : "Cancelled", detail: "This order has been cancelled", icon: "lucide:x-circle", matches: ["cancelled", "seller cancelled"] },
   ];
 
-  const returnSteps = [
-    { title: "Return initiated", detail: "Return request created", icon: "lucide:rotate-ccw", matches: ["return requested", "return initiated"] },
-    { title: "Out for return pickup", detail: "Courier will collect the parcel", icon: "lucide:navigation", matches: ["out for return pickup"] },
-    { title: "Return picked up", detail: "Parcel collected by courier", icon: "lucide:package-check", matches: ["return picked up"] },
-    { title: "Return completed", detail: order?.refund_note || "Return completed", icon: "lucide:badge-check", matches: ["return completed", "return delivered"] },
-  ];
-
-  const exchangeSteps = [
-    { title: "Exchange initiated", detail: "Exchange request created", icon: "lucide:repeat-2", matches: ["exchange requested", "exchange initiated"] },
-    { title: "Exchange pickup scheduled", detail: "Courier pickup is being arranged", icon: "lucide:calendar-clock", matches: ["exchange pickup scheduled", "out for exchange pickup"] },
-    { title: "Exchange picked up", detail: "Exchange parcel collected", icon: "lucide:package-check", matches: ["exchange picked up"] },
-    { title: "Exchange completed", detail: order?.refund_note || "Exchange completed", icon: "lucide:badge-check", matches: ["exchange completed", "exchange delivered"] },
-  ];
-
-  if (status.includes("exchange")) return buildSteps(status, exchangeSteps);
-  if (status.includes("return")) return buildSteps(status, returnSteps);
+  // Return/exchange progress lives in its own "Return / Exchange tracking"
+  // panel below — the shipment timeline keeps showing the completed forward
+  // journey undisturbed (reverse flows only exist after delivery).
+  if (status.includes("exchange") || status.includes("return")) {
+    return buildSteps("delivered", forwardSteps);
+  }
   if (status === "cancelled" || status === "seller cancelled") return buildSteps(status, cancelledSteps);
   if (status.includes("rto") || status === "undelivered") return buildSteps(status, rtoSteps);
   if (status.includes("partial") && status.includes("cancel")) {
@@ -523,6 +564,9 @@ export default function OrderConfirmation() {
   const trackUrl = tracking?.tracking?.tracking_data?.track_url
     || (order?.shiprocket_awb ? `https://shiprocket.co/tracking/${order.shiprocket_awb}` : "");
   const reverseShipments = Array.isArray(tracking?.reverse) ? tracking.reverse : [];
+  // Status-driven return/exchange steps for the panel below the shipment
+  // timeline (used until live pickup scans arrive).
+  const reverseStatusSteps = useMemo(() => buildReverseStatusTimeline(order), [order]);
   const refunds = Array.isArray(order?.refunds) ? order.refunds : [];
   const totalRefunded = refunds
     .filter((r) => isRefundSettled(r.status))
@@ -862,49 +906,48 @@ export default function OrderConfirmation() {
             )}
           </section>
 
-          {reverseShipments.length > 0 && (
+          {(reverseShipments.length > 0 || reverseStatusSteps.length > 0) && (
             <section className="order-panel">
               <div className="order-panel-head">
                 <h2>Return / Exchange tracking</h2>
-                <span>{reverseShipments.length} pickup{reverseShipments.length > 1 ? "s" : ""}</span>
+                <span>
+                  {reverseShipments.length > 0
+                    ? `${reverseShipments.length} pickup${reverseShipments.length > 1 ? "s" : ""}`
+                    : getCustomerOrderStatusLabel(order.status)}
+                </span>
               </div>
-              {reverseShipments.map((shipment, shipmentIndex) => {
-                const steps = buildReverseActivities(shipment);
-                const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
-                return (
-                  <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
-                    <div className="reverse-shipment-head">
-                      <strong>{label}</strong>
-                      {shipment.awb && <small>AWB · {shipment.awb}</small>}
+              {reverseShipments.length > 0 ? (
+                reverseShipments.map((shipment, shipmentIndex) => {
+                  const steps = buildReverseActivities(shipment);
+                  const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
+                  return (
+                    <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
+                      <div className="reverse-shipment-head">
+                        <strong>{label}</strong>
+                        {shipment.awb && <small>AWB · {shipment.awb}</small>}
+                      </div>
+                      {steps.length > 0 ? (
+                        <ReverseStepsTimeline steps={steps} />
+                      ) : reverseStatusSteps.length > 0 ? (
+                        <ReverseStepsTimeline steps={reverseStatusSteps} />
+                      ) : (
+                        <div className="order-track-pending">
+                          <Icon icon="lucide:package-search" />
+                          <span>
+                            {shipment.source === "unavailable"
+                              ? "Pickup tracking is temporarily unavailable. Please check back shortly."
+                              : "Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel."}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    {steps.length > 0 ? (
-                      <div className="confirmation-timeline">
-                        {steps.map((step, index) => (
-                          <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state}`}>
-                            <div className="confirmation-step-track">
-                              <span className="confirmation-step-icon"><Icon icon={step.icon} /></span>
-                              {index < steps.length - 1 && <div className="confirmation-step-line" />}
-                            </div>
-                            <div className="confirmation-step-body">
-                              <strong>{step.title}</strong>
-                              <p>{step.detail}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="order-track-pending">
-                        <Icon icon="lucide:package-search" />
-                        <span>
-                          {shipment.source === "unavailable"
-                            ? "Pickup tracking is temporarily unavailable. Please check back shortly."
-                            : "Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel."}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="reverse-shipment">
+                  <ReverseStepsTimeline steps={reverseStatusSteps} />
+                </div>
+              )}
             </section>
           )}
 
