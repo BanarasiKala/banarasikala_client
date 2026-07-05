@@ -86,6 +86,10 @@
   --home-deferred-min-height: 150px;
 }
 
+.home-deferred-section--royale {
+  --home-deferred-min-height: 620px;
+}
+
 .home-deferred-section--popular {
   --home-deferred-min-height: 760px;
 }
@@ -222,6 +226,10 @@
 
   .home-deferred-section--browse {
     --home-deferred-min-height: 320px;
+  }
+
+  .home-deferred-section--royale {
+    --home-deferred-min-height: 540px;
   }
 
   .home-deferred-section--occasion {
