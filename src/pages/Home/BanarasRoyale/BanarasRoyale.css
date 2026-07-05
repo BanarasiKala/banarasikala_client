@@ -1,0 +1,223 @@
+/* ── Banaras Royale — cinematic showcase below Why Choose Us ──────────────── */
+
+.bk-royale-section {
+  width: 100%;
+  padding: 22px 0 30px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 246, 232, 0.72), rgba(255, 246, 232, 0.72)),
+    var(--bk-section-bg),
+    linear-gradient(90deg, #f7e7cc 0%, #fff5e5 50%, #f7e7cc 100%);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center;
+}
+
+.bk-royale-shell {
+  width: min(100%, var(--bk-page-max));
+  margin: 0 auto;
+  padding: 0 var(--bk-page-pad);
+  box-sizing: border-box;
+}
+
+.bk-royale-heading {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.bk-royale-heading span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8a4c22;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.bk-royale-heading h2 {
+  margin: 0;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 3vw, 42px);
+  font-weight: 900;
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+/* ── Stage: the video is the backdrop, images float in over it ── */
+.bk-royale-stage {
+  position: relative;
+  height: clamp(340px, 46vw, 520px);
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #1d0b07;
+  box-shadow: 0 20px 44px rgba(88, 39, 13, 0.16);
+}
+
+.bk-royale-stage + .bk-royale-stage {
+  margin-top: 18px;
+}
+
+.bk-royale-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.bk-royale-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(23, 13, 8, 0.08) 30%, rgba(23, 13, 8, 0.66) 100%),
+    linear-gradient(100deg, rgba(23, 13, 8, 0.34) 0%, transparent 46%);
+  pointer-events: none;
+}
+
+/* Floating polaroid that cycles through the entry's images one by one.
+   The key change re-runs the entrance, then a gentle bob keeps it alive. */
+.bk-royale-float {
+  position: absolute;
+  top: 50%;
+  right: clamp(18px, 6vw, 72px);
+  width: clamp(150px, 22vw, 240px);
+  transform: translateY(-50%);
+  padding: 8px 8px 10px;
+  background: #fffdf8;
+  border-radius: 10px;
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
+  rotate: 4deg;
+  animation:
+    bk-royale-float-in 0.9s cubic-bezier(0.2, 0.72, 0.2, 1) both,
+    bk-royale-bob 4.5s ease-in-out 0.9s infinite;
+  pointer-events: none;
+}
+
+.bk-royale-float img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+@keyframes bk-royale-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-50% + 46px)) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes bk-royale-bob {
+  0%, 100% { transform: translateY(-50%); }
+  50% { transform: translateY(calc(-50% - 10px)); }
+}
+
+/* ── Copy + CTA ── */
+.bk-royale-copy {
+  position: absolute;
+  left: clamp(16px, 4vw, 42px);
+  right: clamp(16px, 4vw, 42px);
+  bottom: clamp(16px, 3.4vw, 34px);
+  max-width: 520px;
+  color: #fff6e8;
+}
+
+.bk-royale-copy h3 {
+  margin: 0 0 6px;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(20px, 2.4vw, 32px);
+  font-weight: 800;
+  line-height: 1.08;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.bk-royale-copy p {
+  margin: 0 0 14px;
+  font-size: clamp(12px, 1.15vw, 14px);
+  line-height: 1.6;
+  color: rgba(255, 244, 226, 0.88);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bk-royale-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #7b001b;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.3);
+  transition: transform 0.18s ease;
+}
+
+.bk-royale-cta:hover {
+  transform: translateY(-1px);
+}
+
+.bk-royale-cta span {
+  padding-left: 10px;
+  border-left: 1px solid rgba(123, 0, 27, 0.25);
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-royale-float {
+    animation: none;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .bk-royale-stage {
+    height: 420px;
+  }
+
+  /* Floating image sits top-right so the copy owns the bottom. */
+  .bk-royale-float {
+    top: 18px;
+    right: 14px;
+    width: 128px;
+    transform: none;
+    rotate: 5deg;
+  }
+
+  @keyframes bk-royale-float-in {
+    from {
+      opacity: 0;
+      transform: translateY(34px) scale(0.92);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes bk-royale-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .bk-royale-copy {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+  }
+}

@@ -8,6 +8,7 @@ import OfferBand from "./OfferBand/OfferBand";
 import "./Home.css";
 
 const WhyChooseUs = lazy(() => import("./WhyChooseUs/WhyChooseUs"));
+const BanarasRoyale = lazy(() => import("./BanarasRoyale/BanarasRoyale"));
 const PopularSarees = lazy(() => import("./PopularSarees/PopularSarees"));
 const BrowseCircles = lazy(() => import("./BrowseCircles/BrowseCircles"));
 const NewArrivals = lazy(() => import("./NewArrivals/NewArrivals"));
@@ -113,6 +114,7 @@ const Home = () => {
         <HeroSlider />
 
         <HomeSection variant="why"><WhyChooseUs /></HomeSection>
+        <HomeSection variant="royale"><BanarasRoyale /></HomeSection>
         <HomeSection variant="occasion"><OccasionCollections /></HomeSection>
         <HomeSection id="new-arrivals" variant="arrivals"><NewArrivals /></HomeSection>
         <HomeSection variant="browse"><BrowseCircles /></HomeSection>
