@@ -55,7 +55,7 @@ const getStatus = (status) => {
   if (normalized === "undelivered") return STATUS_CONFIG.Undelivered;
   if (normalized === "rto initiated" || normalized === "rto_initiated") return STATUS_CONFIG["RTO Initiated"];
   if (normalized === "rto in transit" || normalized === "rto_in_transit") return STATUS_CONFIG["RTO In Transit"];
-  if (normalized === "rto delivered" || normalized === "rto_delivered") return STATUS_CONFIG["RTO Delivered"];
+  if (normalized === "rto delivered" || normalized === "rto_delivered" || normalized === "rto") return STATUS_CONFIG["RTO Delivered"];
   if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return STATUS_CONFIG["Pickup Scheduled"];
   if (normalized === "out for pickup" || normalized === "out_for_pickup") return STATUS_CONFIG["Out For Pickup"];
   if (normalized === "picked up" || normalized === "picked_up" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Picked Up"];

@@ -98,7 +98,7 @@ const getCustomerOrderStatusLabel = (status) => {
   if (normalized.includes("partial") && normalized.includes("cancel")) return "Modified";
   if (normalized === "cancel requested") return "Cancellation pending";
   if (normalized.includes("cancel")) return "Cancelled";
-  if (normalized === "rto delivered") return "Order returned to seller";
+  if (normalized === "rto delivered" || normalized === "rto") return "Order returned to seller";
   if (normalized === "rto initiated" || normalized === "rto in transit") return "Returning to seller";
   if (normalized.includes("return completed")) return "Return completed";
   if (normalized.includes("return picked up")) return "Return picked up";
@@ -388,7 +388,12 @@ const buildOrderTimeline = (order) => {
     return buildSteps("delivered", forwardSteps);
   }
   if (status === "cancelled" || status === "seller cancelled") return buildSteps(status, cancelledSteps);
-  if (status.includes("rto") || status === "undelivered") return buildSteps(status, rtoSteps);
+  if (status.includes("rto") || status === "undelivered") {
+    // The bare "RTO" status (prepaid parcel back with the seller, awaiting the
+    // customer's re-dispatch / refund choice) is the terminal RTO step — the
+    // short string matches no step keyword, which used to fall back to step 0.
+    return buildSteps(status === "rto" ? "rto delivered" : status, rtoSteps);
+  }
   if (status.includes("partial") && status.includes("cancel")) {
     return [
       { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", state: "done" },
