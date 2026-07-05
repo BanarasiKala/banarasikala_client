@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatBot from "../components/ChatBot/ChatBot";
-import ReelBags from "../components/ReelBags/ReelBags";
+// import ReelBags from "../components/ReelBags/ReelBags"; // floating reel section — disabled for now
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
@@ -107,7 +107,7 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      {isHomePage && <ReelBags />}
+      {/* {isHomePage && <ReelBags />} */}{/* floating reel section — disabled for now */}
       {!isImmersive && <ChatBot />}
     </>
   );
