@@ -127,6 +127,10 @@ const getItemStatusLabel = (status) => {
 const getItemDisplayStatus = (order, item) => {
   const itemStatus = String(item?.status || "").trim();
   if (itemStatus && itemStatus.toLowerCase() !== "active") return getItemStatusLabel(itemStatus);
+  // Return/exchange flows are item-scoped: an untouched (Active) item must not
+  // inherit the order's reverse status — it simply stays delivered.
+  const orderStatus = String(order?.status || "").toLowerCase();
+  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return "Delivered";
   return getStatus(order?.status).label;
 };
 

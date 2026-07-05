@@ -208,6 +208,10 @@ const getEligibleActionItems = (order, actionType) => {
 const getItemDisplayStatus = (order, item) => {
   const status = normalizeStatus(item?.status);
   if (status && status !== "active") return getCustomerOrderStatusLabel(item.status);
+  // Return/exchange flows are item-scoped: an untouched (Active) item must not
+  // inherit the order's reverse status — it simply stays delivered.
+  const orderStatus = normalizeStatus(order?.status);
+  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return "Delivered";
   return getCustomerOrderStatusLabel(order?.status);
 };
 
@@ -1056,7 +1060,10 @@ export default function OrderConfirmation() {
                           )}
                           {toNumber(bd.return_shipping_charge) > 0 && (
                             <div>
-                              <span>Return pickup charge</span>
+                              <span>
+                                Return pickup charge
+                                {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
+                              </span>
                               <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
                             </div>
                           )}
@@ -1475,7 +1482,12 @@ export default function OrderConfirmation() {
                     )}
                     {cancelModal.type === "return" && (
                       <div>
-                        <span>Return pickup charge</span>
+                        <span>
+                          Return pickup charge
+                          {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
+                            ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
+                            : ""}
+                        </span>
                         <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                       </div>
                     )}
