@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
 import "./BanarasRoyale.css";
 
 // One showcase stage: the entry's video plays as the cinematic backdrop while
-// its images float in over it one by one (polaroid-style, cycling).
+// its images float in over it one by one (polaroid-style, cycling). The
+// polaroid is draggable — the shopper can move it anywhere inside the video.
 const RoyaleStage = ({ entry }) => {
   const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
   const [imageIndex, setImageIndex] = useState(0);
+  // null → the CSS default spot (with the bob animation); {x,y} once dragged.
+  const [floatPos, setFloatPos] = useState(null);
+  const stageRef = useRef(null);
+  const floatRef = useRef(null);
+  const dragRef = useRef(null); // pointer offset inside the polaroid while dragging
 
   useEffect(() => {
     if (images.length <= 1) return undefined;
@@ -16,11 +22,39 @@ const RoyaleStage = ({ entry }) => {
     return () => clearInterval(timer);
   }, [images.length]);
 
+  const startDrag = (event) => {
+    const stage = stageRef.current;
+    const float = floatRef.current;
+    if (!stage || !float) return;
+    event.preventDefault();
+    const stageBox = stage.getBoundingClientRect();
+    const floatBox = float.getBoundingClientRect();
+    dragRef.current = { dx: event.clientX - floatBox.left, dy: event.clientY - floatBox.top };
+    float.setPointerCapture?.(event.pointerId);
+    setFloatPos({ x: floatBox.left - stageBox.left, y: floatBox.top - stageBox.top });
+  };
+
+  const moveDrag = (event) => {
+    if (!dragRef.current) return;
+    const stage = stageRef.current;
+    const float = floatRef.current;
+    if (!stage || !float) return;
+    const stageBox = stage.getBoundingClientRect();
+    const x = Math.min(Math.max(0, event.clientX - stageBox.left - dragRef.current.dx), stageBox.width - float.offsetWidth);
+    const y = Math.min(Math.max(0, event.clientY - stageBox.top - dragRef.current.dy), stageBox.height - float.offsetHeight);
+    setFloatPos({ x, y });
+  };
+
+  const endDrag = (event) => {
+    dragRef.current = null;
+    floatRef.current?.releasePointerCapture?.(event.pointerId);
+  };
+
   const product = entry.Product || null;
   const currentImage = images.length ? images[imageIndex % images.length] : null;
 
   return (
-    <div className="bk-royale-stage">
+    <div className="bk-royale-stage" ref={stageRef}>
       {entry.video ? (
         <video
           className="bk-royale-media"
@@ -37,11 +71,21 @@ const RoyaleStage = ({ entry }) => {
       ) : null}
       <span className="bk-royale-scrim" aria-hidden="true" />
 
-      {/* Floating image — only when the video is the backdrop; keyed by index
-          so each image re-runs the float-in animation as it takes its turn. */}
+      {/* Floating polaroid — draggable anywhere inside the stage. The image
+          swap animates on the inner <img> (keyed) so a cycle mid-drag never
+          remounts the container or breaks pointer capture. */}
       {entry.video && currentImage && (
-        <div className="bk-royale-float" key={imageIndex % images.length} aria-hidden="true">
-          <img src={imgUrl(currentImage, 560)} alt="" />
+        <div
+          ref={floatRef}
+          className={`bk-royale-float${floatPos ? " is-free" : ""}`}
+          style={floatPos ? { left: floatPos.x, top: floatPos.y, right: "auto", bottom: "auto" } : undefined}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          title="Drag to move"
+        >
+          <img key={imageIndex % images.length} src={imgUrl(currentImage, 560)} alt="" draggable={false} />
         </div>
       )}
 
