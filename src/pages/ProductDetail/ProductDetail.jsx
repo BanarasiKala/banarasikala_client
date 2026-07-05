@@ -102,15 +102,11 @@ const getSortedImages = (targetProduct) => {
   return unique.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
 };
 
+// Urgency countdown: always under one hour — counts down to the top of the
+// next hour and then naturally restarts (never "20 hrs 3 mins").
 const getOrderCutoff = () => {
-  const now = new Date();
-  const cutoff = new Date(now);
-  cutoff.setHours(23, 59, 0, 0);
-  const diffMs = cutoff - now;
-  if (diffMs <= 0) return null;
-  const hours = Math.floor(diffMs / 3600000);
-  const mins = Math.floor((diffMs % 3600000) / 60000);
-  return { hours, mins };
+  const mins = 59 - new Date().getMinutes();
+  return { hours: 0, mins: Math.max(1, mins) };
 };
 
 const PLYR_OPTIONS = {
@@ -2048,7 +2044,7 @@ const ProductDetail = () => {
               {!isSelectedOutOfStock && <p>Inclusive of all taxes</p>}
             </div>
 
-            <ProductSocialProof productId={product?.id} />
+            <ProductSocialProof productId={product?.id} outOfStock={isSelectedOutOfStock} />
 
             <div className="product-feature-icons">
               {[

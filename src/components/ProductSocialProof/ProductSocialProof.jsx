@@ -13,8 +13,10 @@ const getSessionId = () => {
 };
 
 // Social proof for the product page. The two lines — live viewers and orders
-// this hour — take turns in the same spot every 2 seconds with a slide-in.
-const ProductSocialProof = ({ productId }) => {
+// today — take turns in the same spot with a slide-in. Out-of-stock products
+// show only the live-viewers line (an "ordered today" claim reads false when
+// the item cannot be bought).
+const ProductSocialProof = ({ productId, outOfStock = false }) => {
   const [viewers, setViewers] = useState(0);
   const [ordersRecent, setOrdersRecent] = useState(0);
   const [idx, setIdx] = useState(0);
@@ -33,7 +35,7 @@ const ProductSocialProof = ({ productId }) => {
         const data = await res.json();
         if (ignore) return;
         setViewers(Number(data.viewers) || 0);
-        setOrdersRecent(Number(data.ordersRecent) || 0);
+        setOrdersRecent(Number(data.ordersToday ?? data.ordersRecent) || 0);
       } catch {
         /* non-critical */
       }
@@ -53,13 +55,13 @@ const ProductSocialProof = ({ productId }) => {
       label: "people viewing this right now",
     });
   }
-  if (ordersRecent > 0) {
+  if (ordersRecent > 0 && !outOfStock) {
     messages.push({
       key: "orders",
       cls: "is-orders",
       emoji: "🔥",
       value: ordersRecent,
-      label: "orders placed this hour",
+      label: "orders placed today",
     });
   }
   const count = messages.length;
