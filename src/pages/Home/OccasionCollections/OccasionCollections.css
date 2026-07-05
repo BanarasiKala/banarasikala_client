@@ -84,8 +84,16 @@
   transition: transform 0.7s ease;
 }
 
-.bk-occasion-card:hover img,
-.bk-occasion-card:hover video {
+/* Videos always show in full — never cropped on any side; the leftover
+   space letterboxes against a dark base. */
+.bk-occasion-card video {
+  object-fit: contain;
+  background: #1d0b07;
+}
+
+/* Hover zoom stays for images only — scaling a contained video would clip
+   its edges again. */
+.bk-occasion-card:hover img {
   transform: scale(1.04);
 }
 
