@@ -57,15 +57,30 @@ const OccasionCollections = () => {
                 onClick={() => openOccasion(occasion.id)}
               >
                 {occasion.video ? (
-                  <video
-                    src={occasion.video}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    aria-label={occasion.name}
-                  />
+                  <span className="bk-occasion-video-wrap">
+                    {/* Blurred copy of the same video fills the card behind the
+                        full, uncropped one — no empty letterbox bars. */}
+                    <video
+                      className="bk-occasion-video-blur"
+                      src={occasion.video}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                    <video
+                      src={occasion.video}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-label={occasion.name}
+                    />
+                  </span>
                 ) : (
                   <img src={imgUrl(occasion.image, 800)} alt={occasion.name} decoding="async" />
                 )}
