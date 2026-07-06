@@ -561,6 +561,10 @@ export default function OrderConfirmation() {
   // confirmation modal toggle.
   const [rtoLoading, setRtoLoading] = useState("");
   const [rtoConfirmOpen, setRtoConfirmOpen] = useState(false);
+  // Exchange colour variants keyed by product_id: { loading, colors, error }.
+  // Loaded lazily from the product-detail endpoint when the exchange modal is
+  // open, so the customer can swap to another colour of the same product.
+  const [exchangeVariants, setExchangeVariants] = useState({});
 
   const breakdown = useMemo(() => getBreakdown(order || {}), [order]);
   // Live ShipRocket scan activities (only exist once the parcel is picked up and
@@ -653,6 +657,77 @@ export default function OrderConfirmation() {
       fetchTracking();
     }
   }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
+
+  // While the exchange modal is open, lazily pull each eligible product's colour
+  // variations (from the product-detail endpoint) so the customer can pick a
+  // different colour of the same product. Driven off the exchangeVariants map
+  // itself (only products with no entry yet are fetched), and EVERY product is
+  // always resolved to a terminal state — a missing slug or a failed fetch ends
+  // as { loading: false, ... } rather than spinning on "Loading colours…".
+  useEffect(() => {
+    if (!cancelModal.isOpen || cancelModal.type !== "exchange" || !order) return;
+    const missing = getEligibleActionItems(order, "exchange")
+      .filter((item) => item.product_id && exchangeVariants[item.product_id] === undefined);
+    if (!missing.length) return;
+
+    // Mark them: fetchable (has slug) → loading; otherwise terminal (no variants).
+    setExchangeVariants((prev) => {
+      const next = { ...prev };
+      missing.forEach((item) => {
+        next[item.product_id] = item.product_slug
+          ? { loading: true, colors: [], error: false }
+          : { loading: false, colors: [], error: false };
+      });
+      return next;
+    });
+
+    missing
+      .filter((item) => item.product_slug)
+      .forEach(async (item) => {
+        try {
+          const res = await fetch(`${API_ENDPOINTS.products}/${item.product_slug}/detail`);
+          if (!res.ok) throw new Error("failed");
+          const data = await res.json();
+          const seen = new Set();
+          const colors = (Array.isArray(data.colors) ? data.colors : []).filter((c) => {
+            const key = String(c.id);
+            if (!c.id || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setExchangeVariants((prev) => ({ ...prev, [item.product_id]: { loading: false, colors, error: false } }));
+        } catch {
+          setExchangeVariants((prev) => ({ ...prev, [item.product_id]: { loading: false, colors: [], error: true } }));
+        }
+      });
+  }, [cancelModal.isOpen, cancelModal.type, order, exchangeVariants]);
+
+  // Default each checked exchange item to a sensible target colour once its
+  // variants load: the item's current colour if still in stock, otherwise the
+  // first in-stock colour. Only runs for products that actually have a choice.
+  useEffect(() => {
+    if (!cancelModal.isOpen || cancelModal.type !== "exchange") return;
+    setCancelModal((current) => {
+      let changed = false;
+      const nextSelected = { ...current.selected };
+      Object.entries(nextSelected).forEach(([itemId, val]) => {
+        if (!val.checked || val.exchangeColorId) return;
+        const item = (order?.OrderItems || []).find((it) => String(it.id) === String(itemId));
+        const variant = item ? exchangeVariants[item.product_id] : null;
+        if (!variant || variant.loading) return;
+        const colors = variant.colors || [];
+        if (colors.length <= 1) return;
+        const currentInStock = colors.find((c) => String(c.id) === String(item.colorId) && Number(c.stock_quantity) > 0);
+        const firstInStock = colors.find((c) => Number(c.stock_quantity) > 0);
+        const def = currentInStock?.id ?? firstInStock?.id ?? null;
+        if (def != null) {
+          nextSelected[itemId] = { ...val, exchangeColorId: def };
+          changed = true;
+        }
+      });
+      return changed ? { ...current, selected: nextSelected } : current;
+    });
+  }, [cancelModal.isOpen, cancelModal.type, cancelModal.selected, exchangeVariants, order]);
 
   const openActionModal = (type = "cancel") => {
     const config = getActionConfig(type);
@@ -749,7 +824,24 @@ export default function OrderConfirmation() {
 
   const selectedActionItems = useMemo(() => Object.entries(cancelModal.selected || {})
     .filter(([, value]) => value.checked)
-    .map(([id, value]) => ({ orderItemId: Number(id), quantity: value.quantity || null })), [cancelModal.selected]);
+    .map(([id, value]) => ({
+      orderItemId: Number(id),
+      quantity: value.quantity || null,
+      // Exchange only: the colour variant the customer wants instead.
+      ...(cancelModal.type === "exchange" && value.exchangeColorId
+        ? { exchangeColorId: value.exchangeColorId }
+        : {}),
+    })), [cancelModal.selected, cancelModal.type]);
+
+  const setExchangeColor = (itemId, colorId) => {
+    setCancelModal((current) => ({
+      ...current,
+      selected: {
+        ...current.selected,
+        [itemId]: { ...(current.selected?.[itemId] || {}), exchangeColorId: colorId },
+      },
+    }));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -822,6 +914,20 @@ export default function OrderConfirmation() {
           showNotification("Please select at least one product.", "warning");
           setModalSubmitLoading(false);
           return;
+        }
+        // Exchange: don't submit while a selected item's colour options are still
+        // loading — the customer hasn't had the chance to choose a variant yet.
+        if (type === "exchange") {
+          const stillLoading = selectedActionItems.some(({ orderItemId }) => {
+            const item = (order?.OrderItems || []).find((it) => Number(it.id) === Number(orderItemId));
+            const variant = item ? exchangeVariants[item.product_id] : null;
+            return variant?.loading;
+          });
+          if (stillLoading) {
+            showNotification("Please wait for the colour options to load.", "warning");
+            setModalSubmitLoading(false);
+            return;
+          }
         }
         response = await api.post(`/api/orders/${orderId}/item-actions`, {
           actionType: type,
@@ -1262,6 +1368,9 @@ export default function OrderConfirmation() {
                           <strong>{action.status || "Initiated"}</strong>
                           <small>
                             Qty {action.quantity || 1}
+                            {action.meta?.exchange_color_name
+                              ? ` · New colour: ${action.meta.exchange_color_name}`
+                              : ""}
                             {action.completed_at
                               ? ` · Completed ${formatDate(action.completed_at)}`
                               : action.created_at ? ` · ${formatDate(action.created_at)}` : ""}
@@ -1715,6 +1824,50 @@ export default function OrderConfirmation() {
                             </button>
                           </div>
                         )}
+                        {cancelModal.type === "exchange" && sel.checked && (() => {
+                          const variant = exchangeVariants[item.product_id];
+                          if (!variant || variant.loading) {
+                            return <div className="exchange-variant-note">Loading colours…</div>;
+                          }
+                          if (variant.error) {
+                            return <div className="exchange-variant-note">Couldn&rsquo;t load colour options — we&rsquo;ll exchange it for the same colour.</div>;
+                          }
+                          const colors = variant.colors || [];
+                          // Single-variant product: nothing to choose — the exchange sends
+                          // the same colour. Say so explicitly instead of showing nothing.
+                          if (colors.length <= 1) {
+                            return <div className="exchange-variant-note">This product has no other colours — it will be exchanged for the same one.</div>;
+                          }
+                          if (!colors.some((c) => Number(c.stock_quantity) > 0)) {
+                            return <div className="exchange-variant-note is-warn">No colours are in stock for exchange right now.</div>;
+                          }
+                          const chosen = sel.exchangeColorId ?? item.colorId;
+                          return (
+                            <div className="exchange-variant-picker">
+                              <span className="exchange-variant-label">Exchange for colour</span>
+                              <div className="exchange-variant-swatches">
+                                {colors.map((c) => {
+                                  const inStock = Number(c.stock_quantity) > 0;
+                                  const isCurrent = String(c.id) === String(item.colorId);
+                                  const isChosen = String(chosen) === String(c.id);
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      className={`exchange-variant-swatch${isChosen ? " is-chosen" : ""}${inStock ? "" : " is-out"}`}
+                                      disabled={!inStock}
+                                      onClick={() => setExchangeColor(item.id, c.id)}
+                                      title={inStock ? c.name : `${c.name} — out of stock`}
+                                    >
+                                      <span className="exchange-variant-dot" style={{ backgroundColor: c.hex_code || "#ccc" }} />
+                                      <small>{c.name}{isCurrent ? " (current)" : ""}{inStock ? "" : " · out"}</small>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })

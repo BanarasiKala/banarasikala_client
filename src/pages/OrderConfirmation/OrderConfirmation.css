@@ -939,12 +939,95 @@
 .action-item-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
   border: 1px solid rgba(123, 0, 27, 0.12);
   border-radius: 12px;
   background: #fffaf1;
   transition: border-color 150ms, background 150ms;
+}
+
+/* ── Exchange: pick another colour of the same product ── */
+.exchange-variant-picker {
+  flex-basis: 100%;
+  width: 100%;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px dashed rgba(123, 0, 27, 0.16);
+}
+
+.exchange-variant-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #7b001b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.exchange-variant-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exchange-variant-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 7px;
+  border: 1.5px solid rgba(123, 0, 27, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: #5d170d;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+}
+
+.exchange-variant-swatch small {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.exchange-variant-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 0 2px #fff;
+  flex-shrink: 0;
+}
+
+.exchange-variant-swatch:hover:not(:disabled) {
+  border-color: rgba(123, 0, 27, 0.4);
+  background: #fff5e8;
+}
+
+.exchange-variant-swatch.is-chosen {
+  border-color: #800020;
+  background: #fff0f2;
+  box-shadow: 0 0 0 1px #800020;
+}
+
+.exchange-variant-swatch.is-out {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.exchange-variant-note {
+  flex-basis: 100%;
+  width: 100%;
+  padding-top: 8px;
+  color: #8d7a6d;
+  font-size: 12px;
+}
+
+.exchange-variant-note.is-warn {
+  color: #9a6200;
 }
 
 .action-item-row.is-selected {
