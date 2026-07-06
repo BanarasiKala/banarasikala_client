@@ -1,7 +1,7 @@
-/* ── Box Section — premium "Unboxing Luxury" spotlight showcase ────────────
-   An editorial split: a big cinematic stage that auto-plays through the media
-   (story-style progress on top) beside an elegant copy column + thumbnail rail.
-   Warm ivory band with the site's brocade texture and gold accents. */
+/* ── Box Section — "Unboxing Luxury" WhatsApp-style story ─────────────────
+   A centered portrait story card that auto-advances (segmented progress on
+   top) with tap-left / tap-right navigation. Hardcoded copy overlaid; warm
+   ivory band with the site's brocade texture and gold accents. */
 
 .bk-box-section {
   position: relative;
@@ -54,46 +54,48 @@
   background: linear-gradient(90deg, #d4af37, transparent);
 }
 
-/* ── Block: stage + copy split ── */
-.bk-box-block {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: clamp(20px, 3vw, 44px);
+/* ── Stories row (multiple entries sit side by side, wrapping) ── */
+.bk-box-stories {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 34px;
+}
+
+/* Story card + its caption stacked together. */
+.bk-box-item {
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-.bk-box-block + .bk-box-block {
-  margin-top: 40px;
-  padding-top: 40px;
-  border-top: 1px solid rgba(128, 0, 32, 0.1);
-}
-
-/* ── Stage ── */
-.bk-box-stage-col {
-  min-width: 0;
-}
-
-.bk-box-stage {
+/* ── The story card ── */
+.bk-box-story {
   position: relative;
-  aspect-ratio: 4 / 3;
-  border-radius: 20px;
+  width: min(90vw, 384px);
+  aspect-ratio: 9 / 16;
+  border-radius: 22px;
   overflow: hidden;
   background: #1a0d07;
-  box-shadow: 0 26px 54px rgba(88, 39, 13, 0.24), 0 0 0 2px rgba(212, 175, 55, 0.5), 0 0 0 7px rgba(255, 248, 236, 0.7);
+  box-shadow:
+    0 30px 60px rgba(88, 39, 13, 0.28),
+    0 0 0 2px rgba(212, 175, 55, 0.55),
+    0 0 0 8px rgba(255, 248, 236, 0.75);
 }
 
-/* Blurred, cover-fitted copy fills the frame so nothing is cropped. */
+/* Blurred cover-fill so nothing is cropped. */
 .bk-box-fill {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.18);
-  filter: blur(22px) brightness(0.62) saturate(1.2);
+  transform: scale(1.2);
+  filter: blur(24px) brightness(0.6) saturate(1.2);
 }
 
-/* The full media, uncropped, on top. */
+/* Full media, uncropped, on top. */
 .bk-box-front {
   position: absolute;
   inset: 0;
@@ -101,30 +103,31 @@
   height: 100%;
   object-fit: contain;
   z-index: 1;
-  animation: bk-box-fade 0.6s ease both;
+  animation: bk-box-fade 0.5s ease both;
 }
 
 .bk-box-kenburns {
-  animation: bk-box-fade 0.6s ease both, bk-box-kenburns 6s ease-in-out 0.6s both;
+  animation: bk-box-fade 0.5s ease both, bk-box-kenburns 6s ease-in-out 0.5s both;
 }
 
-.bk-box-stage-scrim {
+.bk-box-scrim {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: linear-gradient(180deg, rgba(10, 3, 4, 0.32) 0%, transparent 22%, transparent 74%, rgba(10, 3, 4, 0.4) 100%);
+  background: linear-gradient(180deg, rgba(10, 3, 4, 0.55) 0%, transparent 20%, transparent 52%, rgba(10, 3, 4, 0.82) 100%);
   pointer-events: none;
 }
 
-/* Story-style segmented progress. */
+/* Segmented progress. */
 .bk-box-segments {
   position: absolute;
   top: 12px;
-  left: 14px;
-  right: 14px;
-  z-index: 3;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
   display: flex;
-  gap: 6px;
+  gap: 5px;
+  pointer-events: none;
 }
 
 .bk-box-segment {
@@ -132,7 +135,7 @@
   flex: 1;
   height: 3px;
   border-radius: 99px;
-  background: rgba(255, 246, 224, 0.32);
+  background: rgba(255, 246, 224, 0.34);
   overflow: hidden;
 }
 
@@ -144,149 +147,102 @@
   transition: width 0.12s linear;
 }
 
-/* Gold gift-box brackets on two corners. */
-.bk-box-corners::before,
-.bk-box-corners::after {
-  content: "";
+/* Brand chip. */
+.bk-box-brand {
   position: absolute;
-  z-index: 3;
-  width: 30px;
-  height: 30px;
-  border: 2px solid rgba(255, 234, 176, 0.85);
-  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
+  top: 26px;
+  left: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #fff3dd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
   pointer-events: none;
 }
 
-.bk-box-corners::before {
-  top: 26px;
-  left: 12px;
-  border-right: 0;
-  border-bottom: 0;
-  border-top-left-radius: 7px;
-}
-
-.bk-box-corners::after {
-  bottom: 12px;
-  right: 12px;
-  border-left: 0;
-  border-top: 0;
-  border-bottom-right-radius: 7px;
-}
-
-/* Media counter. */
-.bk-box-count {
-  position: absolute;
-  z-index: 3;
-  right: 16px;
-  bottom: 14px;
-  color: #fff6e8;
-  font-family: "Cinzel", Georgia, serif;
-  font-size: 17px;
-  font-weight: 800;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-}
-
-.bk-box-count i {
-  font-style: normal;
+.bk-box-brand i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.9);
+  color: #2a0a10;
   font-size: 12px;
-  opacity: 0.7;
 }
 
-/* ── Copy column ── */
-.bk-box-copy {
-  min-width: 0;
+/* Hardcoded copy — below the story card, out of the media view. */
+.bk-box-caption {
+  width: min(90vw, 384px);
+  margin-top: 18px;
+  text-align: center;
 }
 
 .bk-box-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding: 5px 12px;
-  border: 1px solid rgba(212, 175, 55, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.55);
   border-radius: 999px;
   color: #a9772a;
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .bk-box-eyebrow svg {
-  font-size: 14px;
+  font-size: 13px;
   color: #b8891f;
 }
 
-.bk-box-copy h3 {
-  margin: 0 0 12px;
+.bk-box-caption h3 {
+  margin: 0 0 9px;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(26px, 3.2vw, 46px);
+  font-size: clamp(24px, 5vw, 34px);
   font-weight: 900;
-  line-height: 1.02;
+  line-height: 1.04;
   text-transform: uppercase;
 }
 
-.bk-box-copy p {
-  margin: 0 0 20px;
-  max-width: 460px;
+.bk-box-caption p {
+  margin: 0 auto;
+  max-width: 360px;
   color: #6b5136;
-  font-size: clamp(13px, 1.2vw, 15px);
-  line-height: 1.72;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
-/* Thumbnail rail. */
-.bk-box-thumbs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.bk-box-thumb {
-  position: relative;
-  width: 62px;
-  height: 76px;
+/* ── WhatsApp-style tap zones ── */
+.bk-box-tap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  align-items: center;
   padding: 0;
   border: 0;
-  border-radius: 10px;
-  overflow: hidden;
+  background: transparent;
   cursor: pointer;
-  background: #eadccf;
-  box-shadow: 0 6px 16px rgba(88, 39, 13, 0.14);
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  opacity: 0.62;
-  transition: opacity 0.25s ease, outline-color 0.25s ease, transform 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.bk-box-thumb:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
+.bk-box-tap--prev {
+  left: 0;
+  width: 34%;
 }
 
-.bk-box-thumb.is-active {
-  opacity: 1;
-  outline-color: #d4af37;
-  transform: translateY(-2px);
-}
-
-.bk-box-thumb img,
-.bk-box-thumb video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.bk-box-thumb-play {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-size: 15px;
-  background: rgba(10, 3, 4, 0.28);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+.bk-box-tap--next {
+  right: 0;
+  width: 66%;
 }
 
 /* ── Sparkles ── */
@@ -348,31 +304,7 @@
   }
 }
 
-/* ── Mobile: stack stage over copy ── */
-@media (max-width: 860px) {
-  .bk-box-block {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  .bk-box-stage {
-    aspect-ratio: 4 / 5;
-  }
-
-  .bk-box-copy {
-    text-align: center;
-  }
-
-  .bk-box-copy p {
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .bk-box-thumbs {
-    justify-content: center;
-  }
-}
-
+/* ── Mobile ── */
 @media (max-width: 640px) {
   .bk-box-section {
     padding: 26px 0 32px;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
@@ -7,12 +7,17 @@ import "./BoxSection.css";
 const IMAGE_DURATION = 4500; // ms an image holds before auto-advancing
 const VIDEO_MAX = 12000; // ms cap so a long video never stalls the story
 
-// One admin entry → an editorial spotlight: a big cinematic stage that
-// auto-plays through the entry's media (videos first, then images) with a
-// story-style segmented progress bar, an elegant copy column, and a clickable
-// thumbnail rail. Nothing is cropped — a blurred copy fills behind each frame.
-const BoxShowcase = ({ entry }) => {
-  // Stable across renders so the auto-advance effect isn't restarted every frame.
+// Hardcoded, on-brand copy (the admin title/description are intentionally
+// ignored here — this section always tells the same premium packaging story).
+const SECTION_LABEL = "Unboxing Luxury";
+const STORY_TITLE = "Wrapped in Tradition";
+const STORY_TEXT =
+  "Every weave leaves Banaras in a handcrafted keepsake box — tissue-folded, wax-sealed, and tied with a note, so the moment it arrives feels like a celebration.";
+
+// One admin entry → a full WhatsApp-style story: media auto-advances with a
+// segmented progress bar, and the shopper can tap/click the left or right side
+// to step back or forward. Hardcoded copy is overlaid; nothing is cropped.
+const BoxStory = ({ entry }) => {
   const media = useMemo(() => [
     ...(Array.isArray(entry.videos) ? entry.videos.filter(Boolean).map((url) => ({ type: "video", url })) : []),
     ...(Array.isArray(entry.images) ? entry.images.filter(Boolean).map((url) => ({ type: "image", url })) : []),
@@ -21,19 +26,15 @@ const BoxShowcase = ({ entry }) => {
   const [progress, setProgress] = useState(0);
   const single = media.length <= 1;
 
-  const goTo = useCallback((index) => {
+  const step = useCallback((dir) => {
     setProgress(0);
-    setActive(((index % media.length) + media.length) % media.length);
+    setActive((index) => (index + dir + media.length) % media.length);
   }, [media.length]);
 
-  const next = useCallback(() => {
-    if (single) return;
-    setProgress(0);
-    setActive((index) => (index + 1) % media.length);
-  }, [single, media.length]);
+  const next = useCallback(() => { if (!single) step(1); }, [single, step]);
+  const prev = useCallback(() => { if (!single) step(-1); }, [single, step]);
 
-  // Images self-advance on a timed progress ramp; videos drive progress from
-  // their own playback (handled in the <video> events below).
+  // Images self-advance on a timed ramp; videos advance from their own playback.
   useEffect(() => {
     const item = media[active];
     if (!item || item.type !== "image") return undefined;
@@ -53,97 +54,81 @@ const BoxShowcase = ({ entry }) => {
   const current = media[active];
 
   return (
-    <div className="bk-box-block">
-      <div className="bk-box-stage-col">
-        <div className="bk-box-stage">
-          {/* Story-style segmented progress across the top. */}
-          <div className="bk-box-segments" aria-hidden="true">
-            {media.map((item, index) => (
-              <span key={index} className="bk-box-segment">
-                <i style={{ width: index < active ? "100%" : index === active ? `${progress * 100}%` : "0%" }} />
-              </span>
-            ))}
-          </div>
-
-          {/* Blurred fill so portrait/landscape media is never cropped. */}
-          {current.type === "video" ? (
-            <>
-              <video className="bk-box-fill" src={current.url} autoPlay muted loop={single} playsInline preload="metadata" aria-hidden="true" />
-              <video
-                key={`${entry.id}-${active}`}
-                className="bk-box-front"
-                src={current.url}
-                autoPlay
-                muted
-                loop={single}
-                playsInline
-                preload="metadata"
-                aria-label={entry.title || "Premium packaging"}
-                onTimeUpdate={(e) => {
-                  const v = e.currentTarget;
-                  if (v.duration) setProgress(Math.min(1, v.currentTime / v.duration));
-                }}
-                onEnded={next}
-                ref={(el) => {
-                  if (!el) return;
-                  // Safety net: cap absurdly long clips so the story keeps moving.
-                  clearTimeout(el._cap);
-                  if (!single) el._cap = setTimeout(next, VIDEO_MAX);
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <img className="bk-box-fill" src={imgUrl(current.url, 900)} alt="" aria-hidden="true" />
-              <img key={`${entry.id}-${active}`} className="bk-box-front bk-box-kenburns" src={imgUrl(current.url, 1200)} alt={entry.title || "Premium packaging"} />
-            </>
-          )}
-
-          <span className="bk-box-stage-scrim" aria-hidden="true" />
-          <span className="bk-box-corners" aria-hidden="true" />
-          <span className="bk-box-count">{String(active + 1).padStart(2, "0")}<i>/{String(media.length).padStart(2, "0")}</i></span>
-        </div>
+    <div className="bk-box-item">
+      <div className="bk-box-story">
+      {/* Story-style segmented progress across the top. */}
+      <div className="bk-box-segments" aria-hidden="true">
+        {media.map((item, index) => (
+          <span key={index} className="bk-box-segment">
+            <i style={{ width: index < active ? "100%" : index === active ? `${progress * 100}%` : "0%" }} />
+          </span>
+        ))}
       </div>
 
-      <div className="bk-box-copy">
-        <span className="bk-box-eyebrow">
-          <Icon icon="lucide:gift" /> Premium Packaging
-        </span>
-        {entry.title && <h3>{entry.title}</h3>}
-        {entry.description && <p>{entry.description}</p>}
+      {/* Blurred fill so portrait/landscape media is never cropped. */}
+      {current.type === "video" ? (
+        <>
+          <video className="bk-box-fill" src={current.url} autoPlay muted loop={single} playsInline preload="metadata" aria-hidden="true" />
+          <video
+            key={`${entry.id}-${active}`}
+            className="bk-box-front"
+            src={current.url}
+            autoPlay
+            muted
+            loop={single}
+            playsInline
+            preload="metadata"
+            aria-label={STORY_TITLE}
+            onTimeUpdate={(e) => {
+              const v = e.currentTarget;
+              if (v.duration) setProgress(Math.min(1, v.currentTime / v.duration));
+            }}
+            onEnded={next}
+            ref={(el) => {
+              if (!el) return;
+              clearTimeout(el._cap);
+              if (!single) el._cap = setTimeout(next, VIDEO_MAX);
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <img className="bk-box-fill" src={imgUrl(current.url, 900)} alt="" aria-hidden="true" />
+          <img key={`${entry.id}-${active}`} className="bk-box-front bk-box-kenburns" src={imgUrl(current.url, 1200)} alt={STORY_TITLE} />
+        </>
+      )}
 
-        {media.length > 1 && (
-          <div className="bk-box-thumbs">
-            {media.map((item, index) => (
-              <button
-                key={`${item.url}-${index}`}
-                type="button"
-                className={`bk-box-thumb${index === active ? " is-active" : ""}`}
-                onClick={() => goTo(index)}
-                aria-label={`Show item ${index + 1}`}
-              >
-                {item.type === "video" ? (
-                  <>
-                    <video src={item.url} muted playsInline preload="metadata" />
-                    <span className="bk-box-thumb-play" aria-hidden="true"><Icon icon="lucide:play" /></span>
-                  </>
-                ) : (
-                  <img src={imgUrl(item.url, 200)} alt="" loading="lazy" />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+      <span className="bk-box-scrim" aria-hidden="true" />
+
+      {/* Brand chip */}
+      <span className="bk-box-brand" aria-hidden="true">
+        <i><Icon icon="lucide:crown" /></i>
+        Banarasi Kala
+      </span>
+
+      {/* WhatsApp-style tap zones: left = previous, right = next. */}
+      {!single && (
+        <>
+          <button type="button" className="bk-box-tap bk-box-tap--prev" onClick={prev} aria-label="Previous" />
+          <button type="button" className="bk-box-tap bk-box-tap--next" onClick={next} aria-label="Next" />
+        </>
+      )}
+      </div>
+
+      {/* Copy sits below the story card, out of the media view. */}
+      <div className="bk-box-caption">
+        <span className="bk-box-eyebrow"><Icon icon="lucide:gift" /> Premium Packaging</span>
+        <h3>{STORY_TITLE}</h3>
+        <p>{STORY_TEXT}</p>
       </div>
     </div>
   );
 };
 
-// "Box Section" — admin-curated premium-packaging showcase on the home page
-// (title + multiple images + multiple videos per entry).
+// "Box Section" — admin-curated premium-packaging story on the home page
+// (multiple images + multiple videos per entry; copy is hardcoded above).
 const BoxSection = () => {
   const [entries, setEntries] = useState([]);
-  const rootRef = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -161,14 +146,14 @@ const BoxSection = () => {
   if (!entries.length) return null;
 
   return (
-    <section className="bk-box-section" ref={rootRef}>
+    <section className="bk-box-section">
       <span className="bk-box-sparkles" aria-hidden="true">
         {[
-          { top: "10%", left: "8%", d: "0s", s: 13 },
-          { top: "24%", left: "92%", d: "1.2s", s: 10 },
-          { top: "76%", left: "5%", d: "0.6s", s: 11 },
-          { top: "84%", left: "78%", d: "1.8s", s: 14 },
-          { top: "50%", left: "48%", d: "2.4s", s: 9 },
+          { top: "12%", left: "9%", d: "0s", s: 13 },
+          { top: "26%", left: "90%", d: "1.2s", s: 10 },
+          { top: "72%", left: "6%", d: "0.6s", s: 11 },
+          { top: "82%", left: "88%", d: "1.8s", s: 14 },
+          { top: "48%", left: "94%", d: "2.4s", s: 9 },
         ].map((sp, i) => (
           <i key={i} style={{ top: sp.top, left: sp.left, animationDelay: sp.d, "--s": `${sp.s}px` }} />
         ))}
@@ -176,12 +161,14 @@ const BoxSection = () => {
       <div className="bk-box-shell">
         <div className="bk-box-head">
           <span className="bk-box-flourish" aria-hidden="true" />
-          <span className="bk-box-head-label">Unboxing Luxury</span>
+          <span className="bk-box-head-label">{SECTION_LABEL}</span>
           <span className="bk-box-flourish bk-box-flourish--r" aria-hidden="true" />
         </div>
-        {entries.map((entry) => (
-          <BoxShowcase key={entry.id} entry={entry} />
-        ))}
+        <div className="bk-box-stories">
+          {entries.map((entry) => (
+            <BoxStory key={entry.id} entry={entry} />
+          ))}
+        </div>
       </div>
     </section>
   );
