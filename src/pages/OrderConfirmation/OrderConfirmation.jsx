@@ -326,26 +326,98 @@ const buildReverseStatusTimeline = (order) => {
   return [];
 };
 
-// Shared renderer for the Return / Exchange panel timelines (status steps or
-// live courier scans).
-const ReverseStepsTimeline = ({ steps }) => (
-  <div className="confirmation-timeline">
-    {steps.map((step, index) => (
-      <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state || "pending"}`}>
-        <div className="confirmation-step-track">
-          <span className="confirmation-step-icon">
-            {step.state === "done" ? <Icon icon="lucide:check" /> : <Icon icon={step.icon} />}
-          </span>
-          {index < steps.length - 1 && <div className="confirmation-step-line" />}
-        </div>
-        <div className="confirmation-step-body">
-          <strong>{step.title}</strong>
-          <p>{step.detail}</p>
-        </div>
-      </div>
-    ))}
+// Locate the "current" step: the explicitly-current one, else the last done.
+const currentStepIndex = (steps) => {
+  const explicit = steps.findIndex((s) => s.state === "current");
+  if (explicit !== -1) return explicit;
+  let last = 0;
+  steps.forEach((s, i) => { if (s.state === "done") last = i; });
+  return last;
+};
+
+const TimelineStep = ({ step, showLine }) => (
+  <div className={`confirmation-step is-${step.state || "pending"}`}>
+    <div className="confirmation-step-track">
+      <span className="confirmation-step-icon">
+        {step.state === "done" ? <Icon icon="lucide:check" /> : <Icon icon={step.icon} />}
+      </span>
+      {showLine && <div className="confirmation-step-line" />}
+    </div>
+    <div className="confirmation-step-body">
+      <strong>{step.title}</strong>
+      <p>{step.detail}</p>
+    </div>
   </div>
 );
+
+// Shared timeline renderer used by every timeline on the page (main shipment,
+// return, exchange — status steps or live courier scans). By default it is
+// COLLAPSED to: first step · "… N more" · current step · next step. Tapping the
+// "…" row expands the whole timeline (and a "Show less" row collapses it again).
+// Only collapses when it would hide at least two steps, so short timelines and
+// near-complete ones just render in full.
+const CollapsibleTimeline = ({ steps }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!Array.isArray(steps) || !steps.length) return null;
+
+  const current = currentStepIndex(steps);
+  const keep = [0, current, current + 1].filter((i) => i >= 0 && i < steps.length);
+  const visible = Array.from(new Set(keep)).sort((a, b) => a - b);
+  const hiddenCount = steps.length - visible.length;
+  const collapse = !expanded && hiddenCount >= 2;
+
+  // Ordered render rows: steps + "…" markers wherever a run of steps is hidden.
+  const rows = [];
+  if (collapse) {
+    let prev = -1;
+    visible.forEach((idx) => {
+      if (idx - prev > 1) rows.push({ type: "more", count: idx - prev - 1, key: `more-${prev}-${idx}` });
+      rows.push({ type: "step", step: steps[idx], key: `step-${idx}` });
+      prev = idx;
+    });
+    if (prev < steps.length - 1) rows.push({ type: "more", count: steps.length - 1 - prev, key: "more-tail" });
+  } else {
+    steps.forEach((step, idx) => rows.push({ type: "step", step, key: `step-${idx}` }));
+  }
+
+  return (
+    <div className="confirmation-timeline">
+      {rows.map((row, i) => {
+        const showLine = i < rows.length - 1;
+        if (row.type === "more") {
+          return (
+            <button
+              type="button"
+              key={row.key}
+              className="confirmation-step confirmation-step-more"
+              onClick={() => setExpanded(true)}
+              aria-label={`Show ${row.count} more ${row.count === 1 ? "update" : "updates"}`}
+            >
+              <div className="confirmation-step-track">
+                <span className="confirmation-step-icon"><Icon icon="lucide:more-vertical" /></span>
+                {showLine && <div className="confirmation-step-line" />}
+              </div>
+              <div className="confirmation-step-body">
+                <strong>Show {row.count} more {row.count === 1 ? "update" : "updates"}</strong>
+                <p>Tap to expand the full timeline</p>
+              </div>
+            </button>
+          );
+        }
+        return <TimelineStep key={row.key} step={row.step} showLine={showLine} />;
+      })}
+      {expanded && hiddenCount >= 2 && (
+        <button type="button" className="confirmation-timeline-less" onClick={() => setExpanded(false)}>
+          Show less
+        </button>
+      )}
+    </div>
+  );
+};
+
+// Shared renderer for the Return / Exchange panel timelines (status steps or
+// live courier scans) — same collapsible behaviour as the main timeline.
+const ReverseStepsTimeline = ({ steps }) => <CollapsibleTimeline steps={steps} />;
 
 // Map a reverse (return/exchange) shipment's ShipRocket scan activities to timeline steps.
 const buildReverseActivities = (shipment) => {
@@ -1141,22 +1213,7 @@ export default function OrderConfirmation() {
               </div>
             )}
 
-            <div className="confirmation-timeline">
-              {timeline.map((step, index) => (
-                <div key={`${step.title}-${index}`} className={`confirmation-step is-${step.state || "pending"}`}>
-                  <div className="confirmation-step-track">
-                    <span className="confirmation-step-icon">
-                      {step.state === "done" ? <Icon icon="lucide:check" /> : <Icon icon={step.icon} />}
-                    </span>
-                    {index < timeline.length - 1 && <div className="confirmation-step-line" />}
-                  </div>
-                  <div className="confirmation-step-body">
-                    <strong>{step.title}</strong>
-                    <p>{step.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CollapsibleTimeline steps={timeline} />
 
             {order.shiprocket_awb && (
               <div className="awb-strip">
