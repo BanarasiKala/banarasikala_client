@@ -107,11 +107,6 @@ const BanarasInMotion = () => {
                         <i className="bk-motion-avatar"><Icon icon="lucide:crown" /></i>
                         banarasikala
                       </span>
-                      {Number(reel.view_count) > 0 && (
-                        <span className="bk-motion-views" aria-hidden="true">
-                          <Icon icon="lucide:eye" /> {formatCount(reel.view_count)}
-                        </span>
-                      )}
 
                       <span className="bk-motion-actions" aria-hidden="true">
                         <span className={`bk-motion-action${reel.is_liked ? " is-liked" : ""}`}>
@@ -124,6 +119,10 @@ const BanarasInMotion = () => {
                         </span>
                         <span className="bk-motion-action">
                           <Icon icon="lucide:send" />
+                        </span>
+                        <span className="bk-motion-action">
+                          <Icon icon="lucide:eye" />
+                          {Number(reel.view_count) > 0 && <b>{formatCount(reel.view_count)}</b>}
                         </span>
                       </span>
 
