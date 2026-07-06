@@ -1922,3 +1922,77 @@
   background: rgba(128, 0, 32, 0.04);
   border-radius: 8px;
 }
+
+/* ── RTO "action needed" nudge on the order card ─────────────────── */
+.order-rto-nudge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 18px 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(128, 0, 32, 0.24);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 244, 236, 0.96), rgba(255, 238, 226, 0.9));
+}
+
+.order-rto-nudge > svg {
+  flex: 0 0 auto;
+  font-size: 22px;
+  color: #800020;
+}
+
+.order-rto-nudge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.order-rto-nudge-copy strong {
+  color: #5d170d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-rto-nudge-copy span {
+  color: #7a6355;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.order-rto-nudge button {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #800020;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.order-rto-nudge button:hover {
+  background: #6a001a;
+}
+
+.order-rto-nudge-cod {
+  border-color: rgba(154, 98, 0, 0.28);
+  background: linear-gradient(135deg, rgba(255, 248, 224, 0.96), rgba(255, 244, 214, 0.9));
+}
+
+.order-rto-nudge-cod > svg {
+  color: #9a6200;
+}
+
+@media (max-width: 520px) {
+  .order-rto-nudge {
+    flex-wrap: wrap;
+  }
+
+  .order-rto-nudge button {
+    width: 100%;
+  }
+}

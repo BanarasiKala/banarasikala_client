@@ -407,9 +407,32 @@ const OrderCard = ({ order, onFeedback }) => {
         })}
       </div>
 
+      {order.rto_action?.awaiting && String(order.rto_action?.payment_method || "").toUpperCase() !== "COD" && (
+        <div className="order-rto-nudge">
+          <Icon icon="lucide:package-x" />
+          <div className="order-rto-nudge-copy">
+            <strong>Action needed — your order came back to us</strong>
+            <span>Choose to re-dispatch (pay {formatPrice(order.rto_action.redispatch_fee)}) or get a refund.</span>
+          </div>
+          <button type="button" onClick={(e) => { e.stopPropagation(); openOrderDetail(); }}>
+            Choose
+          </button>
+        </div>
+      )}
+
+      {order.rto_action?.resolution === "PRODUCT_RETURNED_COD_BLOCKED" && (
+        <div className="order-rto-nudge order-rto-nudge-cod">
+          <Icon icon="lucide:info" />
+          <div className="order-rto-nudge-copy">
+            <strong>Order returned — Cash on Delivery disabled</strong>
+            <span>This COD parcel couldn&rsquo;t be delivered. You can reorder any time by paying online.</span>
+          </div>
+        </div>
+      )}
+
       {(() => {
         const isPrepaid = String(order.payment_method || '').toUpperCase() !== 'COD';
-        const hasCompletedReturn = String(order.status || '').toLowerCase().includes('return completed') || 
+        const hasCompletedReturn = String(order.status || '').toLowerCase().includes('return completed') ||
           items.some(item => String(item.status || '').toLowerCase().includes('return completed'));
         if (isPrepaid && hasCompletedReturn) {
           let totalItemAmount = 0;

@@ -166,10 +166,6 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     const days = Number(item.processing_days);
     return Number.isFinite(days) && days > max ? days : max;
   }, -1);
-  // Per-product COD is ignored — every product is COD/prepaid eligible. COD is
-  // offered only up to the COD cap (VITE_COD_MAX_AMOUNT); larger orders are
-  // prepaid only (mirrors the cart rule).
-  const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT;
   const [activePayment, setActivePayment] = useState(null);
   // When paying online, which Razorpay method to open to (upi | card | netbanking | emi | wallet).
   const [onlineMethod, setOnlineMethod] = useState(null);
@@ -186,6 +182,13 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const [addressLoading, setAddressLoading] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [walletBalance, setWalletBalance] = useState(0);
+  // COD is blocked for accounts that previously had a COD order returned to
+  // seller (RTO). Such customers can only reorder prepaid.
+  const [codBlocked, setCodBlocked] = useState(false);
+  // Per-product COD is ignored — every product is COD/prepaid eligible. COD is
+  // offered only up to the COD cap (VITE_COD_MAX_AMOUNT); larger orders and
+  // COD-blocked accounts are prepaid only.
+  const isCodAllowed = payableCart.length > 0 && subtotal <= COD_MAX_AMOUNT && !codBlocked;
   const [useWallet, setUseWallet] = useState(() => {
     try { return localStorage.getItem("bk_use_wallet") === "1"; } catch { return false; }
   });
@@ -261,12 +264,14 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         return;
       }
       try {
-        const [ordersRes, addressRes, walletRes] = await Promise.all([
+        const [ordersRes, addressRes, walletRes, meRes] = await Promise.all([
           api.get("/api/orders/my"),
           api.get("/api/addresses").catch(() => ({ data: [] })),
           api.get("/api/wallet").catch(() => ({ data: { wallet_balance: 0 } })),
+          api.get("/api/customers/me").catch(() => ({ data: {} })),
         ]);
         if (cancelled) return;
+        setCodBlocked(Boolean(meRes.data?.is_cod_blocked));
         const ordersData = unwrapApiData(ordersRes.data);
         const ordersList = Array.isArray(ordersData) ? ordersData : [];
         setIsFirstOrder(ordersList.length === 0);
@@ -1180,10 +1185,14 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                     <span className="ckw-pay-title">Cash on Delivery</span>
                     {isCodAllowed
                       ? <span className="ckw-pay-fee">+{money(COD_FEE_AMOUNT)}</span>
-                      : <span className="ckw-pay-fee is-muted">Above {money(COD_MAX_AMOUNT)} not allowed</span>}
+                      : <span className="ckw-pay-fee is-muted">{codBlocked ? "Not available on your account" : `Above ${money(COD_MAX_AMOUNT)} not allowed`}</span>}
                   </span>
                   <span className="ckw-pay-sub">
-                    {isCodAllowed ? "Pay with cash when your order arrives" : "This order is prepaid only"}
+                    {isCodAllowed
+                      ? "Pay with cash when your order arrives"
+                      : codBlocked
+                        ? "A previous COD order was returned undelivered — please pay online."
+                        : "This order is prepaid only"}
                   </span>
                 </span>
                 <img src={logoCod} alt="Cash on Delivery" className="ckw-pay-logo-img" />

@@ -3,10 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../utils/api";
+import { API_ENDPOINTS } from "../../config/api";
 import { getOrderDisplayNumber } from "../../utils/itemCode";
-import { numberEnv } from "../../utils/env";
+import { numberEnv, requiredEnv } from "../../utils/env";
+import { buildRazorpayPrefill } from "../../utils/razorpay";
 import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import { useNotification } from "../../context/NotificationContext";
+import { useCart } from "../../context/CartContext";
 import "./OrderConfirmation.css";
 
 const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
@@ -520,6 +523,7 @@ export default function OrderConfirmation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const { refreshCart } = useCart();
   const orderId = searchParams.get("orderId");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -553,6 +557,10 @@ export default function OrderConfirmation() {
   const [bankSaving, setBankSaving] = useState(false);
   const [tracking, setTracking] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  // RTO resolution: "" | "redispatch" | "refund" (in-flight), and the refund
+  // confirmation modal toggle.
+  const [rtoLoading, setRtoLoading] = useState("");
+  const [rtoConfirmOpen, setRtoConfirmOpen] = useState(false);
 
   const breakdown = useMemo(() => getBreakdown(order || {}), [order]);
   // Live ShipRocket scan activities (only exist once the parcel is picked up and
@@ -577,6 +585,19 @@ export default function OrderConfirmation() {
     .filter((r) => isRefundSettled(r.status))
     .reduce((sum, r) => sum + toNumber(r.amount), 0);
   const orderActions = useMemo(() => getOrderActions(order), [order]);
+  // RTO (order returned to seller). Prepaid parcels wait for the customer to
+  // choose "pay to re-dispatch" or "refund"; COD parcels are terminal (the
+  // account is COD-blocked and can only reorder prepaid).
+  const rtoAction = order?.rto_action || null;
+  const rtoAwaiting = Boolean(rtoAction?.awaiting)
+    && String(rtoAction?.payment_method || "").toUpperCase() !== "COD";
+  const rtoCodBlocked = rtoAction?.resolution === "PRODUCT_RETURNED_COD_BLOCKED";
+  // The refund covers the customer's whole contribution — gateway money paid
+  // plus any wallet credit spent — minus the forward + RTO charges kept. The
+  // wallet-paid share is returned to the wallet, the remainder to the gateway.
+  const rtoWalletPaid = toNumber(order?.wallet_amount);
+  const rtoContribution = toNumber(order?.amount_paid) + rtoWalletPaid;
+  const rtoRefundEstimate = Math.max(0, rtoContribution - toNumber(rtoAction?.redispatch_fee));
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -820,6 +841,141 @@ export default function OrderConfirmation() {
     }
   };
 
+  const reloadOrder = useCallback(async () => {
+    try {
+      const updated = await api.get(`/api/orders/${orderId}`);
+      setOrder(updated.data);
+    } catch {
+      // Non-blocking: the success toast already fired; a manual refresh recovers.
+    }
+  }, [orderId]);
+
+  // COD RTO → "Shop again with prepaid": drop this order's items back into the
+  // bag and send the customer to the cart (their COD is now blocked, so they'll
+  // check out prepaid).
+  const handleReorderPrepaid = async () => {
+    const items = (order?.OrderItems || []).filter(
+      (it) => String(it.status || "").toLowerCase() !== "cancelled",
+    );
+    if (!items.length) {
+      navigate("/collection");
+      return;
+    }
+    setRtoLoading("reorder");
+    try {
+      const results = await Promise.allSettled(
+        items.map((it) => api.post(API_ENDPOINTS.cart, {
+          productId: it.product_id,
+          quantity: Math.max(1, toNumber(it.quantity) || 1),
+          colorId: it.colorId ?? null,
+        })),
+      );
+      const added = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - added;
+      await refreshCart();
+      if (added === 0) {
+        showNotification("These items are no longer available to buy.", "error");
+        setRtoLoading("");
+        return;
+      }
+      showNotification(
+        failed > 0
+          ? `${added} item${added > 1 ? "s" : ""} added to your bag. ${failed} could not be added.`
+          : "Items added to your bag.",
+        failed > 0 ? "warning" : "success",
+      );
+      navigate("/cart");
+    } catch {
+      showNotification("Unable to add these items to your bag right now.", "error");
+      setRtoLoading("");
+    }
+  };
+
+  // Prepaid RTO → "Request refund": abandon the parcel. The backend refunds what
+  // was paid minus the forward + RTO logistics it already spent.
+  const handleRtoRefund = async () => {
+    if (!order) return;
+    setRtoLoading("refund");
+    try {
+      const res = await api.post(API_ENDPOINTS.resolveRto, { orderId: order.id, action: "abandon" });
+      showNotification(res.data?.message || "Refund initiated.", "success");
+      setRtoConfirmOpen(false);
+      await reloadOrder();
+    } catch (err) {
+      showNotification(err?.response?.data?.message || "Unable to process the refund right now.", "error");
+    } finally {
+      setRtoLoading("");
+    }
+  };
+
+  // Prepaid RTO → "Re-dispatch": collect the forward + RTO charge via Razorpay,
+  // then tell the backend to raise a fresh forward shipment for the same order.
+  const handleRtoRedispatch = async () => {
+    if (!order || !rtoAction) return;
+    const fee = toNumber(rtoAction.redispatch_fee);
+    setRtoLoading("redispatch");
+    try {
+      // Zero-fee guard (shouldn't occur for a prepaid RTO): resolve directly.
+      if (fee <= 0) {
+        const res = await api.post(API_ENDPOINTS.resolveRto, { orderId: order.id, action: "redispatch" });
+        showNotification(res.data?.message || "Order re-dispatched.", "success");
+        await reloadOrder();
+        setRtoLoading("");
+        return;
+      }
+
+      if (!window.Razorpay) {
+        showNotification("Payment gateway is still loading. Please try again.", "error");
+        setRtoLoading("");
+        return;
+      }
+
+      const orderResponse = await api.post(API_ENDPOINTS.razorpay.createOrder, { amount: fee });
+      const razorpayOrder = orderResponse.data;
+      if (!razorpayOrder?.id) throw new Error(razorpayOrder?.message || "Unable to start payment.");
+
+      const options = {
+        key: requiredEnv("VITE_RAZORPAY_KEY_ID"),
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency || "INR",
+        name: "Banarasi Kala",
+        description: `Re-dispatch charges · Order ${orderNumber}`,
+        order_id: razorpayOrder.id,
+        prefill: buildRazorpayPrefill({
+          name: order.customer_name,
+          email: order.customer_email,
+          phone: order.phone,
+        }),
+        theme: { color: "#800020" },
+        handler: async (response) => {
+          try {
+            const verifyRes = await api.post(API_ENDPOINTS.razorpay.verifyPayment, response);
+            if (!verifyRes.data?.success) throw new Error("Payment verification failed.");
+            const res = await api.post(API_ENDPOINTS.resolveRto, {
+              orderId: order.id,
+              action: "redispatch",
+              gateway: "razorpay",
+              gateway_payment_id: response.razorpay_payment_id,
+            });
+            showNotification(res.data?.message || "Payment received — your order is being re-dispatched.", "success");
+            await reloadOrder();
+          } catch (err) {
+            showNotification(err?.response?.data?.message || err.message || "Unable to confirm the re-dispatch.", "error");
+          } finally {
+            setRtoLoading("");
+          }
+        },
+        modal: { ondismiss: () => setRtoLoading("") },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      showNotification(err?.response?.data?.message || err.message || "Unable to start the re-dispatch payment.", "error");
+      setRtoLoading("");
+    }
+  };
+
   if (loading) return <OrderConfirmationSkeleton />;
 
   if (error || !order) {
@@ -910,6 +1066,100 @@ export default function OrderConfirmation() {
               </div>
             )}
           </section>
+
+          {rtoAwaiting && (
+            <section className="order-panel rto-panel">
+              <div className="rto-panel-head">
+                <span className="rto-panel-icon"><Icon icon="lucide:package-x" /></span>
+                <div>
+                  <h2>Your order came back to us</h2>
+                  <p>The courier couldn&rsquo;t deliver this parcel and it has returned to our warehouse. Choose what you&rsquo;d like to do next.</p>
+                </div>
+              </div>
+
+              <div className="rto-options">
+                <div className="rto-option">
+                  <div className="rto-option-head">
+                    <Icon icon="lucide:truck" />
+                    <strong>Re-dispatch my order</strong>
+                  </div>
+                  <p>We&rsquo;ll send the same order out again to your delivery address.</p>
+                  <ul className="rto-fee-lines">
+                    <li><span>Forward shipping</span><strong>{formatPrice(rtoAction.forward_charge)}</strong></li>
+                    <li><span>Return (RTO) charge</span><strong>{formatPrice(rtoAction.rto_charge)}</strong></li>
+                    <li className="rto-fee-total"><span>Payable now</span><strong>{formatPrice(rtoAction.redispatch_fee)}</strong></li>
+                  </ul>
+                  <button
+                    type="button"
+                    className="rto-btn rto-btn-primary"
+                    onClick={handleRtoRedispatch}
+                    disabled={Boolean(rtoLoading)}
+                  >
+                    {rtoLoading === "redispatch" ? "Opening payment…" : `Pay ${formatPrice(rtoAction.redispatch_fee)} & re-dispatch`}
+                  </button>
+                </div>
+
+                <div className="rto-option">
+                  <div className="rto-option-head">
+                    <Icon icon="lucide:rotate-ccw" />
+                    <strong>Refund me instead</strong>
+                  </div>
+                  <p>We&rsquo;ll refund what you paid, after deducting the forward &amp; return shipping already spent on this parcel.</p>
+                  <ul className="rto-fee-lines">
+                    <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
+                    {rtoWalletPaid > 0 && (
+                      <li><span>Wallet used</span><strong>{formatPrice(rtoWalletPaid)}</strong></li>
+                    )}
+                    <li><span>Less forward + RTO charges</span><strong>-{formatPrice(rtoAction.redispatch_fee)}</strong></li>
+                    <li className="rto-fee-total"><span>Estimated refund</span><strong>{formatPrice(rtoRefundEstimate)}</strong></li>
+                  </ul>
+                  {rtoWalletPaid > 0 && (
+                    <p className="rto-wallet-hint">
+                      <Icon icon="lucide:wallet" /> Your wallet-paid share is returned to your wallet; the rest to your original payment method.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="rto-btn rto-btn-ghost"
+                    onClick={() => setRtoConfirmOpen(true)}
+                    disabled={Boolean(rtoLoading)}
+                  >
+                    {rtoLoading === "refund" ? "Processing…" : "Request refund"}
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {rtoCodBlocked && (
+            <section className="order-panel rto-panel rto-panel-cod">
+              <div className="rto-panel-head">
+                <span className="rto-panel-icon"><Icon icon="lucide:package-x" /></span>
+                <div>
+                  <h2>This order was returned to us</h2>
+                  <p>
+                    The courier couldn&rsquo;t deliver your Cash on Delivery parcel, so it has come back to our
+                    warehouse and this order is now closed.{" "}
+                    {rtoWalletPaid > 0
+                      ? `The ${formatPrice(rtoWalletPaid)} you paid from your wallet has been returned to your wallet.`
+                      : "As nothing was paid, there’s no refund due."}
+                  </p>
+                  <p className="rto-cod-note">
+                    <Icon icon="lucide:info" /> Cash on Delivery is no longer available on your account. You can still
+                    order any time by paying online.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="rto-btn rto-btn-primary rto-btn-inline"
+                onClick={handleReorderPrepaid}
+                disabled={Boolean(rtoLoading)}
+              >
+                {rtoLoading === "reorder" ? "Adding to bag…" : "Shop again with prepaid"}
+              </button>
+            </section>
+          )}
 
           {(reverseShipments.length > 0 || reverseStatusSteps.length > 0) && (
             <section className="order-panel">
@@ -1223,6 +1473,56 @@ export default function OrderConfirmation() {
           </Link>
         </aside>
       </section>
+
+      {rtoConfirmOpen && (
+        <div className="cancel-modal-overlay" onClick={() => !rtoLoading && setRtoConfirmOpen(false)}>
+          <div className="cancel-modal-container rto-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="cancel-modal-close"
+              onClick={() => setRtoConfirmOpen(false)}
+              disabled={Boolean(rtoLoading)}
+            >
+              <Icon icon="lucide:x" />
+            </button>
+            <div className="cancel-modal-header">
+              <h3>Request a refund?</h3>
+              <p>
+                This closes your order. We&rsquo;ll refund the amount below
+                {rtoWalletPaid > 0
+                  ? " — your wallet-paid share to your wallet and the rest to your original payment method."
+                  : " to your original payment method."}
+              </p>
+            </div>
+            <ul className="rto-fee-lines rto-confirm-lines">
+              <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
+              {rtoWalletPaid > 0 && (
+                <li><span>Wallet used</span><strong>{formatPrice(rtoWalletPaid)}</strong></li>
+              )}
+              <li><span>Forward + RTO charges</span><strong>-{formatPrice(rtoAction?.redispatch_fee)}</strong></li>
+              <li className="rto-fee-total"><span>You&rsquo;ll receive</span><strong>{formatPrice(rtoRefundEstimate)}</strong></li>
+            </ul>
+            <div className="rto-confirm-actions">
+              <button
+                type="button"
+                className="rto-btn rto-btn-ghost"
+                onClick={() => setRtoConfirmOpen(false)}
+                disabled={Boolean(rtoLoading)}
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                className="rto-btn rto-btn-primary"
+                onClick={handleRtoRefund}
+                disabled={Boolean(rtoLoading)}
+              >
+                {rtoLoading === "refund" ? "Processing…" : "Confirm refund"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {feedbackModal.isOpen && (
         <div className="cancel-modal-overlay">

@@ -1659,3 +1659,225 @@
 .cancel-modal-form .form-row .form-group {
   flex: 1;
 }
+
+/* ── RTO (order returned to seller) action panel ─────────────────── */
+.rto-panel {
+  border-color: rgba(128, 0, 32, 0.28);
+  background:
+    linear-gradient(rgba(255, 249, 240, 0.9), rgba(255, 249, 240, 0.9)),
+    #fff;
+  box-shadow: 0 16px 38px rgba(128, 0, 32, 0.1);
+}
+
+.rto-panel-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.rto-panel-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(128, 0, 32, 0.1);
+  color: #800020;
+  font-size: 20px;
+}
+
+.rto-panel-head h2 {
+  margin: 0 0 4px;
+  color: #5d170d;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rto-panel-head p {
+  margin: 0;
+  color: #7a6355;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.rto-cod-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px !important;
+  color: #915b12 !important;
+}
+
+.rto-cod-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.rto-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.rto-option {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.rto-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #5d170d;
+}
+
+.rto-option-head svg {
+  font-size: 17px;
+  color: #800020;
+}
+
+.rto-option-head strong {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.rto-option > p {
+  margin: 6px 0 10px;
+  color: #7a6355;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rto-fee-lines {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.rto-fee-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #6b564a;
+}
+
+.rto-fee-lines li strong {
+  font-weight: 600;
+  color: #4a3a30;
+}
+
+.rto-fee-total {
+  margin-top: 3px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(128, 0, 32, 0.22);
+}
+
+.rto-fee-total span {
+  font-weight: 600;
+  color: #5d170d;
+}
+
+.rto-fee-total strong {
+  color: #800020 !important;
+  font-size: 13.5px;
+}
+
+.rto-btn {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  text-decoration: none;
+}
+
+.rto-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rto-btn-primary {
+  background: #800020;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(128, 0, 32, 0.24);
+}
+
+.rto-btn-primary:not(:disabled):hover {
+  background: #6a001a;
+}
+
+.rto-btn-ghost {
+  background: #fff;
+  color: #800020;
+  border-color: rgba(128, 0, 32, 0.35);
+}
+
+.rto-btn-ghost:not(:disabled):hover {
+  background: #fdf1f2;
+}
+
+.rto-btn-inline {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.rto-wallet-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 12px !important;
+  color: #915b12 !important;
+  font-size: 11.5px !important;
+  line-height: 1.45;
+}
+
+.rto-wallet-hint svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 13px;
+}
+
+.rto-panel-cod .rto-panel-head {
+  margin-bottom: 12px;
+}
+
+/* Refund confirmation modal */
+.rto-confirm-modal {
+  max-width: 420px;
+}
+
+.rto-confirm-lines {
+  margin: 4px 0 18px;
+}
+
+.rto-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.rto-confirm-actions .rto-btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .rto-options {
+    grid-template-columns: 1fr;
+  }
+}
