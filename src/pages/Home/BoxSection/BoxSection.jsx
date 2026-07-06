@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
@@ -25,6 +25,7 @@ const BoxStory = ({ entry }) => {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
   const single = media.length <= 1;
+  const videoElRef = useRef(null);
 
   const step = useCallback((dir) => {
     setProgress(0);
@@ -50,6 +51,28 @@ const BoxStory = ({ entry }) => {
     return () => cancelAnimationFrame(raf);
   }, [active, media, next]);
 
+  // Safety-net cap for the current video only: advances the story if playback
+  // stalls and `onEnded` never fires. Rescheduled on every timeupdate so a
+  // healthy, playing video is never cut short, and always cleared when the
+  // slide changes/unmounts — an inline ref callback here previously left the
+  // OLD slide's timer running after advancing, which fired late and skipped
+  // the NEW slide before it finished.
+  useEffect(() => {
+    const item = media[active];
+    if (!item || item.type !== "video" || single) return undefined;
+    const el = videoElRef.current;
+    let capTimer = setTimeout(next, VIDEO_MAX);
+    const resetCap = () => {
+      clearTimeout(capTimer);
+      capTimer = setTimeout(next, VIDEO_MAX);
+    };
+    el?.addEventListener("timeupdate", resetCap);
+    return () => {
+      clearTimeout(capTimer);
+      el?.removeEventListener("timeupdate", resetCap);
+    };
+  }, [active, media, single, next]);
+
   if (!media.length) return null;
   const current = media[active];
 
@@ -71,6 +94,7 @@ const BoxStory = ({ entry }) => {
           <video className="bk-box-fill" src={current.url} autoPlay muted loop={single} playsInline preload="metadata" aria-hidden="true" />
           <video
             key={`${entry.id}-${active}`}
+            ref={videoElRef}
             className="bk-box-front"
             src={current.url}
             autoPlay
@@ -84,11 +108,6 @@ const BoxStory = ({ entry }) => {
               if (v.duration) setProgress(Math.min(1, v.currentTime / v.duration));
             }}
             onEnded={next}
-            ref={(el) => {
-              if (!el) return;
-              clearTimeout(el._cap);
-              if (!single) el._cap = setTimeout(next, VIDEO_MAX);
-            }}
           />
         </>
       ) : (

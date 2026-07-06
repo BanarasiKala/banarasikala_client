@@ -461,22 +461,25 @@
 /* ── Mobile ── */
 @media (max-width: 560px) {
   .ty-card {
-    padding: 26px 16px 24px;
+    padding: 20px 14px 20px;
   }
 
-  /* Mobile hero: heading + subtitle sit left of a larger saree; the
-     description then breaks out to FULL width below the image, with the
-     button under it. */
+  /* Mobile hero: "Thank you" / "for your purchase!" stack one below the
+     other in the left half, the saree drape fills the right half beside
+     them; the description then breaks out to FULL width below both, with
+     the button under it. The two text lines hug the row boundary (end +
+     start) so they sit together at the vertical middle of the image — no
+     stray gap between or around them. */
   .ty-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 45%;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "script drape"
       "sub    drape"
       "copy   copy"
       "actions actions";
-    align-items: start;
-    padding: 14px 0 18px 2px;
+    column-gap: 12px;
+    padding: 0;
   }
 
   .ty-drape-box {
@@ -484,28 +487,39 @@
     inset: auto;
     grid-area: drape;
     width: auto;
-    height: 265px;
-    margin: -26px -18px 0 0;
+    height: 210px;
+    margin: 0 -14px 0 0;
+    border-radius: 14px 0 0 14px;
   }
 
+  /* Anchor to the TOP of the artwork (the cloth lives in the canvas's upper
+     half) so the box is filled with saree, not blank canvas. */
   .ty-drape {
-    width: 360px;
+    top: -14px;
+    right: 0;
+    left: auto;
+    transform: none;
+    width: 300px;
   }
 
   .ty-script {
     grid-area: script;
-    margin-top: 12px;
-    font-size: 40px;
+    align-self: end;
+    margin: 0;
+    font-size: 34px;
   }
 
   .ty-sub {
     grid-area: sub;
-    font-size: 16px;
+    align-self: start;
+    margin: 3px 0 0;
+    font-size: 15px;
   }
 
   .ty-copy {
     grid-area: copy;
-    margin: 6px 0 18px;
+    margin: 14px 0 16px;
+    font-size: 12.5px;
   }
 
   .ty-actions {
@@ -520,16 +534,36 @@
 
   .ty-meta {
     grid-template-columns: 1fr;
+    margin-bottom: 16px;
   }
 
   .ty-meta-cell + .ty-meta-cell {
     border-left: 0;
     border-top: 1px solid rgba(128, 0, 32, 0.12);
-    padding-top: 12px;
+    padding-top: 10px;
   }
 
   .ty-meta-cell {
     justify-content: flex-start;
+  }
+
+  .ty-section-title {
+    margin-bottom: 4px;
+  }
+
+  .ty-section-title::after {
+    margin: 5px auto 10px;
+  }
+
+  .ty-summary,
+  .ty-address {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .ty-badges {
+    padding: 14px 8px;
+    margin-bottom: 16px;
   }
 
   .ty-badges span {
@@ -537,22 +571,27 @@
   }
 }
 
-/* Small phones: step the saree down a little, keep the same grid layout. */
+/* Small phones: step the image and heading down a touch. */
 @media (max-width: 400px) {
   .ty-drape-box {
-    height: 235px;
+    height: 175px;
   }
 
   .ty-drape {
-    width: 315px;
+    top: -10px;
+    width: 250px;
   }
 
   .ty-script {
-    font-size: 34px;
+    font-size: 28px;
+  }
+
+  .ty-sub {
+    font-size: 13px;
   }
 
   .ty-hero .ty-btn {
     padding: 0 14px;
-    font-size: 12px;
+    font-size: 11.5px;
   }
 }
