@@ -147,6 +147,21 @@
   transition: width 0.12s linear;
 }
 
+/* Image slides fill via a pure CSS animation (not per-frame JS state, which
+   fought with the transition above and never looked like it was moving). */
+.bk-box-segment-fill {
+  width: 0%;
+  transition: none;
+  animation-name: bk-box-segment-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes bk-box-segment-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
 /* Brand chip. */
 .bk-box-brand {
   position: absolute;

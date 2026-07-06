@@ -35,20 +35,16 @@ const BoxStory = ({ entry }) => {
   const next = useCallback(() => { if (!single) step(1); }, [single, step]);
   const prev = useCallback(() => { if (!single) step(-1); }, [single, step]);
 
-  // Images self-advance on a timed ramp; videos advance from their own playback.
+  // Images self-advance on a fixed timer; videos advance from their own
+  // playback. The segment fill for images is a pure CSS animation (see
+  // .bk-box-segment-fill) — driving it from `progress` state on every
+  // animation frame previously fought with the bar's CSS transition and
+  // never looked like it was filling.
   useEffect(() => {
     const item = media[active];
     if (!item || item.type !== "image") return undefined;
-    const start = performance.now();
-    let raf;
-    const tick = (time) => {
-      const p = Math.min(1, (time - start) / IMAGE_DURATION);
-      setProgress(p);
-      if (p >= 1) next();
-      else raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const timer = setTimeout(next, IMAGE_DURATION);
+    return () => clearTimeout(timer);
   }, [active, media, next]);
 
   // Safety-net cap for the current video only: advances the story if playback
@@ -81,11 +77,23 @@ const BoxStory = ({ entry }) => {
       <div className="bk-box-story">
       {/* Story-style segmented progress across the top. */}
       <div className="bk-box-segments" aria-hidden="true">
-        {media.map((item, index) => (
-          <span key={index} className="bk-box-segment">
-            <i style={{ width: index < active ? "100%" : index === active ? `${progress * 100}%` : "0%" }} />
-          </span>
-        ))}
+        {media.map((item, index) => {
+          const isPast = index < active;
+          const isCurrent = index === active;
+          const isImageFill = isCurrent && item.type === "image";
+          return (
+            <span key={index} className="bk-box-segment">
+              <i
+                className={isImageFill ? "bk-box-segment-fill" : undefined}
+                style={
+                  isImageFill
+                    ? { animationDuration: `${IMAGE_DURATION}ms` }
+                    : { width: isPast ? "100%" : isCurrent ? `${progress * 100}%` : "0%" }
+                }
+              />
+            </span>
+          );
+        })}
       </div>
 
       {/* Blurred fill so portrait/landscape media is never cropped. */}
