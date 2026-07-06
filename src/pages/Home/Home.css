@@ -94,6 +94,10 @@
   --home-deferred-min-height: 520px;
 }
 
+.home-deferred-section--boxes {
+  --home-deferred-min-height: 560px;
+}
+
 .home-deferred-section--popular {
   --home-deferred-min-height: 760px;
 }
@@ -238,6 +242,10 @@
 
   .home-deferred-section--motion {
     --home-deferred-min-height: 430px;
+  }
+
+  .home-deferred-section--boxes {
+    --home-deferred-min-height: 500px;
   }
 
   .home-deferred-section--occasion {
