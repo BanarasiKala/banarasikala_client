@@ -335,7 +335,13 @@ const currentStepIndex = (steps) => {
   return last;
 };
 
-const TimelineStep = ({ step, showLine }) => (
+const TimelineStep = ({ step, showLine, currentLabel }) => {
+  const statusLabel = step.state === "done"
+    ? "Completed"
+    : step.state === "current"
+      ? (currentLabel || "In progress")
+      : null;
+  return (
   <div className={`confirmation-step is-${step.state || "pending"}`}>
     <div className="confirmation-step-track">
       <span className="confirmation-step-icon">
@@ -347,8 +353,10 @@ const TimelineStep = ({ step, showLine }) => (
       <strong>{step.title}</strong>
       <p>{step.detail}</p>
     </div>
+    {statusLabel && <span className={`confirmation-step-status is-${step.state}`}>{statusLabel}</span>}
   </div>
-);
+  );
+};
 
 // Shared timeline renderer used by every timeline on the page (main shipment,
 // return, exchange — status steps or live courier scans). By default it is
@@ -356,7 +364,7 @@ const TimelineStep = ({ step, showLine }) => (
 // "…" row expands the whole timeline (and a "Show less" row collapses it again).
 // Only collapses when it would hide at least two steps, so short timelines and
 // near-complete ones just render in full.
-const CollapsibleTimeline = ({ steps }) => {
+const CollapsibleTimeline = ({ steps, currentLabel }) => {
   const [expanded, setExpanded] = useState(false);
   if (!Array.isArray(steps) || !steps.length) return null;
 
@@ -404,7 +412,7 @@ const CollapsibleTimeline = ({ steps }) => {
             </button>
           );
         }
-        return <TimelineStep key={row.key} step={row.step} showLine={showLine} />;
+        return <TimelineStep key={row.key} step={row.step} showLine={showLine} currentLabel={currentLabel} />;
       })}
       {expanded && hiddenCount >= 2 && (
         <button type="button" className="confirmation-timeline-less" onClick={() => setExpanded(false)}>
@@ -677,6 +685,17 @@ export default function OrderConfirmation() {
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
+  const firstName = (() => {
+    const raw = String(order?.customer_name || "").trim().split(/\s+/)[0] || "";
+    return raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
+  })();
+  const statusLabel = getCustomerOrderStatusLabel(order?.status);
+  const statusTone = (() => {
+    const s = String(order?.status || "").toLowerCase();
+    if (s.includes("cancel") || s.includes("rto") || s === "undelivered") return "alert";
+    if (s.includes("delivered") || s.includes("completed")) return "success";
+    return "progress";
+  })();
   const needsCodBankDetails = String(order?.payment_method || "").toUpperCase() === "COD"
     && String(order?.refund_status || "").toLowerCase().includes("bank");
 
@@ -1173,9 +1192,14 @@ export default function OrderConfirmation() {
     <main className="order-confirmation-page">
       <section className="order-success-hero">
         <span className="order-success-icon"><Icon icon="lucide:check" /></span>
-        <div>
-          <p>Order confirmed</p>
-          <h1>Order {orderNumber}</h1>
+        <div className="order-success-copy">
+          <p>Order Confirmed</p>
+          <h1>Thank you{firstName ? `, ${firstName}` : ""}!</h1>
+          <span>Your order has been placed successfully. We will keep you updated on every step.</span>
+        </div>
+        <div className="order-success-meta">
+          <p>Order ID</p>
+          <strong>{orderNumber}</strong>
           <span>Placed on {formatDate(order.createdAt)}</span>
         </div>
       </section>
@@ -1184,9 +1208,12 @@ export default function OrderConfirmation() {
         <div className="order-confirmation-main">
           <section className="order-panel">
             <div className="order-panel-head">
-              <h2>{hasLiveTracking ? "Live tracking" : "Shipment timeline"}</h2>
+              <h2>{hasLiveTracking ? "Live Tracking" : "Shipment Timeline"}</h2>
               <div className="order-track-head-right">
-                <span>{getCustomerOrderStatusLabel(order.status)}</span>
+                <span className={`oc-status-pill is-${statusTone}`}>
+                  {statusLabel}
+                  <Icon icon={statusTone === "success" ? "lucide:check-circle-2" : statusTone === "alert" ? "lucide:alert-circle" : "lucide:loader"} />
+                </span>
                 {(order.shiprocket_awb || order.shiprocket_order_id) && (
                   <button
                     type="button"
@@ -1213,20 +1240,20 @@ export default function OrderConfirmation() {
               </div>
             )}
 
-            <CollapsibleTimeline steps={timeline} />
+            <CollapsibleTimeline steps={timeline} currentLabel={statusLabel} />
 
             {order.shiprocket_awb && (
-              <div className="awb-strip">
-                <span className="awb-strip-info">
-                  <small>AWB{courierName ? ` · ${courierName}` : ""}</small>
-                  <strong>{order.shiprocket_awb}</strong>
-                </span>
-                {trackUrl && (
-                  <a className="awb-track-link" href={trackUrl} target="_blank" rel="noopener noreferrer">
-                    Track on courier <Icon icon="lucide:external-link" />
+              <>
+                {trackUrl ? (
+                  <a className="oc-track-btn" href={trackUrl} target="_blank" rel="noopener noreferrer">
+                    Track on Courier <Icon icon="lucide:external-link" />
                   </a>
-                )}
-              </div>
+                ) : null}
+                <div className="oc-awb-line">
+                  <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
+                  <strong>{order.shiprocket_awb}</strong>
+                </div>
+              </>
             )}
           </section>
 
@@ -1371,8 +1398,8 @@ export default function OrderConfirmation() {
 
           <section className="order-panel">
             <div className="order-panel-head">
-              <h2>Items</h2>
-              <span>{(order.OrderItems || []).length} item(s)</span>
+              <h2>Order Items ({(order.OrderItems || []).length})</h2>
+              <Link to="/my-orders" className="oc-head-link">View All <Icon icon="lucide:chevron-right" /></Link>
             </div>
             <div className="confirmation-items">
               {(order.OrderItems || []).map((item, index) => {
@@ -1446,7 +1473,10 @@ export default function OrderConfirmation() {
 
         <aside className="order-confirmation-side">
           <section className="order-panel">
-            <h2>Payment summary</h2>
+            <div className="order-panel-head">
+              <h2>Payment Summary</h2>
+              <Link to="/my-orders" className="oc-head-link">View Details <Icon icon="lucide:chevron-right" /></Link>
+            </div>
             <div className="summary-row"><span>Product total</span><strong>{formatPrice(breakdown.subtotal)}</strong></div>
             <div className="summary-row">
               <span>Delivery charge</span>
@@ -1548,9 +1578,9 @@ export default function OrderConfirmation() {
 
           <section className="order-panel">
             <div className="order-panel-head-row">
-              <h2>Delivery address</h2>
+              <h2>Delivery Address</h2>
             </div>
-            <p className="address-copy">{order.customer_name}<br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
+            <p className="address-copy"><strong>{order.customer_name}</strong><br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
           </section>
 
           {needsCodBankDetails && (
@@ -1600,42 +1630,46 @@ export default function OrderConfirmation() {
             </section>
           )}
 
-          {Object.values(orderActions).some(Boolean) && (
-            <div className="order-action-list order-action-list-standalone">
-              {orderActions.canCancel && (
-                <>
-                  <button className="cancel-order-btn" type="button" onClick={() => openActionModal("cancel")}>
-                    Cancel order
-                  </button>
-                  {(() => {
-                    const rawDate = order.createdAt || order.created_at;
-                    if (!rawDate) return null;
-                    const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(rawDate).getTime());
-                    if (remaining <= 0) return null;
-                    const hrs = Math.floor(remaining / (1000 * 60 * 60));
-                    const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                    const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                    return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to cancel</p>;
-                  })()}
-                </>
-              )}
-              {orderActions.canReturnExchange && (
-                <button
-                  className="order-secondary-btn"
-                  type="button"
-                  onClick={() => openActionModal(canSelectReturnItems ? "return" : "exchange")}
-                >
+          {orderActions.canReturnExchange && (
+            <button
+              type="button"
+              className="oc-return-row"
+              onClick={() => openActionModal(canSelectReturnItems ? "return" : "exchange")}
+            >
+              <span className="oc-return-icon"><Icon icon="lucide:package-open" /></span>
+              <span className="oc-return-copy">
+                <strong>
                   {canSelectReturnItems && canSelectExchangeItems
-                    ? "Return / exchange products"
-                    : canSelectReturnItems ? "Return products" : "Exchange products"}
-                </button>
-              )}
+                    ? "Return / Exchange Products"
+                    : canSelectReturnItems ? "Return Products" : "Exchange Products"}
+                </strong>
+                <span>Hassle-free returns within 7 days</span>
+              </span>
+              <Icon icon="lucide:chevron-right" className="oc-return-chevron" />
+            </button>
+          )}
+
+          {orderActions.canCancel && (
+            <div className="order-action-list order-action-list-standalone">
+              <button className="cancel-order-btn" type="button" onClick={() => openActionModal("cancel")}>
+                Cancel order
+              </button>
+              {(() => {
+                const rawDate = order.createdAt || order.created_at;
+                if (!rawDate) return null;
+                const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(rawDate).getTime());
+                if (remaining <= 0) return null;
+                const hrs = Math.floor(remaining / (1000 * 60 * 60));
+                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+                return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to cancel</p>;
+              })()}
             </div>
           )}
 
-          <Link className="continue-shopping-link" to="/collection">
+          <Link className="oc-continue-btn" to="/collection">
             <Icon icon="lucide:shopping-bag" />
-            Continue shopping
+            Continue Shopping
           </Link>
         </aside>
       </section>

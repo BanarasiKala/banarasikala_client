@@ -2021,3 +2021,408 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Full-page order-confirmation restyle (single column, mobile-first).
+   Appended last so it overrides the earlier layered rules.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Centre the whole page in a narrow column at every width. */
+.order-confirmation-page {
+  padding: 22px max(14px, calc((100vw - 680px) / 2)) 60px;
+}
+
+.order-confirmation-grid {
+  display: block;
+}
+
+.order-confirmation-main,
+.order-confirmation-side {
+  display: grid;
+  gap: 14px;
+}
+
+.order-confirmation-side {
+  margin-top: 14px;
+}
+
+/* ── Hero card ── */
+.order-success-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  background: #fffdf8;
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(76, 35, 12, 0.07);
+}
+
+.order-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 28px;
+  background: #800020;
+  color: #f5c94d;
+  box-shadow: 0 4px 16px rgba(128, 0, 32, 0.24), 0 0 0 5px rgba(128, 0, 32, 0.08);
+  flex: 0 0 auto;
+}
+
+.order-success-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-success-copy p {
+  margin: 0 0 2px;
+  color: #a9772a;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.order-success-copy h1 {
+  margin: 0 0 5px;
+  color: #800020;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.order-success-copy span {
+  display: block;
+  color: #7a6355;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.order-success-meta {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(128, 0, 32, 0.14);
+  text-align: right;
+}
+
+.order-success-meta p {
+  margin: 0;
+  color: #a9772a;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.order-success-meta strong {
+  color: #800020;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.order-success-meta span {
+  color: #8a7565;
+  font-size: 11px;
+}
+
+/* ── Section header link (View All / View Details) ── */
+.oc-head-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #800020;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.oc-head-link svg {
+  font-size: 15px;
+}
+
+.oc-head-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Status pill in the timeline header ── */
+.order-track-head-right .oc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.oc-status-pill svg {
+  font-size: 14px;
+}
+
+.oc-status-pill.is-success {
+  background: #e6f5ec;
+  color: #0a7d4f;
+}
+
+.oc-status-pill.is-alert {
+  background: #fdeceb;
+  color: #b23b2e;
+}
+
+.oc-status-pill.is-progress {
+  background: #fff2d9;
+  color: #9a6b20;
+}
+
+/* ── Per-step status labels on the timeline ── */
+.confirmation-step {
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+}
+
+.confirmation-step-status {
+  align-self: start;
+  padding-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.confirmation-step-status.is-done {
+  color: #6f8f7d;
+}
+
+.confirmation-step-status.is-current {
+  color: #800020;
+}
+
+/* ── Track on Courier button + AWB line ── */
+.oc-track-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1.5px solid rgba(128, 0, 32, 0.4);
+  border-radius: 12px;
+  background: #fff6f2;
+  color: #800020;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.oc-track-btn:hover {
+  background: #fdece7;
+}
+
+.oc-track-btn svg {
+  font-size: 15px;
+}
+
+.oc-awb-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: #8a7565;
+  font-size: 11.5px;
+}
+
+.oc-awb-line strong {
+  color: #5d170d;
+  font-weight: 700;
+}
+
+/* ── Item status badge → green tone (matches "Delivered") ── */
+.confirmation-item-status {
+  background: #e6f5ec !important;
+  color: #0a7d4f !important;
+}
+
+/* ── Final amount row highlight ── */
+.summary-row.is-final {
+  margin-top: 8px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #fff4df, #fdeccb);
+  border: 1px solid rgba(128, 0, 32, 0.12);
+}
+
+.summary-row.is-final span {
+  color: #5d170d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.summary-row.is-final strong {
+  color: #800020;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ── Return / Exchange nav row ── */
+.oc-return-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffdf8;
+  box-shadow: 0 10px 26px rgba(76, 35, 12, 0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.oc-return-row:hover {
+  background: #fff6ec;
+  border-color: rgba(128, 0, 32, 0.28);
+}
+
+.oc-return-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: rgba(128, 0, 32, 0.09);
+  color: #800020;
+  font-size: 20px;
+}
+
+.oc-return-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.oc-return-copy strong {
+  color: #5d170d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.oc-return-copy span {
+  color: #8a7565;
+  font-size: 12px;
+}
+
+.oc-return-chevron {
+  flex: 0 0 auto;
+  color: #b0937f;
+  font-size: 20px;
+}
+
+/* ── Continue Shopping button (full-width maroon) ── */
+.oc-continue-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 4px;
+  padding: 15px;
+  border-radius: 14px;
+  background: #800020;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(128, 0, 32, 0.26);
+  transition: background 0.15s ease;
+}
+
+.oc-continue-btn:hover {
+  background: #6a001a;
+}
+
+.oc-continue-btn svg {
+  font-size: 18px;
+}
+
+/* Narrow phones: stack the hero's Order ID under the copy. */
+@media (max-width: 460px) {
+  .order-success-hero {
+    flex-wrap: wrap;
+  }
+
+  .order-success-meta {
+    align-self: stretch;
+    width: 100%;
+    margin-top: 12px;
+    padding-left: 0;
+    padding-top: 12px;
+    border-left: 0;
+    border-top: 1px solid rgba(128, 0, 32, 0.14);
+    text-align: left;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .order-success-meta strong {
+    font-size: 15px;
+  }
+
+  .order-success-meta span {
+    margin-left: auto;
+  }
+}
+
+/* ── Item card: image · details · price on one row; extras span below ── */
+.confirmation-item {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  background: #fffdf8;
+}
+
+.confirmation-item-top {
+  display: contents;
+}
+
+.confirmation-item-media {
+  width: 64px;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.confirmation-item-copy {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.confirmation-item > strong {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.confirmation-feedback-area,
+.confirmation-item-actions {
+  grid-column: 1 / -1;
+}
