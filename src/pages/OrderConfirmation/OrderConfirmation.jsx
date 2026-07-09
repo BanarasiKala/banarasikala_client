@@ -28,6 +28,17 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
+// ShipRocket sends scan timestamps as "YYYY-MM-DD HH:mm:ss" (no timezone) —
+// swap the space for "T" so Safari parses it too, not just Chrome.
+const formatTrackDate = (value) => {
+  if (!value) return "";
+  const date = new Date(String(value).includes("T") ? value : String(value).replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return String(value);
+  const datePart = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  const timePart = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase();
+  return `${datePart}, ${timePart}`;
+};
+
 const formatRefundType = (type) => {
   const t = String(type || "").toLowerCase();
   if (t.includes("rto")) return "RTO refund";
@@ -65,6 +76,15 @@ const getBreakdown = (order = {}) => {
   const subtotal = toNumber(order.subtotal_amount) || itemSubtotal;
   const shippingCharge = toNumber(order.shipping_charge);
   const shippingDiscount = toNumber(order.shipping_discount);
+  // Delivery is always fully discounted at order placement (see
+  // OrderController.actualShippingDiscount), so the ledger-derived
+  // shipping_charge/shipping_discount above are always 0. The real
+  // pre-discount rate only survives per item in shipping_meta — sum it back
+  // up so the strike-through "Free" display matches the checkout flow.
+  const originalShippingCharge = items.reduce(
+    (sum, item) => sum + toNumber(item.shipping_meta?.delivery_charge),
+    0,
+  ) || shippingCharge;
   const paymentFee = toNumber(order.payment_fee);
   const isCod = String(order.payment_method || "").toUpperCase() === "COD";
   const storedPlatformFee = toNumber(order.platform_fee);
@@ -79,7 +99,7 @@ const getBreakdown = (order = {}) => {
     subtotal + shippingCharge + paymentFee - shippingDiscount - paymentDiscount - couponDiscount - walletAmount,
   );
 
-  return { subtotal, shippingCharge, shippingDiscount, paymentFee, platformFee, codFee, paymentDiscount, couponDiscount, walletAmount, payable };
+  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, paymentFee, platformFee, codFee, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
 // An order can be cancelled (whole order only — no item-level changes) while it
@@ -624,6 +644,7 @@ export default function OrderConfirmation() {
   const [actionEstimate, setActionEstimate] = useState(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
+  const [trackModalOpen, setTrackModalOpen] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
@@ -1244,11 +1265,9 @@ export default function OrderConfirmation() {
 
             {order.shiprocket_awb && (
               <>
-                {trackUrl ? (
-                  <a className="oc-track-btn" href={trackUrl} target="_blank" rel="noopener noreferrer">
-                    Track on Courier <Icon icon="lucide:external-link" />
-                  </a>
-                ) : null}
+                <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
+                  Track on Courier <Icon icon="lucide:chevron-right" />
+                </button>
                 <div className="oc-awb-line">
                   <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
                   <strong>{order.shiprocket_awb}</strong>
@@ -1399,7 +1418,6 @@ export default function OrderConfirmation() {
           <section className="order-panel">
             <div className="order-panel-head">
               <h2>Order Items ({(order.OrderItems || []).length})</h2>
-              <Link to="/my-orders" className="oc-head-link">View All <Icon icon="lucide:chevron-right" /></Link>
             </div>
             <div className="confirmation-items">
               {(order.OrderItems || []).map((item, index) => {
@@ -1475,20 +1493,19 @@ export default function OrderConfirmation() {
           <section className="order-panel">
             <div className="order-panel-head">
               <h2>Payment Summary</h2>
-              <Link to="/my-orders" className="oc-head-link">View Details <Icon icon="lucide:chevron-right" /></Link>
             </div>
             <div className="summary-row"><span>Product total</span><strong>{formatPrice(breakdown.subtotal)}</strong></div>
+            {breakdown.platformFee > 0 && <div className="summary-row"><span>Platform fee</span><strong>{formatPrice(breakdown.platformFee)}</strong></div>}
             <div className="summary-row">
               <span>Delivery charge</span>
               <strong>
-                {breakdown.shippingDiscount >= breakdown.shippingCharge && breakdown.shippingCharge > 0 ? (
-                  <><span className="summary-strike">{formatPrice(breakdown.shippingCharge)}</span> Free</>
-                ) : formatPrice(Math.max(0, breakdown.shippingCharge - breakdown.shippingDiscount))}
+                {breakdown.originalShippingCharge > 0 ? (
+                  <><span className="summary-strike">{formatPrice(breakdown.originalShippingCharge)}</span> Free</>
+                ) : formatPrice(0)}
               </strong>
             </div>
             {breakdown.paymentDiscount > 0 && <div className="summary-row is-saving"><span>Payment discount</span><strong>-{formatPrice(breakdown.paymentDiscount)}</strong></div>}
             {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
-            {breakdown.platformFee > 0 && <div className="summary-row"><span>Platform fee</span><strong>{formatPrice(breakdown.platformFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
             {breakdown.walletAmount > 0 && <div className="summary-row is-saving"><span>Wallet used</span><strong>-{formatPrice(breakdown.walletAmount)}</strong></div>}
             <div className="summary-row is-final"><span>Final amount</span><strong>{formatPrice(breakdown.payable)}</strong></div>
@@ -2141,6 +2158,66 @@ export default function OrderConfirmation() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {trackModalOpen && (
+        <div className="track-modal-overlay" onClick={() => setTrackModalOpen(false)}>
+          <div className="track-modal-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="track-modal-head">
+              <h3>Track your Order</h3>
+              <button type="button" className="track-modal-close" onClick={() => setTrackModalOpen(false)} aria-label="Close tracking">
+                <Icon icon="lucide:x" />
+              </button>
+            </div>
+
+            <div className="track-modal-info">
+              <div className="track-modal-info-row">
+                <span>Status:</span>
+                <strong>{statusLabel}</strong>
+              </div>
+              <div className="track-modal-info-row">
+                <span>Courier Partner:</span>
+                <strong>Shiprocket</strong>
+              </div>
+              <div className="track-modal-info-row">
+                <span>AWB/Tracking ID:</span>
+                <strong>{order.shiprocket_awb}</strong>
+              </div>
+            </div>
+
+            <div className="track-modal-timeline">
+              {trackingLoading && !liveActivities.length ? (
+                <div className="track-modal-empty">
+                  <Icon icon="lucide:loader" className="is-spinning" />
+                  <span>Fetching live tracking…</span>
+                </div>
+              ) : liveActivities.length ? (
+                liveActivities.map((activity, index) => (
+                  <div className="track-modal-item" key={`${activity.date || "scan"}-${index}`}>
+                    <span className="track-modal-dot"><Icon icon="lucide:check" /></span>
+                    {index < liveActivities.length - 1 && <span className="track-modal-line" />}
+                    <div className="track-modal-item-copy">
+                      <strong>{activity.activity || activity["sr-status-label"] || "Shipment update"}</strong>
+                      {activity.location && <p>&gt;Location: {activity.location}</p>}
+                    </div>
+                    <span className="track-modal-item-date">{formatTrackDate(activity.date)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="track-modal-empty">
+                  <Icon icon="lucide:map-pin-off" />
+                  <span>Tracking updates will appear here once the courier scans the parcel.</span>
+                </div>
+              )}
+            </div>
+
+            {trackUrl && (
+              <a className="track-modal-external" href={trackUrl} target="_blank" rel="noopener noreferrer">
+                View on courier site <Icon icon="lucide:external-link" />
+              </a>
+            )}
           </div>
         </div>
       )}
