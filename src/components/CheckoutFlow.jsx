@@ -12,7 +12,7 @@ import { unwrapApiData } from "../utils/error";
 import { LocationPickerModal } from "../pages/Profile/Profile";
 import { getProductStockInfo } from "../utils/stockStatus";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../utils/deliveryDate";
-import { selectBestCourier } from "../utils/courierSelection";
+import { selectBestCourier, computeCourierShippingCharge } from "../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
 import "../pages/Checkout/Checkout.css";
@@ -629,7 +629,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         });
 
         if (!cancelled) {
-          setShippingCharge(selectedCourier?.rate || 0);
+          setShippingCharge(computeCourierShippingCharge(selectedCourier, {
+            isCod: activePayment === "cod",
+            orderValue: subtotal,
+          }));
           setShippingDeliveryDate(selectedCourier?.etd ? formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedCourier.etd, maxProcessingDays >= 0 ? maxProcessingDays : undefined)) : null);
           setSelectedShippingCourier(selectedCourier || null);
         }

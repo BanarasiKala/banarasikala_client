@@ -131,6 +131,30 @@ const scoreCourier = (option, preferredName = "") => {
   );
 };
 
+/**
+ * Total delivery charge for a chosen courier, mirroring Shiprocket's billing:
+ *   Prepaid → rate + whatsapp_charges
+ *   COD     → rate + (cod_charges + orderValue × cod_multiplier) + whatsapp_charges
+ *
+ * Accepts either a selectBestCourier() option ({ rate, raw }) or a raw
+ * Shiprocket courier. Missing charge fields default to 0, so a courier that
+ * doesn't return WhatsApp/COD charges simply falls back to the base rate.
+ */
+export const computeCourierShippingCharge = (courier, { isCod = false, orderValue = 0 } = {}) => {
+  if (!courier) return 0;
+  const raw = courier.raw || courier;
+  const rate = toNumber(courier.rate) ?? getCourierRate(raw) ?? 0;
+  const whatsappCharge = getScoreValue(raw, ["whatsapp_charges", "whatsapp_charge"], 0);
+
+  let charge = rate + whatsappCharge;
+  if (isCod) {
+    const codCharges = getScoreValue(raw, ["cod_charges", "cod_charge"], 0);
+    const codMultiplier = getScoreValue(raw, ["cod_multiplier"], 0);
+    charge += codCharges + Number(orderValue || 0) * codMultiplier;
+  }
+  return Math.max(0, Math.round(charge * 100) / 100);
+};
+
 export const selectBestCourier = (couriers = [], {
   preferredName = requiredEnv("VITE_PREFERRED_COURIER_NAME"),
   weightKg = null,

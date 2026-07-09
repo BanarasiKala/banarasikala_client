@@ -94,12 +94,13 @@ const getBreakdown = (order = {}) => {
   const paymentDiscount = toNumber(order.payment_discount);
   const couponDiscount = toNumber(order.discount_amount);
   const walletAmount = toNumber(order.wallet_amount);
+  const giftCharge = toNumber(order.gift_charge);
   const payable = toNumber(order.payable_amount) || toNumber(order.total_amount) || Math.max(
     0,
-    subtotal + shippingCharge + paymentFee - shippingDiscount - paymentDiscount - couponDiscount - walletAmount,
+    subtotal + shippingCharge + paymentFee + giftCharge - shippingDiscount - paymentDiscount - couponDiscount - walletAmount,
   );
 
-  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, paymentFee, platformFee, codFee, paymentDiscount, couponDiscount, walletAmount, payable };
+  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
 // An order can be cancelled (whole order only — no item-level changes) while it
@@ -1504,6 +1505,7 @@ export default function OrderConfirmation() {
                 ) : formatPrice(0)}
               </strong>
             </div>
+            {breakdown.giftCharge > 0 && <div className="summary-row"><span>Gift wrap &amp; message</span><strong>{formatPrice(breakdown.giftCharge)}</strong></div>}
             {breakdown.paymentDiscount > 0 && <div className="summary-row is-saving"><span>Payment discount</span><strong>-{formatPrice(breakdown.paymentDiscount)}</strong></div>}
             {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
@@ -1556,27 +1558,63 @@ export default function OrderConfirmation() {
                       </div>
                       {bd && (
                         <div className="refund-ledger-breakdown">
-                          <div>
-                            <span>Returned product value</span>
-                            <strong>{formatPrice(bd.returned_value)}</strong>
-                          </div>
-                          {bd.coupon && toNumber(bd.coupon.adjustment) > 0 && (
-                            <div>
-                              <span>
-                                Coupon difference ({bd.coupon.original_code}
-                                {bd.coupon.applied_code && bd.coupon.applied_code !== bd.coupon.original_code ? ` → ${bd.coupon.applied_code}` : ""})
-                              </span>
-                              <strong>-{formatPrice(bd.coupon.adjustment)}</strong>
-                            </div>
-                          )}
-                          {toNumber(bd.return_shipping_charge) > 0 && (
-                            <div>
-                              <span>
-                                Return pickup charge
-                                {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
-                              </span>
-                              <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
-                            </div>
+                          {bd.is_full_return ? (
+                            <>
+                              {/* Full return: what you paid (amount_paid) is refunded
+                                  to the gateway minus the non-refundable fees +
+                                  pickup charge; the wallet credit is returned to the
+                                  wallet in full (shown separately below). */}
+                              <div>
+                                <span>Amount paid</span>
+                                <strong>{formatPrice(bd.amount_paid)}</strong>
+                              </div>
+                              {toNumber(bd.platform_fee) > 0 && (
+                                <div><span>Platform fee (not refunded)</span><strong>-{formatPrice(bd.platform_fee)}</strong></div>
+                              )}
+                              {toNumber(bd.cod_fee) > 0 && (
+                                <div><span>COD charge (not refunded)</span><strong>-{formatPrice(bd.cod_fee)}</strong></div>
+                              )}
+                              {toNumber(bd.gift_charge) > 0 && (
+                                <div><span>Gift charge (not refunded)</span><strong>-{formatPrice(bd.gift_charge)}</strong></div>
+                              )}
+                              {toNumber(bd.return_shipping_charge) > 0 && (
+                                <div>
+                                  <span>
+                                    Return pickup charge
+                                    {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
+                                  </span>
+                                  <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
+                                </div>
+                              )}
+                              {toNumber(bd.wallet_return) > 0 && (
+                                <div><span>Returned to wallet (in full)</span><strong>{formatPrice(bd.wallet_return)}</strong></div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <span>Returned product value</span>
+                                <strong>{formatPrice(bd.returned_value)}</strong>
+                              </div>
+                              {bd.coupon && toNumber(bd.coupon.adjustment) > 0 && (
+                                <div>
+                                  <span>
+                                    Coupon difference ({bd.coupon.original_code}
+                                    {bd.coupon.applied_code && bd.coupon.applied_code !== bd.coupon.original_code ? ` → ${bd.coupon.applied_code}` : ""})
+                                  </span>
+                                  <strong>-{formatPrice(bd.coupon.adjustment)}</strong>
+                                </div>
+                              )}
+                              {toNumber(bd.return_shipping_charge) > 0 && (
+                                <div>
+                                  <span>
+                                    Return pickup charge
+                                    {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
+                                  </span>
+                                  <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -2064,49 +2102,93 @@ export default function OrderConfirmation() {
               {cancelModal.type !== "cancel" && !loadingEstimate && actionEstimate?.totals && (() => {
                 const couponInfo = actionEstimate.coupon || null;
                 const adjustment = toNumber(actionEstimate.totals.coupon_adjustment);
+                const isFullReturn = cancelModal.type === "return" && Boolean(actionEstimate.totals.is_full_return);
                 return (
                   <div className="action-estimate-box">
-                    <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
-                    {cancelModal.type === "return" && couponInfo && (
+                    {isFullReturn ? (
                       <>
-                        <div>
-                          <span>Coupon on order ({couponInfo.original_code})</span>
-                          <strong>{formatPrice(couponInfo.original_discount)}</strong>
-                        </div>
+                        {/* Full return: what you PAID (amount_paid) is refunded to
+                            your original payment method minus the non-refundable
+                            fees + pickup charge; the wallet credit is returned to
+                            the wallet in full and shown as its own line. */}
+                        <div><span>Amount paid</span><strong>{formatPrice(actionEstimate.totals.amount_paid)}</strong></div>
+                        {toNumber(actionEstimate.totals.platform_fee) > 0 && (
+                          <div><span>Platform fee (not refunded)</span><strong>-{formatPrice(actionEstimate.totals.platform_fee)}</strong></div>
+                        )}
+                        {toNumber(actionEstimate.totals.cod_fee) > 0 && (
+                          <div><span>COD charge (not refunded)</span><strong>-{formatPrice(actionEstimate.totals.cod_fee)}</strong></div>
+                        )}
+                        {toNumber(actionEstimate.totals.gift_charge) > 0 && (
+                          <div><span>Gift charge (not refunded)</span><strong>-{formatPrice(actionEstimate.totals.gift_charge)}</strong></div>
+                        )}
                         <div>
                           <span>
-                            {couponInfo.original_eligible
-                              ? `Coupon re-applied on remaining items (${couponInfo.original_code})`
-                              : couponInfo.applied_code
-                                ? `Best coupon re-applied (${couponInfo.applied_code})`
-                                : "No coupon qualifies for the remaining items"}
+                            Return pickup charge
+                            {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
+                              ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
+                              : ""}
                           </span>
-                          <strong>{formatPrice(couponInfo.new_discount)}</strong>
-                        </div>
-                        <div>
-                          <span>Coupon difference deducted</span>
-                          <strong>-{formatPrice(adjustment)}</strong>
+                          <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                         </div>
                       </>
+                    ) : (
+                      <>
+                        <div><span>Selected product value</span><strong>{formatPrice(actionEstimate.totals.item_amount)}</strong></div>
+                        {cancelModal.type === "return" && couponInfo && (
+                          <>
+                            <div>
+                              <span>Coupon on order ({couponInfo.original_code})</span>
+                              <strong>{formatPrice(couponInfo.original_discount)}</strong>
+                            </div>
+                            <div>
+                              <span>
+                                {couponInfo.original_eligible
+                                  ? `Coupon re-applied on remaining items (${couponInfo.original_code})`
+                                  : couponInfo.applied_code
+                                    ? `Best coupon re-applied (${couponInfo.applied_code})`
+                                    : "No coupon qualifies for the remaining items"}
+                              </span>
+                              <strong>{formatPrice(couponInfo.new_discount)}</strong>
+                            </div>
+                            <div>
+                              <span>Coupon difference deducted</span>
+                              <strong>-{formatPrice(adjustment)}</strong>
+                            </div>
+                          </>
+                        )}
+                        {cancelModal.type === "return" && (
+                          <div>
+                            <span>
+                              Return pickup charge
+                              {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
+                                ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
+                                : ""}
+                            </span>
+                            <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
+                          </div>
+                        )}
+                      </>
                     )}
-                    {cancelModal.type === "return" && (
-                      <div>
-                        <span>
-                          Return pickup charge
-                          {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
-                            ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
-                            : ""}
-                        </span>
-                        <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
+                    {isFullReturn && toNumber(actionEstimate.totals.wallet_return) > 0 ? (
+                      <>
+                        <div className="action-estimate-total">
+                          <span>Refund to original payment method</span>
+                          <strong>{formatPrice(actionEstimate.totals.gateway_refund)}</strong>
+                        </div>
+                        <div className="action-estimate-total">
+                          <span>Returned to wallet</span>
+                          <strong>{formatPrice(actionEstimate.totals.wallet_return)}</strong>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="action-estimate-total">
+                        <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
+                        <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
                       </div>
                     )}
-                    <div className="action-estimate-total">
-                      <span>{cancelModal.type === "exchange" ? "Refund" : "Estimated refund"}</span>
-                      <strong>{formatPrice(actionEstimate.totals.estimated_refund_amount)}</strong>
-                    </div>
                     {cancelModal.type === "return" && (
                       <>
-                        {couponInfo && adjustment > 0 && (
+                        {!isFullReturn && couponInfo && adjustment > 0 && (
                           <p className="action-estimate-note">
                             <Icon icon="lucide:badge-percent" />
                             {couponInfo.original_eligible
@@ -2116,13 +2198,19 @@ export default function OrderConfirmation() {
                                 : `The items you keep no longer qualify for ${couponInfo.original_code} and no other coupon applies, so the coupon amount is deducted from the refund.`}
                           </p>
                         )}
-                        {couponInfo && adjustment <= 0 && (
+                        {!isFullReturn && couponInfo && adjustment <= 0 && (
                           <p className="action-estimate-note">
                             <Icon icon="lucide:badge-percent" />
                             Your coupon {couponInfo.original_code} still applies in full to the items you keep — nothing is deducted.
                           </p>
                         )}
-                        {breakdown.walletAmount > 0 && (
+                        {isFullReturn && toNumber(actionEstimate.totals.wallet_return) > 0 && (
+                          <p className="action-estimate-note">
+                            <Icon icon="lucide:wallet" />
+                            {formatPrice(actionEstimate.totals.wallet_return)} paid from your wallet is credited back to your wallet in full; the fees and pickup charge come out of the amount you paid.
+                          </p>
+                        )}
+                        {!isFullReturn && breakdown.walletAmount > 0 && (
                           <p className="action-estimate-note">
                             <Icon icon="lucide:wallet" />
                             The part you paid from your wallet is credited back to your wallet; the rest goes to your original payment method.

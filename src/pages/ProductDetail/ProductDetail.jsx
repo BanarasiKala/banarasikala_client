@@ -22,7 +22,7 @@ import ProductSocialProof from "../../components/ProductSocialProof/ProductSocia
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
-import { selectBestCourier } from "../../utils/courierSelection";
+import { selectBestCourier, computeCourierShippingCharge } from "../../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../../utils/env";
 import { buildRazorpayPrefill } from "../../utils/razorpay";
 import { Plyr } from "plyr-react";
@@ -805,7 +805,9 @@ const ProductDetail = () => {
   const canUsePrepaid = true;
   const isProductCodAllowed = !Array.isArray(product?.payment_options) || product.payment_options.includes("cod");
   const canUseCod = isProductCodAllowed && buyNowSubtotal <= COD_MAX_AMOUNT;
-  const buyNowShippingRate = Number(buyNowShipping?.rate || 0);
+  const buyNowShippingRate = buyNowShipping && !buyNowShipping.unavailable
+    ? computeCourierShippingCharge(buyNowShipping, { isCod: buyNowPayment === "cod", orderValue: buyNowSubtotal })
+    : 0;
   const qualifiesForFreeShipping = buyNowShippingRate > 0;
   const shippingDiscountReasonCode = buyNowShippingRate > 0 ? (isFirstOrder ? "first_order" : "free_delivery") : null;
   const freeShippingReason = isFirstOrder
