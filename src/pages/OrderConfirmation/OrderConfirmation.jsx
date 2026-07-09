@@ -120,15 +120,16 @@ const canCancelOrder = (order) => {
   return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
 };
 
-// The "Track on Courier" button is only useful while the parcel is actively moving
-// to the customer. It stays hidden before dispatch and once the order is delivered,
-// cancelled or returned (RTO).
-const IN_TRANSIT_STATUSES = ["picked up", "picked_up", "shipped", "out for delivery", "out_for_delivery"];
+// The "Track on Courier" button appears once the shipment has an AWB (the courier is
+// engaged / it has shipped) and stays until the journey ends — hidden once the order
+// is delivered, cancelled or fully returned to the seller (RTO delivered).
 const isTrackable = (order) => {
   if (!order?.shiprocket_awb) return false;
   const status = String(order?.status || "").toLowerCase();
-  if (status.includes("rto") || status.includes("cancel") || status === "delivered") return false;
-  return IN_TRANSIT_STATUSES.includes(status) || status.includes("in transit");
+  if (status === "delivered") return false;
+  if (status.includes("cancel")) return false;
+  if (status === "rto delivered" || status === "rto") return false;
+  return true;
 };
 
 const getCustomerOrderStatusLabel = (status) => {
@@ -151,9 +152,9 @@ const getCustomerOrderStatusLabel = (status) => {
   if (normalized === "delivered") return "Delivered";
   if (normalized === "out for delivery" || normalized === "out_for_delivery") return "Out for delivery";
   if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return "Shipped";
-  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return "Pickup scheduled";
+  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled" || normalized === "awb assigned" || normalized === "awb_assigned") return "Pickup scheduled";
   if (normalized === "out for pickup" || normalized === "out_for_pickup") return "Courier out for pickup";
-  if (normalized === "picked up" || normalized === "picked_up" || normalized.includes("pickup") || normalized === "awb assigned" || normalized === "awb_assigned") return "Picked up";
+  if (normalized === "picked up" || normalized === "picked_up" || normalized.includes("pickup")) return "Picked up";
   if (normalized === "pending" || normalized === "processing" || normalized === "order placed" || normalized === "order_placed") return "Order placed";
   return status || "Pending";
 };
@@ -480,8 +481,8 @@ const buildOrderTimeline = (order) => {
   const forwardSteps = [
     { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", matches: ["pending", "order placed"] },
     { title: "Processing", detail: "Seller is preparing your order", icon: "lucide:package-2", matches: ["processing"] },
-    { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["pickup scheduled", "pickup_scheduled", "out for pickup", "out_for_pickup"] },
-    { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up", "awb assigned", "awb_assigned"] },
+    { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["pickup scheduled", "pickup_scheduled", "awb assigned", "awb_assigned", "out for pickup", "out_for_pickup"] },
+    { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up"] },
     { title: "Shipped", detail: order?.shiprocket_awb ? `AWB ${order.shiprocket_awb}` : "Tracking appears after dispatch", icon: "lucide:truck", matches: ["shipped", "in transit"] },
     { title: "Out for delivery", detail: "Courier will attempt delivery at your address", icon: "lucide:navigation", matches: ["out for delivery"] },
     { title: "Delivered", detail: order?.delivered_at ? formatDate(order.delivered_at) : "Final delivery scan pending", icon: "lucide:badge-check", matches: ["delivered"] },
@@ -713,12 +714,13 @@ export default function OrderConfirmation() {
   const rtoAwaiting = Boolean(rtoAction?.awaiting)
     && String(rtoAction?.payment_method || "").toUpperCase() !== "COD";
   const rtoCodBlocked = rtoAction?.resolution === "PRODUCT_RETURNED_COD_BLOCKED";
-  // The refund covers the customer's whole contribution — gateway money paid
-  // plus any wallet credit spent — minus the forward + RTO charges kept. The
-  // wallet-paid share is returned to the wallet, the remainder to the gateway.
+  // "Refund me instead": the seller keeps the platform fee and the forward + RTO
+  // charges, all taken out of the gateway money. rtoGatewayRefund is what goes back to
+  // the payment method — the wallet credit is returned to the wallet in full and is
+  // called out in a message, not folded into this figure.
   const rtoWalletPaid = toNumber(order?.wallet_amount);
-  const rtoContribution = toNumber(order?.amount_paid) + rtoWalletPaid;
-  const rtoRefundEstimate = Math.max(0, rtoContribution - toNumber(rtoAction?.redispatch_fee));
+  const rtoPlatformFee = toNumber(order?.platform_fee);
+  const rtoGatewayRefund = Math.max(0, toNumber(order?.amount_paid) - rtoPlatformFee - toNumber(rtoAction?.redispatch_fee));
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -1331,18 +1333,18 @@ export default function OrderConfirmation() {
                     <Icon icon="lucide:rotate-ccw" />
                     <strong>Refund me instead</strong>
                   </div>
-                  <p>We&rsquo;ll refund what you paid, after deducting the forward &amp; return shipping already spent on this parcel.</p>
+                  <p>We&rsquo;ll refund what you paid, after deducting the platform fee and the forward &amp; return shipping already spent on this parcel.</p>
                   <ul className="rto-fee-lines">
                     <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
-                    {rtoWalletPaid > 0 && (
-                      <li><span>Wallet used</span><strong>{formatPrice(rtoWalletPaid)}</strong></li>
+                    {rtoPlatformFee > 0 && (
+                      <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
                     )}
                     <li><span>Less forward + RTO charges</span><strong>-{formatPrice(rtoAction.redispatch_fee)}</strong></li>
-                    <li className="rto-fee-total"><span>Estimated refund</span><strong>{formatPrice(rtoRefundEstimate)}</strong></li>
+                    <li className="rto-fee-total"><span>Estimated refund</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
                   </ul>
                   {rtoWalletPaid > 0 && (
                     <p className="rto-wallet-hint">
-                      <Icon icon="lucide:wallet" /> Your wallet-paid share is returned to your wallet; the rest to your original payment method.
+                      <Icon icon="lucide:wallet" /> Plus {formatPrice(rtoWalletPaid)} returned to your wallet; the amount above goes to your original payment method.
                     </p>
                   )}
                   <button
@@ -1760,19 +1762,19 @@ export default function OrderConfirmation() {
             <div className="cancel-modal-header">
               <h3>Request a refund?</h3>
               <p>
-                This closes your order. We&rsquo;ll refund the amount below
+                This closes your order. We&rsquo;ll refund the amount below to your original payment method
                 {rtoWalletPaid > 0
-                  ? " — your wallet-paid share to your wallet and the rest to your original payment method."
-                  : " to your original payment method."}
+                  ? `, plus ${formatPrice(rtoWalletPaid)} back to your wallet.`
+                  : "."}
               </p>
             </div>
             <ul className="rto-fee-lines rto-confirm-lines">
               <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
-              {rtoWalletPaid > 0 && (
-                <li><span>Wallet used</span><strong>{formatPrice(rtoWalletPaid)}</strong></li>
+              {rtoPlatformFee > 0 && (
+                <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
               )}
               <li><span>Forward + RTO charges</span><strong>-{formatPrice(rtoAction?.redispatch_fee)}</strong></li>
-              <li className="rto-fee-total"><span>You&rsquo;ll receive</span><strong>{formatPrice(rtoRefundEstimate)}</strong></li>
+              <li className="rto-fee-total"><span>You&rsquo;ll receive</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
             </ul>
             <div className="rto-confirm-actions">
               <button

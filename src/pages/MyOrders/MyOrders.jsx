@@ -56,9 +56,9 @@ const getStatus = (status) => {
   if (normalized === "rto initiated" || normalized === "rto_initiated") return STATUS_CONFIG["RTO Initiated"];
   if (normalized === "rto in transit" || normalized === "rto_in_transit") return STATUS_CONFIG["RTO In Transit"];
   if (normalized === "rto delivered" || normalized === "rto_delivered" || normalized === "rto") return STATUS_CONFIG["RTO Delivered"];
-  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled") return STATUS_CONFIG["Pickup Scheduled"];
+  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Pickup Scheduled"];
   if (normalized === "out for pickup" || normalized === "out_for_pickup") return STATUS_CONFIG["Out For Pickup"];
-  if (normalized === "picked up" || normalized === "picked_up" || normalized === "awb assigned" || normalized === "awb_assigned") return STATUS_CONFIG["Picked Up"];
+  if (normalized === "picked up" || normalized === "picked_up") return STATUS_CONFIG["Picked Up"];
   if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return STATUS_CONFIG.Shipped;
   if (normalized === "delivered") return STATUS_CONFIG.Delivered;
   if (normalized.includes("partial") && normalized.includes("cancel")) return STATUS_CONFIG["Partially Cancelled"];
@@ -158,7 +158,9 @@ const getOrderFilterGroup = (status = "") => {
   // customer never received it; keep it with the in-transit group.
   if (normalized.includes("rto") || normalized === "undelivered") return "shipped";
   if (normalized.includes("delivered")) return "delivered";
-  if (normalized.includes("ship") || normalized.includes("awb") || normalized.includes("out for delivery")) return "shipped";
+  // "awb assigned" reads as "Pickup scheduled" (courier booked, not yet shipped), so
+  // it stays with the Ordered group — only actual shipping states go under Shipped.
+  if (normalized.includes("ship") || normalized.includes("out for delivery")) return "shipped";
   return "ordered";
 };
 
