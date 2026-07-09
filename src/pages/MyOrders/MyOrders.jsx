@@ -213,9 +213,10 @@ const getOrderBreakdown = (order) => {
   };
 };
 
-// Whole-order cancellation only, while the order is still pre-dispatch and
-// within 24 hours. Mirror of CANCELLABLE_STATUSES in OrderController.
-const CANCELLABLE_STATUSES = ["pending", "processing", "order placed", "order_placed", "awb assigned", "awb_assigned"];
+// Whole-order cancellation only, while the order is still being prepared
+// (pending / processing) and within 24 hours. Mirror of CANCELLABLE_STATUSES in
+// OrderController — once the status moves on (AWB assigned, shipped…) cancel is gone.
+const CANCELLABLE_STATUSES = ["pending", "processing"];
 const canCancelOrder = (order) => {
   const rawDate = order?.createdAt || order?.created_at;
   if (!rawDate) return false;

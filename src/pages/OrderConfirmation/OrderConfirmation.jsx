@@ -107,17 +107,28 @@ const getBreakdown = (order = {}) => {
   return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, deliveryChargeShown, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
-// An order can be cancelled (whole order only — no item-level changes) while it
-// is still pre-dispatch — pending / processing / AWB assigned — and within 24
-// hours of placement. Mirror of CANCELLABLE_STATUSES in OrderController on the
-// backend.
-const CANCELLABLE_STATUSES = ["pending", "processing", "order placed", "order_placed", "awb assigned", "awb_assigned"];
+// An order can be cancelled (whole order only — no item-level changes) only while it
+// is still being prepared (pending / processing) and within 24 hours of placement.
+// Once the status moves on (AWB assigned, shipped, …) the cancel button disappears.
+// Mirror of CANCELLABLE_STATUSES in OrderController on the backend.
+const CANCELLABLE_STATUSES = ["pending", "processing"];
 const canCancelOrder = (order) => {
   const rawDate = order?.createdAt || order?.created_at;
   const status = String(order?.status || "").toLowerCase();
   if (!rawDate || !CANCELLABLE_STATUSES.includes(status)) return false;
   const createdAt = new Date(rawDate).getTime();
   return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
+};
+
+// The "Track on Courier" button is only useful while the parcel is actively moving
+// to the customer. It stays hidden before dispatch and once the order is delivered,
+// cancelled or returned (RTO).
+const IN_TRANSIT_STATUSES = ["picked up", "picked_up", "shipped", "out for delivery", "out_for_delivery"];
+const isTrackable = (order) => {
+  if (!order?.shiprocket_awb) return false;
+  const status = String(order?.status || "").toLowerCase();
+  if (status.includes("rto") || status.includes("cancel") || status === "delivered") return false;
+  return IN_TRANSIT_STATUSES.includes(status) || status.includes("in transit");
 };
 
 const getCustomerOrderStatusLabel = (status) => {
@@ -1270,9 +1281,11 @@ export default function OrderConfirmation() {
 
             {order.shiprocket_awb && (
               <>
-                <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
-                  Track on Courier <Icon icon="lucide:chevron-right" />
-                </button>
+                {isTrackable(order) && (
+                  <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
+                    Track on Courier <Icon icon="lucide:chevron-right" />
+                  </button>
+                )}
                 <div className="oc-awb-line">
                   <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
                   <strong>{order.shiprocket_awb}</strong>
