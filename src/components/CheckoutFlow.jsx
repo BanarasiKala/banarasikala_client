@@ -177,6 +177,9 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const [shippingDeliveryDate, setShippingDeliveryDate] = useState(null);
   const [selectedShippingCourier, setSelectedShippingCourier] = useState(null);
   const [shippingLoading, setShippingLoading] = useState(false);
+  // Upfront COD-charge estimate for the pincode (fetched with is_cod=1) so the Cash on
+  // Delivery option can preview the real courier COD charge before it is selected.
+  const [codCourierCharge, setCodCourierCharge] = useState(0);
   const [isFirstOrder, setIsFirstOrder] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(true);
@@ -229,7 +232,14 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   // COD fee = the chosen courier's own COD handling charge (cod_charges + subtotal ×
   // cod_multiplier), floored at the configured minimum. Falls back to the env value
   // when no courier is selected yet. Prepaid keeps the flat env discount unchanged.
-  const codChargeAmount = Math.max(COD_FEE_AMOUNT, computeCourierCodCharge(selectedShippingCourier, subtotal));
+  // When COD is the active method, charge from the exact courier the order will use
+  // (keeps the client total in step with the server, which recomputes from
+  // selected_courier_data). Otherwise fall back to the upfront estimate so the option
+  // previews the real charge before it's picked.
+  const codCourierChargeNow = activePayment === "cod"
+    ? computeCourierCodCharge(selectedShippingCourier, subtotal)
+    : codCourierCharge;
+  const codChargeAmount = Math.max(COD_FEE_AMOUNT, codCourierChargeNow);
   const paymentFee = payableCart.length > 0 && activePayment === "cod" ? codChargeAmount : 0;
   // Delivery is displayed net of the COD charge (billed separately on its own line);
   // the full delivery charge is still what we persist to the order (shipping_charge).
@@ -661,6 +671,42 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       clearTimeout(timer);
     };
   }, [formData.pincode, payableCart.length, totalWeightKg, activePayment, subtotal, maxProcessingDays]);
+
+  // Preview the COD charge on the payment step before COD is selected. The main fetch
+  // above uses is_cod based on the chosen method, so a prepaid/unselected shopper never
+  // gets COD pricing — this dedicated is_cod=1 lookup fills that gap without changing the
+  // courier picked for prepaid. Skipped once COD is active (the main fetch covers it).
+  useEffect(() => {
+    const cleanPincode = formData.pincode.trim();
+    if (!/^\d{6}$/.test(cleanPincode) || payableCart.length === 0 || !isCodAllowed || activePayment === "cod") {
+      setCodCourierCharge(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const effectiveWeight = Math.max(0.1, Number(totalWeightKg.toFixed(3)));
+        const response = await fetch(
+          `${API_ENDPOINTS.shiprocket}/serviceability?pincode=${encodeURIComponent(cleanPincode)}&weight=${effectiveWeight}&is_cod=1`
+        );
+        if (!response.ok) throw new Error("Failed to fetch COD rates");
+        const data = await response.json();
+        const codCourier = selectBestCourier(data?.data?.available_courier_companies || [], {
+          weightKg: effectiveWeight,
+          requireCod: true,
+        });
+        if (!cancelled) setCodCourierCharge(computeCourierCodCharge(codCourier, subtotal));
+      } catch {
+        if (!cancelled) setCodCourierCharge(0);
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.pincode, payableCart.length, totalWeightKg, subtotal, isCodAllowed, activePayment]);
 
   const handlePlaceOrder = async (e) => {
     if (e?.preventDefault) e.preventDefault();
