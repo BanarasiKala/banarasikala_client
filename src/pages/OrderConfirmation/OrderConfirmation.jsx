@@ -100,7 +100,11 @@ const getBreakdown = (order = {}) => {
     subtotal + shippingCharge + paymentFee + giftCharge - shippingDiscount - paymentDiscount - couponDiscount - walletAmount,
   );
 
-  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
+  // Delivery is shown net of the COD charge (billed separately on its own row); the
+  // full delivery charge is what was persisted to the order.
+  const deliveryChargeShown = Math.max(0, originalShippingCharge - codFee);
+
+  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, deliveryChargeShown, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
 // An order can be cancelled (whole order only — no item-level changes) while it
@@ -1500,8 +1504,8 @@ export default function OrderConfirmation() {
             <div className="summary-row">
               <span>Delivery charge</span>
               <strong>
-                {breakdown.originalShippingCharge > 0 ? (
-                  <><span className="summary-strike">{formatPrice(breakdown.originalShippingCharge)}</span> Free</>
+                {breakdown.deliveryChargeShown > 0 ? (
+                  <><span className="summary-strike">{formatPrice(breakdown.deliveryChargeShown)}</span> Free</>
                 ) : formatPrice(0)}
               </strong>
             </div>

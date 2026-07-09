@@ -91,6 +91,11 @@ export default function ThankYou() {
   const shippingCharge = toNumber(order.shipping_charge);
   const shippingDiscount = toNumber(order.shipping_discount);
   const netShipping = Math.max(0, shippingCharge - shippingDiscount);
+  // COD charge is billed separately (folded into "Fees"), so the delivery charge is
+  // shown net of it; the full charge stays persisted on the order.
+  const isCod = String(order.payment_method || "").toUpperCase() === "COD";
+  const codFee = toNumber(order.cod_fee) || (isCod ? Math.max(0, fees - toNumber(order.platform_fee)) : 0);
+  const shippingChargeShown = Math.max(0, shippingCharge - codFee);
   const total = toNumber(order.payable_amount) || toNumber(order.total_amount)
     || Math.max(0, subtotal + netShipping + fees - couponDiscount - paymentDiscount - walletAmount);
   const totalSaved = couponDiscount + paymentDiscount + shippingDiscount;
@@ -194,8 +199,8 @@ export default function ThankYou() {
               <strong>
                 {netShipping > 0
                   ? formatPrice(netShipping)
-                  : shippingCharge > 0
-                    ? <><s>{formatPrice(shippingCharge)}</s> Free</>
+                  : shippingChargeShown > 0
+                    ? <><s>{formatPrice(shippingChargeShown)}</s> Free</>
                     : formatPrice(0)}
               </strong>
             </div>

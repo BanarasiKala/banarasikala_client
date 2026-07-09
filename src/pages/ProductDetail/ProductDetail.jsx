@@ -22,7 +22,7 @@ import ProductSocialProof from "../../components/ProductSocialProof/ProductSocia
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
 import { getVariantSku } from "../../utils/itemCode";
-import { selectBestCourier, computeCourierShippingCharge } from "../../utils/courierSelection";
+import { selectBestCourier, computeCourierShippingCharge, computeCourierCodCharge } from "../../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../../utils/env";
 import { buildRazorpayPrefill } from "../../utils/razorpay";
 import { Plyr } from "plyr-react";
@@ -816,7 +816,15 @@ const ProductDetail = () => {
   const buyNowShippingDiscount = qualifiesForFreeShipping ? buyNowShippingRate : 0;
   const buyNowFinalShipping = Math.max(0, buyNowShippingRate - buyNowShippingDiscount);
   const buyNowReturnDeliveryDeduction = shippingDiscountReasonCode === "first_order" ? 0 : buyNowShippingRate;
-  const buyNowPaymentFee = buyNowPayment === "cod" ? COD_FEE_AMOUNT : 0;
+  // COD fee = the chosen courier's own COD handling charge (cod_charges + subtotal ×
+  // cod_multiplier), floored at the configured minimum. Prepaid keeps the env discount.
+  const buyNowCourierCodCharge = buyNowShipping && !buyNowShipping.unavailable
+    ? computeCourierCodCharge(buyNowShipping, buyNowSubtotal)
+    : 0;
+  const buyNowCodCharge = Math.max(COD_FEE_AMOUNT, buyNowCourierCodCharge);
+  const buyNowPaymentFee = buyNowPayment === "cod" ? buyNowCodCharge : 0;
+  // Delivery shown net of the COD charge (billed separately); full charge still saved.
+  const buyNowShippingShown = Math.max(0, buyNowShippingRate - buyNowPaymentFee);
   const buyNowPlatformFee = PLATFORM_FEE_AMOUNT;
   const buyNowPaymentDiscount = buyNowPayment === "prepaid" ? Math.min(PREPAID_DISCOUNT_AMOUNT, buyNowSubtotal + buyNowFinalShipping) : 0;
   const buyNowGrossTotal = Math.max(0, buyNowSubtotal + buyNowFinalShipping + buyNowPaymentFee + buyNowPlatformFee - buyNowPaymentDiscount);
@@ -2674,7 +2682,7 @@ const ProductDetail = () => {
                     id: "cod",
                     icon: "lucide:banknote",
                     title: "Cash on Delivery",
-                    description: canUseCod ? `${formatMoney(COD_FEE_AMOUNT)} COD charge` : `Not available above ${formatMoney(COD_MAX_AMOUNT)}`,
+                    description: canUseCod ? `${formatMoney(buyNowCodCharge)} COD charge` : `Not available above ${formatMoney(COD_MAX_AMOUNT)}`,
                     active: buyNowPayment === "cod",
                     disabled: !canUseCod,
                     onSelect: () => setBuyNowPayment("cod"),
@@ -2722,7 +2730,7 @@ const ProductDetail = () => {
                   setUseWallet,
                   rows: [
                     { label: "Product total", value: formatMoney(buyNowSubtotal) },
-                    { label: "Free delivery charge", value: buyNowShippingLoading ? "Checking..." : buyNowShipping?.unavailable ? "Unavailable" : <><s>{formatMoney(buyNowShippingRate)}</s> Free</>, tone: "success" },
+                    { label: "Free delivery charge", value: buyNowShippingLoading ? "Checking..." : buyNowShipping?.unavailable ? "Unavailable" : <><s>{formatMoney(buyNowShippingShown)}</s> Free</>, tone: "success" },
                     ...(buyNowPaymentDiscount > 0 ? [{ label: "Prepaid payment discount", value: `-${formatMoney(buyNowPaymentDiscount)}`, tone: "success" }] : []),
                     ...(buyNowPaymentFee > 0 ? [{ label: "COD charge", value: formatMoney(buyNowPaymentFee), tone: "accent" }] : []),
                     { label: "Platform fee", value: formatMoney(buyNowPlatformFee) },
@@ -2834,7 +2842,7 @@ const ProductDetail = () => {
                   >
                     <Icon icon="lucide:banknote" />
                     <span>Cash on Delivery</span>
-                    <small>{canUseCod ? `${formatMoney(COD_FEE_AMOUNT)} COD charge` : `Not available above ${formatMoney(COD_MAX_AMOUNT)}`}</small>
+                    <small>{canUseCod ? `${formatMoney(buyNowCodCharge)} COD charge` : `Not available above ${formatMoney(COD_MAX_AMOUNT)}`}</small>
                   </button>
                 </div>
               </section>
@@ -2901,7 +2909,7 @@ const ProductDetail = () => {
                   setUseWallet={setUseWallet}
                   rows={[
                     { label: "Product total", value: formatMoney(buyNowSubtotal) },
-                    { label: "Free delivery charge", value: buyNowShippingLoading ? "Checking..." : buyNowShipping?.unavailable ? "Unavailable" : <><s>{formatMoney(buyNowShippingRate)}</s> Free</>, tone: "success" },
+                    { label: "Free delivery charge", value: buyNowShippingLoading ? "Checking..." : buyNowShipping?.unavailable ? "Unavailable" : <><s>{formatMoney(buyNowShippingShown)}</s> Free</>, tone: "success" },
                     ...(buyNowPaymentDiscount > 0 ? [{ label: "Prepaid payment discount", value: `-${formatMoney(buyNowPaymentDiscount)}`, tone: "success" }] : []),
                     ...(buyNowPaymentFee > 0 ? [{ label: "COD charge", value: formatMoney(buyNowPaymentFee), tone: "accent" }] : []),
                     { label: "Platform fee", value: formatMoney(buyNowPlatformFee) },

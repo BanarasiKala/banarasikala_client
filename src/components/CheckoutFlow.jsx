@@ -12,7 +12,7 @@ import { unwrapApiData } from "../utils/error";
 import { LocationPickerModal } from "../pages/Profile/Profile";
 import { getProductStockInfo } from "../utils/stockStatus";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../utils/deliveryDate";
-import { selectBestCourier, computeCourierShippingCharge } from "../utils/courierSelection";
+import { selectBestCourier, computeCourierShippingCharge, computeCourierCodCharge } from "../utils/courierSelection";
 import { numberEnv, requiredEnv } from "../utils/env";
 import { buildRazorpayPrefill } from "../utils/razorpay";
 import "../pages/Checkout/Checkout.css";
@@ -226,7 +226,14 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const shippingDiscountReason = shippingCharge > 0 ? (isFirstOrder ? "first_order" : "free_delivery") : null;
   const shippingDiscount = shippingDiscountReason ? shippingCharge : 0;
   const finalShippingCharge = Math.max(0, shippingCharge - shippingDiscount);
-  const paymentFee = payableCart.length > 0 && activePayment === "cod" ? COD_FEE_AMOUNT : 0;
+  // COD fee = the chosen courier's own COD handling charge (cod_charges + subtotal ×
+  // cod_multiplier), floored at the configured minimum. Falls back to the env value
+  // when no courier is selected yet. Prepaid keeps the flat env discount unchanged.
+  const codChargeAmount = Math.max(COD_FEE_AMOUNT, computeCourierCodCharge(selectedShippingCourier, subtotal));
+  const paymentFee = payableCart.length > 0 && activePayment === "cod" ? codChargeAmount : 0;
+  // Delivery is displayed net of the COD charge (billed separately on its own line);
+  // the full delivery charge is still what we persist to the order (shipping_charge).
+  const shippingChargeShown = Math.max(0, shippingCharge - paymentFee);
   const platformFee = payableCart.length > 0 ? PLATFORM_FEE_AMOUNT : 0;
   const giftCharge = payableCart.length > 0 && isGift ? GIFT_CHARGE_AMOUNT : 0;
   const paymentDiscount = payableCart.length > 0 && activePayment === "online" ? Math.min(PREPAID_DISCOUNT_AMOUNT, subtotal + finalShippingCharge) : 0;
@@ -244,7 +251,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   // Everything the shopper genuinely saves: MRP discount + waived delivery +
   // prepaid discount (only when paying online) + coupon. Wallet is excluded —
   // spending your own balance isn't a saving.
-  const totalSavings = mrpSavings + shippingDiscount + paymentDiscount + effectiveCouponDiscount;
+  const totalSavings = mrpSavings + shippingChargeShown + paymentDiscount + effectiveCouponDiscount;
   // Payment-step preview stays anchored to the cart subtotal. Confirm-step-only
   // choices such as platform fee, coupon, wallet and gift wrap are shown in the
   // review bill instead of leaking back into "Cart Total".
@@ -1187,7 +1194,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                   <span className="ckw-pay-title-row">
                     <span className="ckw-pay-title">Cash on Delivery</span>
                     {isCodAllowed
-                      ? <span className="ckw-pay-fee">+{money(COD_FEE_AMOUNT)}</span>
+                      ? <span className="ckw-pay-fee">+{money(codChargeAmount)}</span>
                       : <span className="ckw-pay-fee is-muted">{codBlocked ? "Not available on your account" : `Above ${money(COD_MAX_AMOUNT)} not allowed`}</span>}
                   </span>
                   <span className="ckw-pay-sub">
@@ -1225,7 +1232,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
               {payCtaContent}
             </button>
 
-            <div className={`ckw-bill${shippingCharge > 0 ? " ckw-bill--attached" : ""}`}>
+            <div className={`ckw-bill${shippingChargeShown > 0 ? " ckw-bill--attached" : ""}`}>
               <div className="ckw-bill-row">
                 <span>Subtotal ({selectedUnits} {selectedUnits === 1 ? "item" : "items"})</span>
                 <span>{money(subtotal)}</span>
@@ -1240,8 +1247,8 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                 <span>Delivery</span>
                 {shippingLoading ? (
                   <span>Calculating…</span>
-                ) : shippingCharge > 0 && finalShippingCharge === 0 ? (
-                  <span className="ckw-bill-free"><s>{money(shippingCharge)}</s> Free</span>
+                ) : shippingChargeShown > 0 && finalShippingCharge === 0 ? (
+                  <span className="ckw-bill-free"><s>{money(shippingChargeShown)}</s> Free</span>
                 ) : finalShippingCharge > 0 ? (
                   <span>{money(finalShippingCharge)}</span>
                 ) : (
@@ -1289,10 +1296,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
               )}
             </div>
 
-            {shippingCharge > 0 && (
+            {shippingChargeShown > 0 && (
               <div className="ckw-prime">
                 <strong>FREE DELIVERY UNLOCKED</strong>
-                <span>You saved {money(shippingCharge)} on delivery for this order</span>
+                <span>You saved {money(shippingChargeShown)} on delivery for this order</span>
               </div>
             )}
 
