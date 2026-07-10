@@ -108,16 +108,19 @@ const getBreakdown = (order = {}) => {
 };
 
 // An order can be cancelled (whole order only — no item-level changes) only while it
-// is still being prepared (pending / processing) and within 24 hours of placement.
+// is still being prepared (pending / processing) and within 24 hours of the window
+// start. The window normally starts at order placement, but a re-dispatched order
+// (after an RTO round trip) restarts it at the re-dispatch moment — see
+// cancel_window_started_at on the order (OrderController.hydrateV2Fields).
 // Once the status moves on (AWB assigned, shipped, …) the cancel button disappears.
 // Mirror of CANCELLABLE_STATUSES in OrderController on the backend.
 const CANCELLABLE_STATUSES = ["pending", "processing"];
 const canCancelOrder = (order) => {
-  const rawDate = order?.createdAt || order?.created_at;
+  const rawDate = order?.cancel_window_started_at || order?.createdAt || order?.created_at;
   const status = String(order?.status || "").toLowerCase();
   if (!rawDate || !CANCELLABLE_STATUSES.includes(status)) return false;
-  const createdAt = new Date(rawDate).getTime();
-  return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
+  const windowStart = new Date(rawDate).getTime();
+  return Number.isFinite(windowStart) && Date.now() - windowStart <= 24 * 60 * 60 * 1000;
 };
 
 // A current, dispatched AWB — present only once the order has moved past preparation.
@@ -1764,7 +1767,7 @@ export default function OrderConfirmation() {
                 Cancel order
               </button>
               {(() => {
-                const rawDate = order.createdAt || order.created_at;
+                const rawDate = order.cancel_window_started_at || order.createdAt || order.created_at;
                 if (!rawDate) return null;
                 const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(rawDate).getTime());
                 if (remaining <= 0) return null;
