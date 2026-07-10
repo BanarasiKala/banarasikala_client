@@ -120,11 +120,20 @@ const canCancelOrder = (order) => {
   return Number.isFinite(createdAt) && Date.now() - createdAt <= 24 * 60 * 60 * 1000;
 };
 
-// The "Track on Courier" button appears once the shipment has an AWB (the courier is
-// engaged / it has shipped) and stays until the journey ends — hidden once the order
-// is delivered, cancelled or fully returned to the seller (RTO delivered).
-const isTrackable = (order) => {
+// A current, dispatched AWB — present only once the order has moved past preparation.
+// A re-dispatched order sits in Processing (sometimes still holding the PREVIOUS
+// shipment's AWB) until a new AWB is assigned, so pending / processing count as
+// "no live AWB yet" and the tracking block stays hidden until then.
+const hasCurrentAwb = (order) => {
   if (!order?.shiprocket_awb) return false;
+  const status = String(order?.status || "").toLowerCase();
+  return status !== "pending" && status !== "processing";
+};
+
+// The "Track on Courier" button appears once the shipment has a current AWB and stays
+// until the journey ends — hidden once delivered, cancelled or returned (RTO delivered).
+const isTrackable = (order) => {
+  if (!hasCurrentAwb(order)) return false;
   const status = String(order?.status || "").toLowerCase();
   if (status === "delivered") return false;
   if (status.includes("cancel")) return false;
@@ -702,7 +711,13 @@ export default function OrderConfirmation() {
   // Status-driven return/exchange steps for the panel below the shipment
   // timeline (used until live pickup scans arrive).
   const reverseStatusSteps = useMemo(() => buildReverseStatusTimeline(order), [order]);
-  const refunds = Array.isArray(order?.refunds) ? order.refunds : [];
+  // Only actual refunds belong in the ledger below. RTO placeholder rows — one
+  // awaiting the customer's choice ("RTO Action Required"), or one resolved by paying
+  // to re-dispatch ("Not Required") — are not refunds and must not appear as one.
+  const refunds = (Array.isArray(order?.refunds) ? order.refunds : []).filter((r) => {
+    const s = String(r.status || "").toLowerCase();
+    return !s.includes("not required") && !s.includes("action required");
+  });
   const totalRefunded = refunds
     .filter((r) => isRefundSettled(r.status))
     .reduce((sum, r) => sum + toNumber(r.amount), 0);
@@ -713,7 +728,10 @@ export default function OrderConfirmation() {
   const rtoAction = order?.rto_action || null;
   const rtoAwaiting = Boolean(rtoAction?.awaiting)
     && String(rtoAction?.payment_method || "").toUpperCase() !== "COD";
+   
   const rtoCodBlocked = rtoAction?.resolution === "PRODUCT_RETURNED_COD_BLOCKED";
+  // A repeat RTO (the order was already re-dispatched once) is refund-only.
+  const rtoRedispatchAllowed = rtoAction?.redispatch_allowed !== false;
   // "Refund me instead": the seller keeps the platform fee and the forward + RTO
   // charges, all taken out of the gateway money. rtoGatewayRefund is what goes back to
   // the payment method — the wallet credit is returned to the wallet in full and is
@@ -1253,7 +1271,7 @@ export default function OrderConfirmation() {
                   {statusLabel}
                   <Icon icon={statusTone === "success" ? "lucide:check-circle-2" : statusTone === "alert" ? "lucide:alert-circle" : "lucide:loader"} />
                 </span>
-                {(order.shiprocket_awb || order.shiprocket_order_id) && (
+                {hasCurrentAwb(order) && (
                   <button
                     type="button"
                     className="order-track-refresh"
@@ -1268,7 +1286,7 @@ export default function OrderConfirmation() {
               </div>
             </div>
 
-            {!order.shiprocket_awb && (
+            {!hasCurrentAwb(order) && (
               <div className="order-track-pending">
                 <Icon icon="lucide:package-search" />
                 <span>
@@ -1281,7 +1299,7 @@ export default function OrderConfirmation() {
 
             <CollapsibleTimeline steps={timeline} currentLabel={statusLabel} />
 
-            {order.shiprocket_awb && (
+            {hasCurrentAwb(order) && (
               <>
                 {isTrackable(order) && (
                   <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
@@ -1302,31 +1320,37 @@ export default function OrderConfirmation() {
                 <span className="rto-panel-icon"><Icon icon="lucide:package-x" /></span>
                 <div>
                   <h2>Your order came back to us</h2>
-                  <p>The courier couldn&rsquo;t deliver this parcel and it has returned to our warehouse. Choose what you&rsquo;d like to do next.</p>
+                  <p>
+                    {rtoRedispatchAllowed
+                      ? "The courier couldn’t deliver this parcel and it has returned to our warehouse. Choose what you’d like to do next."
+                      : "This order was re-dispatched once and came back again, so it can now only be refunded."}
+                  </p>
                 </div>
               </div>
 
               <div className="rto-options">
-                <div className="rto-option">
-                  <div className="rto-option-head">
-                    <Icon icon="lucide:truck" />
-                    <strong>Re-dispatch my order</strong>
+                {rtoRedispatchAllowed && (
+                  <div className="rto-option">
+                    <div className="rto-option-head">
+                      <Icon icon="lucide:truck" />
+                      <strong>Re-dispatch my order</strong>
+                    </div>
+                    <p>We&rsquo;ll send the same order out again to your delivery address.</p>
+                    <ul className="rto-fee-lines">
+                      <li><span>Forward shipping</span><strong>{formatPrice(rtoAction.forward_charge)}</strong></li>
+                      <li><span>Return (RTO) charge</span><strong>{formatPrice(rtoAction.rto_charge)}</strong></li>
+                      <li className="rto-fee-total"><span>Payable now</span><strong>{formatPrice(rtoAction.redispatch_fee)}</strong></li>
+                    </ul>
+                    <button
+                      type="button"
+                      className="rto-btn rto-btn-primary"
+                      onClick={handleRtoRedispatch}
+                      disabled={Boolean(rtoLoading)}
+                    >
+                      {rtoLoading === "redispatch" ? "Opening payment…" : `Pay ${formatPrice(rtoAction.redispatch_fee)} & re-dispatch`}
+                    </button>
                   </div>
-                  <p>We&rsquo;ll send the same order out again to your delivery address.</p>
-                  <ul className="rto-fee-lines">
-                    <li><span>Forward shipping</span><strong>{formatPrice(rtoAction.forward_charge)}</strong></li>
-                    <li><span>Return (RTO) charge</span><strong>{formatPrice(rtoAction.rto_charge)}</strong></li>
-                    <li className="rto-fee-total"><span>Payable now</span><strong>{formatPrice(rtoAction.redispatch_fee)}</strong></li>
-                  </ul>
-                  <button
-                    type="button"
-                    className="rto-btn rto-btn-primary"
-                    onClick={handleRtoRedispatch}
-                    disabled={Boolean(rtoLoading)}
-                  >
-                    {rtoLoading === "redispatch" ? "Opening payment…" : `Pay ${formatPrice(rtoAction.redispatch_fee)} & re-dispatch`}
-                  </button>
-                </div>
+                )}
 
                 <div className="rto-option">
                   <div className="rto-option-head">
@@ -1529,7 +1553,18 @@ export default function OrderConfirmation() {
             {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
             {breakdown.walletAmount > 0 && <div className="summary-row is-saving"><span>Wallet used</span><strong>-{formatPrice(breakdown.walletAmount)}</strong></div>}
-            <div className="summary-row is-final"><span>Final amount</span><strong>{formatPrice(breakdown.payable)}</strong></div>
+            {rtoAction?.resolution === "REDISPATCHED" && toNumber(rtoAction?.redispatch_fee) > 0 ? (
+              // After a paid re-dispatch the ledger folds the forward + RTO charge into
+              // payable_amount, so split it out: the original order total, the extra
+              // re-dispatch charge the customer paid, and the combined total paid.
+              <>
+                <div className="summary-row is-final"><span>Order total</span><strong>{formatPrice(Math.max(0, breakdown.payable - toNumber(rtoAction.redispatch_fee)))}</strong></div>
+                <div className="summary-row summary-row-redispatch"><span>Re-dispatch charges paid</span><strong>+{formatPrice(rtoAction.redispatch_fee)}</strong></div>
+                <div className="summary-row is-final"><span>Total paid</span><strong>{formatPrice(breakdown.payable)}</strong></div>
+              </>
+            ) : (
+              <div className="summary-row is-final"><span>Final amount</span><strong>{formatPrice(breakdown.payable)}</strong></div>
+            )}
             <div className="payment-tags">
               <span>{order.payment_method || "Prepaid"}</span>
               <span>{order.payment_status || "Paid"}</span>
