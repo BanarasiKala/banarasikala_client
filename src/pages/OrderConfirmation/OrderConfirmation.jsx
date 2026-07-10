@@ -2103,12 +2103,18 @@ export default function OrderConfirmation() {
               </div>
 
               {cancelModal.type === "cancel" && (() => {
-                // Whole-order cancel: the refund is simply everything paid.
-                // Prepaid → paid amount back to the original payment method and
-                // any wallet money back to the wallet. COD → nothing was paid.
+                // Whole-order cancel. The refund figure comes straight from the backend
+                // (order.cancellation_refund) so it always matches what POST /cancel will
+                // actually pay out — notably, a cancel after a paid re-dispatch keeps back
+                // the re-dispatch logistics, the platform fee and the gift charge.
+                // Prepaid → refund to the original payment method; wallet money always
+                // goes back to the wallet in full. COD → nothing was paid.
                 const isCod = String(order?.payment_method || "").toUpperCase() === "COD";
-                const paidAmount = toNumber(order.amount_paid) || (isCod ? 0 : breakdown.payable);
-                const walletUsed = toNumber(order.wallet_amount);
+                const cr = order?.cancellation_refund || null;
+                const paidAmount = toNumber(cr?.amount_paid) || toNumber(order.amount_paid) || (isCod ? 0 : breakdown.payable);
+                const walletUsed = toNumber(cr?.wallet_refund) || toNumber(order.wallet_amount);
+                const refundAmount = cr ? toNumber(cr.refund_estimate) : paidAmount;
+                const showDeductions = Boolean(cr?.was_redispatched) && toNumber(cr?.non_refundable) > 0;
                 return (
                   <div className="action-estimate-box">
                     {isCod ? (
@@ -2130,8 +2136,17 @@ export default function OrderConfirmation() {
                     ) : (
                       <>
                         <div><span>Amount paid</span><strong>{formatPrice(paidAmount)}</strong></div>
+                        {showDeductions && toNumber(cr.redispatch_fee) > 0 && (
+                          <div><span>Less re-dispatch charges</span><strong>-{formatPrice(cr.redispatch_fee)}</strong></div>
+                        )}
+                        {showDeductions && toNumber(cr.platform_fee) > 0 && (
+                          <div><span>Less platform fee</span><strong>-{formatPrice(cr.platform_fee)}</strong></div>
+                        )}
+                        {showDeductions && toNumber(cr.gift_charge) > 0 && (
+                          <div><span>Less gift charge</span><strong>-{formatPrice(cr.gift_charge)}</strong></div>
+                        )}
                         <div className="action-estimate-total">
-                          <span>Refund to original payment method</span><strong>{formatPrice(paidAmount)}</strong>
+                          <span>Refund to original payment method</span><strong>{formatPrice(refundAmount)}</strong>
                         </div>
                         {walletUsed > 0 && (
                           <p className="action-estimate-note">
