@@ -250,7 +250,9 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const orderGrossTotal = Math.max(0, subtotal + finalShippingCharge + paymentFee + platformFee + giftCharge - paymentDiscount);
   const effectiveCouponDiscount = Math.min(activeDiscountAmount, orderGrossTotal);
   const grossAfterCoupon = Math.max(0, orderGrossTotal - effectiveCouponDiscount);
-  const walletUsableAmount = useWallet ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
+  // COD already lets the shopper pay cash on arrival — wallet credit is prepaid-only.
+  const walletEligible = activePayment !== "cod";
+  const walletUsableAmount = (useWallet && walletEligible) ? Math.min(Number(walletBalance || 0), grossAfterCoupon) : 0;
   const total = Math.max(0, grossAfterCoupon - walletUsableAmount);
   // Per-item MRP savings, mirroring the cart page's calculation.
   const mrpSavings = payableCart.reduce((sum, item) => {
@@ -1428,13 +1430,18 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
             </div>
 
             {walletBalance > 0 && (
-              <label className="ckw-confirm-card ckw-wallet-row">
+              <label className={`ckw-confirm-card ckw-wallet-row${walletEligible ? "" : " is-disabled"}`}>
                 <span className="ckw-confirm-ico"><Icon icon="lucide:wallet" /></span>
                 <span className="ckw-confirm-text">
                   <strong>Use wallet balance</strong>
-                  <small>Available {money(walletBalance)}</small>
+                  <small>{walletEligible ? `Available ${money(walletBalance)}` : "Not available with Cash on Delivery"}</small>
                 </span>
-                <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={useWallet && walletEligible}
+                  disabled={!walletEligible}
+                  onChange={(e) => setUseWallet(e.target.checked)}
+                />
               </label>
             )}
 

@@ -1583,6 +1583,15 @@
   accent-color: #6b0f17;
 }
 
+.ckw-wallet-row.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ckw-wallet-row.is-disabled input {
+  cursor: not-allowed;
+}
+
 /* Coupon (Buy Now flow) — mirrors the cart page's .cart-promo UI.
    Note: classes are prefixed ckw-coupon (NOT ckw-promo) to avoid colliding
    with the wizard's top promo ticker bar (.ckw-promo). */
