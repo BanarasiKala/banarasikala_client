@@ -1993,6 +1993,22 @@
   font-size: 13px;
 }
 
+/* "Available to re-dispatch until <date>" note inside the re-dispatch option */
+.rto-window-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px !important;
+  color: #915b12 !important;
+  font-size: 11.5px !important;
+  line-height: 1.45;
+}
+
+.rto-window-info svg {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
 .rto-panel-cod .rto-panel-head {
   margin-bottom: 12px;
 }

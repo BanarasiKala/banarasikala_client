@@ -733,8 +733,11 @@ export default function OrderConfirmation() {
     && String(rtoAction?.payment_method || "").toUpperCase() !== "COD";
    
   const rtoCodBlocked = rtoAction?.resolution === "PRODUCT_RETURNED_COD_BLOCKED";
-  // A repeat RTO (the order was already re-dispatched once) is refund-only.
+  // Re-dispatch is offered only while the order hasn't already been re-dispatched once
+  // AND we're still inside the window that opened when the parcel came back to us.
+  // Both conditions are decided by the backend (rto_action) so they can't drift.
   const rtoRedispatchAllowed = rtoAction?.redispatch_allowed !== false;
+  const rtoRedispatchBlockedReason = rtoAction?.redispatch_blocked_reason || null;
   // "Refund me instead": the seller keeps the platform fee and the forward + RTO
   // charges, all taken out of the gateway money. rtoGatewayRefund is what goes back to
   // the payment method — the wallet credit is returned to the wallet in full and is
@@ -1326,7 +1329,9 @@ export default function OrderConfirmation() {
                   <p>
                     {rtoRedispatchAllowed
                       ? "The courier couldn’t deliver this parcel and it has returned to our warehouse. Choose what you’d like to do next."
-                      : "This order was re-dispatched once and came back again, so it can now only be refunded."}
+                      : rtoRedispatchBlockedReason === "window_expired"
+                        ? "The window to re-dispatch this order has closed, so it can now only be refunded."
+                        : "This order was re-dispatched once and came back again, so it can now only be refunded."}
                   </p>
                 </div>
               </div>
@@ -1344,6 +1349,11 @@ export default function OrderConfirmation() {
                       <li><span>Return (RTO) charge</span><strong>{formatPrice(rtoAction.rto_charge)}</strong></li>
                       <li className="rto-fee-total"><span>Payable now</span><strong>{formatPrice(rtoAction.redispatch_fee)}</strong></li>
                     </ul>
+                    {rtoAction.redispatch_window_ends_at && (
+                      <p className="rto-window-info">
+                        <Icon icon="lucide:clock" /> Available to re-dispatch until {formatDate(rtoAction.redispatch_window_ends_at)}
+                      </p>
+                    )}
                     <button
                       type="button"
                       className="rto-btn rto-btn-primary"
