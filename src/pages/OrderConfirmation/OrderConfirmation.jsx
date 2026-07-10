@@ -714,9 +714,11 @@ export default function OrderConfirmation() {
   // Status-driven return/exchange steps for the panel below the shipment
   // timeline (used until live pickup scans arrive).
   const reverseStatusSteps = useMemo(() => buildReverseStatusTimeline(order), [order]);
-  // Only actual refunds belong in the ledger below. RTO placeholder rows — one
-  // awaiting the customer's choice ("RTO Action Required"), or one resolved by paying
-  // to re-dispatch ("Not Required") — are not refunds and must not appear as one.
+  // Only actual refunds belong in the ledger below. A prepaid RTO no longer creates a
+  // placeholder row (it's written only when a refund is really requested), so this is
+  // now a safety net for rows that represent "no money moved": a COD RTO where nothing
+  // was collected, and legacy orders still carrying the old "RTO Action Required" /
+  // "Not Required" placeholders.
   const refunds = (Array.isArray(order?.refunds) ? order.refunds : []).filter((r) => {
     const s = String(r.status || "").toLowerCase();
     return !s.includes("not required") && !s.includes("action required");
