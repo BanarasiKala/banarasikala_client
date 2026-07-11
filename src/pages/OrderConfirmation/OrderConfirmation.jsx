@@ -740,13 +740,23 @@ export default function OrderConfirmation() {
   // Both conditions are decided by the backend (rto_action) so they can't drift.
   const rtoRedispatchAllowed = rtoAction?.redispatch_allowed !== false;
   const rtoRedispatchBlockedReason = rtoAction?.redispatch_blocked_reason || null;
-  // "Refund me instead": the seller keeps the platform fee and the forward + RTO
-  // charges, all taken out of the gateway money. rtoGatewayRefund is what goes back to
-  // the payment method — the wallet credit is returned to the wallet in full and is
-  // called out in a message, not folded into this figure.
-  const rtoWalletPaid = toNumber(order?.wallet_amount);
-  const rtoPlatformFee = toNumber(order?.platform_fee);
-  const rtoGatewayRefund = Math.max(0, toNumber(order?.amount_paid) - rtoPlatformFee - toNumber(rtoAction?.redispatch_fee));
+  // Total forward + RTO charge PAID across every re-dispatch. Survives a later RTO,
+  // unlike rto_action (which describes only the latest event).
+  const redispatchChargesPaid = toNumber(order?.redispatch_charges_paid);
+  // "Refund me instead". These figures come straight from the backend (order.rto_refund),
+  // computed by the same helper resolveRto pays out with, so the quote can't drift.
+  // The refundable base EXCLUDES re-dispatch fees already paid (that money is spent), and
+  // the seller keeps the platform fee + this cycle's forward + RTO charges — all out of
+  // the gateway money. Wallet credit is returned to the wallet in full and is called out
+  // in a message, never folded into the gateway figure.
+  const rtoRefund = order?.rto_refund || null;
+  const rtoWalletPaid = toNumber(rtoRefund?.wallet_refund ?? order?.wallet_amount);
+  const rtoPlatformFee = toNumber(rtoRefund?.platform_fee ?? order?.platform_fee);
+  const rtoRefundableBase = toNumber(rtoRefund?.refundable_base ?? order?.amount_paid);
+  const rtoForwardRtoCharges = toNumber(rtoRefund?.forward_rto_charges ?? rtoAction?.redispatch_fee);
+  const rtoGatewayRefund = rtoRefund
+    ? toNumber(rtoRefund.gateway_refund)
+    : Math.max(0, rtoRefundableBase - rtoPlatformFee - rtoForwardRtoCharges);
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -1372,15 +1382,20 @@ export default function OrderConfirmation() {
                     <Icon icon="lucide:rotate-ccw" />
                     <strong>Refund me instead</strong>
                   </div>
-                  <p>We&rsquo;ll refund what you paid, after deducting the platform fee and the forward &amp; return shipping already spent on this parcel.</p>
+                  <p>We&rsquo;ll refund what you paid for the order, after deducting the platform fee and the forward &amp; return shipping already spent on this parcel.</p>
                   <ul className="rto-fee-lines">
-                    <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
+                    <li><span>Amount paid</span><strong>{formatPrice(rtoRefundableBase)}</strong></li>
                     {rtoPlatformFee > 0 && (
                       <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
                     )}
-                    <li><span>Less forward + RTO charges</span><strong>-{formatPrice(rtoAction.redispatch_fee)}</strong></li>
+                    <li><span>Less forward + RTO charges</span><strong>-{formatPrice(rtoForwardRtoCharges)}</strong></li>
                     <li className="rto-fee-total"><span>Estimated refund</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
                   </ul>
+                  {redispatchChargesPaid > 0 && (
+                    <p className="rto-wallet-hint">
+                      <Icon icon="lucide:info" /> The {formatPrice(redispatchChargesPaid)} you paid to re-dispatch was spent on shipping and isn&rsquo;t refundable, so it&rsquo;s not counted above.
+                    </p>
+                  )}
                   {rtoWalletPaid > 0 && (
                     <p className="rto-wallet-hint">
                       <Icon icon="lucide:wallet" /> Plus {formatPrice(rtoWalletPaid)} returned to your wallet; the amount above goes to your original payment method.
@@ -1568,13 +1583,17 @@ export default function OrderConfirmation() {
             {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
             {breakdown.walletAmount > 0 && <div className="summary-row is-saving"><span>Wallet used</span><strong>-{formatPrice(breakdown.walletAmount)}</strong></div>}
-            {rtoAction?.resolution === "REDISPATCHED" && toNumber(rtoAction?.redispatch_fee) > 0 ? (
-              // After a paid re-dispatch the ledger folds the forward + RTO charge into
-              // payable_amount, so split it out: the original order total, the extra
-              // re-dispatch charge the customer paid, and the combined total paid.
+            {redispatchChargesPaid > 0 ? (
+              // Resolving a re-dispatch posts the forward + RTO charge to the ledger, so
+              // payable_amount carries it. Split it back out: the goods total, the extra
+              // re-dispatch charge paid, and the combined total paid. Keyed on
+              // order.redispatch_charges_paid (the sum actually paid across every
+              // re-dispatch) — NOT on rto_action.resolution, which flips back to
+              // AWAITING_PAYMENT on a later RTO and would drop the split, leaving the old
+              // re-dispatch charge silently baked into "Final amount".
               <>
-                <div className="summary-row is-final"><span>Order total</span><strong>{formatPrice(Math.max(0, breakdown.payable - toNumber(rtoAction.redispatch_fee)))}</strong></div>
-                <div className="summary-row summary-row-redispatch"><span>Re-dispatch charges paid</span><strong>+{formatPrice(rtoAction.redispatch_fee)}</strong></div>
+                <div className="summary-row is-final"><span>Order total</span><strong>{formatPrice(Math.max(0, breakdown.payable - redispatchChargesPaid))}</strong></div>
+                <div className="summary-row summary-row-redispatch"><span>Re-dispatch charges paid</span><strong>+{formatPrice(redispatchChargesPaid)}</strong></div>
                 <div className="summary-row is-final"><span>Total paid</span><strong>{formatPrice(breakdown.payable)}</strong></div>
               </>
             ) : (
@@ -1819,13 +1838,18 @@ export default function OrderConfirmation() {
               </p>
             </div>
             <ul className="rto-fee-lines rto-confirm-lines">
-              <li><span>Amount paid</span><strong>{formatPrice(order.amount_paid)}</strong></li>
+              <li><span>Amount paid</span><strong>{formatPrice(rtoRefundableBase)}</strong></li>
               {rtoPlatformFee > 0 && (
                 <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
               )}
-              <li><span>Forward + RTO charges</span><strong>-{formatPrice(rtoAction?.redispatch_fee)}</strong></li>
+              <li><span>Forward + RTO charges</span><strong>-{formatPrice(rtoForwardRtoCharges)}</strong></li>
               <li className="rto-fee-total"><span>You&rsquo;ll receive</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
             </ul>
+            {redispatchChargesPaid > 0 && (
+              <p className="rto-wallet-hint rto-confirm-lines">
+                <Icon icon="lucide:info" /> The {formatPrice(redispatchChargesPaid)} re-dispatch charge was spent on shipping and isn&rsquo;t refundable.
+              </p>
+            )}
             <div className="rto-confirm-actions">
               <button
                 type="button"
