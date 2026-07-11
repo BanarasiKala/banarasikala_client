@@ -478,6 +478,17 @@
   color: #34170f;
 }
 
+/* Wallet credit goes back to the wallet, not the card — styled apart from the
+   deduction lines so it never reads as part of the payment-method total. */
+.refund-ledger-wallet,
+.refund-ledger-breakdown .refund-ledger-wallet {
+  color: #6840aa;
+}
+
+.refund-ledger-wallet strong {
+  color: #6840aa;
+}
+
 .refund-ledger-total strong {
   color: #087a46;
 }

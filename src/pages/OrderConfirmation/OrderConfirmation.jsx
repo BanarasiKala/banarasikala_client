@@ -723,9 +723,22 @@ export default function OrderConfirmation() {
     const s = String(r.status || "").toLowerCase();
     return !s.includes("not required") && !s.includes("action required");
   });
+  // Money that goes back to the PAYMENT METHOD for a refund row. `amount` is the ledger
+  // total (gateway + wallet), but wallet credit is returned to the wallet — a different
+  // destination — so it must not be folded into the figure shown against the card, nor
+  // into the column total (it would make the deduction lines fail to add up).
+  const refundToPaymentMethod = (r) => {
+    const bd = r?.breakdown || null;
+    return (bd?.is_full_return && bd?.gateway_refund !== undefined && bd?.gateway_refund !== null)
+      ? toNumber(bd.gateway_refund)
+      : toNumber(r?.amount);
+  };
   const totalRefunded = refunds
     .filter((r) => isRefundSettled(r.status))
-    .reduce((sum, r) => sum + toNumber(r.amount), 0);
+    .reduce((sum, r) => sum + refundToPaymentMethod(r), 0);
+  const totalWalletReturned = refunds
+    .filter((r) => isRefundSettled(r.status))
+    .reduce((sum, r) => sum + toNumber(r?.breakdown?.wallet_return), 0);
   const orderActions = useMemo(() => getOrderActions(order), [order]);
   // RTO (order returned to seller). Prepaid parcels wait for the customer to
   // choose "pay to re-dispatch" or "refund"; COD parcels are terminal (the
@@ -1646,7 +1659,12 @@ export default function OrderConfirmation() {
                             {formatRefundStatus(r.status)}{r.createdAt || r.created_at ? ` · ${formatDate(r.createdAt || r.created_at)}` : ""}
                           </small>
                         </span>
-                        <strong>{formatPrice(r.amount)}</strong>
+                        {/* Headline = money going back to the PAYMENT METHOD. r.amount is the
+                            ledger total (gateway + wallet), but the wallet credit goes to the
+                            wallet, not the card — adding it here made the figure disagree with
+                            the deduction lines below and read as if the card were refunded more
+                            than it was. Wallet is called out separately underneath. */}
+                        <strong>{formatPrice(refundToPaymentMethod(r))}</strong>
                       </div>
                       {bd && (
                         <div className="refund-ledger-breakdown">
@@ -1655,7 +1673,8 @@ export default function OrderConfirmation() {
                               {/* Full return: what you paid (amount_paid) is refunded
                                   to the gateway minus the non-refundable fees +
                                   pickup charge; the wallet credit is returned to the
-                                  wallet in full (shown separately below). */}
+                                  wallet in full (called out below, NOT added into the
+                                  refund figure — it goes to a different destination). */}
                               <div>
                                 <span>Amount paid</span>
                                 <strong>{formatPrice(bd.amount_paid)}</strong>
@@ -1678,8 +1697,22 @@ export default function OrderConfirmation() {
                                   <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
                                 </div>
                               )}
+                              {toNumber(bd.payment_gateway_charge) > 0 && (
+                                <div>
+                                  <span>
+                                    Payment gateway charge
+                                    {toNumber(bd.payment_gateway_fee_percent) > 0
+                                      ? ` (${bd.payment_gateway_fee_percent}% + ${bd.payment_gateway_gst_percent}% GST)`
+                                      : ""}
+                                  </span>
+                                  <strong>-{formatPrice(bd.payment_gateway_charge)}</strong>
+                                </div>
+                              )}
                               {toNumber(bd.wallet_return) > 0 && (
-                                <div><span>Returned to wallet (in full)</span><strong>{formatPrice(bd.wallet_return)}</strong></div>
+                                <div className="refund-ledger-wallet">
+                                  <span>Plus returned to your wallet (in full)</span>
+                                  <strong>+{formatPrice(bd.wallet_return)}</strong>
+                                </div>
                               )}
                             </>
                           ) : (
@@ -1715,8 +1748,14 @@ export default function OrderConfirmation() {
                 })}
                 {totalRefunded > 0 && (
                   <div className="refund-ledger-row refund-ledger-total">
-                    <span>Total refunded</span>
+                    <span>Total refunded to payment method</span>
                     <strong>{formatPrice(totalRefunded)}</strong>
+                  </div>
+                )}
+                {totalWalletReturned > 0 && (
+                  <div className="refund-ledger-row refund-ledger-wallet">
+                    <span>Total returned to wallet</span>
+                    <strong>{formatPrice(totalWalletReturned)}</strong>
                   </div>
                 )}
               </div>
@@ -2245,6 +2284,17 @@ export default function OrderConfirmation() {
                           </span>
                           <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                         </div>
+                        {toNumber(actionEstimate.totals.payment_gateway_charge) > 0 && (
+                          <div>
+                            <span>
+                              Payment gateway charge
+                              {toNumber(actionEstimate.totals.payment_gateway_fee_percent) > 0
+                                ? ` (${actionEstimate.totals.payment_gateway_fee_percent}% + ${actionEstimate.totals.payment_gateway_gst_percent}% GST)`
+                                : ""}
+                            </span>
+                            <strong>-{formatPrice(actionEstimate.totals.payment_gateway_charge)}</strong>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
