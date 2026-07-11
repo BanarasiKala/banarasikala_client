@@ -1697,6 +1697,10 @@ export default function OrderConfirmation() {
                                   <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
                                 </div>
                               )}
+                              {/* LEGACY ONLY. The gateway charge is no longer deducted, so this is
+                                  absent from every new refund. It stays for refunds settled while
+                                  that policy was live — without the line, the money they were
+                                  actually charged would just be missing from the breakdown. */}
                               {toNumber(bd.payment_gateway_charge) > 0 && (
                                 <div>
                                   <span>
@@ -2284,17 +2288,6 @@ export default function OrderConfirmation() {
                           </span>
                           <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                         </div>
-                        {toNumber(actionEstimate.totals.payment_gateway_charge) > 0 && (
-                          <div>
-                            <span>
-                              Payment gateway charge
-                              {toNumber(actionEstimate.totals.payment_gateway_fee_percent) > 0
-                                ? ` (${actionEstimate.totals.payment_gateway_fee_percent}% + ${actionEstimate.totals.payment_gateway_gst_percent}% GST)`
-                                : ""}
-                            </span>
-                            <strong>-{formatPrice(actionEstimate.totals.payment_gateway_charge)}</strong>
-                          </div>
-                        )}
                       </>
                     ) : (
                       <>
