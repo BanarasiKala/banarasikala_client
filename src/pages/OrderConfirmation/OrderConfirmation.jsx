@@ -752,11 +752,12 @@ export default function OrderConfirmation() {
   const rtoRefund = order?.rto_refund || null;
   const rtoWalletPaid = toNumber(rtoRefund?.wallet_refund ?? order?.wallet_amount);
   const rtoPlatformFee = toNumber(rtoRefund?.platform_fee ?? order?.platform_fee);
+  const rtoGiftCharge = toNumber(rtoRefund?.gift_charge ?? order?.gift_charge);
   const rtoRefundableBase = toNumber(rtoRefund?.refundable_base ?? order?.amount_paid);
   const rtoForwardRtoCharges = toNumber(rtoRefund?.forward_rto_charges ?? rtoAction?.redispatch_fee);
   const rtoGatewayRefund = rtoRefund
     ? toNumber(rtoRefund.gateway_refund)
-    : Math.max(0, rtoRefundableBase - rtoPlatformFee - rtoForwardRtoCharges);
+    : Math.max(0, rtoRefundableBase - rtoPlatformFee - rtoGiftCharge - rtoForwardRtoCharges);
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -1382,11 +1383,14 @@ export default function OrderConfirmation() {
                     <Icon icon="lucide:rotate-ccw" />
                     <strong>Refund me instead</strong>
                   </div>
-                  <p>We&rsquo;ll refund what you paid for the order, after deducting the platform fee and the forward &amp; return shipping already spent on this parcel.</p>
+                  <p>We&rsquo;ll refund what you paid for the order, after deducting the platform fee{rtoGiftCharge > 0 ? ", the gift charge" : ""} and the forward &amp; return shipping already spent on this parcel.</p>
                   <ul className="rto-fee-lines">
                     <li><span>Amount paid</span><strong>{formatPrice(rtoRefundableBase)}</strong></li>
                     {rtoPlatformFee > 0 && (
                       <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
+                    )}
+                    {rtoGiftCharge > 0 && (
+                      <li><span>Less gift charge</span><strong>-{formatPrice(rtoGiftCharge)}</strong></li>
                     )}
                     <li><span>Less forward + RTO charges</span><strong>-{formatPrice(rtoForwardRtoCharges)}</strong></li>
                     <li className="rto-fee-total"><span>Estimated refund</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
@@ -1841,6 +1845,9 @@ export default function OrderConfirmation() {
               <li><span>Amount paid</span><strong>{formatPrice(rtoRefundableBase)}</strong></li>
               {rtoPlatformFee > 0 && (
                 <li><span>Less platform fee</span><strong>-{formatPrice(rtoPlatformFee)}</strong></li>
+              )}
+              {rtoGiftCharge > 0 && (
+                <li><span>Less gift charge</span><strong>-{formatPrice(rtoGiftCharge)}</strong></li>
               )}
               <li><span>Forward + RTO charges</span><strong>-{formatPrice(rtoForwardRtoCharges)}</strong></li>
               <li className="rto-fee-total"><span>You&rsquo;ll receive</span><strong>{formatPrice(rtoGatewayRefund)}</strong></li>
