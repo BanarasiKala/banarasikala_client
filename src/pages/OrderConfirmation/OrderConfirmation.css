@@ -972,6 +972,10 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* The modal is a fixed width and scrolls vertically only. Anything wide inside it (the
+     exchange product strip) must scroll within its own box, never widen the modal. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .action-type-switch {
@@ -1002,6 +1006,10 @@
 .action-item-picker {
   display: grid;
   gap: 10px;
+  /* Grid items default to min-width:auto, so a wide child (the exchange product strip)
+     would stretch the track instead of scrolling inside it, pushing the modal off to the
+     right. Pinning this to 0 all the way down the chain is what lets overflow-x work. */
+  min-width: 0;
 }
 
 .action-item-row {
@@ -1014,12 +1022,17 @@
   border-radius: 12px;
   background: #fffaf1;
   transition: border-color 150ms, background 150ms;
+  min-width: 0; /* see .action-item-picker */
 }
 
-/* ── Exchange: pick another colour of the same product ── */
+/* ── Exchange: pick any saree at exactly the price paid, then its colour ── */
 .exchange-variant-picker {
   flex-basis: 100%;
   width: 100%;
+  /* Flex item — same min-width:auto trap as the grid above. Without this the strip below
+     sets the row's width and the modal overflows to the right instead of scrolling. */
+  min-width: 0;
+  max-width: 100%;
   padding-top: 10px;
   margin-top: 2px;
   border-top: 1px dashed rgba(123, 0, 27, 0.16);
@@ -1033,6 +1046,90 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.exchange-variant-hint {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(93, 23, 13, 0.65);
+}
+
+/* Horizontally scrollable strip. Many sarees can share a price, so this list is unbounded
+   — it scrolls WITHIN the card and the modal itself never grows a horizontal scrollbar.
+   width:100% + min-width:0 stop the flex content from sizing the box; overflow-x then has
+   something to scroll against. */
+.exchange-product-options {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain; /* don't chain the scroll out to the page */
+  scroll-snap-type: x proximity;
+  margin-bottom: 10px;
+  /* Scrolls, but the bar itself is hidden — it sat under the cards and looked like a
+     stray rule. Drag/swipe/trackpad still work; the cut-off card at the right edge is
+     what signals there is more to see. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+.exchange-product-options::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.exchange-product-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  /* flex-shrink:0 is what keeps the cards their true size so the row actually overflows
+     (and therefore scrolls) instead of squashing every card to fit. */
+  flex: 0 0 96px;
+  width: 96px;
+  scroll-snap-align: start;
+  padding: 8px 6px;
+  border: 1.5px solid rgba(123, 0, 27, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: #5d170d;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+}
+
+.exchange-product-option:hover {
+  border-color: rgba(123, 0, 27, 0.45);
+}
+
+.exchange-product-option.is-chosen {
+  border-color: #7b001b;
+  background: rgba(123, 0, 27, 0.05);
+  box-shadow: 0 0 0 1px #7b001b inset;
+}
+
+.exchange-product-thumb {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.exchange-product-name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .exchange-variant-swatches {

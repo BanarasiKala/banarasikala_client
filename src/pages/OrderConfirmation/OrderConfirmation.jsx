@@ -838,72 +838,74 @@ export default function OrderConfirmation() {
     }
   }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
 
-  // While the exchange modal is open, lazily pull each eligible product's colour
-  // variations (from the product-detail endpoint) so the customer can pick a
-  // different colour of the same product. Driven off the exchangeVariants map
-  // itself (only products with no entry yet are fetched), and EVERY product is
-  // always resolved to a terminal state — a missing slug or a failed fetch ends
-  // as { loading: false, ... } rather than spinning on "Loading colours…".
+  // While the exchange modal is open, lazily pull what each eligible LINE can be swapped
+  // for: every active product priced at EXACTLY what was paid for it, with its in-stock
+  // colours. Keyed by ORDER ITEM (not product) because the options depend on that line's
+  // paid price. Every line always resolves to a terminal state — a failed fetch ends as
+  // { loading: false, error: true } rather than spinning on "Loading…".
   useEffect(() => {
     if (!cancelModal.isOpen || cancelModal.type !== "exchange" || !order) return;
     const missing = getEligibleActionItems(order, "exchange")
-      .filter((item) => item.product_id && exchangeVariants[item.product_id] === undefined);
+      .filter((item) => exchangeVariants[item.id] === undefined);
     if (!missing.length) return;
 
-    // Mark them: fetchable (has slug) → loading; otherwise terminal (no variants).
     setExchangeVariants((prev) => {
       const next = { ...prev };
-      missing.forEach((item) => {
-        next[item.product_id] = item.product_slug
-          ? { loading: true, colors: [], error: false }
-          : { loading: false, colors: [], error: false };
-      });
+      missing.forEach((item) => { next[item.id] = { loading: true, options: [], error: false }; });
       return next;
     });
 
-    missing
-      .filter((item) => item.product_slug)
-      .forEach(async (item) => {
-        try {
-          const res = await fetch(`${API_ENDPOINTS.products}/${item.product_slug}/detail`);
-          if (!res.ok) throw new Error("failed");
-          const data = await res.json();
-          const seen = new Set();
-          const colors = (Array.isArray(data.colors) ? data.colors : []).filter((c) => {
-            const key = String(c.id);
-            if (!c.id || seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          setExchangeVariants((prev) => ({ ...prev, [item.product_id]: { loading: false, colors, error: false } }));
-        } catch {
-          setExchangeVariants((prev) => ({ ...prev, [item.product_id]: { loading: false, colors: [], error: true } }));
-        }
-      });
+    missing.forEach(async (item) => {
+      try {
+        const res = await api.get(
+          `/api/orders/${order.id}/item-actions/exchange-options?orderItemId=${item.id}`,
+        );
+        const data = res.data || {};
+        setExchangeVariants((prev) => ({
+          ...prev,
+          [item.id]: {
+            loading: false,
+            options: Array.isArray(data.options) ? data.options : [],
+            paidPrice: data.paid_price,
+            error: false,
+          },
+        }));
+      } catch {
+        setExchangeVariants((prev) => ({
+          ...prev,
+          [item.id]: { loading: false, options: [], error: true },
+        }));
+      }
+    });
   }, [cancelModal.isOpen, cancelModal.type, order, exchangeVariants]);
 
-  // Default each checked exchange item to a sensible target colour once its
-  // variants load: the item's current colour if still in stock, otherwise the
-  // first in-stock colour. Only runs for products that actually have a choice.
+  // Default each checked exchange line to the like-for-like swap once its options load:
+  // the same product in its current colour if still in stock, else that product's first
+  // in-stock colour. Never auto-selects a DIFFERENT product — swapping the saree itself is
+  // always a deliberate choice by the customer.
   useEffect(() => {
     if (!cancelModal.isOpen || cancelModal.type !== "exchange") return;
     setCancelModal((current) => {
       let changed = false;
       const nextSelected = { ...current.selected };
       Object.entries(nextSelected).forEach(([itemId, val]) => {
-        if (!val.checked || val.exchangeColorId) return;
+        if (!val.checked || val.exchangeProductId) return;
         const item = (order?.OrderItems || []).find((it) => String(it.id) === String(itemId));
-        const variant = item ? exchangeVariants[item.product_id] : null;
-        if (!variant || variant.loading) return;
-        const colors = variant.colors || [];
-        if (colors.length <= 1) return;
-        const currentInStock = colors.find((c) => String(c.id) === String(item.colorId) && Number(c.stock_quantity) > 0);
-        const firstInStock = colors.find((c) => Number(c.stock_quantity) > 0);
-        const def = currentInStock?.id ?? firstInStock?.id ?? null;
-        if (def != null) {
-          nextSelected[itemId] = { ...val, exchangeColorId: def };
-          changed = true;
-        }
+        const variant = item ? exchangeVariants[itemId] : null;
+        if (!variant || variant.loading || variant.error) return;
+
+        const currentOption = (variant.options || []).find((o) => o.is_current_product);
+        if (!currentOption) return;
+        const colors = currentOption.colors || [];
+        const currentInStock = colors.find((c) => String(c.color_id) === String(item.colorId));
+        const def = currentInStock?.color_id ?? colors[0]?.color_id ?? null;
+
+        nextSelected[itemId] = {
+          ...val,
+          exchangeProductId: currentOption.product_id,
+          exchangeColorId: val.exchangeColorId ?? def,
+        };
+        changed = true;
       });
       return changed ? { ...current, selected: nextSelected } : current;
     });
@@ -1007,7 +1009,11 @@ export default function OrderConfirmation() {
     .map(([id, value]) => ({
       orderItemId: Number(id),
       quantity: value.quantity || null,
-      // Exchange only: the colour variant the customer wants instead.
+      // Exchange only: the saree the customer wants instead — a different product at the
+      // same price, and/or a different colour of it.
+      ...(cancelModal.type === "exchange" && value.exchangeProductId
+        ? { exchangeProductId: value.exchangeProductId }
+        : {}),
       ...(cancelModal.type === "exchange" && value.exchangeColorId
         ? { exchangeColorId: value.exchangeColorId }
         : {}),
@@ -1019,6 +1025,23 @@ export default function OrderConfirmation() {
       selected: {
         ...current.selected,
         [itemId]: { ...(current.selected?.[itemId] || {}), exchangeColorId: colorId },
+      },
+    }));
+  };
+
+  // Picking a different product resets the colour — the old colour belongs to the old
+  // saree and almost certainly isn't a variant of the new one. Default straight to the
+  // new product's first in-stock colour so the request is always submittable.
+  const setExchangeProduct = (itemId, option) => {
+    setCancelModal((current) => ({
+      ...current,
+      selected: {
+        ...current.selected,
+        [itemId]: {
+          ...(current.selected?.[itemId] || {}),
+          exchangeProductId: option.product_id,
+          exchangeColorId: option.colors?.[0]?.color_id ?? null,
+        },
       },
     }));
   };
@@ -1095,16 +1118,14 @@ export default function OrderConfirmation() {
           setModalSubmitLoading(false);
           return;
         }
-        // Exchange: don't submit while a selected item's colour options are still
-        // loading — the customer hasn't had the chance to choose a variant yet.
+        // Exchange: don't submit while a selected line's options are still loading — the
+        // customer hasn't had the chance to choose what they want instead yet.
         if (type === "exchange") {
-          const stillLoading = selectedActionItems.some(({ orderItemId }) => {
-            const item = (order?.OrderItems || []).find((it) => Number(it.id) === Number(orderItemId));
-            const variant = item ? exchangeVariants[item.product_id] : null;
-            return variant?.loading;
-          });
+          const stillLoading = selectedActionItems.some(
+            ({ orderItemId }) => exchangeVariants[orderItemId]?.loading,
+          );
           if (stillLoading) {
-            showNotification("Please wait for the colour options to load.", "warning");
+            showNotification("Please wait for the exchange options to load.", "warning");
             setModalSubmitLoading(false);
             return;
           }
@@ -2114,46 +2135,79 @@ export default function OrderConfirmation() {
                           </div>
                         )}
                         {cancelModal.type === "exchange" && sel.checked && (() => {
-                          const variant = exchangeVariants[item.product_id];
+                          const variant = exchangeVariants[item.id];
                           if (!variant || variant.loading) {
-                            return <div className="exchange-variant-note">Loading colours…</div>;
+                            return <div className="exchange-variant-note">Loading exchange options…</div>;
                           }
                           if (variant.error) {
-                            return <div className="exchange-variant-note">Couldn&rsquo;t load colour options — we&rsquo;ll exchange it for the same colour.</div>;
+                            return <div className="exchange-variant-note is-warn">Couldn&rsquo;t load exchange options. Please try again.</div>;
                           }
-                          const colors = variant.colors || [];
-                          // Single-variant product: nothing to choose — the exchange sends
-                          // the same colour. Say so explicitly instead of showing nothing.
-                          if (colors.length <= 1) {
-                            return <div className="exchange-variant-note">This product has no other colours — it will be exchanged for the same one.</div>;
+                          const options = variant.options || [];
+                          const swappable = options.filter((o) => (o.colors || []).length > 0);
+                          if (!swappable.length) {
+                            return <div className="exchange-variant-note is-warn">Nothing is in stock to exchange this for right now.</div>;
                           }
-                          if (!colors.some((c) => Number(c.stock_quantity) > 0)) {
-                            return <div className="exchange-variant-note is-warn">No colours are in stock for exchange right now.</div>;
-                          }
-                          const chosen = sel.exchangeColorId ?? item.colorId;
+
+                          const chosenProductId = sel.exchangeProductId ?? item.product_id;
+                          const chosenOption = swappable.find((o) => String(o.product_id) === String(chosenProductId))
+                            || swappable[0];
+                          const colors = chosenOption.colors || [];
+                          const chosenColorId = sel.exchangeColorId ?? colors[0]?.color_id ?? null;
+
                           return (
                             <div className="exchange-variant-picker">
-                              <span className="exchange-variant-label">Exchange for colour</span>
-                              <div className="exchange-variant-swatches">
-                                {colors.map((c) => {
-                                  const inStock = Number(c.stock_quantity) > 0;
-                                  const isCurrent = String(c.id) === String(item.colorId);
-                                  const isChosen = String(chosen) === String(c.id);
+                              <span className="exchange-variant-label">
+                                Exchange for {formatPrice(variant.paidPrice)}
+                                <small className="exchange-variant-hint">
+                                  {" "}— any saree at the same price. No extra charge, no refund.
+                                </small>
+                              </span>
+
+                              <div className="exchange-product-options">
+                                {swappable.map((option) => {
+                                  const isChosen = String(option.product_id) === String(chosenOption.product_id);
+                                  const thumb = Array.isArray(option.images)
+                                    ? (option.images[0]?.url || option.images[0])
+                                    : null;
                                   return (
                                     <button
-                                      key={c.id}
+                                      key={option.product_id}
                                       type="button"
-                                      className={`exchange-variant-swatch${isChosen ? " is-chosen" : ""}${inStock ? "" : " is-out"}`}
-                                      disabled={!inStock}
-                                      onClick={() => setExchangeColor(item.id, c.id)}
-                                      title={inStock ? c.name : `${c.name} — out of stock`}
+                                      className={`exchange-product-option${isChosen ? " is-chosen" : ""}`}
+                                      onClick={() => setExchangeProduct(item.id, option)}
+                                      title={option.name}
                                     >
-                                      <span className="exchange-variant-dot" style={{ backgroundColor: c.hex_code || "#ccc" }} />
-                                      <small>{c.name}{isCurrent ? " (current)" : ""}{inStock ? "" : " · out"}</small>
+                                      {thumb && <img src={thumb} alt="" className="exchange-product-thumb" />}
+                                      <span className="exchange-product-name">
+                                        {option.name}
+                                        {option.is_current_product ? " (current)" : ""}
+                                      </span>
                                     </button>
                                   );
                                 })}
                               </div>
+
+                              {colors.length > 0 && (
+                                <div className="exchange-variant-swatches">
+                                  {colors.map((c) => {
+                                    const isCurrent = chosenOption.is_current_product
+                                      && String(c.color_id) === String(item.colorId);
+                                    const isChosen = String(chosenColorId) === String(c.color_id);
+                                    return (
+                                      <button
+                                        key={c.color_id}
+                                        type="button"
+                                        className={`exchange-variant-swatch${isChosen ? " is-chosen" : ""}`}
+                                        onClick={() => setExchangeColor(item.id, c.color_id)}
+                                        title={c.name}
+                                      >
+                                        <span className="exchange-variant-dot" style={{ backgroundColor: c.hex_code || "#ccc" }} />
+                                        <small>{c.name}{isCurrent ? " (current)" : ""}</small>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
