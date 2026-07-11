@@ -59,7 +59,7 @@ const Cart = () => {
   } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
-  const { pincode, courierEtd, setPincode } = useDeliveryLocation();
+  const { pincode, courierEtd, deliverable, setPincode } = useDeliveryLocation();
 
   const [stockAlerts, setStockAlerts] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -278,6 +278,8 @@ const Cart = () => {
   const farthestDeliveryLabel = farthestDelivery
     ? farthestDelivery.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
     : null;
+  // Confirmed unserviceable (not just "still checking") — blocks proceeding to checkout.
+  const pincodeUndeliverable = !!pincode && deliverable === false;
 
   const handleCartQuantityChange = async (item, nextQuantity) => {
     if (nextQuantity < 1) return;
@@ -314,6 +316,10 @@ const Cart = () => {
     }
     if (!pincode) {
       showNotification("Please add your delivery pincode to continue.", "warning");
+      return;
+    }
+    if (pincodeUndeliverable) {
+      showNotification("Delivery isn't available to this pincode. Please try another.", "error");
       return;
     }
     const blockedKeys = new Set(
@@ -404,11 +410,13 @@ const Cart = () => {
             <div className="cart-summary-info">
               <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your bag</strong>
               {pincode && !editingPin && (
-                <span className="cart-summary-freedelivery">
-                  <Icon icon="lucide:truck" />
-                  {farthestDeliveryLabel
-                    ? <>FREE Delivery by <strong>{farthestDeliveryLabel}</strong></>
-                    : "Checking delivery date…"}
+                <span className={`cart-summary-freedelivery${pincodeUndeliverable ? " is-undeliverable" : ""}`}>
+                  <Icon icon={pincodeUndeliverable ? "lucide:alert-triangle" : "lucide:truck"} />
+                  {pincodeUndeliverable
+                    ? "Delivery not available to this pincode"
+                    : farthestDeliveryLabel
+                      ? <>FREE Delivery by <strong>{farthestDeliveryLabel}</strong></>
+                      : "Checking delivery date…"}
                   <button
                     type="button"
                     className="cart-pin-change"
@@ -455,8 +463,8 @@ const Cart = () => {
             </div>
           )}
 
-          <button ref={topProceedRef} type="button" className="cart-proceed-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
-            PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
+          <button ref={topProceedRef} type="button" className="cart-proceed-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode || pincodeUndeliverable}>
+            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : `PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`}
             <Icon icon="lucide:arrow-right" />
           </button>
         </div>
@@ -689,8 +697,8 @@ const Cart = () => {
               </strong>
             </div>
           )}
-          <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode}>
-            PROCEED TO BUY ({selectedUnits} ITEM{selectedUnits === 1 ? "" : "S"})
+          <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode || pincodeUndeliverable}>
+            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : `PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`}
             <Icon icon="lucide:arrow-right" />
           </button>
         </div>

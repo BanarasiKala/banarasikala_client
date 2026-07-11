@@ -115,6 +115,14 @@
   font-weight: 500;
 }
 
+.cart-summary-freedelivery.is-undeliverable {
+  color: #b3261e;
+}
+
+.cart-summary-freedelivery.is-undeliverable .cart-pin-change {
+  color: #b3261e;
+}
+
 .cart-pin-change {
   margin-left: 4px;
   padding: 0;

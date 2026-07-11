@@ -57,6 +57,12 @@ export function LocationProvider({ children }) {
   const [locationSource, setLocationSource] = useState(() => localStorage.getItem(LS_SOURCE) || null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [courierEtd, setCourierEtd] = useState(null);
+  // Tri-state serviceability for the active pincode: null = unknown/checking,
+  // true = at least one courier can deliver, false = confirmed no courier available
+  // (e.g. Shiprocket's 404 "no courier service available" or an empty courier list).
+  // Genuine network/fetch errors are left at null rather than false, so a flaky
+  // connection never blocks checkout the way a real "unserviceable" result should.
+  const [deliverable, setDeliverable] = useState(null);
   const alreadyAsked = useRef(!!localStorage.getItem(LS_ASKED));
 
   const setPincode = useCallback((pin, source = "manual") => {
@@ -114,16 +120,25 @@ export function LocationProvider({ children }) {
   useEffect(() => {
     if (!/^\d{6}$/.test(pincode)) {
       setCourierEtd(null);
+      setDeliverable(null);
       return undefined;
     }
 
     let cancelled = false;
 
+    // Clear any ETD/serviceability carried over from a previously looked-up
+    // pincode so a failed/unserviceable lookup below can't reuse stale data.
+    setCourierEtd(null);
+    setDeliverable(null);
+
     const loadCourierEtd = async () => {
       try {
         const cached = JSON.parse(sessionStorage.getItem(courierEtdCacheKey(pincode)) || "null");
         if (cached?.etd && Date.now() - cached.ts < COURIER_ETD_TTL_MS) {
-          if (!cancelled) setCourierEtd(cached.etd);
+          if (!cancelled) {
+            setCourierEtd(cached.etd);
+            setDeliverable(true);
+          }
           return;
         }
       } catch {
@@ -132,19 +147,32 @@ export function LocationProvider({ children }) {
 
       try {
         const res = await fetch(`${API_ENDPOINTS.shiprocket}/serviceability?pincode=${pincode}&weight=0.5`);
-        if (!res.ok) return;
+        // Non-OK (e.g. Shiprocket's 404 "no courier service available") means this
+        // pincode is confirmed unserviceable — leave courierEtd at null rather than
+        // stale data, and mark it explicitly so checkout can block on it.
+        if (!res.ok) {
+          if (!cancelled) setDeliverable(false);
+          return;
+        }
         const data = await res.json();
         const best = selectBestCourier(data?.data?.available_courier_companies || [], {
           weightKg: 0.5,
           requireCod: false,
         });
         const etd = best?.etd || null;
-        if (!cancelled && etd) {
-          setCourierEtd(etd);
-          sessionStorage.setItem(courierEtdCacheKey(pincode), JSON.stringify({ etd, ts: Date.now() }));
+        if (!cancelled) {
+          if (etd) {
+            setCourierEtd(etd);
+            setDeliverable(true);
+            sessionStorage.setItem(courierEtdCacheKey(pincode), JSON.stringify({ etd, ts: Date.now() }));
+          } else {
+            // 200 OK but no usable courier in the list — also confirmed unserviceable.
+            setDeliverable(false);
+          }
         }
       } catch {
-        // network/serviceability failure — badges fall back to env processing days
+        // network/fetch failure — leave deliverable at null (unknown), not false,
+        // so a flaky connection never blocks checkout the way a real "unserviceable" result should.
       }
     };
 
@@ -153,12 +181,12 @@ export function LocationProvider({ children }) {
   }, [pincode]);
 
   return (
-    <LocationContext.Provider value={{ pincode, setPincode, clearPincode, locationSource, locationLoading, courierEtd }}>
+    <LocationContext.Provider value={{ pincode, setPincode, clearPincode, locationSource, locationLoading, courierEtd, deliverable }}>
       {children}
     </LocationContext.Provider>
   );
 }
 
-const FALLBACK = { pincode: "", locationSource: null, locationLoading: false, courierEtd: null, setPincode: () => {}, clearPincode: () => {} };
+const FALLBACK = { pincode: "", locationSource: null, locationLoading: false, courierEtd: null, deliverable: null, setPincode: () => {}, clearPincode: () => {} };
 
 export const useDeliveryLocation = () => useContext(LocationContext) ?? FALLBACK;

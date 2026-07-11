@@ -427,6 +427,21 @@
   font-size: 17px;
 }
 
+.ckw-addr-unserviceable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #b3261e;
+}
+
+.ckw-addr-unserviceable svg {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .ckw-edit-btn {
   display: flex;
   align-items: center;
@@ -1359,6 +1374,13 @@
 .ckw-bill-free {
   color: #107a46 !important;
   font-weight: 500 !important;
+  text-transform: uppercase;
+  font-size: 10.5px;
+}
+
+.ckw-bill-unavailable {
+  color: #b3261e !important;
+  font-weight: 600 !important;
   text-transform: uppercase;
   font-size: 10.5px;
 }

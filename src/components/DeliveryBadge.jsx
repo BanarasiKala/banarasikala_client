@@ -5,9 +5,11 @@ import { getEstimatedDeliveryDate } from "../utils/deliveryDate";
 // Shown only when the user has granted GPS location access.
 // Uses local date math (no API call) so it's safe to render inside any product card.
 export default function DeliveryBadge({ processingDays }) {
-  const { pincode, courierEtd } = useDeliveryLocation();
+  const { pincode, courierEtd, deliverable } = useDeliveryLocation();
 
   if (!pincode) return null;
+  // Confirmed no courier serves this pincode — don't show a "FREE delivery" promise.
+  if (deliverable === false) return null;
 
   // Same formula as the product detail page: courier ETA + this product's
   // processing days. courierEtd is a shared, cached value for the pincode.

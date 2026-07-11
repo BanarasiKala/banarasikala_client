@@ -274,6 +274,12 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     const productWeightKg = raw > 5 ? raw / 1000 : raw;
     return sum + ((productWeightKg + PACKAGING_WEIGHT_KG) * qty);
   }, 0);
+  const hasValidPincode = /^\d{6}$/.test(formData.pincode.trim());
+  // True once the serviceability check for this pincode has come back with no
+  // courier at all (e.g. Shiprocket's 404 "no courier service available") —
+  // distinct from shippingLoading (still checking) or no pincode entered yet.
+  // Blocks checkout so an order can never be placed to an address nothing can ship to.
+  const shippingUnavailable = hasValidPincode && payableCart.length > 0 && !shippingLoading && !selectedShippingCourier;
 
   useEffect(() => {
     let cancelled = false;
@@ -725,6 +731,11 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         setLoading(false);
         return;
       }
+      if (shippingUnavailable) {
+        showNotification("Delivery isn't available to this pincode. Please choose another address.", "error");
+        setLoading(false);
+        return;
+      }
       if (activePayment === "cod" && !isCodAllowed) {
         showNotification(`COD is available only up to ${money(COD_MAX_AMOUNT)}.`, "warning");
         setLoading(false);
@@ -944,10 +955,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       <button
         type="button"
         className="ckw-continue"
-        disabled={shippingLoading || payableCart.length === 0}
+        disabled={shippingLoading || payableCart.length === 0 || shippingUnavailable}
         onClick={() => { setWizardStep("confirm"); document.querySelector('.checkout-page')?.scrollTo({ top: 0, behavior: 'smooth' }); }}
       >
-        {shippingLoading ? "…" : "CONTINUE"}
+        {shippingLoading ? "…" : shippingUnavailable ? "DELIVERY UNAVAILABLE" : "CONTINUE"}
       </button>
     </div>
   );
@@ -1035,11 +1046,17 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                         <button
                           type="button"
                           className={`ckw-deliver-btn ${isSel ? "is-active" : ""}`}
-                          onClick={() => isSel && deliverToAddress(address)}
-                          disabled={!isSel}
+                          onClick={() => isSel && !shippingUnavailable && deliverToAddress(address)}
+                          disabled={!isSel || (isSel && shippingUnavailable)}
                         >
-                          <Icon icon="lucide:map-pin" /> DELIVER TO THIS ADDRESS
+                          <Icon icon="lucide:map-pin" />
+                          {isSel && shippingLoading ? "CHECKING DELIVERY…" : "DELIVER TO THIS ADDRESS"}
                         </button>
+                        {isSel && shippingUnavailable && (
+                          <p className="ckw-addr-unserviceable">
+                            <Icon icon="lucide:alert-triangle" /> Delivery isn't available to this pincode right now. Please try another address.
+                          </p>
+                        )}
                         <button type="button" className="ckw-edit-btn" onClick={() => openAddressModal(address)}>
                           <Icon icon="lucide:pencil" /> EDIT ADDRESS
                         </button>
@@ -1270,12 +1287,18 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
               </p>
             </div>
 
+            {shippingUnavailable && (
+              <p className="ckw-addr-unserviceable">
+                <Icon icon="lucide:alert-triangle" /> Delivery isn't available to this pincode. Go back and choose another address.
+              </p>
+            )}
+
             <button
               ref={ctaRef}
               type="button"
               className="ckw-pay-cta"
               onClick={handlePlaceOrder}
-              disabled={loading || shippingLoading || payableCart.length === 0}
+              disabled={loading || shippingLoading || payableCart.length === 0 || shippingUnavailable}
             >
               {payCtaContent}
             </button>
@@ -1295,6 +1318,8 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                 <span>Delivery</span>
                 {shippingLoading ? (
                   <span>Calculating…</span>
+                ) : shippingUnavailable ? (
+                  <span className="ckw-bill-unavailable">Unavailable</span>
                 ) : shippingChargeShown > 0 && finalShippingCharge === 0 ? (
                   <span className="ckw-bill-free"><s>{money(shippingChargeShown)}</s> Free</span>
                 ) : finalShippingCharge > 0 ? (
@@ -1561,7 +1586,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                 type="button"
                 className="ckw-pay-cta ckw-pay-cta--sticky"
                 onClick={handlePlaceOrder}
-                disabled={loading || shippingLoading || payableCart.length === 0}
+                disabled={loading || shippingLoading || payableCart.length === 0 || shippingUnavailable}
               >
                 {payCtaContent}
               </button>
