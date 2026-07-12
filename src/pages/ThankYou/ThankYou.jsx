@@ -117,7 +117,10 @@ export default function ThankYou() {
 
           <div className="ty-actions">
             <Link className="ty-btn ty-btn-primary" to={`/order-confirmation?orderId=${order.id}`}>
-              Track your order
+              View your order
+            </Link>
+            <Link className="ty-btn ty-btn-ghost" to="/collection">
+              Visit our store
             </Link>
           </div>
         </div>

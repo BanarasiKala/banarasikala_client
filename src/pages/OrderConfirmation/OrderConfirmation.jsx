@@ -22,6 +22,15 @@ const toNumber = (value) => {
 
 const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const formatDateTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const datePart = date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const timePart = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
+  return `${datePart}, ${timePart}`;
+};
+
 const formatDate = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -241,6 +250,35 @@ const withinReturnWindow = (order) => {
   const lastDate = new Date(order.delivered_at);
   lastDate.setDate(lastDate.getDate() + RETURN_WINDOW_DAYS);
   return Date.now() <= lastDate.getTime();
+};
+
+// Per-item "Return/Exchange closes on…" line shown on every product card. Gated by
+// the EXACT same conditions as the Return/Exchange buttons below (getEligibleActionItems):
+// delivered, item not cancelled/already-actioned/out of actionable qty, and each of
+// return/exchange usable only once per order. The one difference: where that
+// eligibility check would just silently exclude an item once the 7-day window has
+// passed, this shows "closed" instead of hiding — everything else that makes an
+// item ineligible (already returned/exchanged, cancelled, nothing left to action)
+// still hides the line entirely, same as the button never offering it.
+const getItemReturnWindowInfo = (order, item) => {
+  const itemStatus = normalizeStatus(item?.status);
+  if (itemStatus === "cancelled") return null;
+  if (getActionableQty(item) < 1) return null;
+  if (itemStatus.includes("requested") || itemStatus.includes("initiated")) return null;
+  if (hasUsableAction(item)) return null;
+  if (!wasDelivered(order)) return null;
+
+  // Return and exchange are each usable once per ORDER — if both have already been
+  // raised (on this or another item), there is nothing left to action here.
+  const returnUsed = hasOrderReturnHistory(order);
+  const exchangeUsed = hasOrderExchangeHistory(order);
+  if (returnUsed && exchangeUsed) return null;
+
+  return { closed: !withinReturnWindow(order), deadline: (() => {
+    const d = new Date(order.delivered_at);
+    d.setDate(d.getDate() + RETURN_WINDOW_DAYS);
+    return d;
+  })() };
 };
 
 const getEligibleActionItems = (order, actionType) => {
@@ -639,14 +677,25 @@ const SkLine = ({ w, h = 12, mb = 0 }) => (
 
 const OrderConfirmationSkeleton = () => (
   <main className="order-confirmation-page">
-    <section className="order-success-hero">
-      <div className="oc-sk oc-sk-hero-icon" />
-      <div style={{ display: "grid", gap: 6 }}>
-        <SkLine w={70} h={10} />
-        <SkLine w={200} h={22} />
-        <SkLine w={300} h={11} />
+    <section className="oc-thanks">
+      <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
+        <SkLine w={240} h={44} />
+        <SkLine w={170} h={18} />
+        <SkLine w="min(320px, 80%)" h={11} />
+        <SkLine w={150} h={44} />
       </div>
     </section>
+
+    <div className="oc-thanks-meta">
+      <div className="oc-thanks-meta-cell" style={{ display: "grid", gap: 6 }}>
+        <SkLine w={90} h={11} />
+        <SkLine w={140} h={14} />
+      </div>
+      <div className="oc-thanks-meta-cell" style={{ display: "grid", gap: 6 }}>
+        <SkLine w={80} h={11} />
+        <SkLine w={110} h={14} />
+      </div>
+    </div>
 
     <section className="order-confirmation-grid">
       <div className="order-confirmation-main">
@@ -739,6 +788,10 @@ export default function OrderConfirmation() {
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
   const [trackModalOpen, setTrackModalOpen] = useState(false);
+  // "Track your order" on the thank-you hero opens the full order details
+  // (timeline, items, cancel/return/exchange, refund, address) in a modal instead
+  // of it sitting inline on the page.
+  const [orderDetailsModalOpen, setOrderDetailsModalOpen] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
@@ -762,6 +815,9 @@ export default function OrderConfirmation() {
   const [exchangeVariants, setExchangeVariants] = useState({});
 
   const breakdown = useMemo(() => getBreakdown(order || {}), [order]);
+  // Display-only total of what the customer already saved — sums discounts already
+  // computed above, not a new figure from the backend.
+  const totalSaved = breakdown.couponDiscount + breakdown.paymentDiscount + breakdown.shippingDiscount;
   // Live ShipRocket scan activities (only exist once the parcel is picked up and
   // an AWB is generated). Before that we fall back to the status stepper.
   const liveActivities = tracking?.tracking?.tracking_data?.shipment_track_activities || [];
@@ -839,10 +895,10 @@ export default function OrderConfirmation() {
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
-  const firstName = (() => {
-    const raw = String(order?.customer_name || "").trim().split(/\s+/)[0] || "";
-    return raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
-  })();
+  const customerFullName = String(order?.customer_name || "").trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
   const statusLabel = getCustomerOrderStatusLabel(order?.status);
   const statusTone = (() => {
     const s = String(order?.status || "").toLowerCase();
@@ -1393,73 +1449,49 @@ export default function OrderConfirmation() {
 
   return (
     <main className="order-confirmation-page">
-      <section className="order-success-hero">
-        <span className="order-success-icon"><Icon icon="lucide:check" /></span>
-        <div className="order-success-copy">
-          <p>Order Confirmed</p>
-          <h1>Thank you{firstName ? `, ${firstName}` : ""}!</h1>
-          <span>Your order has been placed successfully. We will keep you updated on every step.</span>
+      <section className="oc-thanks">
+        <h1 className="oc-thanks-script">Thank you</h1>
+        {customerFullName && <p className="oc-thanks-name">{customerFullName}</p>}
+        <p className="oc-thanks-sub">for your purchase!</p>
+        <p className="oc-thanks-note">
+          We&rsquo;re getting your order ready to be shipped.
+          <br />
+          We will notify you once it has been dispatched.
+        </p>
+
+        <div className="oc-thanks-divider" aria-hidden="true">
+          <i /><span>◆</span><i />
         </div>
-        <div className="order-success-meta">
-          <p>Order ID</p>
-          <strong>{orderNumber}</strong>
-          <span>Placed on {formatDate(order.createdAt)}</span>
+
+        <div className="oc-thanks-actions">
+          <button type="button" className="oc-thanks-btn oc-thanks-btn-primary" onClick={() => setOrderDetailsModalOpen(true)}>
+            Track your order <Icon icon="lucide:arrow-right" />
+          </button>
+          <Link className="oc-thanks-btn oc-thanks-btn-ghost" to="/collection">
+            View our collection <Icon icon="lucide:arrow-right" />
+          </Link>
         </div>
       </section>
 
+      <div className="oc-thanks-meta">
+        <div className="oc-thanks-meta-cell">
+          <span className="oc-thanks-meta-icon"><Icon icon="lucide:clipboard-check" /></span>
+          <span>
+            <small>Order Number</small>
+            <strong>#{orderNumber}</strong>
+          </span>
+        </div>
+        <div className="oc-thanks-meta-cell">
+          <span className="oc-thanks-meta-icon"><Icon icon="lucide:calendar-days" /></span>
+          <span>
+            <small>Order Date</small>
+            <strong>{formatDate(order.createdAt)}</strong>
+          </span>
+        </div>
+      </div>
+
       <section className="order-confirmation-grid">
         <div className="order-confirmation-main">
-          <section className="order-panel">
-            <div className="order-panel-head">
-              <h2>{hasLiveTracking ? "Live Tracking" : "Shipment Timeline"}</h2>
-              <div className="order-track-head-right">
-                <span className={`oc-status-pill is-${statusTone}`}>
-                  {statusLabel}
-                  <Icon icon={statusTone === "success" ? "lucide:check-circle-2" : statusTone === "alert" ? "lucide:alert-circle" : "lucide:loader"} />
-                </span>
-                {hasCurrentAwb(order) && (
-                  <button
-                    type="button"
-                    className="order-track-refresh"
-                    onClick={fetchTracking}
-                    disabled={trackingLoading}
-                    aria-label="Refresh tracking"
-                  >
-                    <Icon icon="lucide:refresh-cw" className={trackingLoading ? "is-spinning" : ""} />
-                    {trackingLoading ? "Refreshing…" : "Refresh"}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {!hasCurrentAwb(order) && (
-              <div className="order-track-pending">
-                <Icon icon="lucide:package-search" />
-                <span>
-                  {hasLiveTracking
-                    ? "Live tracking is now available."
-                    : "Your order is being prepared. Live tracking will appear here once the courier picks it up and an AWB is generated."}
-                </span>
-              </div>
-            )}
-
-            <CollapsibleTimeline steps={timeline} currentLabel={statusLabel} />
-
-            {hasCurrentAwb(order) && (
-              <>
-                {isTrackable(order) && (
-                  <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
-                    Track on Courier <Icon icon="lucide:chevron-right" />
-                  </button>
-                )}
-                <div className="oc-awb-line">
-                  <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
-                  <strong>{order.shiprocket_awb}</strong>
-                </div>
-              </>
-            )}
-          </section>
-
           {rtoAwaiting && (
             <section className="order-panel rto-panel">
               <div className="rto-panel-head">
@@ -1575,65 +1607,19 @@ export default function OrderConfirmation() {
             </section>
           )}
 
-          {(reverseShipments.length > 0 || hasPendingReverseRequest) && (
-            <section className="order-panel">
-              <div className="order-panel-head">
-                <h2>Return / Exchange tracking</h2>
-                <span>
-                  {reverseShipments.length > 0
-                    ? `${reverseShipments.length} pickup${reverseShipments.length > 1 ? "s" : ""}`
-                    : getCustomerOrderStatusLabel(order.status)}
-                </span>
+          <section className="order-panel oc-summary-card">
+            <div className="order-panel-head oc-summary-head">
+              <h2 className="oc-summary-title oc-summary-title--divider">Order Summary</h2>
+              <div className="oc-thanks-divider" aria-hidden="true">
+                <i /><span>◆</span><i />
               </div>
-              {reverseShipments.length > 0 ? (
-                reverseShipments.map((shipment, shipmentIndex) => {
-                  // Prefer live courier scans; fall back to the shipment's own lifecycle
-                  // (which survives order.status moving on after a replacement ships).
-                  const liveSteps = buildReverseActivities(shipment);
-                  const steps = liveSteps.length > 0 ? liveSteps : buildReverseStatusTimeline(shipment);
-                  const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
-                  return (
-                    <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
-                      <div className="reverse-shipment-head">
-                        <strong>{label}</strong>
-                        {shipment.awb && <small>AWB · {shipment.awb}</small>}
-                      </div>
-                      {steps.length > 0 ? (
-                        <ReverseStepsTimeline steps={steps} />
-                      ) : (
-                        <div className="order-track-pending">
-                          <Icon icon="lucide:package-search" />
-                          <span>
-                            {shipment.source === "unavailable"
-                              ? "Pickup tracking is temporarily unavailable. Please check back shortly."
-                              : "Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel."}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                // A request exists but no reverse shipment has been booked with the courier
-                // yet, so there is nothing to track — say so rather than showing a timeline.
-                <div className="reverse-shipment">
-                  <div className="order-track-pending">
-                    <Icon icon="lucide:package-search" />
-                    <span>Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel.</span>
-                  </div>
-                </div>
-              )}
-            </section>
-          )}
-
-          <section className="order-panel">
-            <div className="order-panel-head">
-              <h2>Order Items ({(order.OrderItems || []).length})</h2>
             </div>
             <div className="confirmation-items">
               {(order.OrderItems || []).map((item, index) => {
                 const productUrl = item.product_slug ? `/product/${item.product_slug}` : null;
                 const itemRating = Number(item.feedback?.rating || 0);
+                const returnWindow = getItemReturnWindowInfo(order, item);
+                const itemDisplayStatus = getItemDisplayStatus(order, item);
                 return (
                 <article className="confirmation-item" key={`${item.product_id}-${item.colorId || index}`}>
                   <div className="confirmation-item-top">
@@ -1648,19 +1634,26 @@ export default function OrderConfirmation() {
                     )}
                     <div className="confirmation-item-copy">
                       {productUrl ? <Link to={productUrl} className="confirmation-product-link"><h3>{item.product_name}</h3></Link> : <h3>{item.product_name}</h3>}
-                      <p>{getItemColor(item)}</p>
                       {(() => {
                         const cancelledQty = toNumber(item.cancelled_quantity);
                         const activeQty = Math.max(0, toNumber(item.quantity) - cancelledQty);
                         return (
                           <p>
-                            Qty {activeQty}
+                            Qty: {activeQty}
                             {cancelledQty > 0 ? ` · ${cancelledQty} cancelled` : ""}
-                            {item.sku ? ` - SKU: ${item.sku}` : ""}
                           </p>
                         );
                       })()}
-                      <span className="confirmation-item-status">{getItemDisplayStatus(order, item)}</span>
+                      <p className="oc-item-color">
+                        {item.color_hex && <span className="oc-item-color-dot" style={{ backgroundColor: item.color_hex }} />}
+                        {getItemColor(item)}
+                      </p>
+                      <span className="oc-item-status-row">
+                        <span className="confirmation-item-status">{itemDisplayStatus}</span>
+                        {itemDisplayStatus === "Delivered" && order.delivered_at && (
+                          <span className="oc-item-delivered-at">{formatDateTime(order.delivered_at)}</span>
+                        )}
+                      </span>
                     </div>
                   </div>
                   {canReviewOrderItem(order, item) && (
@@ -1747,6 +1740,15 @@ export default function OrderConfirmation() {
                   )}
 
                   <strong>{formatPrice(toNumber(item.price) * Math.max(0, toNumber(item.quantity) - toNumber(item.cancelled_quantity)))}</strong>
+
+                  {returnWindow && (
+                    <p className={`oc-item-return-window ${returnWindow.closed ? "is-closed" : ""}`}>
+                      <Icon icon={returnWindow.closed ? "lucide:calendar-x" : "lucide:calendar-clock"} />
+                      {returnWindow.closed
+                        ? "Return / Exchange closed"
+                        : `Return / Exchange closes on ${formatDate(returnWindow.deadline)}`}
+                    </p>
+                  )}
                 </article>
                 );
               })}
@@ -1755,9 +1757,12 @@ export default function OrderConfirmation() {
         </div>
 
         <aside className="order-confirmation-side">
-          <section className="order-panel">
-            <div className="order-panel-head">
-              <h2>Payment Summary</h2>
+          <section className="order-panel oc-summary-card">
+            <div className="order-panel-head oc-summary-head">
+              <h2 className="oc-summary-title oc-summary-title--divider">Payment Summary</h2>
+              <div className="oc-thanks-divider" aria-hidden="true">
+                <i /><span>◆</span><i />
+              </div>
             </div>
             <div className="summary-row"><span>Product total</span><strong>{formatPrice(breakdown.subtotal)}</strong></div>
             {breakdown.platformFee > 0 && <div className="summary-row"><span>Platform fee</span><strong>{formatPrice(breakdown.platformFee)}</strong></div>}
@@ -1785,10 +1790,22 @@ export default function OrderConfirmation() {
               <>
                 <div className="summary-row is-final"><span>Order total</span><strong>{formatPrice(Math.max(0, breakdown.payable - redispatchChargesPaid))}</strong></div>
                 <div className="summary-row summary-row-redispatch"><span>Re-dispatch charges paid</span><strong>+{formatPrice(redispatchChargesPaid)}</strong></div>
-                <div className="summary-row is-final"><span>Total paid</span><strong>{formatPrice(breakdown.payable)}</strong></div>
+                <div className="summary-row is-final">
+                  <span>Total paid</span>
+                  <span className="oc-final-amount-col">
+                    <strong>{formatPrice(breakdown.payable)}</strong>
+                    {totalSaved > 0 && <small>You saved {formatPrice(totalSaved)}</small>}
+                  </span>
+                </div>
               </>
             ) : (
-              <div className="summary-row is-final"><span>Final amount</span><strong>{formatPrice(breakdown.payable)}</strong></div>
+              <div className="summary-row is-final">
+                <span>Final amount</span>
+                <span className="oc-final-amount-col">
+                  <strong>{formatPrice(breakdown.payable)}</strong>
+                  {totalSaved > 0 && <small>You saved {formatPrice(totalSaved)}</small>}
+                </span>
+              </div>
             )}
             <div className="payment-tags">
               <span>{order.payment_method || "Prepaid"}</span>
@@ -1940,9 +1957,15 @@ export default function OrderConfirmation() {
             )}
           </section>
 
-          <section className="order-panel">
+          <section className="order-panel oc-summary-card oc-address-card">
+            <div className="order-panel-head oc-summary-head">
+              <h2 className="oc-summary-title oc-summary-title--divider">Customer Information</h2>
+              <div className="oc-thanks-divider" aria-hidden="true">
+                <i /><span>◆</span><i />
+              </div>
+            </div>
             <div className="order-panel-head-row">
-              <h2>Delivery Address</h2>
+              <h2><Icon icon="lucide:map-pin" /> Delivery Address</h2>
             </div>
             <p className="address-copy"><strong>{order.customer_name}</strong><br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
           </section>
@@ -2037,6 +2060,123 @@ export default function OrderConfirmation() {
           </Link>
         </aside>
       </section>
+
+      {orderDetailsModalOpen && (
+        <div className="oc-details-overlay" onClick={() => setOrderDetailsModalOpen(false)}>
+          <div className="oc-details-sheet" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="oc-details-close"
+              onClick={() => setOrderDetailsModalOpen(false)}
+              aria-label="Close tracking"
+            >
+              <Icon icon="lucide:x" />
+            </button>
+
+            <section className="order-panel">
+              <div className="order-panel-head">
+                <h2>{hasLiveTracking ? "Live Tracking" : "Shipment Timeline"}</h2>
+                <div className="order-track-head-right">
+                  <span className={`oc-status-pill is-${statusTone}`}>
+                    {statusLabel}
+                    <Icon icon={statusTone === "success" ? "lucide:check-circle-2" : statusTone === "alert" ? "lucide:alert-circle" : "lucide:loader"} />
+                  </span>
+                  {hasCurrentAwb(order) && (
+                    <button
+                      type="button"
+                      className="order-track-refresh"
+                      onClick={fetchTracking}
+                      disabled={trackingLoading}
+                      aria-label="Refresh tracking"
+                    >
+                      <Icon icon="lucide:refresh-cw" className={trackingLoading ? "is-spinning" : ""} />
+                      {trackingLoading ? "Refreshing…" : "Refresh"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!hasCurrentAwb(order) && (
+                <div className="order-track-pending">
+                  <Icon icon="lucide:package-search" />
+                  <span>
+                    {hasLiveTracking
+                      ? "Live tracking is now available."
+                      : "Your order is being prepared. Live tracking will appear here once the courier picks it up and an AWB is generated."}
+                  </span>
+                </div>
+              )}
+
+              <CollapsibleTimeline steps={timeline} currentLabel={statusLabel} />
+
+              {hasCurrentAwb(order) && (
+                <>
+                  {isTrackable(order) && (
+                    <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
+                      Track on Courier <Icon icon="lucide:chevron-right" />
+                    </button>
+                  )}
+                  <div className="oc-awb-line">
+                    <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
+                    <strong>{order.shiprocket_awb}</strong>
+                  </div>
+                </>
+              )}
+            </section>
+
+            {(reverseShipments.length > 0 || hasPendingReverseRequest) && (
+              <section className="order-panel">
+                <div className="order-panel-head">
+                  <h2>Return / Exchange tracking</h2>
+                  <span>
+                    {reverseShipments.length > 0
+                      ? `${reverseShipments.length} pickup${reverseShipments.length > 1 ? "s" : ""}`
+                      : getCustomerOrderStatusLabel(order.status)}
+                  </span>
+                </div>
+                {reverseShipments.length > 0 ? (
+                  reverseShipments.map((shipment, shipmentIndex) => {
+                    // Prefer live courier scans; fall back to the shipment's own lifecycle
+                    // (which survives order.status moving on after a replacement ships).
+                    const liveSteps = buildReverseActivities(shipment);
+                    const steps = liveSteps.length > 0 ? liveSteps : buildReverseStatusTimeline(shipment);
+                    const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
+                    return (
+                      <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
+                        <div className="reverse-shipment-head">
+                          <strong>{label}</strong>
+                          {shipment.awb && <small>AWB · {shipment.awb}</small>}
+                        </div>
+                        {steps.length > 0 ? (
+                          <ReverseStepsTimeline steps={steps} />
+                        ) : (
+                          <div className="order-track-pending">
+                            <Icon icon="lucide:package-search" />
+                            <span>
+                              {shipment.source === "unavailable"
+                                ? "Pickup tracking is temporarily unavailable. Please check back shortly."
+                                : "Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel."}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  // A request exists but no reverse shipment has been booked with the courier
+                  // yet, so there is nothing to track — say so rather than showing a timeline.
+                  <div className="reverse-shipment">
+                    <div className="order-track-pending">
+                      <Icon icon="lucide:package-search" />
+                      <span>Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel.</span>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+        </div>
+      )}
 
       {rtoConfirmOpen && (
         <div className="cancel-modal-overlay" onClick={() => !rtoLoading && setRtoConfirmOpen(false)}>

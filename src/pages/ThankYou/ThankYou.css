@@ -1,13 +1,14 @@
 /* Post-purchase "Thank you" splash (/order-placed) — styled after the order
    confirmation email: cream card, maroon + gold accents, draped saree art. */
 
+/* No background of its own — it inherits .App's texture, so there is no seam
+   between the page and the chrome around it. */
 .thank-you-page {
   min-height: 100vh;
-  background:
-    var(--bk-section-bg, none) center top / cover,
-    #f5f1e8;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px 44px;
 }
 
 .ty-card {
@@ -17,7 +18,9 @@
   padding: 34px 26px 30px;
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 18px;
+  /* The texture is a grain under a cream wash, not a full-strength photo. */
   background:
+    linear-gradient(rgba(255, 253, 248, 0.9), rgba(255, 253, 248, 0.95)),
     var(--bk-section-bg, none) center top / cover,
     #fffdf8;
   box-shadow: 0 18px 45px rgba(75, 22, 14, 0.08);
@@ -27,6 +30,10 @@
 
 /* Card runs edge-to-edge as soon as it fills the viewport width. */
 @media (max-width: 720px) {
+  .thank-you-page {
+    padding: 0 0 28px;
+  }
+
   .ty-card {
     border-radius: 0;
     border-left: 0;
@@ -126,6 +133,18 @@
 .ty-btn-primary:hover {
   transform: translateY(-1px);
   background: #8d0521;
+}
+
+.ty-btn-ghost {
+  border: 1.5px solid rgba(123, 0, 27, 0.4);
+  background: transparent;
+  color: #7b001b;
+}
+
+.ty-btn-ghost:hover {
+  transform: translateY(-1px);
+  border-color: #7b001b;
+  background: rgba(123, 0, 27, 0.06);
 }
 
 /* ── Order number / date strip ── */
@@ -458,8 +477,11 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Mobile ── */
-@media (max-width: 560px) {
+/* ── Mobile / tablet ──
+   Breaks at 720px, not 560px: the desktop hero reserves a fixed 372px column
+   for the drape, which only fits inside the 720px card. Below that the card is
+   full-bleed and narrower, so the text column would be crushed against the art. */
+@media (max-width: 720px) {
   .ty-card {
     padding: 20px 14px 20px;
   }

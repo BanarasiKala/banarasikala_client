@@ -1,10 +1,26 @@
 .my-orders-page {
   min-height: 100vh;
+  color: #32150f;
+}
+
+/* The texture is painted as a viewport-fixed layer BEHIND everything (z-index -1)
+   rather than on the page box itself. The header's background is translucent, so
+   it now shows THIS texture through it instead of .App's — which is what removes
+   the colour seam between the header strip and the page.
+   The wash is 0.62–0.78 (it was 0.9–0.95, which hid the image almost entirely). */
+.my-orders-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 248, 235, 0.62), rgba(255, 248, 235, 0.78)),
+    url("../../assets/img.jpg"),
+    #fff8eb;
   background-size: 100% 100%, cover, 100% 100%;
   background-position: center top;
   background-repeat: no-repeat;
-  background-attachment: fixed;
-  color: #32150f;
 }
 
 .orders-hero {
