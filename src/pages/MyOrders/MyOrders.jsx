@@ -384,6 +384,10 @@ const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   const orderNumber = getOrderDisplayNumber(order);
+  // getEffectiveOrderStatus, not order.status directly — a mid-exchange or re-dispatched
+  // order sits in the same "Processing" the backend uses for a brand-new order, and the
+  // raw value would misread as "Order placed" here too.
+  const orderStatusMeta = getStatus(getEffectiveOrderStatus(order));
   const items = order.OrderItems || [];
   const activeItems = useMemo(() => items.filter(item => String(item.status || "").toLowerCase() !== "cancelled"), [items]);
   const placedAt = new Date(order.createdAt);
@@ -475,6 +479,10 @@ const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
               </span>
             )}
           </div>
+          <span className="order-status-badge" style={{ backgroundColor: orderStatusMeta.bg, color: orderStatusMeta.color }}>
+            <Icon icon={orderStatusMeta.icon} />
+            {orderStatusMeta.label}
+          </span>
           <button className="order-detail-arrow" type="button" onClick={openOrderDetail} aria-label={`Open order ${orderNumber}`}>
             <Icon icon="lucide:chevron-right" />
           </button>
@@ -715,7 +723,7 @@ const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
       {trackOpen && (
         <OrderTrackModal
           order={order}
-          statusLabel={getStatus(getEffectiveOrderStatus(order)).label}
+          statusLabel={orderStatusMeta.label}
           onClose={() => setTrackOpen(false)}
         />
       )}
