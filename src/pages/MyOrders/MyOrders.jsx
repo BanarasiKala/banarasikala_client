@@ -10,11 +10,12 @@ import { getOrderDisplayNumber } from "../../utils/itemCode";
 import { numberEnv } from "../../utils/env";
 import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
+import OrderTrackModal from "../../components/OrderTrackModal";
 import "./MyOrders.css";
 
 const STATUS_CONFIG = {
-  "Order Placed": { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:clock-3", label: "Order placed" },
-  Pending: { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:clock-3", label: "Order placed" },
+  "Order Placed": { color: "#1a7f3c", bg: "#ecf8ef", icon: "lucide:package-check", label: "Order placed" },
+  Pending: { color: "#1a7f3c", bg: "#ecf8ef", icon: "lucide:package-check", label: "Order placed" },
   "Pickup Scheduled": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:calendar-clock", label: "Pickup scheduled" },
   "Out For Pickup": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:navigation", label: "Courier out for pickup" },
   "Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Picked up" },
@@ -127,6 +128,23 @@ const isDelivered = (order) => {
   if (PRE_DELIVERY_STATUSES.has(status)) return false;
   return status === "delivered" || Boolean(order?.delivered_at);
 };
+
+// A current, dispatched AWB — a re-dispatched order sits in Processing while still
+// holding the PREVIOUS shipment's AWB, so those statuses count as "not shipped yet".
+// Mirror of hasCurrentAwb / isTrackable on the order detail page.
+const hasCurrentAwb = (order) => {
+  if (!order?.shiprocket_awb) return false;
+  const status = String(order?.status || "").toLowerCase();
+  return status !== "pending" && status !== "processing";
+};
+const isTrackable = (order) => {
+  if (!hasCurrentAwb(order)) return false;
+  const status = String(order?.status || "").toLowerCase();
+  if (status === "delivered") return false;
+  if (status.includes("cancel")) return false;
+  if (status === "rto delivered" || status === "rto") return false;
+  return true;
+};
 const canReviewOrderItem = (order, item) => {
   const itemStatus = String(item?.status || "").toLowerCase();
   return isDelivered(order) && !itemStatus.includes("cancel");
@@ -143,6 +161,24 @@ const getItemStatusMeta = (order, item) => {
   return getStatus(order?.status);
 };
 
+// Statuses the backend parks an order in while it prepares a shipment. They are the same
+// ones a brand-new order sits in, and shipping an exchange REPLACEMENT puts the order back
+// into Processing — so a months-old exchanged order would group under "Ordered" while its
+// items correctly read "Exchange completed". When the items say a reverse flow has happened,
+// they are the truthful source; the filter reads off them instead.
+const PREP_STATUSES = new Set(["pending", "processing", "order placed", "order_placed"]);
+
+const getEffectiveOrderStatus = (order) => {
+  const status = String(order?.status || "");
+  if (!PREP_STATUSES.has(status.toLowerCase())) return status;
+
+  // The old saree is already back with the seller and this "Processing" is the replacement
+  // being prepared — treat it as an exchange so the Exchange filter still finds it.
+  const items = order?.OrderItems || [];
+  const hasExchange = items.some((item) => String(item?.status || "").toLowerCase().includes("exchange"));
+  return hasExchange ? "Exchange Received" : status;
+};
+
 const FILTER_OPTIONS = [
   { id: "all", label: "All" },
   { id: "ordered", label: "Ordered" },
@@ -153,8 +189,10 @@ const FILTER_OPTIONS = [
   { id: "return", label: "Return" },
 ];
 
-const getOrderFilterGroup = (status = "") => {
-  const normalized = String(status || "").toLowerCase();
+// Keyed off the SAME effective status as the badge, so an order the card shows as an
+// exchange is also the one the Exchange filter finds.
+const getOrderFilterGroup = (order) => {
+  const normalized = getEffectiveOrderStatus(order).toLowerCase();
   if (normalized.includes("exchange")) return "exchange";
   if (normalized.includes("return")) return "return";
   // A partially-cancelled (modified) order is still active — keep it with the
@@ -301,6 +339,24 @@ const CANCEL_EXCHANGE_REASONS = [
   "Other reason"
 ];
 
+// Mirror of TICKET_CATEGORIES in the server's SupportController — it rejects
+// anything not on this list.
+const TICKET_CATEGORIES = [
+  "Delivery or shipping issue",
+  "Payment or refund issue",
+  "Damaged or defective product",
+  "Wrong or missing item",
+  "Return or exchange help",
+  "Other",
+];
+
+const TICKET_STATUS_TONE = {
+  Open: "is-open",
+  "In Progress": "is-progress",
+  Resolved: "is-resolved",
+  Closed: "is-closed",
+};
+
 const RATING_LABELS = ["Very Bad", "Bad", "Ok-Ok", "Good", "Very Good"];
 
 const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
@@ -321,12 +377,13 @@ const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
   </div>
 );
 
-const OrderCard = ({ order, onFeedback }) => {
+const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [trackOpen, setTrackOpen] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   const orderNumber = getOrderDisplayNumber(order);
-  const statusMeta = getStatus(order.status);
   const items = order.OrderItems || [];
   const activeItems = useMemo(() => items.filter(item => String(item.status || "").toLowerCase() !== "cancelled"), [items]);
   const placedAt = new Date(order.createdAt);
@@ -366,6 +423,33 @@ const OrderCard = ({ order, onFeedback }) => {
     }
   };
 
+  // The invoice is an authenticated endpoint, so it can't be a plain link — fetch
+  // it with the auth header and hand the HTML to a tab the browser can print. The
+  // tab is opened synchronously inside the click so the pop-up blocker allows it.
+  const downloadInvoice = async () => {
+    if (invoiceLoading) return;
+    const tab = window.open("", "_blank");
+    setInvoiceLoading(true);
+    try {
+      const response = await api.get(`/api/orders/${order.id}/invoice`);
+      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "text/html" }));
+      if (tab) {
+        tab.location.href = blobUrl;
+      } else {
+        onNotify?.("Allow pop-ups for this site to open your invoice.", "warning");
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+      tab?.close();
+      onNotify?.(err?.response?.data?.message || "Could not open your invoice right now.", "error");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const canDownloadInvoice = isDelivered(order);
+  const canTrackOrder = isTrackable(order);
+
   return (
     <article className={`order-card ${isCancelled(order) ? "is-cancelled" : ""}`}>
       <div className="order-card-header">
@@ -391,10 +475,6 @@ const OrderCard = ({ order, onFeedback }) => {
               </span>
             )}
           </div>
-          <span className="order-status-badge" style={{ backgroundColor: statusMeta.bg, color: statusMeta.color }}>
-            <Icon icon={statusMeta.icon} />
-            {statusMeta.label}
-          </span>
           <button className="order-detail-arrow" type="button" onClick={openOrderDetail} aria-label={`Open order ${orderNumber}`}>
             <Icon icon="lucide:chevron-right" />
           </button>
@@ -595,6 +675,50 @@ const OrderCard = ({ order, onFeedback }) => {
         }
         return null;
       })()}
+
+      <div className="order-card-footer">
+        <div className="order-help-box">
+          <span className="order-help-icon"><Icon icon="lucide:message-circle-question" /></span>
+          <div className="order-help-copy">
+            <strong>Need Help with this order?</strong>
+            {ticket ? (
+              <span className={`order-help-ticket ${TICKET_STATUS_TONE[ticket.status] || "is-open"}`}>
+                {ticket.ticket_number} · {ticket.status}
+              </span>
+            ) : (
+              <span>Contact our support team</span>
+            )}
+          </div>
+          <button type="button" className="order-help-btn" onClick={() => onContact(order)}>
+            Contact Us
+          </button>
+        </div>
+
+        {(canDownloadInvoice || canTrackOrder) && (
+          <div className="order-card-actions">
+            {canDownloadInvoice && (
+              <button type="button" className="order-action-btn" onClick={downloadInvoice} disabled={invoiceLoading}>
+                <Icon icon={invoiceLoading ? "lucide:loader" : "lucide:download"} className={invoiceLoading ? "is-spinning" : ""} />
+                {invoiceLoading ? "Preparing…" : "Download Invoice"}
+              </button>
+            )}
+            {canTrackOrder && (
+              <button type="button" className="order-action-btn" onClick={() => setTrackOpen(true)}>
+                <Icon icon="lucide:truck" />
+                Track Order
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {trackOpen && (
+        <OrderTrackModal
+          order={order}
+          statusLabel={getStatus(getEffectiveOrderStatus(order)).label}
+          onClose={() => setTrackOpen(false)}
+        />
+      )}
     </article>
   );
 };
@@ -638,9 +762,23 @@ export default function MyOrders() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
 
+  const [tickets, setTickets] = useState([]);
+  const [supportModal, setSupportModal] = useState({ isOpen: false, order: null });
+  const [supportForm, setSupportForm] = useState({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+
+  // Newest ticket per order — the card shows its live status next to "Contact Us".
+  const ticketByOrder = useMemo(() => {
+    const map = new Map();
+    tickets.forEach((ticket) => {
+      if (!map.has(String(ticket.order_id))) map.set(String(ticket.order_id), ticket);
+    });
+    return map;
+  }, [tickets]);
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) =>
-      selectedFilter === "all" || getOrderFilterGroup(order.status) === selectedFilter
+      selectedFilter === "all" || getOrderFilterGroup(order) === selectedFilter
     );
   }, [orders, selectedFilter]);
 
@@ -669,6 +807,53 @@ export default function MyOrders() {
       setLoading(false);
     }
   }, [user]);
+
+  const fetchTickets = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await api.get("/api/support/tickets/my");
+      setTickets(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      // Non-blocking: the cards still offer "Contact Us", just without a status.
+    }
+  }, [user]);
+
+  const openSupportModal = (order) => {
+    setSupportModal({ isOpen: true, order });
+    setSupportForm({ category: TICKET_CATEGORIES[0], message: "", phone: user?.phone || "" });
+  };
+
+  const closeSupportModal = () => {
+    if (supportSubmitting) return;
+    setSupportModal({ isOpen: false, order: null });
+  };
+
+  const submitSupportTicket = async (event) => {
+    event.preventDefault();
+    const order = supportModal.order;
+    if (!order?.id) return;
+    if (supportForm.message.trim().length < 10) {
+      showNotification("Please describe your issue in a little more detail.", "warning");
+      return;
+    }
+
+    setSupportSubmitting(true);
+    try {
+      const response = await api.post("/api/support/tickets", {
+        orderId: order.id,
+        category: supportForm.category,
+        message: supportForm.message.trim(),
+        phone: supportForm.phone.trim(),
+      });
+      showNotification(response.data?.message || "Your ticket has been raised.", "success");
+      setSupportModal({ isOpen: false, order: null });
+      fetchTickets();
+    } catch (err) {
+      showNotification(err?.response?.data?.message || "Unable to raise your ticket right now.", "error");
+    } finally {
+      setSupportSubmitting(false);
+    }
+  };
 
   const handleActionTrigger = ({ type, orderId, itemId = null, itemName }) => {
     let defaultReason = "";
@@ -796,7 +981,8 @@ export default function MyOrders() {
       return;
     }
     fetchOrders();
-  }, [user, navigate, fetchOrders]);
+    fetchTickets();
+  }, [user, navigate, fetchOrders, fetchTickets]);
 
   const openFilterModal = () => {
     setDraftFilter(selectedFilter);
@@ -819,6 +1005,7 @@ export default function MyOrders() {
       <section className="orders-hero orders-hero--compact">
         <div className="orders-hero-content">
           <h1>My Orders</h1>
+          <span>Track, manage and view all your orders</span>
         </div>
       </section>
 
@@ -885,7 +1072,14 @@ export default function MyOrders() {
                   <>
                     <p className="orders-search-showing-all">Showing all {selectedFilter !== "all" ? `${FILTER_OPTIONS.find(f => f.id === selectedFilter)?.label} ` : ""}orders:</p>
                     {filteredOrders.map((order) => (
-                      <OrderCard key={order.id} order={order} onFeedback={handleFeedbackTrigger} />
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        ticket={ticketByOrder.get(String(order.id))}
+                        onFeedback={handleFeedbackTrigger}
+                        onContact={openSupportModal}
+                        onNotify={showNotification}
+                      />
                     ))}
                   </>
                 )}
@@ -901,14 +1095,28 @@ export default function MyOrders() {
                   <>
                     <p className="orders-search-showing-all">Showing all orders:</p>
                     {orders.map((order) => (
-                      <OrderCard key={order.id} order={order} onFeedback={handleFeedbackTrigger} />
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        ticket={ticketByOrder.get(String(order.id))}
+                        onFeedback={handleFeedbackTrigger}
+                        onContact={openSupportModal}
+                        onNotify={showNotification}
+                      />
                     ))}
                   </>
                 )}
               </>
             ) : (
               visibleOrders.map((order) => (
-                <OrderCard key={order.id} order={order} onFeedback={handleFeedbackTrigger} />
+                <OrderCard
+                        key={order.id}
+                        order={order}
+                        ticket={ticketByOrder.get(String(order.id))}
+                        onFeedback={handleFeedbackTrigger}
+                        onContact={openSupportModal}
+                        onNotify={showNotification}
+                      />
               ))
             )}
           </div>
@@ -941,6 +1149,82 @@ export default function MyOrders() {
               <button type="button" onClick={clearFilter}>Clear</button>
               <button type="button" onClick={applyFilter}>Apply</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {supportModal.isOpen && (
+        <div className="cancel-modal-overlay">
+          <div className="cancel-modal-container">
+            <button
+              type="button"
+              className="cancel-modal-close"
+              onClick={closeSupportModal}
+              disabled={supportSubmitting}
+            >
+              <Icon icon="lucide:x" />
+            </button>
+            <div className="cancel-modal-header">
+              <h3>Need help with this order?</h3>
+              <p>
+                Tell us what went wrong with order{" "}
+                <strong>#{getOrderDisplayNumber(supportModal.order)}</strong> and our support team will get back to you.
+              </p>
+            </div>
+
+            <form className="cancel-modal-form" onSubmit={submitSupportTicket}>
+              <div className="form-group">
+                <label htmlFor="support-category">What is your query about?</label>
+                <select
+                  id="support-category"
+                  value={supportForm.category}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, category: event.target.value }))}
+                  required
+                >
+                  {TICKET_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="support-message">Describe your issue</label>
+                <textarea
+                  id="support-message"
+                  required
+                  rows={4}
+                  maxLength={2000}
+                  value={supportForm.message}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
+                  placeholder="Share the details so we can resolve this faster."
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="support-phone">Phone number (optional)</label>
+                <input
+                  id="support-phone"
+                  type="tel"
+                  value={supportForm.phone}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="10-digit mobile number we can call you on"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="modal-action-btn secondary"
+                  onClick={closeSupportModal}
+                  disabled={supportSubmitting}
+                >
+                  Go Back
+                </button>
+                <button type="submit" className="modal-action-btn primary" disabled={supportSubmitting}>
+                  {supportSubmitting ? "Raising ticket..." : "Raise Ticket"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -10,6 +10,7 @@ import { buildRazorpayPrefill } from "../../utils/razorpay";
 import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
+import OrderTrackModal from "../../components/OrderTrackModal";
 import "./OrderConfirmation.css";
 
 const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
@@ -26,17 +27,6 @@ const formatDate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-};
-
-// ShipRocket sends scan timestamps as "YYYY-MM-DD HH:mm:ss" (no timezone) —
-// swap the space for "T" so Safari parses it too, not just Chrome.
-const formatTrackDate = (value) => {
-  if (!value) return "";
-  const date = new Date(String(value).includes("T") ? value : String(value).replace(" ", "T"));
-  if (Number.isNaN(date.getTime())) return String(value);
-  const datePart = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-  const timePart = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase();
-  return `${datePart}, ${timePart}`;
 };
 
 const formatRefundType = (type) => {
@@ -783,8 +773,6 @@ export default function OrderConfirmation() {
   const courierName = order?.courier_name
     || tracking?.tracking?.tracking_data?.shipment_track?.[0]?.courier_name
     || "";
-  const trackUrl = tracking?.tracking?.tracking_data?.track_url
-    || (order?.shiprocket_awb ? `https://shiprocket.co/tracking/${order.shiprocket_awb}` : "");
   const reverseShipments = Array.isArray(tracking?.reverse) ? tracking.reverse : [];
   // A return/exchange was requested but no reverse shipment is booked with the courier yet
   // (trackOrder only returns pickups that have a ShipRocket id/AWB). order.status is the
@@ -2674,63 +2662,13 @@ export default function OrderConfirmation() {
       )}
 
       {trackModalOpen && (
-        <div className="track-modal-overlay" onClick={() => setTrackModalOpen(false)}>
-          <div className="track-modal-sheet" onClick={(event) => event.stopPropagation()}>
-            <div className="track-modal-head">
-              <h3>Track your Order</h3>
-              <button type="button" className="track-modal-close" onClick={() => setTrackModalOpen(false)} aria-label="Close tracking">
-                <Icon icon="lucide:x" />
-              </button>
-            </div>
-
-            <div className="track-modal-info">
-              <div className="track-modal-info-row">
-                <span>Status:</span>
-                <strong>{statusLabel}</strong>
-              </div>
-              <div className="track-modal-info-row">
-                <span>Courier Partner:</span>
-                <strong>Shiprocket</strong>
-              </div>
-              <div className="track-modal-info-row">
-                <span>AWB/Tracking ID:</span>
-                <strong>{order.shiprocket_awb}</strong>
-              </div>
-            </div>
-
-            <div className="track-modal-timeline">
-              {trackingLoading && !liveActivities.length ? (
-                <div className="track-modal-empty">
-                  <Icon icon="lucide:loader" className="is-spinning" />
-                  <span>Fetching live tracking…</span>
-                </div>
-              ) : liveActivities.length ? (
-                liveActivities.map((activity, index) => (
-                  <div className="track-modal-item" key={`${activity.date || "scan"}-${index}`}>
-                    <span className="track-modal-dot"><Icon icon="lucide:check" /></span>
-                    {index < liveActivities.length - 1 && <span className="track-modal-line" />}
-                    <div className="track-modal-item-copy">
-                      <strong>{activity.activity || activity["sr-status-label"] || "Shipment update"}</strong>
-                      {activity.location && <p>&gt;Location: {activity.location}</p>}
-                    </div>
-                    <span className="track-modal-item-date">{formatTrackDate(activity.date)}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="track-modal-empty">
-                  <Icon icon="lucide:map-pin-off" />
-                  <span>Tracking updates will appear here once the courier scans the parcel.</span>
-                </div>
-              )}
-            </div>
-
-            {trackUrl && (
-              <a className="track-modal-external" href={trackUrl} target="_blank" rel="noopener noreferrer">
-                View on courier site <Icon icon="lucide:external-link" />
-              </a>
-            )}
-          </div>
-        </div>
+        <OrderTrackModal
+          order={order}
+          statusLabel={statusLabel}
+          tracking={tracking}
+          loading={trackingLoading}
+          onClose={() => setTrackModalOpen(false)}
+        />
       )}
     </main>
   );
