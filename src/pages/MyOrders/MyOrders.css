@@ -1,9 +1,5 @@
 .my-orders-page {
   min-height: 100vh;
-  background:
-    linear-gradient(rgba(255, 248, 235, 0.9), rgba(255, 248, 235, 0.95)),
-    url("../../assets/img.jpg"),
-    #fff8eb;
   background-size: 100% 100%, cover, 100% 100%;
   background-position: center top;
   background-repeat: no-repeat;
@@ -2413,13 +2409,15 @@
   background: rgba(128, 0, 32, 0.06);
 }
 
+/* Both buttons share the row; a lone button stretches to fill it. */
 .order-card-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  display: flex;
   gap: 12px;
 }
 
 .order-action-btn {
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2480,7 +2478,19 @@
     width: 100%;
   }
 
+  /* Stay side by side on a phone — just tighter, with a smaller label. */
   .order-card-actions {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .order-action-btn {
+    gap: 6px;
+    padding: 0 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .order-action-btn svg {
+    font-size: 16px;
   }
 }

@@ -131,19 +131,18 @@ const isDelivered = (order) => {
 
 // A current, dispatched AWB — a re-dispatched order sits in Processing while still
 // holding the PREVIOUS shipment's AWB, so those statuses count as "not shipped yet".
-// Mirror of hasCurrentAwb / isTrackable on the order detail page.
+// Mirror of hasCurrentAwb on the order detail page.
 const hasCurrentAwb = (order) => {
   if (!order?.shiprocket_awb) return false;
   const status = String(order?.status || "").toLowerCase();
   return status !== "pending" && status !== "processing";
 };
+// Unlike the order detail page, tracking stays on the card AFTER delivery — the scan
+// history is still worth reading, and it lets Track Order sit beside Download Invoice.
+// Only a cancelled order (no journey to show) loses the button.
 const isTrackable = (order) => {
   if (!hasCurrentAwb(order)) return false;
-  const status = String(order?.status || "").toLowerCase();
-  if (status === "delivered") return false;
-  if (status.includes("cancel")) return false;
-  if (status === "rto delivered" || status === "rto") return false;
-  return true;
+  return !String(order?.status || "").toLowerCase().includes("cancel");
 };
 const canReviewOrderItem = (order, item) => {
   const itemStatus = String(item?.status || "").toLowerCase();
