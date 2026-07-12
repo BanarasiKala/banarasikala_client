@@ -12,7 +12,7 @@
   margin: 0;
   color: #9a6b20;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -23,8 +23,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 34px 24px 30px;
-  margin-bottom: 14px;
+  padding: 10px 10px 8px;
+  margin-bottom: 3px;
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(255, 247, 234, 0.85));
@@ -34,9 +34,9 @@
 .oc-thanks-script {
   margin: 0;
   font-family: "Great Vibes", "Cinzel", cursive;
-  font-size: clamp(44px, 7vw, 68px);
+  font-size: clamp(36px, 6vw, 56px);
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.1;
   color: #7b001b;
 }
 
@@ -44,25 +44,25 @@
   margin: 2px 0 0;
   font-family: "Cinzel", serif;
   font-size: clamp(15px, 2vw, 18px);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.04em;
   color: #9a6b20;
   text-transform: uppercase;
 }
 
 .oc-thanks-sub {
-  margin: 8px 0 16px;
+  margin: 4px 0 8px;
   font-family: "Cinzel", serif;
-  font-size: clamp(17px, 2.4vw, 22px);
-  font-weight: 500;
+  font-size: clamp(15px, 2vw, 19px);
+  font-weight: 400;
   color: #4b160e;
 }
 
 .oc-thanks-note {
   max-width: 460px;
   margin: 0;
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: #6b5648;
 }
 
@@ -73,9 +73,10 @@
   justify-content: center;
   gap: 10px;
   width: min(240px, 60%);
-  margin: 20px 0;
+  margin: 0 0 12px;
   color: #b98a2f;
   font-size: 10px;
+  line-height: 1;
 }
 
 .oc-thanks-divider i {
@@ -105,7 +106,7 @@
   padding: 0 18px;
   border-radius: 10px;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
   text-decoration: none;
   transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
@@ -143,9 +144,9 @@
 .oc-thanks-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 16px 18px;
-  margin-bottom: 22px;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 0;
   border: 1px solid rgba(128, 0, 32, 0.12);
   border-radius: 16px;
   background: rgba(255, 253, 248, 0.72);
@@ -154,12 +155,12 @@
 .oc-thanks-meta-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
 .oc-thanks-meta-cell + .oc-thanks-meta-cell {
-  padding-left: 16px;
+  padding-left: 10px;
   border-left: 1px solid rgba(128, 0, 32, 0.12);
 }
 
@@ -179,28 +180,28 @@
   display: block;
   color: #8a7a6d;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .oc-thanks-meta-cell strong {
   color: #3d2817;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 @media (max-width: 760px) {
   .oc-thanks {
-    margin-bottom: 14px;
-    padding: 24px 16px 22px;
+    margin-bottom: 3px;
+    padding: 14px 12px 12px;
     border-radius: 16px;
   }
 
   .oc-thanks-note {
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
   .oc-thanks-divider {
-    margin: 16px 0;
+    margin: 0 0 5px;
   }
 
   .oc-thanks-actions {
@@ -214,9 +215,9 @@
   }
 
   .oc-thanks-meta {
-    padding: 12px;
+    padding: 5px 5px;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 4px;
   }
 
   .oc-thanks-meta-cell {
@@ -320,7 +321,7 @@
   margin: 0;
   color: #5d170d;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .order-panel-head {
@@ -410,7 +411,7 @@
   display: block;
   color: #441a10;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   margin: 0 0 4px;
   line-height: 1.3;
 }
@@ -473,7 +474,7 @@
   background: none;
   color: #800020;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -482,13 +483,16 @@
 }
 
 .awb-strip,
+/* Bleeds to the same left/right edges as the final-amount banner above it (both
+   use the card's own 5px padding as the negative margin), so the two colored
+   blocks sit flush against each other with no gap and no horizontal jog. */
 .payment-tags {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
+  margin: 0 -5px;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: 0 0 8px 8px;
   background: #fff3dc;
 }
 
@@ -510,7 +514,7 @@
 .awb-strip-info small {
   color: #9a6b20;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -527,7 +531,7 @@
   flex-shrink: 0;
   color: #800020;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -554,7 +558,7 @@
   background: #fffdf8;
   color: #800020;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -642,7 +646,7 @@
 
 .refund-ledger-head strong {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .refund-ledger-head svg {
@@ -709,7 +713,7 @@
 }
 
 .refund-ledger-breakdown strong {
-  font-weight: 600;
+  font-weight: 400;
   color: #34170f;
   white-space: nowrap;
 }
@@ -718,7 +722,7 @@
   margin-top: 4px;
   padding-top: 8px;
   border-top: 1px solid rgba(128, 0, 32, 0.1);
-  font-weight: 600;
+  font-weight: 400;
   color: #34170f;
 }
 
@@ -798,7 +802,7 @@
 .confirmation-item h3 {
   margin: 0 0 6px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: #4b160e;
 }
 
@@ -811,18 +815,6 @@
   margin: 0;
   color: #766457;
   font-size: 13px;
-}
-
-.confirmation-item-status {
-  display: inline-flex;
-  width: fit-content;
-  margin-top: 7px !important;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(128, 0, 32, 0.08);
-  color: #800020 !important;
-  font-size: 11px !important;
-  font-weight: 600;
 }
 
 .confirmation-item small {
@@ -860,7 +852,7 @@
   margin-top: 6px;
   border-bottom: 0;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .summary-row.is-final strong {
@@ -870,7 +862,7 @@
 .payment-tags span {
   color: #800020;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .refund-bank-form {
@@ -896,7 +888,7 @@
   border-radius: 8px;
   background: #800020;
   color: #f5c94d;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -922,7 +914,7 @@
   display: block;
   color: #065a3e;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .refund-notice p {
@@ -959,7 +951,7 @@
   justify-content: center;
   gap: 8px;
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -1059,7 +1051,7 @@
 .order-activity-label {
   color: #441a10;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .order-activity-note {
@@ -1197,7 +1189,7 @@
   color: #7b001b;
   font-family: "Cinzel", serif;
   font-size: clamp(20px, 4.5vw, 24px);
-  font-weight: 700;
+  font-weight: 500;
   text-transform: none;
 }
 
@@ -1234,7 +1226,7 @@
   border-radius: 9px;
   background: transparent;
   color: #765f52;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -1290,7 +1282,7 @@
   margin-bottom: 8px;
   color: #7b001b;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -1342,7 +1334,7 @@
 .exchange-swap-copy strong {
   display: block;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: #5d170d;
   white-space: nowrap;
   overflow: hidden;
@@ -1389,7 +1381,7 @@
   margin-bottom: 8px;
   color: #7b001b;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -1453,7 +1445,7 @@
   background: rgba(214, 158, 46, 0.14);
   color: #7a5a12;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .exchange-allocation.is-complete {
@@ -1498,7 +1490,7 @@
 
 .exchange-chosen-info strong {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: #5d170d;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1550,7 +1542,7 @@
 
 .exchange-color-chip small {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1563,7 +1555,7 @@
 .exchange-color-chip.is-chosen {
   border-color: #7b001b;
   background: rgba(123, 0, 27, 0.07);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .exchange-color-chip:disabled {
@@ -1580,7 +1572,7 @@
 
 .exchange-product-name {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.25;
   text-align: center;
   display: -webkit-box;
@@ -1612,7 +1604,7 @@
 
 .exchange-variant-swatch small {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .exchange-variant-dot {
@@ -1686,7 +1678,7 @@
   background: transparent;
   color: #7b001b;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: background 150ms;
 }
@@ -1711,7 +1703,7 @@
   border: 0;
   color: #7b001b;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -1732,7 +1724,7 @@
   min-width: 48px;
   text-align: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: #4b160e;
   padding: 0 4px;
   border-left: 1px solid rgba(123, 0, 27, 0.12);
@@ -1781,7 +1773,7 @@
   padding-top: 8px;
   border-top: 1px dashed rgba(128, 0, 32, 0.25);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   color: #4b160e;
 }
 
@@ -1792,7 +1784,7 @@
 .action-estimate-box .action-bill-title {
   display: block;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #8a5a00;
@@ -1802,7 +1794,7 @@
   margin-top: 2px;
   padding-top: 7px;
   border-top: 1px solid rgba(128, 0, 32, 0.12);
-  font-weight: 600;
+  font-weight: 400;
   color: #4b160e;
 }
 
@@ -1841,7 +1833,7 @@
 .cancel-modal-form label {
   color: #401a11;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
 }
 
@@ -1899,7 +1891,7 @@
   padding: 0 20px;
   border-radius: 999px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: none;
   letter-spacing: normal;
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
@@ -1943,7 +1935,7 @@
   background: #fffdf8;
   color: #9b1746;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -1977,7 +1969,7 @@
 .confirmation-item-actions strong {
   color: #5d170d;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .confirmation-item-actions small {
@@ -2059,7 +2051,7 @@
 .order-panel-head span,
 .awb-strip span {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.08em;
 }
 
@@ -2083,7 +2075,7 @@
 .order-panel h2,
 .order-panel-head h2 {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .order-panel-head {
@@ -2107,7 +2099,7 @@
 
 .confirmation-step strong {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   margin-bottom: 2px;
 }
 
@@ -2132,7 +2124,7 @@
 .confirmation-item h3 {
   margin-bottom: 4px;
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 400;
 }
 
 .confirmation-item p,
@@ -2146,7 +2138,7 @@
   grid-column: 1 / -1;
   justify-self: end;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .summary-row {
@@ -2161,12 +2153,12 @@
 }
 
 .summary-row strong {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .summary-row.is-final {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .summary-row.is-final strong {
@@ -2180,7 +2172,7 @@
   min-height: 38px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: none;
 }
@@ -2189,7 +2181,7 @@
   min-height: 28px;
   padding: 0 10px;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 400;
 }
 
 @media (max-width: 820px) {
@@ -2228,7 +2220,7 @@
   border-radius: 12px;
   color: #765f52;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   margin: 15px 0;
 }
 
@@ -2319,7 +2311,7 @@
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -2366,7 +2358,7 @@
   margin: 0 0 4px;
   color: #5d170d;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .rto-panel-head p {
@@ -2419,7 +2411,7 @@
 
 .rto-option-head strong {
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .rto-option > p {
@@ -2446,7 +2438,7 @@
 }
 
 .rto-fee-lines li strong {
-  font-weight: 600;
+  font-weight: 400;
   color: #4a3a30;
 }
 
@@ -2457,7 +2449,7 @@
 }
 
 .rto-fee-total span {
-  font-weight: 600;
+  font-weight: 400;
   color: #5d170d;
 }
 
@@ -2474,7 +2466,7 @@
   padding: 11px 14px;
   border-radius: 9px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   border: 1px solid transparent;
   transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
@@ -2603,7 +2595,7 @@
   gap: 2px;
   color: #800020;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -2624,7 +2616,7 @@
   padding: 4px 11px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -2657,7 +2649,7 @@
   align-self: start;
   padding-top: 8px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
   text-align: right;
 }
@@ -2684,7 +2676,7 @@
   background: #fff6f2;
   color: #800020;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -2710,13 +2702,7 @@
 
 .oc-awb-line strong {
   color: #5d170d;
-  font-weight: 700;
-}
-
-/* ── Item status badge → green tone (matches "Delivered") ── */
-.confirmation-item-status {
-  background: #e6f5ec !important;
-  color: #0a7d4f !important;
+  font-weight: 500;
 }
 
 /* ── Final amount row: bled to the card's own left/right edges (the row keeps
@@ -2735,14 +2721,14 @@
 
 .summary-row.is-final span {
   color: #5d170d;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .summary-row.is-final strong {
   color: #800020;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .oc-final-amount-col {
@@ -2755,7 +2741,7 @@
 .oc-final-amount-col small {
   color: #9a6200;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* ── Return / Exchange nav row ── */
@@ -2802,7 +2788,7 @@
 .oc-return-copy strong {
   color: #5d170d;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .oc-return-copy span {
@@ -2816,35 +2802,46 @@
   font-size: 20px;
 }
 
-/* ── Continue Shopping button (full-width maroon) ── */
-.oc-continue-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
+/* ── Trust badges (replaces the old Continue Shopping button) ── */
+.oc-trust-badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   margin-top: 4px;
-  padding: 15px;
+  padding: 14px 8px;
+  border: 1px solid rgba(128, 0, 32, 0.1);
   border-radius: 14px;
-  background: #800020;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 12px 28px rgba(128, 0, 32, 0.26);
-  transition: background 0.15s ease;
+  background: #fdf8ee;
 }
 
-.oc-continue-btn:hover {
-  background: #6a001a;
+.oc-trust-badges > div {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
 }
 
-.oc-continue-btn svg {
-  font-size: 18px;
+.oc-trust-badges > div + div {
+  border-left: 1px solid rgba(128, 0, 32, 0.1);
 }
 
-/* ── Item card: image · details · price on one row; extras span below ── */
+.oc-trust-badges svg {
+  font-size: 22px;
+  color: #7b001b;
+}
+
+.oc-trust-badges span {
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #4b160e;
+  text-align: center;
+}
+
+/* ── Item card: image on the left; title runs the full width of the copy
+   column with the price left-aligned directly below it (no more price column
+   on the right — that width now belongs to the title/copy). ── */
 .confirmation-item {
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 64px minmax(0, 1fr);
   align-items: start;
   gap: 12px;
   background: #fffdf8;
@@ -2864,14 +2861,9 @@
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
-}
-
-.confirmation-item > strong {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: start;
-  font-size: 15px;
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .confirmation-feedback-area,
@@ -2880,29 +2872,44 @@
   grid-column: 1 / -1;
 }
 
-/* ── Delivered-at, shown beside the status badge ── */
-.oc-item-status-row {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 7px;
-  margin-top: 7px;
-  max-width: 100%;
+/* ── Title + status pill: same arrangement and pill styling as My Orders
+   (.order-product-headline / .order-item-status) — title on top, pill below,
+   both left-aligned. ── */
+.oc-item-headline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
 }
 
-.oc-item-status-row .confirmation-item-status {
-  margin-top: 0 !important;
+.oc-item-status-pill {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
-.oc-item-delivered-at {
-  flex: 0 1 auto;
-  min-width: 0;
+.oc-item-status-pill svg {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+}
+
+span.oc-item-delivered-at {
+  display: block;
+  margin: 0;
   color: #8a7565;
   font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Per-item "Return/Exchange closes on…" line ── */
@@ -2948,13 +2955,20 @@
   margin-bottom: 6px;
 }
 
+/* Wins over the later, more general .order-panel-head margin-bottom (8px) via
+   the extra class, rather than depending on source order. */
+.order-panel-head.oc-summary-head {
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
 .oc-summary-title {
   display: block;
   width: 100%;
   color: #7b001b;
   font-family: "Cinzel", serif;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-align: center;
@@ -2976,7 +2990,7 @@
 
 .oc-summary-head .oc-thanks-divider {
   width: min(200px, 70%);
-  margin: 0 auto;
+  margin: 0 auto 5px;
 }
 
 /* Scoped to the inner "Delivery Address" sub-heading only — the outer
@@ -2988,6 +3002,7 @@
   gap: 8px;
   width: 100%;
   text-align: left;
+  font-weight: 500;
 }
 
 .oc-address-card .order-panel-head-row h2 svg {
@@ -2995,26 +3010,36 @@
   font-size: 16px;
 }
 
-.confirmation-item-copy p + p,
-.confirmation-item-copy p + .oc-item-color,
-.oc-item-color + p {
-  margin-top: 5px;
-}
-
-.oc-item-color {
+/* ── Color / Total Qty rows: same label+value structure as My Orders
+   (.order-product-attr / .order-attr-label / .order-attr-value). ── */
+div.oc-item-attr {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: #766457;
-  font-size: 13px;
+  gap: 8px;
+  min-width: 0;
+}
+
+span.oc-item-attr-label {
+  color: rgba(50, 21, 15, 0.5);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+span.oc-item-attr-value {
+  overflow: hidden;
+  color: #3b1710;
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .oc-item-color-dot {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   flex: 0 0 auto;
-  border: 1.5px solid #fff;
+  border: 2px solid #fff;
   box-shadow: 0 0 0 1px rgba(116, 40, 19, 0.18);
 }
 
@@ -3026,36 +3051,303 @@
 }
 
 .order-panel {
-  padding: 11px;
+  padding: 5px;
 }
 
 .order-panel-head {
-  margin-bottom: 8px;
+  margin-bottom: 3px;
 }
 
 .order-confirmation-main,
 .order-confirmation-side {
-  gap: 10px;
+  gap: 3px;
 }
 
 .order-confirmation-side {
-  margin-top: 10px;
+  margin-top: 3px;
 }
 
 .confirmation-items {
-  gap: 8px;
+  gap: 3px;
 }
 
 .confirmation-item {
-  padding: 8px;
+  padding: 4px;
 }
 
 .summary-row {
-  padding: 5px 0;
+  padding: 3px 0;
 }
 
 .summary-row.is-final {
-  margin: 6px -11px 0;
-  padding: 10px 11px;
+  margin: 4px -5px 0;
+  padding: 6px 5px;
+}
+
+/* ── Item title + price: same type scale as the Home page product card
+   (.bk-arrival-info h3 / .bk-arrival-price) ── */
+.confirmation-item h3 {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.oc-item-headline .confirmation-product-link {
+  width: 100%;
+  min-width: 0;
+}
+
+strong.oc-item-price {
+  display: block;
+  grid-column: auto;
+  justify-self: auto;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #800020;
+  white-space: normal;
+}
+
+/* ── "Need Help?" box + Download Invoice — same UI as the My Orders card ── */
+.order-help-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(116, 40, 19, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.order-help-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #7b001b;
+  font-size: 20px;
+}
+
+.order-help-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.order-help-copy strong {
+  color: #3b1710;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.order-help-copy span {
+  color: rgba(50, 21, 15, 0.5);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.order-help-ticket {
+  font-weight: 500 !important;
+  letter-spacing: 0.02em;
+}
+
+.order-help-ticket.is-open { color: #9a6200 !important; }
+.order-help-ticket.is-progress { color: #2454a6 !important; }
+.order-help-ticket.is-resolved { color: #087a55 !important; }
+.order-help-ticket.is-closed { color: rgba(50, 21, 15, 0.55) !important; }
+
+.order-help-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1.5px solid rgba(128, 0, 32, 0.45);
+  border-radius: 10px;
+  background: transparent;
+  color: #800020;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.order-help-btn:hover {
+  border-color: #800020;
+  background: rgba(128, 0, 32, 0.06);
+}
+
+.order-card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.order-action-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid rgba(128, 0, 32, 0.45);
+  border-radius: 10px;
+  background: transparent;
+  color: #800020;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.order-action-btn:hover:not(:disabled) {
+  border-color: #800020;
+  background: rgba(128, 0, 32, 0.06);
+}
+
+.order-action-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.order-action-btn svg {
+  font-size: 14px;
+}
+
+.order-action-btn svg.is-spinning {
+  animation: oc-invoice-spin 0.8s linear infinite;
+}
+
+@keyframes oc-invoice-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Cancel order: info card + timer pill, then a standalone outlined button
+   below it. Mirrors the reference mockup. ── */
+.oc-cancel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oc-cancel-info-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(214, 158, 97, 0.35);
+  border-radius: 14px;
+  background: #fdf3ec;
+  text-align: center;
+}
+
+.oc-cancel-info-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #b9762f;
+  font-size: 18px;
+}
+
+.oc-cancel-info-card p {
+  margin: 0;
+  color: #5d4b3e;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.oc-cancel-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #fbe4e4;
+  color: #b3374a;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.oc-cancel-timer svg {
+  font-size: 13px;
+}
+
+.oc-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  border: 1.5px solid #c23b4f;
+  border-radius: 12px;
+  background: #fdf1f2;
+  color: #b3223a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.oc-cancel-btn:hover {
+  background: #fbe4e6;
+  border-color: #b3223a;
+}
+
+.oc-cancel-btn svg {
+  font-size: 15px;
+}
+
+/* ── Cancellation window closed: plain, quiet notice — no icon, no button. ── */
+.oc-cancel-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(50, 21, 15, 0.05);
+  text-align: center;
+}
+
+.oc-cancel-closed strong {
+  color: #5d4b3e;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.oc-cancel-closed span {
+  color: rgba(50, 21, 15, 0.55);
+  font-size: 12px;
+}
+
+/* ── MRP struck through, next to the actual price — item rows and the
+   Payment Summary subtotal both use this. ── */
+/* "MRP:" label stays plain text; only the value inside gets struck through. */
+.oc-item-mrp-label {
+  margin-right: 4px;
+  color: rgba(50, 21, 15, 0.42);
+  font-weight: 400;
+}
+
+.oc-item-mrp-label s {
+  text-decoration: line-through;
+}
+
+/* ── No bold anywhere on this page: safety net for any <strong>/<b> that isn't
+   already covered by a specific rule above (native strong/b render bold=700 by
+   default in every browser regardless of the page's own type scale). ── */
+.order-confirmation-page strong,
+.order-confirmation-page b {
+  font-weight: 500;
 }
 

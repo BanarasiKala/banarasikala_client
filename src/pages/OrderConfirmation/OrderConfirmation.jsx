@@ -31,6 +31,24 @@ const formatDateTime = (value) => {
   return `${datePart}, ${timePart}`;
 };
 
+// Mirror of TICKET_CATEGORIES in the server's SupportController — it rejects
+// anything not on this list. Same "Need Help with this order?" box as My Orders.
+const TICKET_CATEGORIES = [
+  "Delivery or shipping issue",
+  "Payment or refund issue",
+  "Damaged or defective product",
+  "Wrong or missing item",
+  "Return or exchange help",
+  "Other",
+];
+
+const TICKET_STATUS_TONE = {
+  Open: "is-open",
+  "In Progress": "is-progress",
+  Resolved: "is-resolved",
+  Closed: "is-closed",
+};
+
 const formatDate = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -73,6 +91,16 @@ const getBreakdown = (order = {}) => {
   const items = order.OrderItems || [];
   const itemSubtotal = items.reduce((sum, item) => sum + toNumber(item.price) * Math.max(1, toNumber(item.quantity) || 1), 0);
   const subtotal = toNumber(order.subtotal_amount) || itemSubtotal;
+  // Per-item MRP vs. what was actually charged, mirroring CheckoutFlow's mrpSavings —
+  // same live product MRP lookup (OrderItem never snapshots one), only counted where
+  // the MRP is actually higher than the price paid.
+  const mrpTotal = items.reduce((sum, item) => {
+    const qty = Math.max(1, toNumber(item.quantity) || 1);
+    const mrp = toNumber(item.mrp_price);
+    const sell = toNumber(item.price);
+    return sum + (mrp > sell ? mrp : sell) * qty;
+  }, 0);
+  const mrpSavings = Math.max(0, mrpTotal - itemSubtotal);
   const shippingCharge = toNumber(order.shipping_charge);
   const shippingDiscount = toNumber(order.shipping_discount);
   // Delivery is always fully discounted at order placement (see
@@ -103,7 +131,7 @@ const getBreakdown = (order = {}) => {
   // full delivery charge is what was persisted to the order.
   const deliveryChargeShown = Math.max(0, originalShippingCharge - codFee);
 
-  return { subtotal, shippingCharge, shippingDiscount, originalShippingCharge, deliveryChargeShown, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
+  return { subtotal, mrpTotal, mrpSavings, shippingCharge, shippingDiscount, originalShippingCharge, deliveryChargeShown, paymentFee, platformFee, codFee, giftCharge, paymentDiscount, couponDiscount, walletAmount, payable };
 };
 
 // An order can be cancelled (whole order only — no item-level changes) only while it
@@ -127,6 +155,20 @@ const canCancelOrder = (order) => {
   if (hasAnyReverseAction(order)) return false;
   const windowStart = new Date(rawDate).getTime();
   return Number.isFinite(windowStart) && Date.now() - windowStart <= 24 * 60 * 60 * 1000;
+};
+
+// True only when the order would otherwise qualify for cancellation (still
+// pending/processing, no return/exchange raised) but the 24h clock has simply run
+// out — i.e. the ONE reason canCancelOrder said no was the time check. An order
+// that has moved on to shipped/delivered/etc. isn't "closed", it's just not
+// applicable, so this stays false there (mirrors canCancelOrder's other guards).
+const cancelWindowClosed = (order) => {
+  const rawDate = order?.cancel_window_started_at || order?.createdAt || order?.created_at;
+  const status = String(order?.status || "").toLowerCase();
+  if (!rawDate || !CANCELLABLE_STATUSES.includes(status)) return false;
+  if (hasAnyReverseAction(order)) return false;
+  const windowStart = new Date(rawDate).getTime();
+  return Number.isFinite(windowStart) && Date.now() - windowStart > 24 * 60 * 60 * 1000;
 };
 
 // A current, dispatched AWB — present only once the order has moved past preparation.
@@ -303,31 +345,84 @@ const getEligibleActionItems = (order, actionType) => {
   });
 };
 
-const getItemDisplayStatus = (order, item) => {
-  const status = normalizeStatus(item?.status);
+// Ported verbatim from My Orders (STATUS_CONFIG / getStatus) so the item status
+// pill here is pixel-identical — same colours, same icon, same label per status.
+const ITEM_STATUS_CONFIG = {
+  "Order Placed": { color: "#1a7f3c", bg: "#ecf8ef", icon: "lucide:package-check", label: "Order placed" },
+  Pending: { color: "#1a7f3c", bg: "#ecf8ef", icon: "lucide:package-check", label: "Order placed" },
+  "Pickup Scheduled": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:calendar-clock", label: "Pickup scheduled" },
+  "Out For Pickup": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:navigation", label: "Courier out for pickup" },
+  "Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Picked up" },
+  Shipped: { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:truck", label: "Shipped" },
+  Delivered: { color: "#087a55", bg: "#edfdf5", icon: "lucide:check-circle", label: "Delivered" },
+  Cancelled: { color: "#b42318", bg: "#fff0ee", icon: "lucide:x-circle", label: "Cancelled" },
+  "Partially Cancelled": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:file-edit", label: "Modified" },
+  "Out For Delivery": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:navigation", label: "Out for delivery" },
+  Undelivered: { color: "#9a6200", bg: "#fff6dc", icon: "lucide:triangle-alert", label: "Delivery attempt failed" },
+  "RTO Initiated": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:undo-2", label: "Returning to seller" },
+  "RTO In Transit": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:truck", label: "Returning to seller" },
+  "RTO Delivered": { color: "#7a3d00", bg: "#fff4e8", icon: "lucide:warehouse", label: "Order returned to seller" },
+  "Seller Cancelled": { color: "#b42318", bg: "#fff0ee", icon: "lucide:x-circle", label: "Cancelled by seller" },
+  "Re-dispatch Requested": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:repeat-2", label: "Re-dispatch requested" },
+  "Re-dispatch Payment Pending": { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:credit-card", label: "Re-dispatch payment pending" },
+  "Re-dispatch Paid": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Re-dispatch paid" },
+  "Re-dispatched": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:truck", label: "Re-dispatched" },
+  "Return Requested": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:rotate-ccw", label: "Return requested" },
+  "Return Initiated": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:rotate-ccw", label: "Return initiated" },
+  "Out For Return Pickup": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:navigation", label: "Return pickup" },
+  "Return Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Return picked up" },
+  "Return Completed": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Return completed" },
+  "Exchange Requested": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:repeat-2", label: "Exchange requested" },
+  "Exchange Initiated": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:repeat-2", label: "Exchange initiated" },
+  "Exchange Pickup Scheduled": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:calendar-clock", label: "Exchange pickup scheduled" },
+  "Exchange Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Exchange picked up" },
+  "Exchange Received": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:package-open", label: "Replacement being prepared" },
+  "Exchange Completed": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Exchange completed" },
+};
 
-  // An exchanged item parks on "Exchange Received" — the old saree is back with the seller,
-  // but the REPLACEMENT is still being prepared or is in transit. It only becomes "Exchange
-  // Completed" once the replacement is delivered. Reflect where the replacement actually is
-  // (the order status tracks its forward journey) instead of freezing on one message.
-  if (status === "exchange received") {
-    const orderStatus = normalizeStatus(order?.status);
-    if (orderStatus === "shipped" || orderStatus.includes("in transit") || orderStatus.includes("manifest")) {
-      return "Replacement shipped";
-    }
-    if (orderStatus === "out for delivery") return "Replacement out for delivery";
-    if (orderStatus === "awb assigned" || orderStatus === "pickup scheduled") {
-      return "Replacement pickup scheduled";
-    }
-    return "Replacement being prepared";
-  }
+const getItemStatusVisual = (status) => {
+  if (!status) return ITEM_STATUS_CONFIG.Pending;
+  const normalized = String(status).toLowerCase();
+  if (normalized === "order placed" || normalized === "order_placed") return ITEM_STATUS_CONFIG["Order Placed"];
+  if (normalized === "pending") return ITEM_STATUS_CONFIG.Pending;
+  if (normalized === "processing") return ITEM_STATUS_CONFIG["Order Placed"];
+  if (normalized === "undelivered") return ITEM_STATUS_CONFIG.Undelivered;
+  if (normalized === "rto initiated" || normalized === "rto_initiated") return ITEM_STATUS_CONFIG["RTO Initiated"];
+  if (normalized === "rto in transit" || normalized === "rto_in_transit") return ITEM_STATUS_CONFIG["RTO In Transit"];
+  if (normalized === "rto delivered" || normalized === "rto_delivered" || normalized === "rto") return ITEM_STATUS_CONFIG["RTO Delivered"];
+  if (normalized === "pickup scheduled" || normalized === "pickup_scheduled" || normalized === "awb assigned" || normalized === "awb_assigned") return ITEM_STATUS_CONFIG["Pickup Scheduled"];
+  if (normalized === "out for pickup" || normalized === "out_for_pickup") return ITEM_STATUS_CONFIG["Out For Pickup"];
+  if (normalized === "picked up" || normalized === "picked_up") return ITEM_STATUS_CONFIG["Picked Up"];
+  if (normalized === "shipped" || normalized.includes("in transit") || normalized.includes("manifest")) return ITEM_STATUS_CONFIG.Shipped;
+  if (normalized === "delivered") return ITEM_STATUS_CONFIG.Delivered;
+  if (normalized.includes("partial") && normalized.includes("cancel")) return ITEM_STATUS_CONFIG["Partially Cancelled"];
+  if (normalized === "cancelled") return ITEM_STATUS_CONFIG.Cancelled;
+  if (normalized.includes("cancel")) return ITEM_STATUS_CONFIG.Cancelled;
+  if (normalized === "out for delivery" || normalized === "out_for_delivery") return ITEM_STATUS_CONFIG["Out For Delivery"];
+  if (normalized === "seller cancelled" || normalized === "seller_cancelled") return ITEM_STATUS_CONFIG["Seller Cancelled"];
+  if (normalized.includes("return requested")) return ITEM_STATUS_CONFIG["Return Requested"];
+  if (normalized.includes("return initiated")) return ITEM_STATUS_CONFIG["Return Initiated"];
+  if (normalized.includes("out for return pickup")) return ITEM_STATUS_CONFIG["Out For Return Pickup"];
+  if (normalized.includes("return picked up")) return ITEM_STATUS_CONFIG["Return Picked Up"];
+  if (normalized.includes("return completed") || normalized.includes("return delivered")) return ITEM_STATUS_CONFIG["Return Completed"];
+  if (normalized.includes("exchange requested")) return ITEM_STATUS_CONFIG["Exchange Requested"];
+  if (normalized.includes("exchange initiated")) return ITEM_STATUS_CONFIG["Exchange Initiated"];
+  if (normalized.includes("exchange pickup scheduled")) return ITEM_STATUS_CONFIG["Exchange Pickup Scheduled"];
+  if (normalized.includes("exchange picked up")) return ITEM_STATUS_CONFIG["Exchange Picked Up"];
+  if (normalized.includes("exchange received")) return ITEM_STATUS_CONFIG["Exchange Received"];
+  if (normalized.includes("exchange completed") || normalized.includes("exchange delivered")) return ITEM_STATUS_CONFIG["Exchange Completed"];
+  return ITEM_STATUS_CONFIG[status] || ITEM_STATUS_CONFIG.Pending;
+};
 
-  if (status && status !== "active") return getCustomerOrderStatusLabel(item.status);
-  // Return/exchange flows are item-scoped: an untouched (Active) item must not
-  // inherit the order's reverse status — it simply stays delivered.
-  const orderStatus = normalizeStatus(order?.status);
-  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return "Delivered";
-  return getCustomerOrderStatusLabel(order?.status);
+// The pill each item carries — mirrors My Orders' getItemStatusMeta: an item with
+// its own status (cancelled, returned…) shows that; otherwise it inherits the
+// order's, except an untouched item on a return/exchange order stays "Delivered".
+const getItemStatusMeta = (order, item) => {
+  const itemStatus = String(item?.status || "").trim();
+  if (itemStatus && itemStatus.toLowerCase() !== "active") return getItemStatusVisual(itemStatus);
+  const orderStatus = String(order?.status || "").toLowerCase();
+  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return ITEM_STATUS_CONFIG.Delivered;
+  return getItemStatusVisual(order?.status);
 };
 
 const getActionLabel = (action) => {
@@ -771,7 +866,13 @@ export default function OrderConfirmation() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
+  const [ticket, setTicket] = useState(null);
+  const [supportModal, setSupportModal] = useState(false);
+  const [supportForm, setSupportForm] = useState({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+
   const [cancelModal, setCancelModal] = useState({
     isOpen: false,
     type: "cancel",
@@ -815,9 +916,13 @@ export default function OrderConfirmation() {
   const [exchangeVariants, setExchangeVariants] = useState({});
 
   const breakdown = useMemo(() => getBreakdown(order || {}), [order]);
-  // Display-only total of what the customer already saved — sums discounts already
-  // computed above, not a new figure from the backend.
-  const totalSaved = breakdown.couponDiscount + breakdown.paymentDiscount + breakdown.shippingDiscount;
+  // Mirrors CheckoutFlow's totalSavings: MRP markdown + coupon + prepaid discount +
+  // waived delivery. Uses deliveryChargeShown (the pre-discount rate recovered from
+  // shipping_meta), not shippingDiscount — the ledger's shipping_discount is always 0
+  // (delivery is granted as a $0 charge, not a discounted one), so that field alone
+  // would silently drop the shipping savings every time. Wallet is excluded, same as
+  // checkout: spending your own balance isn't a saving.
+  const totalSaved = breakdown.mrpSavings + breakdown.couponDiscount + breakdown.paymentDiscount + breakdown.deliveryChargeShown;
   // Live ShipRocket scan activities (only exist once the parcel is picked up and
   // an AWB is generated). Before that we fall back to the status stepper.
   const liveActivities = tracking?.tracking?.tracking_data?.shipment_track_activities || [];
@@ -958,6 +1063,83 @@ export default function OrderConfirmation() {
       fetchTracking();
     }
   }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
+
+  // Newest support ticket already raised on THIS order, so the help box can show
+  // its live status instead of always inviting a new one. Same feature as My Orders.
+  const fetchTicket = useCallback(async () => {
+    if (!orderId) return;
+    try {
+      const response = await api.get(`/api/support/tickets/my?orderId=${orderId}`);
+      const tickets = Array.isArray(response.data) ? response.data : [];
+      setTicket(tickets[0] || null);
+    } catch {
+      // Non-blocking: the help box still offers "Contact Us" without a status.
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchTicket();
+  }, [fetchTicket]);
+
+  const openSupportModal = () => {
+    setSupportForm({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
+    setSupportModal(true);
+  };
+
+  const closeSupportModal = () => {
+    if (supportSubmitting) return;
+    setSupportModal(false);
+  };
+
+  const submitSupportTicket = async (event) => {
+    event.preventDefault();
+    if (!order?.id) return;
+    if (supportForm.message.trim().length < 10) {
+      showNotification("Please describe your issue in a little more detail.", "warning");
+      return;
+    }
+
+    setSupportSubmitting(true);
+    try {
+      const response = await api.post("/api/support/tickets", {
+        orderId: order.id,
+        category: supportForm.category,
+        message: supportForm.message.trim(),
+        phone: supportForm.phone.trim(),
+      });
+      showNotification(response.data?.message || "Your ticket has been raised.", "success");
+      setSupportModal(false);
+      fetchTicket();
+    } catch (err) {
+      showNotification(err?.response?.data?.message || "Unable to raise your ticket right now.", "error");
+    } finally {
+      setSupportSubmitting(false);
+    }
+  };
+
+  // The invoice is an authenticated endpoint, so it can't be a plain link — fetch
+  // it with the auth header and hand the HTML to a tab the browser can print. The
+  // tab is opened synchronously inside the click so the pop-up blocker allows it.
+  const downloadInvoice = async () => {
+    if (invoiceLoading || !order?.id) return;
+    const tab = window.open("", "_blank");
+    setInvoiceLoading(true);
+    try {
+      const response = await api.get(`/api/orders/${order.id}/invoice`);
+      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "text/html" }));
+      if (tab) {
+        tab.location.href = blobUrl;
+      } else {
+        showNotification("Allow pop-ups for this site to open your invoice.", "warning");
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+      tab?.close();
+      showNotification(err?.response?.data?.message || "Could not open your invoice right now.", "error");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
 
   // While the exchange modal is open, lazily pull what each eligible LINE can be swapped
   // for: every active product priced at EXACTLY what was paid for it, with its in-stock
@@ -1619,7 +1801,7 @@ export default function OrderConfirmation() {
                 const productUrl = item.product_slug ? `/product/${item.product_slug}` : null;
                 const itemRating = Number(item.feedback?.rating || 0);
                 const returnWindow = getItemReturnWindowInfo(order, item);
-                const itemDisplayStatus = getItemDisplayStatus(order, item);
+                const itemStatusMeta = getItemStatusMeta(order, item);
                 return (
                 <article className="confirmation-item" key={`${item.product_id}-${item.colorId || index}`}>
                   <div className="confirmation-item-top">
@@ -1633,27 +1815,53 @@ export default function OrderConfirmation() {
                       </div>
                     )}
                     <div className="confirmation-item-copy">
-                      {productUrl ? <Link to={productUrl} className="confirmation-product-link"><h3>{item.product_name}</h3></Link> : <h3>{item.product_name}</h3>}
+                      <div className="oc-item-headline">
+                        {productUrl ? <Link to={productUrl} className="confirmation-product-link"><h3>{item.product_name}</h3></Link> : <h3>{item.product_name}</h3>}
+                        <strong className="oc-item-price">
+                          {(() => {
+                            const billedQty = Math.max(0, toNumber(item.quantity) - toNumber(item.cancelled_quantity));
+                            const mrpEach = toNumber(item.mrp_price);
+                            const sellEach = toNumber(item.price);
+                            const showMrp = mrpEach > sellEach;
+                            return showMrp ? (
+                              <>
+                                <span className="oc-item-mrp-label">MRP: <s>{formatPrice(mrpEach * billedQty)}</s></span>{" "}
+                                {formatPrice(sellEach * billedQty)}
+                              </>
+                            ) : formatPrice(sellEach * billedQty);
+                          })()}
+                        </strong>
+                        <span
+                          className="oc-item-status-pill"
+                          style={{ backgroundColor: itemStatusMeta.bg, color: itemStatusMeta.color }}
+                        >
+                          <Icon icon={itemStatusMeta.icon} />
+                          {itemStatusMeta.label}
+                        </span>
+                      </div>
+
+                      {itemStatusMeta.label === "Delivered" && order.delivered_at && (
+                        <span className="oc-item-delivered-at">{formatDateTime(order.delivered_at)}</span>
+                      )}
+
+                      <div className="oc-item-attr">
+                        <span className="oc-item-attr-label">Color:</span>
+                        {item.color_hex && <span className="oc-item-color-dot" style={{ backgroundColor: item.color_hex }} />}
+                        <span className="oc-item-attr-value">{getItemColor(item)}</span>
+                      </div>
                       {(() => {
                         const cancelledQty = toNumber(item.cancelled_quantity);
                         const activeQty = Math.max(0, toNumber(item.quantity) - cancelledQty);
                         return (
-                          <p>
-                            Qty: {activeQty}
-                            {cancelledQty > 0 ? ` · ${cancelledQty} cancelled` : ""}
-                          </p>
+                          <div className="oc-item-attr">
+                            <span className="oc-item-attr-label">Total Qty:</span>
+                            <span className="oc-item-attr-value">
+                              {activeQty}
+                              {cancelledQty > 0 ? ` · ${cancelledQty} cancelled` : ""}
+                            </span>
+                          </div>
                         );
                       })()}
-                      <p className="oc-item-color">
-                        {item.color_hex && <span className="oc-item-color-dot" style={{ backgroundColor: item.color_hex }} />}
-                        {getItemColor(item)}
-                      </p>
-                      <span className="oc-item-status-row">
-                        <span className="confirmation-item-status">{itemDisplayStatus}</span>
-                        {itemDisplayStatus === "Delivered" && order.delivered_at && (
-                          <span className="oc-item-delivered-at">{formatDateTime(order.delivered_at)}</span>
-                        )}
-                      </span>
                     </div>
                   </div>
                   {canReviewOrderItem(order, item) && (
@@ -1739,8 +1947,6 @@ export default function OrderConfirmation() {
                     </div>
                   )}
 
-                  <strong>{formatPrice(toNumber(item.price) * Math.max(0, toNumber(item.quantity) - toNumber(item.cancelled_quantity)))}</strong>
-
                   {returnWindow && (
                     <p className={`oc-item-return-window ${returnWindow.closed ? "is-closed" : ""}`}>
                       <Icon icon={returnWindow.closed ? "lucide:calendar-x" : "lucide:calendar-clock"} />
@@ -1764,7 +1970,12 @@ export default function OrderConfirmation() {
                 <i /><span>◆</span><i />
               </div>
             </div>
-            <div className="summary-row"><span>Product total</span><strong>{formatPrice(breakdown.subtotal)}</strong></div>
+            <div className="summary-row">
+              <span>Product total</span>
+              <strong>
+                {breakdown.mrpSavings > 0 && <span className="oc-item-mrp-label">MRP: <s>{formatPrice(breakdown.mrpTotal)}</s></span>} {formatPrice(breakdown.subtotal)}
+              </strong>
+            </div>
             {breakdown.platformFee > 0 && <div className="summary-row"><span>Platform fee</span><strong>{formatPrice(breakdown.platformFee)}</strong></div>}
             <div className="summary-row">
               <span>Delivery charge</span>
@@ -2036,28 +2247,77 @@ export default function OrderConfirmation() {
             </button>
           )}
 
-          {orderActions.canCancel && (
-            <div className="order-action-list order-action-list-standalone">
-              <button className="cancel-order-btn" type="button" onClick={() => openActionModal("cancel")}>
-                Cancel order
+          {orderActions.canCancel ? (
+            <div className="oc-cancel-block">
+              <div className="oc-cancel-info-card">
+                <span className="oc-cancel-info-icon"><Icon icon="lucide:package" /></span>
+                <p>You can cancel your order within 24 hours of placing the order.</p>
+                {(() => {
+                  const rawDate = order.cancel_window_started_at || order.createdAt || order.created_at;
+                  if (!rawDate) return null;
+                  const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(rawDate).getTime());
+                  if (remaining <= 0) return null;
+                  const hrs = Math.floor(remaining / (1000 * 60 * 60));
+                  const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                  const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+                  return (
+                    <span className="oc-cancel-timer">
+                      <Icon icon="lucide:clock" /> {label} left to cancel
+                    </span>
+                  );
+                })()}
+              </div>
+              <button className="oc-cancel-btn" type="button" onClick={() => openActionModal("cancel")}>
+                <Icon icon="lucide:x" /> Cancel Order
               </button>
-              {(() => {
-                const rawDate = order.cancel_window_started_at || order.createdAt || order.created_at;
-                if (!rawDate) return null;
-                const remaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(rawDate).getTime());
-                if (remaining <= 0) return null;
-                const hrs = Math.floor(remaining / (1000 * 60 * 60));
-                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                const label = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                return <p className="cancel-window-info"><Icon icon="lucide:clock" /> {label} left to cancel</p>;
-              })()}
+            </div>
+          ) : cancelWindowClosed(order) ? (
+            <div className="oc-cancel-closed">
+              <strong>Cancellation window is closed.</strong>
+              <span>You can&rsquo;t cancel this order now.</span>
+            </div>
+          ) : null}
+
+          <div className="order-help-box">
+            <span className="order-help-icon"><Icon icon="lucide:message-circle-question" /></span>
+            <div className="order-help-copy">
+              <strong>Need Help with this order?</strong>
+              {ticket ? (
+                <span className={`order-help-ticket ${TICKET_STATUS_TONE[ticket.status] || "is-open"}`}>
+                  {ticket.ticket_number} · {ticket.status}
+                </span>
+              ) : (
+                <span>Contact our support team</span>
+              )}
+            </div>
+            <button type="button" className="order-help-btn" onClick={openSupportModal}>
+              Contact Us
+            </button>
+          </div>
+
+          {wasDelivered(order) && (
+            <div className="order-card-actions">
+              <button type="button" className="order-action-btn" onClick={downloadInvoice} disabled={invoiceLoading}>
+                <Icon icon={invoiceLoading ? "lucide:loader" : "lucide:download"} className={invoiceLoading ? "is-spinning" : ""} />
+                {invoiceLoading ? "Preparing…" : "Download Invoice"}
+              </button>
             </div>
           )}
 
-          <Link className="oc-continue-btn" to="/collection">
-            <Icon icon="lucide:shopping-bag" />
-            Continue Shopping
-          </Link>
+          <div className="oc-trust-badges">
+            <div>
+              <Icon icon="lucide:shopping-bag" />
+              <span>100% Authentic<br />Banarasi Sarees</span>
+            </div>
+            <div>
+              <Icon icon="lucide:heart-handshake" />
+              <span>Handpicked<br />Premium Quality</span>
+            </div>
+            <div>
+              <Icon icon="lucide:lock" />
+              <span>Secure<br />Payments</span>
+            </div>
+          </div>
         </aside>
       </section>
 
@@ -2308,6 +2568,71 @@ export default function OrderConfirmation() {
                 </button>
                 <button type="submit" className="modal-action-btn primary" disabled={feedbackSubmitting}>
                   {feedbackSubmitting ? feedbackSubmitLabel || "Submitting..." : "Submit Feedback"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {supportModal && (
+        <div className="cancel-modal-overlay">
+          <div className="cancel-modal-container">
+            <button type="button" className="cancel-modal-close" onClick={closeSupportModal} disabled={supportSubmitting}>
+              <Icon icon="lucide:x" />
+            </button>
+            <div className="cancel-modal-header">
+              <h3>Need help with this order?</h3>
+              <p>
+                Tell us what went wrong with order <strong>#{orderNumber}</strong> and our support team will get back to you.
+              </p>
+            </div>
+
+            <form className="cancel-modal-form" onSubmit={submitSupportTicket}>
+              <div className="form-group">
+                <label htmlFor="oc-support-category">What is your query about?</label>
+                <select
+                  id="oc-support-category"
+                  value={supportForm.category}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, category: event.target.value }))}
+                  required
+                >
+                  {TICKET_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="oc-support-message">Describe your issue</label>
+                <textarea
+                  id="oc-support-message"
+                  required
+                  rows={4}
+                  maxLength={2000}
+                  value={supportForm.message}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
+                  placeholder="Share the details so we can resolve this faster."
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="oc-support-phone">Phone number (optional)</label>
+                <input
+                  id="oc-support-phone"
+                  type="tel"
+                  value={supportForm.phone}
+                  onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="10-digit mobile number we can call you on"
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="modal-action-btn secondary" onClick={closeSupportModal} disabled={supportSubmitting}>
+                  Go Back
+                </button>
+                <button type="submit" className="modal-action-btn primary" disabled={supportSubmitting}>
+                  {supportSubmitting ? "Raising ticket..." : "Raise Ticket"}
                 </button>
               </div>
             </form>
