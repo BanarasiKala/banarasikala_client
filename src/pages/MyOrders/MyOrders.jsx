@@ -91,6 +91,12 @@ const toNumber = (value) => {
   return Number.isFinite(next) ? next : 0;
 };
 const formatPrice = (value) => `₹${toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// Header summary money — paise only when the amount actually has them.
+const formatAmount = (value) => {
+  const amount = toNumber(value);
+  const decimals = Number.isInteger(amount) ? 0 : 2;
+  return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+};
 const getItemImage = (item) => item.image_url || item.product_image_url || "";
 const getItemColorLabel = (item) => item.color_name || item.Color?.name || null;
 const isCancelled = (order) => ["cancelled", "seller cancelled"].includes(String(order.status || "").toLowerCase());
@@ -125,21 +131,16 @@ const canReviewOrderItem = (order, item) => {
   const itemStatus = String(item?.status || "").toLowerCase();
   return isDelivered(order) && !itemStatus.includes("cancel");
 };
-// A partially-cancelled item (some units removed) reads as "Modified"; a fully
-// cancelled item stays "Cancelled".
-const getItemStatusLabel = (status) => {
-  const normalized = String(status || "").toLowerCase();
-  if (normalized.includes("partial") && normalized.includes("cancel")) return "Modified";
-  return status;
-};
-const getItemDisplayStatus = (order, item) => {
+// The pill each item carries. An item that has its own status (cancelled,
+// returned…) shows that; otherwise it inherits the order's.
+const getItemStatusMeta = (order, item) => {
   const itemStatus = String(item?.status || "").trim();
-  if (itemStatus && itemStatus.toLowerCase() !== "active") return getItemStatusLabel(itemStatus);
+  if (itemStatus && itemStatus.toLowerCase() !== "active") return getStatus(itemStatus);
   // Return/exchange flows are item-scoped: an untouched (Active) item must not
   // inherit the order's reverse status — it simply stays delivered.
   const orderStatus = String(order?.status || "").toLowerCase();
-  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return "Delivered";
-  return getStatus(order?.status).label;
+  if (orderStatus.includes("return") || orderStatus.includes("exchange")) return STATUS_CONFIG.Delivered;
+  return getStatus(order?.status);
 };
 
 const FILTER_OPTIONS = [
@@ -322,98 +323,181 @@ const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
 
 const OrderCard = ({ order, onFeedback }) => {
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
 
   const orderNumber = getOrderDisplayNumber(order);
   const statusMeta = getStatus(order.status);
   const items = order.OrderItems || [];
   const activeItems = useMemo(() => items.filter(item => String(item.status || "").toLowerCase() !== "cancelled"), [items]);
-  const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const placedAt = new Date(order.createdAt);
+  const hasPlacedAt = !Number.isNaN(placedAt.getTime());
+  const orderDate = hasPlacedAt
+    ? placedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+  const orderTime = hasPlacedAt
+    ? placedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })
+    : "";
+
+  const summary = useMemo(() => {
+    const breakdown = getOrderBreakdown(order);
+    const isCod = String(breakdown.paymentMethod).toUpperCase() === "COD";
+    // amount_paid is what actually reached us (gateway payment or COD collection);
+    // until then show what the order is worth, not a misleading "paid".
+    const amountPaid = toNumber(order.amount_paid);
+    return {
+      isCod,
+      amount: amountPaid > 0 ? amountPaid : breakdown.payable,
+      amountLabel: amountPaid > 0 ? "Total Paid" : isCod ? "Amount Due" : "Order Total",
+    };
+  }, [order]);
 
   const openOrderDetail = () => {
     navigate(`/order-confirmation?orderId=${order.id}`);
   };
 
+  const copyOrderNumber = async (event) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(orderNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // Clipboard unavailable (insecure origin / denied) — nothing to show.
+    }
+  };
+
   return (
     <article className={`order-card ${isCancelled(order) ? "is-cancelled" : ""}`}>
       <div className="order-card-header">
-        <div className="order-meta">
-          <span className="order-number">#{orderNumber}</span>
-          <span className="order-date">{orderDate}</span>
+        <div className="order-head-main">
+          <div className="order-meta">
+            <span className="order-id-label">Order ID</span>
+            <span className="order-id-line">
+              <span className="order-number">#{orderNumber}</span>
+              <button
+                type="button"
+                className={`order-copy-btn ${copied ? "is-copied" : ""}`}
+                onClick={copyOrderNumber}
+                aria-label={`Copy order ID ${orderNumber}`}
+              >
+                <Icon icon={copied ? "lucide:check" : "lucide:copy"} />
+              </button>
+            </span>
+            {hasPlacedAt && (
+              <span className="order-date">
+                {orderDate}
+                <span className="order-date-dot">•</span>
+                Placed on {orderTime}
+              </span>
+            )}
+          </div>
+          <span className="order-status-badge" style={{ backgroundColor: statusMeta.bg, color: statusMeta.color }}>
+            <Icon icon={statusMeta.icon} />
+            {statusMeta.label}
+          </span>
+          <button className="order-detail-arrow" type="button" onClick={openOrderDetail} aria-label={`Open order ${orderNumber}`}>
+            <Icon icon="lucide:chevron-right" />
+          </button>
         </div>
-        <span className="order-status-badge" style={{ backgroundColor: statusMeta.bg, color: statusMeta.color }}>
-          <Icon icon={statusMeta.icon} />
-          {statusMeta.label}
-        </span>
-        <button className="order-detail-arrow" type="button" onClick={openOrderDetail} aria-label={`Open order ${orderNumber}`}>
-          <Icon icon="lucide:chevron-right" />
-        </button>
+
+        <div className="order-head-stats">
+          <div className="order-stat">
+            <span className="order-stat-icon"><Icon icon="lucide:package" /></span>
+            <span className="order-stat-copy">
+              <strong>{activeItems.length}</strong>
+              <small>{activeItems.length === 1 ? "Item" : "Items"}</small>
+            </span>
+          </div>
+          <div className="order-stat">
+            <span className="order-stat-icon"><Icon icon="lucide:indian-rupee" /></span>
+            <span className="order-stat-copy">
+              <strong>{formatAmount(summary.amount)}</strong>
+              <small>{summary.amountLabel}</small>
+            </span>
+          </div>
+          <div className="order-stat">
+            <span className="order-stat-icon"><Icon icon={summary.isCod ? "lucide:banknote" : "lucide:credit-card"} /></span>
+            <span className="order-stat-copy">
+              <strong>{summary.isCod ? "COD" : "Online"}</strong>
+              <small>Payment</small>
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="order-products">
-        <div className="order-products-title">
-          <span>Items</span>
-          <small>{activeItems.length} {activeItems.length === 1 ? "item" : "items"}</small>
+        <h4 className="order-products-title">Items in this order</h4>
+
+        <div className="order-items-box">
+          {items.map((item, index) => {
+            const imageUrl = getItemImage(item);
+            const colorHex = item.color_hex || null;
+            const colorLabel = getItemColorLabel(item);
+            const productName = item.product_name || `Product #${item.product_id}`;
+            const isItemCancelled = String(item.status || "").toLowerCase() === "cancelled";
+            const itemRating = Number(item.feedback?.rating || 0);
+            const itemStatusMeta = getItemStatusMeta(order, item);
+            const productUrl = item.product_slug
+              ? `/product/${item.product_slug}${item.colorId ? `?color=${item.colorId}` : ""}`
+              : null;
+
+            return (
+              <div
+                key={`${item.product_id}-${item.colorId || index}`}
+                className={`order-product-item ${isItemCancelled ? "item-cancelled" : ""}${productUrl ? " is-clickable" : ""}`}
+                onClick={productUrl ? () => navigate(productUrl) : undefined}
+                role={productUrl ? "button" : undefined}
+                tabIndex={productUrl ? 0 : undefined}
+                onKeyDown={productUrl ? (e) => e.key === "Enter" && navigate(productUrl) : undefined}
+              >
+                <div className="order-product-media">
+                  {imageUrl ? (
+                    <img src={imgUrl(imageUrl, 200)} alt={productName} loading="lazy" />
+                  ) : (
+                    <div className="order-product-placeholder">
+                      <Icon icon="lucide:image-off" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="order-product-details">
+                  <div className="order-product-headline">
+                    <h3>{productName}</h3>
+                    <span
+                      className="order-item-status"
+                      style={{ backgroundColor: itemStatusMeta.bg, color: itemStatusMeta.color }}
+                    >
+                      <Icon icon={itemStatusMeta.icon} />
+                      {itemStatusMeta.label}
+                    </span>
+                  </div>
+
+                  {(colorHex || colorLabel) && (
+                    <div className="order-product-attr">
+                      <span className="order-attr-label">Color:</span>
+                      {colorHex && <span className="order-color-swatch" style={{ backgroundColor: colorHex }} />}
+                      {colorLabel && <span className="order-attr-value">{colorLabel}</span>}
+                    </div>
+                  )}
+
+                  <div className="order-product-attr">
+                    <span className="order-attr-label">Total Qty:</span>
+                    <span className="order-attr-value">{item.quantity}</span>
+                  </div>
+                </div>
+
+                {canReviewOrderItem(order, item) && (
+                  <div className="order-feedback-row">
+                    <ReviewStars rating={itemRating} disabled />
+                    <button type="button" onClick={(e) => { e.stopPropagation(); onFeedback(order, item); }}>
+                      {item.feedback ? "Edit feedback" : "Add feedback"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        {items.map((item, index) => {
-          const imageUrl = getItemImage(item);
-          const colorHex = item.color_hex || null;
-          const productName = item.product_name || `Product #${item.product_id}`;
-          const isItemCancelled = String(item.status || "").toLowerCase() === "cancelled";
-          const itemRating = Number(item.feedback?.rating || 0);
-          const productUrl = item.product_slug
-            ? `/product/${item.product_slug}${item.colorId ? `?color=${item.colorId}` : ""}`
-            : null;
-
-          return (
-            <div
-              key={`${item.product_id}-${item.colorId || index}`}
-              className={`order-product-item ${isItemCancelled ? "item-cancelled" : ""}${productUrl ? " is-clickable" : ""}`}
-              onClick={productUrl ? () => navigate(productUrl) : undefined}
-              role={productUrl ? "button" : undefined}
-              tabIndex={productUrl ? 0 : undefined}
-              onKeyDown={productUrl ? (e) => e.key === "Enter" && navigate(productUrl) : undefined}
-            >
-              <div className="order-product-media">
-                {imageUrl ? (
-                  <img src={imgUrl(imageUrl, 200)} alt={productName} loading="lazy" />
-                ) : (
-                  <div className="order-product-placeholder">
-                    <Icon icon="lucide:image-off" />
-                  </div>
-                )}
-              </div>
-
-              <div className="order-product-details">
-                <h3>{productName}</h3>
-                <div className="order-product-subline">
-                  <span>Qty {item.quantity}</span>
-                </div>
-                {(colorHex || getItemColorLabel(item)) && (
-                  <div className="order-product-color">
-                    {colorHex && <span className="order-color-swatch" style={{ backgroundColor: colorHex }} />}
-                    {getItemColorLabel(item) && <span>{getItemColorLabel(item)}</span>}
-                  </div>
-                )}
-                {String(item?.status || "").trim().toLowerCase() !== "active" && item?.status && (
-                  <span className="order-item-status">{getItemDisplayStatus(order, item)}</span>
-                )}
-              </div>
-              {canReviewOrderItem(order, item) && (
-                <div className="order-feedback-row">
-                  <ReviewStars rating={itemRating} disabled />
-                  <button type="button" onClick={(e) => { e.stopPropagation(); onFeedback(order, item); }}>
-                    {item.feedback ? "Edit feedback" : "Add feedback"}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       {order.rto_action?.awaiting && String(order.rto_action?.payment_method || "").toUpperCase() !== "COD" && (
