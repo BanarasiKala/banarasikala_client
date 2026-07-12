@@ -2424,15 +2424,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
+  min-height: 32px;
+  padding: 0 14px;
   border: 1.5px solid rgba(128, 0, 32, 0.45);
   border-radius: 10px;
   background: transparent;
   color: #800020;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   transition: background 140ms ease, border-color 140ms ease;
 }
 
@@ -2447,7 +2447,7 @@
 }
 
 .order-action-btn svg {
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .order-action-btn svg.is-spinning {
