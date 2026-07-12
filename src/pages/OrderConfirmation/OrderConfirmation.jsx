@@ -163,6 +163,9 @@ const getCustomerOrderStatusLabel = (status) => {
   if (normalized.includes("return picked up")) return "Return picked up";
   if (normalized.includes("out for return pickup")) return "Out for return pickup";
   if (normalized.includes("return initiated") || normalized.includes("return requested")) return "Return initiated";
+  // The parcel is back with us but the replacement has NOT shipped — an exchange is only
+  // half done at this point. Mirrors RECEIVED_STATUS in ShipRocketController.
+  if (normalized.includes("exchange received")) return "Replacement being prepared";
   if (normalized.includes("exchange completed")) return "Exchange completed";
   if (normalized.includes("exchange picked up")) return "Exchange picked up";
   if (normalized.includes("exchange pickup scheduled")) return "Exchange pickup scheduled";
@@ -274,6 +277,23 @@ const getEligibleActionItems = (order, actionType) => {
 
 const getItemDisplayStatus = (order, item) => {
   const status = normalizeStatus(item?.status);
+
+  // An exchanged item parks on "Exchange Received" — the old saree is back with the seller,
+  // but the REPLACEMENT is still being prepared or is in transit. It only becomes "Exchange
+  // Completed" once the replacement is delivered. Reflect where the replacement actually is
+  // (the order status tracks its forward journey) instead of freezing on one message.
+  if (status === "exchange received") {
+    const orderStatus = normalizeStatus(order?.status);
+    if (orderStatus === "shipped" || orderStatus.includes("in transit") || orderStatus.includes("manifest")) {
+      return "Replacement shipped";
+    }
+    if (orderStatus === "out for delivery") return "Replacement out for delivery";
+    if (orderStatus === "awb assigned" || orderStatus === "pickup scheduled") {
+      return "Replacement pickup scheduled";
+    }
+    return "Replacement being prepared";
+  }
+
   if (status && status !== "active") return getCustomerOrderStatusLabel(item.status);
   // Return/exchange flows are item-scoped: an untouched (Active) item must not
   // inherit the order's reverse status — it simply stays delivered.
@@ -288,6 +308,19 @@ const getActionLabel = (action) => {
   if (type === "exchange") return "Exchange";
   if (type === "cancel") return "Cancellation";
   return "Request";
+};
+
+// An exchange ACTION is marked Completed the moment the old saree is back with the seller —
+// which is not what "Completed" means to a customer still waiting for their replacement.
+// Show it as "Item received" until the item itself reaches Exchange Completed (replacement
+// delivered).
+const getActionStatusLabel = (action, item) => {
+  const status = String(action?.status || "Initiated");
+  const isExchange = String(action?.action_type || "").toLowerCase() === "exchange";
+  if (isExchange && status === "Completed" && normalizeStatus(item?.status) !== "exchange completed") {
+    return "Item received";
+  }
+  return status;
 };
 
 const getOrderActions = (order) => ({
@@ -1657,13 +1690,13 @@ export default function OrderConfirmation() {
                         .map((action) => (
                         <div key={action.id || `${action.action_type}-${action.created_at}`}>
                           <span>{getActionLabel(action)}</span>
-                          <strong>{action.status || "Initiated"}</strong>
+                          <strong>{getActionStatusLabel(action, item)}</strong>
                           <small>
                             Qty {action.quantity || 1}
                             {/* The saree(s) swapped in are shown properly below (exchange_swap),
                                 with images and links — not squeezed into this status line. */}
                             {action.completed_at
-                              ? ` · Completed ${formatDate(action.completed_at)}`
+                              ? ` · ${getActionStatusLabel(action, item) === "Item received" ? "Received" : "Completed"} ${formatDate(action.completed_at)}`
                               : action.created_at ? ` · ${formatDate(action.created_at)}` : ""}
                           </small>
                         </div>
@@ -1678,7 +1711,11 @@ export default function OrderConfirmation() {
                     <div className="exchange-swap-card">
                       <span className="exchange-swap-title">
                         <Icon icon="lucide:repeat" />
-                        {item.exchange_swap.status === "Completed"
+                        {/* Keyed off the ITEM, not the action: the action is "Completed" as soon
+                            as the old saree is back with the seller, which is well before the
+                            replacement reaches the customer. Only the item reaching
+                            "Exchange Completed" (replacement delivered) is past tense. */}
+                        {normalizeStatus(item.status) === "exchange completed"
                           ? "Exchanged for"
                           : "Being exchanged for"}
                       </span>

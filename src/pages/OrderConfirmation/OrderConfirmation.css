@@ -1030,7 +1030,10 @@
    (the order line is the purchase record and is never rewritten), so this is the only
    place the customer sees what is actually coming to them. */
 .exchange-swap-card {
-  flex-basis: 100%;
+  /* .confirmation-item is a 3-column grid (82px | 1fr | auto). Without an explicit span
+     this card lands in the 82px media column and pushes the price into the wrong cell,
+     breaking the whole row. Every other full-width child here does the same thing. */
+  grid-column: 1 / -1;
   width: 100%;
   min-width: 0;
   margin-top: 10px;
@@ -1093,12 +1096,27 @@
   min-width: 0;
 }
 
+/* `.confirmation-item strong` (the price) sets colour + white-space:nowrap on ALL nested
+   strongs, including these product names. Restate both here so a long saree name truncates
+   cleanly inside the card instead of inheriting the price's styling and overflowing. */
 .exchange-swap-copy strong {
+  display: block;
   font-size: 13px;
   font-weight: 700;
   color: #5d170d;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* The name is wrapped in a <Link>; text-overflow needs a block box with a real width to
+   truncate against, or the anchor just runs past the card. */
+.exchange-swap-copy .confirmation-product-link {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .exchange-swap-copy small {

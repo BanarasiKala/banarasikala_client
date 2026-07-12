@@ -41,6 +41,9 @@ const STATUS_CONFIG = {
   "Exchange Initiated": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:repeat-2", label: "Exchange initiated" },
   "Exchange Pickup Scheduled": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:calendar-clock", label: "Exchange pickup scheduled" },
   "Exchange Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Exchange picked up" },
+  // The old saree is back with the seller; the REPLACEMENT has not been delivered (often not
+  // even shipped). Deliberately not green/"completed" — the customer is still waiting.
+  "Exchange Received": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:package-open", label: "Replacement being prepared" },
   "Exchange Completed": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Exchange completed" },
 };
 
@@ -75,6 +78,9 @@ const getStatus = (status) => {
   if (normalized.includes("exchange initiated")) return STATUS_CONFIG["Exchange Initiated"];
   if (normalized.includes("exchange pickup scheduled")) return STATUS_CONFIG["Exchange Pickup Scheduled"];
   if (normalized.includes("exchange picked up")) return STATUS_CONFIG["Exchange Picked Up"];
+  // Must be checked BEFORE "exchange completed" — both are substring matches, and an
+  // exchange sits in Received (replacement pending) far longer than it sits in Completed.
+  if (normalized.includes("exchange received")) return STATUS_CONFIG["Exchange Received"];
   if (normalized.includes("exchange completed") || normalized.includes("exchange delivered")) return STATUS_CONFIG["Exchange Completed"];
   
   return STATUS_CONFIG[status] || STATUS_CONFIG.Pending;
