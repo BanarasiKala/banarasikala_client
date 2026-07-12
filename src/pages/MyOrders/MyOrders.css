@@ -2035,8 +2035,8 @@
 .order-number {
   overflow: hidden;
   color: #3b1710;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2147,8 +2147,8 @@
 .order-stat-copy strong {
   overflow: hidden;
   color: #3b1710;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2166,7 +2166,7 @@
   }
 
   .order-number {
-    font-size: 15px;
+    font-size: 12px;
   }
 
   .order-card-header .order-status-badge {
@@ -2191,7 +2191,7 @@
   }
 
   .order-stat-copy strong {
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .order-stat-copy small {
@@ -2244,19 +2244,20 @@
 
 .order-product-headline {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
 }
 
 .order-product-details h3 {
+  width: 100%;
   min-width: 0;
   color: #3b1710;
   font-family: "Poppins", sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .order-item-status {
@@ -2264,9 +2265,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  max-width: 112px;
+  width: fit-content;
+  max-width: 100%;
   min-height: 0;
-  margin-top: 2px;
+  margin-top: 0;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 10px;
@@ -2291,15 +2293,15 @@
 
 .order-attr-label {
   color: rgba(50, 21, 15, 0.5);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .order-attr-value {
   overflow: hidden;
   color: #3b1710;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2330,19 +2332,9 @@
     height: 94px;
   }
 
-  .order-product-details h3 {
-    font-size: 14px;
-  }
-
   .order-item-status {
-    max-width: 92px;
     padding: 4px 8px;
     font-size: 9px;
-  }
-
-  .order-attr-label,
-  .order-attr-value {
-    font-size: 12px;
   }
 }
 
@@ -2367,10 +2359,10 @@
 .order-help-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
   color: #7b001b;
-  font-size: 30px;
+  font-size: 20px;
 }
 
 .order-help-copy {
@@ -2382,8 +2374,8 @@
 
 .order-help-copy strong {
   color: #3b1710;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .order-help-copy span {
@@ -2404,15 +2396,15 @@
 
 .order-help-btn {
   flex: 0 0 auto;
-  min-height: 38px;
-  padding: 0 18px;
+  min-height: 32px;
+  padding: 0 14px;
   border: 1.5px solid rgba(128, 0, 32, 0.45);
   border-radius: 10px;
   background: transparent;
   color: #800020;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   transition: background 140ms ease, border-color 140ms ease;
 }
 
