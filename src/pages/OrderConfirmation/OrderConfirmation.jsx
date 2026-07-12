@@ -351,28 +351,39 @@ const buildTimeline = (order, tracking) => {
   ];
 };
 
-// Status-driven steps for the Return / Exchange panel — shown from the moment
-// a request exists until live pickup scans take over.
-const buildReverseStatusTimeline = (order) => {
-  const status = String(order?.status || "").toLowerCase();
+// Steps for the Return / Exchange panel, driven by the REVERSE shipment's OWN lifecycle
+// (shipment_status: CREATED -> PICKUP_SCHEDULED -> PICKED_UP -> IN_TRANSIT -> RECEIVED),
+// which the courier webhook maintains.
+//
+// This used to key off order.status instead, which breaks in two ways: order.status is a
+// single field describing the whole ORDER, so it moves on the moment anything else happens
+// — most sharply when an exchange replacement ships and it becomes "Processing". At that
+// point it no longer contains "return"/"exchange", this returned [], and a pickup that had
+// already been received back fell through to the hardcoded "your pickup is being arranged"
+// copy. The shipment's own status never gets clobbered that way.
+const buildReverseStatusTimeline = (shipment) => {
+  const status = String(shipment?.shipment_status || "").toUpperCase();
+  if (!status) return [];
 
-  const returnSteps = [
-    { title: "Return initiated", detail: "Return request created", icon: "lucide:rotate-ccw", matches: ["return requested", "return initiated"] },
-    { title: "Out for return pickup", detail: "Courier will collect the parcel", icon: "lucide:navigation", matches: ["out for return pickup", "return pickup scheduled"] },
-    { title: "Return picked up", detail: "Parcel collected by courier", icon: "lucide:package-check", matches: ["return picked up", "return shipped"] },
-    { title: "Return completed", detail: order?.refund_note || "Return completed", icon: "lucide:badge-check", matches: ["return completed", "return delivered"] },
+  const isExchange = shipment?.type === "exchange";
+  const noun = isExchange ? "Exchange" : "Return";
+
+  const steps = [
+    { title: `${noun} initiated`, detail: `${noun} request created`, icon: isExchange ? "lucide:repeat-2" : "lucide:rotate-ccw", matches: ["CREATED"] },
+    { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["PICKUP_SCHEDULED"] },
+    { title: "Picked up", detail: shipment?.picked_up_at ? formatDate(shipment.picked_up_at) : "Parcel collected by courier", icon: "lucide:package-check", matches: ["PICKED_UP"] },
+    { title: "In transit to seller", detail: "Parcel is on its way back", icon: "lucide:truck", matches: ["IN_TRANSIT"] },
+    { title: "Received by seller", detail: shipment?.received_at ? formatDate(shipment.received_at) : `${noun} item received back`, icon: "lucide:badge-check", matches: ["RECEIVED"] },
   ];
 
-  const exchangeSteps = [
-    { title: "Exchange initiated", detail: "Exchange request created", icon: "lucide:repeat-2", matches: ["exchange requested", "exchange initiated"] },
-    { title: "Exchange pickup scheduled", detail: "Courier pickup is being arranged", icon: "lucide:calendar-clock", matches: ["exchange pickup scheduled", "out for exchange pickup"] },
-    { title: "Exchange picked up", detail: "Exchange parcel collected", icon: "lucide:package-check", matches: ["exchange picked up", "exchange shipped"] },
-    { title: "Exchange completed", detail: order?.refund_note || "Exchange completed", icon: "lucide:badge-check", matches: ["exchange completed", "exchange delivered"] },
-  ];
+  if (status === "CANCELLED") {
+    return [
+      { ...steps[0], state: "done" },
+      { title: "Pickup cancelled", detail: `This ${noun.toLowerCase()} pickup was cancelled`, icon: "lucide:x-circle", state: "current" },
+    ];
+  }
 
-  if (status.includes("exchange")) return buildSteps(status, exchangeSteps);
-  if (status.includes("return")) return buildSteps(status, returnSteps);
-  return [];
+  return buildSteps(status, steps);
 };
 
 // Locate the "current" step: the explicitly-current one, else the last done.
@@ -533,6 +544,22 @@ const buildOrderTimeline = (order) => {
       { title: "Remaining items in transit", detail: "The rest of your order will be shipped as scheduled", icon: "lucide:truck", state: "pending" },
     ];
   }
+
+  // order.delivered_at survives from the FIRST delivery even after a second forward
+  // shipment starts (an exchange replacement, or a paid RTO redispatch) cycles the
+  // order back through early statuses (Processing, AWB Assigned, Shipped…). Left as
+  // plain forwardSteps, step 1 would replay "Order placed" with the original order's
+  // date — reading as if the whole order restarted, instead of a new shipment going
+  // out after the first one already finished.
+  if (order?.delivered_at && status !== "delivered") {
+    const redispatchSteps = forwardSteps.map((step, index) => (
+      index === 0
+        ? { ...step, title: "Replacement dispatched", detail: "A new shipment was arranged after your return/exchange", icon: "lucide:repeat-2" }
+        : step
+    ));
+    return buildSteps(status, redispatchSteps);
+  }
+
   return buildSteps(status, forwardSteps);
 };
 
@@ -711,9 +738,11 @@ export default function OrderConfirmation() {
   const trackUrl = tracking?.tracking?.tracking_data?.track_url
     || (order?.shiprocket_awb ? `https://shiprocket.co/tracking/${order.shiprocket_awb}` : "");
   const reverseShipments = Array.isArray(tracking?.reverse) ? tracking.reverse : [];
-  // Status-driven return/exchange steps for the panel below the shipment
-  // timeline (used until live pickup scans arrive).
-  const reverseStatusSteps = useMemo(() => buildReverseStatusTimeline(order), [order]);
+  // A return/exchange was requested but no reverse shipment is booked with the courier yet
+  // (trackOrder only returns pickups that have a ShipRocket id/AWB). order.status is the
+  // right signal HERE — and only here — because at this point nothing else has happened to
+  // the order that could have moved it off the "…Initiated" state.
+  const hasPendingReverseRequest = /return|exchange/i.test(String(order?.status || ""));
   // Only actual refunds belong in the ledger below. A prepaid RTO no longer creates a
   // placeholder row (it's written only when a refund is really requested), so this is
   // now a safety net for rows that represent "no money moved": a COD RTO where nothing
@@ -1482,7 +1511,7 @@ export default function OrderConfirmation() {
             </section>
           )}
 
-          {(reverseShipments.length > 0 || reverseStatusSteps.length > 0) && (
+          {(reverseShipments.length > 0 || hasPendingReverseRequest) && (
             <section className="order-panel">
               <div className="order-panel-head">
                 <h2>Return / Exchange tracking</h2>
@@ -1494,7 +1523,10 @@ export default function OrderConfirmation() {
               </div>
               {reverseShipments.length > 0 ? (
                 reverseShipments.map((shipment, shipmentIndex) => {
-                  const steps = buildReverseActivities(shipment);
+                  // Prefer live courier scans; fall back to the shipment's own lifecycle
+                  // (which survives order.status moving on after a replacement ships).
+                  const liveSteps = buildReverseActivities(shipment);
+                  const steps = liveSteps.length > 0 ? liveSteps : buildReverseStatusTimeline(shipment);
                   const label = shipment.type === "exchange" ? "Exchange pickup" : "Return pickup";
                   return (
                     <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
@@ -1504,8 +1536,6 @@ export default function OrderConfirmation() {
                       </div>
                       {steps.length > 0 ? (
                         <ReverseStepsTimeline steps={steps} />
-                      ) : reverseStatusSteps.length > 0 ? (
-                        <ReverseStepsTimeline steps={reverseStatusSteps} />
                       ) : (
                         <div className="order-track-pending">
                           <Icon icon="lucide:package-search" />
@@ -1520,8 +1550,13 @@ export default function OrderConfirmation() {
                   );
                 })
               ) : (
+                // A request exists but no reverse shipment has been booked with the courier
+                // yet, so there is nothing to track — say so rather than showing a timeline.
                 <div className="reverse-shipment">
-                  <ReverseStepsTimeline steps={reverseStatusSteps} />
+                  <div className="order-track-pending">
+                    <Icon icon="lucide:package-search" />
+                    <span>Your pickup is being arranged. Scan updates will appear here once the courier collects the parcel.</span>
+                  </div>
                 </div>
               )}
             </section>
