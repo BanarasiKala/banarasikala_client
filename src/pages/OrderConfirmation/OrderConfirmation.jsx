@@ -119,6 +119,13 @@ const canCancelOrder = (order) => {
   const rawDate = order?.cancel_window_started_at || order?.createdAt || order?.created_at;
   const status = String(order?.status || "").toLowerCase();
   if (!rawDate || !CANCELLABLE_STATUSES.includes(status)) return false;
+  // Once a return or exchange is raised, cancellation is closed — cancelling refunds the
+  // whole order and restocks every line, which would double-count against a reverse flow
+  // that is already settling that money and moving those goods. This matters most for an
+  // exchange REPLACEMENT: shipping it puts the order back into 'Processing' (a cancellable
+  // status), and without this the customer could cancel it and be refunded for goods they
+  // kept. Mirrors the guard in OrderController.cancelOrder.
+  if (hasAnyReverseAction(order)) return false;
   const windowStart = new Date(rawDate).getTime();
   return Number.isFinite(windowStart) && Date.now() - windowStart <= 24 * 60 * 60 * 1000;
 };
@@ -225,6 +232,14 @@ const hasOrderExchangeHistory = (order) => Boolean(order?.exchange_requested_at)
   || (order?.OrderItems || []).some((item) => hasUsableAction(item, "exchange"));
 
 const hasOrderReturnHistory = (order) => (order?.OrderItems || []).some((item) => hasUsableAction(item, "return"));
+
+// Any return or exchange raised on this order that hasn't been rejected. Used to close
+// cancellation — see canCancelOrder. Mirrors the OrderItemAction count in
+// OrderController.cancelOrder.
+const hasAnyReverseAction = (order) => Boolean(order?.exchange_requested_at)
+  || (order?.OrderItems || []).some((item) => (
+    hasUsableAction(item, "return") || hasUsableAction(item, "exchange")
+  ));
 
 // Keep in sync with OrderReturnService.RETURN_WINDOW_DAYS on the backend.
 const RETURN_WINDOW_DAYS = 7;
@@ -908,37 +923,10 @@ export default function OrderConfirmation() {
     });
   }, [cancelModal.isOpen, cancelModal.type, order, exchangeVariants]);
 
-  // Default each checked exchange line to the like-for-like swap once its options load:
-  // the same product in its current colour if still in stock, else that product's first
-  // in-stock colour. Never auto-selects a DIFFERENT product — swapping the saree itself is
-  // always a deliberate choice by the customer.
-  useEffect(() => {
-    if (!cancelModal.isOpen || cancelModal.type !== "exchange") return;
-    setCancelModal((current) => {
-      let changed = false;
-      const nextSelected = { ...current.selected };
-      Object.entries(nextSelected).forEach(([itemId, val]) => {
-        if (!val.checked || val.exchangeProductId) return;
-        const item = (order?.OrderItems || []).find((it) => String(it.id) === String(itemId));
-        const variant = item ? exchangeVariants[itemId] : null;
-        if (!variant || variant.loading || variant.error) return;
-
-        const currentOption = (variant.options || []).find((o) => o.is_current_product);
-        if (!currentOption) return;
-        const colors = currentOption.colors || [];
-        const currentInStock = colors.find((c) => String(c.color_id) === String(item.colorId));
-        const def = currentInStock?.color_id ?? colors[0]?.color_id ?? null;
-
-        nextSelected[itemId] = {
-          ...val,
-          exchangeProductId: currentOption.product_id,
-          exchangeColorId: val.exchangeColorId ?? def,
-        };
-        changed = true;
-      });
-      return changed ? { ...current, selected: nextSelected } : current;
-    });
-  }, [cancelModal.isOpen, cancelModal.type, cancelModal.selected, exchangeVariants, order]);
+  // NOTE: exchange targets are NOT auto-selected. The customer sets the quantity first and
+  // then allocates every unit of it explicitly — which saree, which colour, how many. There
+  // is no sensible default once the quantity can be split across several products, and a
+  // silent default would ship something they never chose.
 
   const openActionModal = (type = "cancel") => {
     const config = getActionConfig(type);
@@ -1038,41 +1026,76 @@ export default function OrderConfirmation() {
     .map(([id, value]) => ({
       orderItemId: Number(id),
       quantity: value.quantity || null,
-      // Exchange only: the saree the customer wants instead — a different product at the
-      // same price, and/or a different colour of it.
-      ...(cancelModal.type === "exchange" && value.exchangeProductId
-        ? { exchangeProductId: value.exchangeProductId }
-        : {}),
-      ...(cancelModal.type === "exchange" && value.exchangeColorId
-        ? { exchangeColorId: value.exchangeColorId }
+      // Exchange only: the sarees the customer wants instead, as a LIST. They can split the
+      // exchanged quantity across several products (2 × A + 1 × B) — the quantities must
+      // sum to the quantity being exchanged, which the backend re-checks.
+      ...(cancelModal.type === "exchange" && value.exchangeTargets?.length
+        ? {
+          exchangeTargets: value.exchangeTargets.map((t) => ({
+            productId: t.productId,
+            colorId: t.colorId,
+            quantity: t.quantity,
+          })),
+        }
         : {}),
     })), [cancelModal.selected, cancelModal.type]);
 
-  const setExchangeColor = (itemId, colorId) => {
-    setCancelModal((current) => ({
-      ...current,
-      selected: {
-        ...current.selected,
-        [itemId]: { ...(current.selected?.[itemId] || {}), exchangeColorId: colorId },
-      },
-    }));
+  // How many units of this line are still unallocated — the customer must place every one.
+  const exchangeAllocatedQty = (value) => (value?.exchangeTargets || [])
+    .reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+
+  // Add one unit of {product, colour} to the line's target list, capped at the quantity
+  // being exchanged. Re-picking the same product+colour just increments it.
+  const addExchangeTarget = (itemId, option, color) => {
+    setCancelModal((current) => {
+      const value = current.selected?.[itemId] || {};
+      const wanted = Number(value.quantity || 0);
+      const targets = [...(value.exchangeTargets || [])];
+      const allocated = targets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+      if (allocated >= wanted) return current; // fully allocated — ignore the click
+
+      const colorId = color?.color_id ?? null;
+      const existing = targets.find(
+        (t) => Number(t.productId) === Number(option.product_id)
+          && String(t.colorId ?? "") === String(colorId ?? ""),
+      );
+      // Never allocate more of a colour than is actually in stock.
+      const stock = Number(color?.stock ?? Infinity);
+      if (existing) {
+        if (existing.quantity >= stock) return current;
+        existing.quantity += 1;
+      } else {
+        if (stock < 1) return current;
+        targets.push({
+          productId: option.product_id,
+          productName: option.name,
+          colorId,
+          colorName: color?.name ?? null,
+          image: Array.isArray(option.images) ? (option.images[0]?.url || option.images[0]) : null,
+          quantity: 1,
+        });
+      }
+      return {
+        ...current,
+        selected: { ...current.selected, [itemId]: { ...value, exchangeTargets: targets } },
+      };
+    });
   };
 
-  // Picking a different product resets the colour — the old colour belongs to the old
-  // saree and almost certainly isn't a variant of the new one. Default straight to the
-  // new product's first in-stock colour so the request is always submittable.
-  const setExchangeProduct = (itemId, option) => {
-    setCancelModal((current) => ({
-      ...current,
-      selected: {
-        ...current.selected,
-        [itemId]: {
-          ...(current.selected?.[itemId] || {}),
-          exchangeProductId: option.product_id,
-          exchangeColorId: option.colors?.[0]?.color_id ?? null,
-        },
-      },
-    }));
+  // Remove one unit; drop the line entirely when it hits zero.
+  const removeExchangeTarget = (itemId, index) => {
+    setCancelModal((current) => {
+      const value = current.selected?.[itemId] || {};
+      const targets = [...(value.exchangeTargets || [])];
+      const target = targets[index];
+      if (!target) return current;
+      if (target.quantity > 1) targets[index] = { ...target, quantity: target.quantity - 1 };
+      else targets.splice(index, 1);
+      return {
+        ...current,
+        selected: { ...current.selected, [itemId]: { ...value, exchangeTargets: targets } },
+      };
+    });
   };
 
   useEffect(() => {
@@ -1155,6 +1178,26 @@ export default function OrderConfirmation() {
           );
           if (stillLoading) {
             showNotification("Please wait for the exchange options to load.", "warning");
+            setModalSubmitLoading(false);
+            return;
+          }
+          // Every unit going back must have a saree chosen to replace it. The backend
+          // re-checks this, but failing here keeps the customer in the picker with their
+          // choices intact rather than bouncing them off a server error.
+          const unallocated = selectedActionItems.find(({ orderItemId, quantity, exchangeTargets }) => {
+            const item = (order?.OrderItems || []).find((it) => Number(it.id) === Number(orderItemId));
+            const wanted = Number(quantity || getActionableQty(item));
+            const chosen = (exchangeTargets || []).reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+            return chosen !== wanted;
+          });
+          if (unallocated) {
+            const item = (order?.OrderItems || []).find(
+              (it) => Number(it.id) === Number(unallocated.orderItemId),
+            );
+            showNotification(
+              `Please choose exactly ${unallocated.quantity || getActionableQty(item)} replacement saree(s) for ${item?.product_name || "this product"}.`,
+              "warning",
+            );
             setModalSubmitLoading(false);
             return;
           }
@@ -1617,9 +1660,8 @@ export default function OrderConfirmation() {
                           <strong>{action.status || "Initiated"}</strong>
                           <small>
                             Qty {action.quantity || 1}
-                            {action.meta?.exchange_color_name
-                              ? ` · New colour: ${action.meta.exchange_color_name}`
-                              : ""}
+                            {/* The saree(s) swapped in are shown properly below (exchange_swap),
+                                with images and links — not squeezed into this status line. */}
                             {action.completed_at
                               ? ` · Completed ${formatDate(action.completed_at)}`
                               : action.created_at ? ` · ${formatDate(action.created_at)}` : ""}
@@ -1628,6 +1670,57 @@ export default function OrderConfirmation() {
                       ))}
                     </div>
                   )}
+
+                  {/* What this line is being exchanged FOR. The line above still names the saree
+                      that went back — it is the purchase record and is never rewritten — so
+                      without this the customer would see no sign of what is actually coming. */}
+                  {item.exchange_swap?.to?.length > 0 && (
+                    <div className="exchange-swap-card">
+                      <span className="exchange-swap-title">
+                        <Icon icon="lucide:repeat" />
+                        {item.exchange_swap.status === "Completed"
+                          ? "Exchanged for"
+                          : "Being exchanged for"}
+                      </span>
+                      <ul className="exchange-swap-list">
+                        {item.exchange_swap.to.map((target, i) => {
+                          const targetUrl = target.product_slug ? `/product/${target.product_slug}` : null;
+                          const media = target.image_url ? (
+                            <img src={imgUrl(target.image_url, 120)} alt={target.product_name} />
+                          ) : (
+                            <Icon icon="lucide:image-off" />
+                          );
+                          return (
+                            <li key={`${target.product_id}-${target.color_name || i}`}>
+                              {targetUrl ? (
+                                <Link to={targetUrl} className="exchange-swap-media" aria-label={`Open ${target.product_name}`}>
+                                  {media}
+                                </Link>
+                              ) : (
+                                <span className="exchange-swap-media">{media}</span>
+                              )}
+                              <span className="exchange-swap-copy">
+                                {targetUrl ? (
+                                  <Link to={targetUrl} className="confirmation-product-link">
+                                    <strong>{target.product_name}</strong>
+                                  </Link>
+                                ) : (
+                                  <strong>{target.product_name}</strong>
+                                )}
+                                <small>
+                                  {target.color_name || "—"} · Qty {target.quantity}
+                                </small>
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <small className="exchange-swap-foot">
+                        Same price — nothing extra to pay, nothing to refund.
+                      </small>
+                    </div>
+                  )}
+
                   <strong>{formatPrice(toNumber(item.price) * Math.max(0, toNumber(item.quantity) - toNumber(item.cancelled_quantity)))}</strong>
                 </article>
                 );
@@ -2131,13 +2224,30 @@ export default function OrderConfirmation() {
                     const maxQty = getActionableQty(item);
                     const setQuantity = (nextQty) => {
                       const quantity = Math.min(maxQty, Math.max(1, nextQty));
-                      setCancelModal((current) => ({
-                        ...current,
-                        selected: {
-                          ...current.selected,
-                          [item.id]: { ...sel, quantity },
-                        },
-                      }));
+                      setCancelModal((current) => {
+                        const value = current.selected?.[item.id] || sel;
+                        // Lowering the quantity can leave more allocated than is being
+                        // exchanged. Trim from the end so the customer never submits a
+                        // request for more sarees than they are sending back.
+                        let targets = [...(value.exchangeTargets || [])];
+                        let allocated = targets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+                        while (allocated > quantity && targets.length) {
+                          const last = targets[targets.length - 1];
+                          if (last.quantity > 1) {
+                            targets[targets.length - 1] = { ...last, quantity: last.quantity - 1 };
+                          } else {
+                            targets = targets.slice(0, -1);
+                          }
+                          allocated -= 1;
+                        }
+                        return {
+                          ...current,
+                          selected: {
+                            ...current.selected,
+                            [item.id]: { ...value, quantity, exchangeTargets: targets },
+                          },
+                        };
+                      });
                     };
                     return (
                       <div className={`action-item-row${sel.checked ? " is-selected" : ""}`} key={item.id}>
@@ -2177,68 +2287,97 @@ export default function OrderConfirmation() {
                           if (variant.error) {
                             return <div className="exchange-variant-note is-warn">Couldn&rsquo;t load exchange options. Please try again.</div>;
                           }
-                          const options = variant.options || [];
-                          const swappable = options.filter((o) => (o.colors || []).length > 0);
-                          if (!swappable.length) {
+                          const options = (variant.options || []).filter((o) => (o.colors || []).length > 0);
+                          if (!options.length) {
                             return <div className="exchange-variant-note is-warn">Nothing is in stock to exchange this for right now.</div>;
                           }
 
-                          const chosenProductId = sel.exchangeProductId ?? item.product_id;
-                          const chosenOption = swappable.find((o) => String(o.product_id) === String(chosenProductId))
-                            || swappable[0];
-                          const colors = chosenOption.colors || [];
-                          const chosenColorId = sel.exchangeColorId ?? colors[0]?.color_id ?? null;
+                          const wanted = Number(sel.quantity || maxQty);
+                          const targets = sel.exchangeTargets || [];
+                          const allocated = exchangeAllocatedQty(sel);
+                          const remaining = Math.max(0, wanted - allocated);
+                          const isComplete = remaining === 0;
 
                           return (
                             <div className="exchange-variant-picker">
                               <span className="exchange-variant-label">
-                                Exchange for {formatPrice(variant.paidPrice)}
+                                Choose {wanted} saree{wanted > 1 ? "s" : ""} at {formatPrice(variant.paidPrice)}
                                 <small className="exchange-variant-hint">
                                   {" "}— any saree at the same price. No extra charge, no refund.
                                 </small>
                               </span>
 
-                              <div className="exchange-product-options">
-                                {swappable.map((option) => {
-                                  const isChosen = String(option.product_id) === String(chosenOption.product_id);
-                                  const thumb = Array.isArray(option.images)
-                                    ? (option.images[0]?.url || option.images[0])
-                                    : null;
-                                  return (
-                                    <button
-                                      key={option.product_id}
-                                      type="button"
-                                      className={`exchange-product-option${isChosen ? " is-chosen" : ""}`}
-                                      onClick={() => setExchangeProduct(item.id, option)}
-                                      title={option.name}
-                                    >
-                                      {thumb && <img src={thumb} alt="" className="exchange-product-thumb" />}
-                                      <span className="exchange-product-name">
-                                        {option.name}
-                                        {option.is_current_product ? " (current)" : ""}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
+                              {/* Running tally. The request can't be submitted until every unit
+                                  being sent back has a saree chosen to replace it. */}
+                              <div className={`exchange-allocation${isComplete ? " is-complete" : ""}`}>
+                                {isComplete
+                                  ? `All ${wanted} chosen`
+                                  : `${allocated} of ${wanted} chosen — pick ${remaining} more`}
                               </div>
 
-                              {colors.length > 0 && (
-                                <div className="exchange-variant-swatches">
-                                  {colors.map((c) => {
-                                    const isCurrent = chosenOption.is_current_product
-                                      && String(c.color_id) === String(item.colorId);
-                                    const isChosen = String(chosenColorId) === String(c.color_id);
-                                    return (
+                              {targets.length > 0 && (
+                                <ul className="exchange-chosen-list">
+                                  {targets.map((t, index) => (
+                                    <li key={`${t.productId}-${t.colorId ?? "x"}`} className="exchange-chosen-row">
+                                      {t.image && <img src={t.image} alt="" className="exchange-chosen-thumb" />}
+                                      <span className="exchange-chosen-info">
+                                        <strong>{t.productName}</strong>
+                                        <small>{t.colorName || "—"} · {t.quantity} pc</small>
+                                      </span>
                                       <button
-                                        key={c.color_id}
                                         type="button"
-                                        className={`exchange-variant-swatch${isChosen ? " is-chosen" : ""}`}
-                                        onClick={() => setExchangeColor(item.id, c.color_id)}
-                                        title={c.name}
+                                        className="exchange-chosen-remove"
+                                        onClick={() => removeExchangeTarget(item.id, index)}
+                                        aria-label={`Remove one ${t.productName}`}
                                       >
-                                        <span className="exchange-variant-dot" style={{ backgroundColor: c.hex_code || "#ccc" }} />
-                                        <small>{c.name}{isCurrent ? " (current)" : ""}</small>
+                                        <Icon icon="lucide:minus" />
                                       </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+
+                              {/* Cards stay visible while there is anything left to allocate, and
+                                  go quiet once the customer has chosen enough. */}
+                              {!isComplete && (
+                                <div className="exchange-product-options">
+                                  {options.map((option) => {
+                                    const thumb = Array.isArray(option.images)
+                                      ? (option.images[0]?.url || option.images[0])
+                                      : null;
+                                    return (
+                                      <div key={option.product_id} className="exchange-product-option">
+                                        {thumb && <img src={thumb} alt="" className="exchange-product-thumb" />}
+                                        <span className="exchange-product-name">
+                                          {option.name}
+                                          {option.is_current_product ? " (current)" : ""}
+                                        </span>
+                                        <div className="exchange-product-colors">
+                                          {(option.colors || []).map((c) => {
+                                            const taken = targets.find(
+                                              (t) => Number(t.productId) === Number(option.product_id)
+                                                && String(t.colorId ?? "") === String(c.color_id ?? ""),
+                                            )?.quantity || 0;
+                                            const soldOut = taken >= Number(c.stock || 0);
+                                            return (
+                                              <button
+                                                key={c.color_id}
+                                                type="button"
+                                                className={`exchange-color-chip${taken ? " is-chosen" : ""}`}
+                                                disabled={soldOut}
+                                                onClick={() => addExchangeTarget(item.id, option, c)}
+                                                title={soldOut ? `${c.name} — no more available` : `Add ${c.name}`}
+                                              >
+                                                <span
+                                                  className="exchange-variant-dot"
+                                                  style={{ backgroundColor: c.hex_code || "#ccc" }}
+                                                />
+                                                <small>{c.name}{taken ? ` ×${taken}` : ""}</small>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
                                     );
                                   })}
                                 </div>

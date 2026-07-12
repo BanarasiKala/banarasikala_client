@@ -1025,6 +1025,94 @@
   min-width: 0; /* see .action-item-picker */
 }
 
+/* ── The saree(s) an exchanged line is being swapped FOR ──
+   Shown on the order item itself. The line above still names the saree that went back
+   (the order line is the purchase record and is never rewritten), so this is the only
+   place the customer sees what is actually coming to them. */
+.exchange-swap-card {
+  flex-basis: 100%;
+  width: 100%;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(123, 0, 27, 0.28);
+  border-radius: 12px;
+  background: rgba(123, 0, 27, 0.035);
+}
+
+.exchange-swap-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #7b001b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.exchange-swap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exchange-swap-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.exchange-swap-media {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(123, 0, 27, 0.12);
+  color: rgba(93, 23, 13, 0.4);
+}
+
+.exchange-swap-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.exchange-swap-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.exchange-swap-copy strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5d170d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exchange-swap-copy small {
+  font-size: 11px;
+  color: rgba(93, 23, 13, 0.7);
+}
+
+.exchange-swap-foot {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(93, 23, 13, 0.6);
+}
+
 /* ── Exchange: pick any saree at exactly the price paid, then its colour ── */
 .exchange-variant-picker {
   flex-basis: 100%;
@@ -1086,31 +1174,143 @@
 .exchange-product-option {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
   /* flex-shrink:0 is what keeps the cards their true size so the row actually overflows
      (and therefore scrolls) instead of squashing every card to fit. */
-  flex: 0 0 96px;
-  width: 96px;
+  flex: 0 0 132px;
+  width: 132px;
   scroll-snap-align: start;
   padding: 8px 6px;
   border: 1.5px solid rgba(123, 0, 27, 0.18);
   border-radius: 10px;
   background: #fff;
   color: #5d170d;
+}
+
+/* ── Allocation tally: how many of the exchanged units still need a saree ── */
+.exchange-allocation {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(214, 158, 46, 0.14);
+  color: #7a5a12;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.exchange-allocation.is-complete {
+  background: rgba(34, 139, 84, 0.12);
+  color: #1c6b41;
+}
+
+/* ── What they've chosen so far ── */
+.exchange-chosen-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exchange-chosen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgba(123, 0, 27, 0.14);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.exchange-chosen-thumb {
+  width: 32px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.exchange-chosen-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.exchange-chosen-info strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d170d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exchange-chosen-info small {
+  font-size: 11px;
+  color: rgba(93, 23, 13, 0.7);
+}
+
+.exchange-chosen-remove {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(123, 0, 27, 0.25);
+  border-radius: 50%;
+  background: #fff;
+  color: #7b001b;
+  cursor: pointer;
+}
+
+.exchange-chosen-remove:hover {
+  background: rgba(123, 0, 27, 0.07);
+}
+
+/* ── Colour chips inside each product card: one click = one unit ── */
+.exchange-product-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exchange-color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid rgba(123, 0, 27, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: #5d170d;
   font: inherit;
   cursor: pointer;
-  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  transition: border-color 150ms, background 150ms;
 }
 
-.exchange-product-option:hover {
-  border-color: rgba(123, 0, 27, 0.45);
+.exchange-color-chip small {
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.exchange-product-option.is-chosen {
+.exchange-color-chip:hover:not(:disabled) {
+  border-color: rgba(123, 0, 27, 0.5);
+}
+
+.exchange-color-chip.is-chosen {
   border-color: #7b001b;
-  background: rgba(123, 0, 27, 0.05);
-  box-shadow: 0 0 0 1px #7b001b inset;
+  background: rgba(123, 0, 27, 0.07);
+  font-weight: 700;
+}
+
+.exchange-color-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .exchange-product-thumb {
