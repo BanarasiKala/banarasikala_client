@@ -763,7 +763,7 @@ const EXCHANGE_REASONS = [
 const getActionConfig = (type) => {
   if (type === "return") return { title: "Request Return", label: "Return reason", reasons: RETURN_REASONS, button: "Submit Return Request", tone: "primary" };
   if (type === "exchange") return { title: "Request Exchange", label: "Exchange reason", reasons: EXCHANGE_REASONS, button: "Submit Exchange Request", tone: "primary" };
-  return { title: "Cancel Order", label: "Reason for cancellation", reasons: CANCEL_REASONS, button: "Cancel Entire Order", tone: "danger" };
+  return { title: "Cancel Order", label: "Reason for cancellation", reasons: CANCEL_REASONS, button: "Cancel Order", tone: "danger" };
 };
 
 const SkLine = ({ w, h = 12, mb = 0 }) => (
@@ -2228,24 +2228,31 @@ export default function OrderConfirmation() {
             </section>
           )}
 
-          {orderActions.canReturnExchange && (
-            <button
-              type="button"
-              className="oc-return-row"
-              onClick={() => openActionModal(canSelectReturnItems ? "return" : "exchange")}
-            >
-              <span className="oc-return-icon"><Icon icon="lucide:package-open" /></span>
-              <span className="oc-return-copy">
-                <strong>
-                  {canSelectReturnItems && canSelectExchangeItems
-                    ? "Return / Exchange Products"
-                    : canSelectReturnItems ? "Return Products" : "Exchange Products"}
-                </strong>
-                <span>Hassle-free returns within 7 days</span>
-              </span>
-              <Icon icon="lucide:chevron-right" className="oc-return-chevron" />
-            </button>
-          )}
+          {orderActions.canReturnExchange && (() => {
+            const actionLabel = canSelectReturnItems && canSelectExchangeItems
+              ? "Return / Exchange"
+              : canSelectReturnItems ? "Return" : "Exchange";
+            const deadline = new Date(order.delivered_at);
+            deadline.setDate(deadline.getDate() + RETURN_WINDOW_DAYS);
+            return (
+              <div className="oc-return-block">
+                <div className="oc-return-info-card">
+                  <span className="oc-return-info-icon"><Icon icon="lucide:package" /></span>
+                  <p>
+                    {actionLabel} available till {formatDate(deadline)}{" "}
+                    <small>({RETURN_WINDOW_DAYS} days from delivery)</small>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="oc-return-btn"
+                  onClick={() => openActionModal(canSelectReturnItems ? "return" : "exchange")}
+                >
+                  <Icon icon="lucide:package" /> {actionLabel}
+                </button>
+              </div>
+            );
+          })()}
 
           {orderActions.canCancel ? (
             <div className="oc-cancel-block">
@@ -2641,20 +2648,44 @@ export default function OrderConfirmation() {
       )}
 
       {cancelModal.isOpen && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal-container">
-            <button 
+        <div className={`cancel-modal-overlay ${cancelModal.type === "cancel" ? "oc-sheet-overlay" : ""}`}>
+          <div className={`cancel-modal-container ${cancelModal.type === "cancel" ? "oc-sheet-container" : ""}`}>
+            {cancelModal.type === "cancel" && <span className="oc-sheet-handle" aria-hidden="true" />}
+            <button
               type="button"
-              className="cancel-modal-close" 
+              className="cancel-modal-close"
               onClick={closeActionModal}
             >
               <Icon icon="lucide:x" />
             </button>
             <div className="cancel-modal-header">
               <h3>{getActionConfig(cancelModal.type).title}</h3>
-              <p>{cancelModal.type === "cancel" ? <>This will cancel <strong>{cancelModal.itemName}</strong> completely — all items below will be cancelled. Individual items cannot be cancelled or changed.</> : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}</p>
+              <p>
+                {cancelModal.type === "cancel"
+                  ? "You can cancel this order only within 24 hours of placing it."
+                  : <>Select product for <strong>{cancelModal.itemName}</strong>.</>}
+              </p>
             </div>
-            
+
+            {cancelModal.type === "cancel" && (
+              <div className="oc-cancel-modal-meta">
+                <div className="oc-cancel-modal-meta-cell">
+                  <span className="oc-cancel-modal-meta-icon"><Icon icon="lucide:clipboard-check" /></span>
+                  <span>
+                    <small>Order ID</small>
+                    <strong>#{orderNumber}</strong>
+                  </span>
+                </div>
+                <div className="oc-cancel-modal-meta-cell">
+                  <span className="oc-cancel-modal-meta-icon"><Icon icon="lucide:calendar-days" /></span>
+                  <span>
+                    <small>Order Date</small>
+                    <strong>{formatDate(order.createdAt)}</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleModalSubmit} className="cancel-modal-form">
               {cancelModal.type !== "cancel" && (canSelectReturnItems || canSelectExchangeItems) && (
                 <div className="action-type-switch">
@@ -2695,20 +2726,31 @@ export default function OrderConfirmation() {
                 </div>
               )}
 
+              {cancelModal.type === "cancel" && (
+                <div className="oc-cancel-items-block">
+                  <span className="oc-cancel-items-title">Item{(order.OrderItems || []).filter((item) => normalizeStatus(item.status) !== "cancelled").length > 1 ? "s" : ""} to be Cancelled</span>
+                  <div className="oc-cancel-items-box">
+                    {(order.OrderItems || [])
+                      .filter((item) => normalizeStatus(item.status) !== "cancelled")
+                      .map((item) => (
+                        <div className="oc-cancel-item-row" key={item.id}>
+                          <div className="oc-cancel-item-media">
+                            {getItemImage(item) ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
+                          </div>
+                          <span className="oc-cancel-item-info">
+                            <strong>{item.product_name}</strong>
+                            <small>{getItemColor(item)} · Qty {item.quantity}</small>
+                          </span>
+                          <strong className="oc-cancel-item-price">{formatPrice(toNumber(item.price) * Math.max(1, toNumber(item.quantity) || 1))}</strong>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {cancelModal.type !== "cancel" && (
               <div className="action-item-picker">
-                {cancelModal.type === "cancel" ? (
-                  // Whole-order cancel: read-only list of every item being cancelled.
-                  (order.OrderItems || [])
-                    .filter((item) => normalizeStatus(item.status) !== "cancelled")
-                    .map((item) => (
-                      <div className="action-item-row is-selected" key={item.id}>
-                        <span className="action-item-info">
-                          <strong>{item.product_name}</strong>
-                          <small>{getItemColor(item)} · Qty {item.quantity}</small>
-                        </span>
-                      </div>
-                    ))
-                ) : (
+                {(
                   getEligibleActionItems(order, cancelModal.type).map((item) => {
                     const sel = cancelModal.selected?.[item.id] || { checked: false, quantity: getActionableQty(item) };
                     const maxQty = getActionableQty(item);
@@ -2880,6 +2922,7 @@ export default function OrderConfirmation() {
                   })
                 )}
               </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="cancel-reason">{getActionConfig(cancelModal.type).label}</label>

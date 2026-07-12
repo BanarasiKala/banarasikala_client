@@ -1148,6 +1148,13 @@
   text-transform: none; /* Reset any inheritance from sidebar uppercase rules */
   letter-spacing: normal;
   animation: modal-slide-up 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Still scrollable — just no visible scrollbar track/thumb. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cancel-modal-container::-webkit-scrollbar {
+  display: none;
 }
 
 .feedback-detail-modal {
@@ -2028,12 +2035,13 @@
   }
   
   .cancel-modal-form .modal-actions {
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
   }
-  
+
   .modal-action-btn {
-    width: 100%;
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
@@ -3330,6 +3338,72 @@ strong.oc-item-price {
   font-size: 12px;
 }
 
+/* ── Return / Exchange: same info-card-then-button pattern as Cancel Order,
+   in the warm amber tone from the reference mockup. ── */
+.oc-return-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oc-return-info-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(214, 158, 97, 0.35);
+  border-radius: 14px;
+  background: #fdf3ec;
+}
+
+.oc-return-info-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  color: #b9762f;
+  font-size: 18px;
+}
+
+.oc-return-info-card p {
+  margin: 0;
+  color: #5d4b3e;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.oc-return-info-card p small {
+  color: rgba(93, 75, 62, 0.7);
+  font-size: 11.5px;
+}
+
+.oc-return-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  border: 1.5px solid rgba(214, 158, 97, 0.6);
+  border-radius: 12px;
+  background: #fdf3ec;
+  color: #9a6018;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.oc-return-btn:hover {
+  background: #fbe8d8;
+  border-color: #b9762f;
+}
+
+.oc-return-btn svg {
+  font-size: 15px;
+}
+
 /* ── MRP struck through, next to the actual price — item rows and the
    Payment Summary subtotal both use this. ── */
 /* "MRP:" label stays plain text; only the value inside gets struck through. */
@@ -3348,6 +3422,158 @@ strong.oc-item-price {
    default in every browser regardless of the page's own type scale). ── */
 .order-confirmation-page strong,
 .order-confirmation-page b {
+  font-weight: 500;
+}
+
+/* ── Cancel-order modal: bottom sheet instead of the shared centered popup.
+   Scoped to cancelModal.type === "cancel" only — return/exchange, feedback,
+   support and RTO confirm all still use the plain centered .cancel-modal-*. ── */
+.oc-sheet-overlay {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.oc-sheet-container {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  margin: 0 auto;
+  border-radius: 20px 20px 0 0;
+  animation: oc-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes oc-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ── Bottom-sheet chrome specific to the Cancel Order modal ── */
+.oc-sheet-handle {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: rgba(50, 21, 15, 0.2);
+}
+
+/* ── Order ID / Order Date strip inside the Cancel Order sheet ── */
+.oc-cancel-modal-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.6);
+}
+
+.oc-cancel-modal-meta-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oc-cancel-modal-meta-cell + .oc-cancel-modal-meta-cell {
+  padding-left: 10px;
+  border-left: 1px solid rgba(128, 0, 32, 0.12);
+}
+
+.oc-cancel-modal-meta-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fdf1ee;
+  color: #7b001b;
+  font-size: 15px;
+}
+
+.oc-cancel-modal-meta-cell small {
+  display: block;
+  color: rgba(50, 21, 15, 0.5);
+  font-size: 11px;
+}
+
+.oc-cancel-modal-meta-cell strong {
+  color: #3d2817;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── "Item to be Cancelled" box ── */
+.oc-cancel-items-title {
+  display: block;
+  margin-bottom: 8px;
+  color: #5d170d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.oc-cancel-items-box {
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 14px;
+  padding: 0 14px;
+  margin-bottom: 16px;
+  background: rgba(255, 253, 248, 0.6);
+}
+
+.oc-cancel-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+}
+
+.oc-cancel-item-row + .oc-cancel-item-row {
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
+}
+
+.oc-cancel-item-media {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 68px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f1dfbf;
+  display: grid;
+  place-items: center;
+  color: #94663e;
+}
+
+.oc-cancel-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.oc-cancel-item-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oc-cancel-item-info strong {
+  color: #3d2817;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.oc-cancel-item-info small {
+  color: rgba(50, 21, 15, 0.55);
+  font-size: 12px;
+}
+
+.oc-cancel-item-price {
+  flex: 0 0 auto;
+  color: #800020;
+  font-size: 14px;
   font-weight: 500;
 }
 
