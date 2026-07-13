@@ -689,7 +689,7 @@ const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
             )}
           </div>
           <button type="button" className="order-help-btn" onClick={() => onContact(order)}>
-            Contact Us
+            {ticket ? "View Ticket" : "Contact Us"}
           </button>
         </div>
 
@@ -817,7 +817,14 @@ export default function MyOrders() {
     }
   }, [user]);
 
+  // One ticket per order: once it exists, "Contact Us" is a way back INTO that conversation,
+  // not a way to start a second one.
   const openSupportModal = (order) => {
+    const existing = ticketByOrder.get(String(order?.id));
+    if (existing) {
+      navigate(`/tickets?id=${existing.id}`);
+      return;
+    }
     setSupportModal({ isOpen: true, order });
     setSupportForm({ category: TICKET_CATEGORIES[0], message: "", phone: user?.phone || "" });
   };
@@ -847,8 +854,20 @@ export default function MyOrders() {
       showNotification(response.data?.message || "Your ticket has been raised.", "success");
       setSupportModal({ isOpen: false, order: null });
       fetchTickets();
+      if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
     } catch (err) {
-      showNotification(err?.response?.data?.message || "Unable to raise your ticket right now.", "error");
+      // 409 = a ticket already exists for this order (raised on another tab/device). Take the
+      // customer to that conversation rather than leaving them staring at an error.
+      const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
+      showNotification(
+        err?.response?.data?.message || "Unable to raise your ticket right now.",
+        existing ? "warning" : "error",
+      );
+      if (existing?.id) {
+        setSupportModal({ isOpen: false, order: null });
+        fetchTickets();
+        navigate(`/tickets?id=${existing.id}`);
+      }
     } finally {
       setSupportSubmitting(false);
     }

@@ -548,6 +548,8 @@ const Header = () => {
           <Link to="/reels" onClick={refreshNavClick("/reels")}>Reels</Link>
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
           <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
+          {/* Support threads belong to an account — there is nothing to show a guest. */}
+          {user && <Link to="/tickets" onClick={refreshNavClick("/tickets")}>Tickets</Link>}
         </nav>
 
         <Link
@@ -687,6 +689,9 @@ const Header = () => {
                   </div>
                   <button type="button" onClick={() => goProtected("/my-orders")}>
                     Orders
+                  </button>
+                  <button type="button" onClick={() => goProtected("/tickets")}>
+                    Tickets
                   </button>
                   <button type="button" onClick={() => goProtected("/profile")}>
                     Account
@@ -914,6 +919,9 @@ const Header = () => {
               <>
                 <button type="button" onClick={() => goProtected("/my-orders")}>
                   Orders
+                </button>
+                <button type="button" onClick={() => goProtected("/tickets")}>
+                  Tickets
                 </button>
                 <button type="button" onClick={() => goProtected("/profile")}>
                   Account

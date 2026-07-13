@@ -1090,7 +1090,13 @@ export default function OrderConfirmation() {
     fetchTicket();
   }, [fetchTicket]);
 
+  // One ticket per order: once it exists, "Contact Us" leads back INTO that conversation
+  // instead of starting a second one.
   const openSupportModal = () => {
+    if (ticket?.id) {
+      navigate(`/tickets?id=${ticket.id}`);
+      return;
+    }
     setSupportForm({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
     setSupportModal(true);
   };
@@ -1119,8 +1125,20 @@ export default function OrderConfirmation() {
       showNotification(response.data?.message || "Your ticket has been raised.", "success");
       setSupportModal(false);
       fetchTicket();
+      if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
     } catch (err) {
-      showNotification(err?.response?.data?.message || "Unable to raise your ticket right now.", "error");
+      // 409 = a ticket already exists for this order (raised elsewhere). Send the customer
+      // to that conversation instead of leaving them on a dead error.
+      const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
+      showNotification(
+        err?.response?.data?.message || "Unable to raise your ticket right now.",
+        existing ? "warning" : "error",
+      );
+      if (existing?.id) {
+        setSupportModal(false);
+        fetchTicket();
+        navigate(`/tickets?id=${existing.id}`);
+      }
     } finally {
       setSupportSubmitting(false);
     }
@@ -2370,7 +2388,7 @@ export default function OrderConfirmation() {
               )}
             </div>
             <button type="button" className="order-help-btn" onClick={openSupportModal}>
-              Contact Us
+              {ticket ? "View Ticket" : "Contact Us"}
             </button>
           </div>
 
