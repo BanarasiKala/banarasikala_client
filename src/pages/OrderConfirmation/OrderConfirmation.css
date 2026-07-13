@@ -4362,3 +4362,12 @@ strong.oc-item-price {
 .oc-exchange-footnote svg {
   font-size: 13px;
 }
+
+/* Review row for a replacement product the customer received via exchange. */
+.exchange-swap-feedback {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}

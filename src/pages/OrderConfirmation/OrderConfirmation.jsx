@@ -224,51 +224,36 @@ const getCustomerOrderStatusLabel = (status) => {
 
 const normalizeStatus = (value) => String(value || "Pending").toLowerCase();
 
-const PRE_DELIVERY_STATUSES = new Set([
-  "pending",
-  "order placed",
-  "order_placed",
-  "processing",
-  "pickup scheduled",
-  "pickup_scheduled",
-  "out for pickup",
-  "out_for_pickup",
-  "picked up",
-  "picked_up",
-  "awb assigned",
-  "awb_assigned",
-  "shipped",
-  "out for delivery",
-  "out_for_delivery",
-  "undelivered",
-  "rto initiated",
-  "rto_initiated",
-  "rto in transit",
-  "rto_in_transit",
-]);
-
-// Feedback only. Kept status-gated to stay in lockstep with the backend's
-// FeedbackController, which applies this same PRE_DELIVERY_STATUSES guard.
-const wasDelivered = (order) => {
-  const status = normalizeStatus(order?.status);
-  if (PRE_DELIVERY_STATUSES.has(status)) return false;
-  return status === "delivered" || Boolean(order?.delivered_at);
-};
-
-// Return / exchange / invoice. Mirrors the backend's isDeliveredEnoughForPostDeliveryAction
-// (utils/orderItemActions.js) EXACTLY: delivery is a fact stamped on delivered_at, and the
-// order's *status* can legitimately move on afterwards — shipping an exchange replacement
-// puts the order back into Processing (ExchangeReplacementService), and an RTO/re-dispatch
-// moves it too. Gating on status here would silently retract the still-open return window
-// and the invoice for a delivered order, even though the API would still honour both.
+// Return / exchange / invoice / feedback. Mirrors the backend EXACTLY (both
+// isDeliveredEnoughForPostDeliveryAction and FeedbackController.isReviewAllowedForOrder):
+// delivery is a fact stamped on delivered_at, and the order's *status* can legitimately
+// move on afterwards — shipping an exchange replacement puts the order back into Processing
+// (ExchangeReplacementService), and an RTO/re-dispatch moves it too. Gating on status would
+// silently retract the still-open return window, the invoice and the right to review a
+// product the customer already has, even though the API still honours all three.
 const wasDeliveredForPostDeliveryAction = (order) => (
   Boolean(order?.delivered_at) || normalizeStatus(order?.status) === "delivered"
 );
 
 const canReviewOrderItem = (order, item) => {
   const itemStatus = normalizeStatus(item?.status);
-  return wasDelivered(order) && !itemStatus.includes("cancel");
+  return wasDeliveredForPostDeliveryAction(order) && !itemStatus.includes("cancel");
 };
+
+// The replacement product(s) this line was exchanged FOR — reviewable only once the
+// replacement has itself been delivered, which is exactly when the line reaches
+// "Exchange Completed". Mirrors FeedbackController.exchangeReplacementProductIds.
+const getReviewableExchangeTargets = (order, item) => {
+  if (!wasDeliveredForPostDeliveryAction(order)) return [];
+  if (normalizeStatus(item?.status) !== "exchange completed") return [];
+  return item?.exchange_swap?.to || [];
+};
+
+// The review already left for a specific PRODUCT on this line. `item.feedback` only ever
+// resolves the product that was ordered, so the replacement needs its own lookup.
+const getItemFeedbackForProduct = (item, productId) => (item?.feedbacks || []).find(
+  (row) => Number(row.product_id) === Number(productId),
+) || null;
 
 const getActionableQty = (item) => Math.max(0, toNumber(item.actionable_quantity ?? (
   toNumber(item.quantity)
@@ -1249,23 +1234,38 @@ export default function OrderConfirmation() {
     setExchangeResult(null);
   };
 
-  const openFeedbackModal = (item) => {
+  // `target` is the replacement product after an exchange ({ product_id, product_name }).
+  // Omit it to review the product that was originally ordered.
+  const openFeedbackModal = (item, target = null) => {
     if (!canReviewOrderItem(order, item)) {
       showNotification("Product review is available after delivery.", "warning");
       return;
     }
-    setFeedbackModal({ isOpen: true, item });
+    if (target && !getReviewableExchangeTargets(order, item).some(
+      (t) => Number(t.product_id) === Number(target.product_id),
+    )) {
+      showNotification("Review opens once your replacement is delivered.", "warning");
+      return;
+    }
+
+    const productId = target ? Number(target.product_id) : Number(item.product_id);
+    const productName = target ? target.product_name : item.product_name;
+    const existing = target
+      ? getItemFeedbackForProduct(item, productId)
+      : item.feedback;
+
+    setFeedbackModal({ isOpen: true, item, productId, productName });
     setFeedbackForm({
-      rating: Number(item.feedback?.rating || 5),
-      title: item.feedback?.title || "",
-      comment: item.feedback?.comment || "",
+      rating: Number(existing?.rating || 5),
+      title: existing?.title || "",
+      comment: existing?.comment || "",
       images: [],
     });
   };
 
   const closeFeedbackModal = () => {
     if (feedbackSubmitting) return;
-    setFeedbackModal({ isOpen: false, item: null });
+    setFeedbackModal({ isOpen: false, item: null, productId: null, productName: "" });
     setFeedbackForm({ rating: 5, title: "", comment: "", images: [] });
     setFeedbackSubmitLabel("");
   };
@@ -1293,7 +1293,8 @@ export default function OrderConfirmation() {
       const response = await api.post("/api/feedback/submit", {
         orderId: order.id,
         orderItemId: item.id,
-        productId: item.product_id,
+        // The replacement product after an exchange, or the one originally ordered.
+        productId: feedbackModal.productId || item.product_id,
         rating: feedbackForm.rating,
         title: feedbackForm.title.trim(),
         comment: feedbackForm.comment.trim(),
@@ -1978,6 +1979,27 @@ export default function OrderConfirmation() {
                                 <small>
                                   {target.color_name || "—"} · Qty {target.quantity}
                                 </small>
+
+                                {/* The replacement is a product the customer now owns, so it
+                                    earns its own review — but only once it has actually been
+                                    delivered (the line reaches "Exchange Completed"). */}
+                                {getReviewableExchangeTargets(order, item).some(
+                                  (t) => Number(t.product_id) === Number(target.product_id),
+                                ) && (() => {
+                                  const targetFeedback = getItemFeedbackForProduct(item, target.product_id);
+                                  return (
+                                    <span className="exchange-swap-feedback">
+                                      <RatingStars rating={Number(targetFeedback?.rating || 0)} />
+                                      <button
+                                        className="confirmation-feedback-btn"
+                                        type="button"
+                                        onClick={() => openFeedbackModal(item, target)}
+                                      >
+                                        {targetFeedback ? "Edit Feedback" : "Add Feedback"}
+                                      </button>
+                                    </span>
+                                  );
+                                })()}
                               </span>
                             </li>
                           );
@@ -2561,7 +2583,7 @@ export default function OrderConfirmation() {
             </button>
             <div className="cancel-modal-header">
               <h3>Complete your Feedback</h3>
-              <p>Share your experience for <strong>{feedbackModal.item?.product_name}</strong>.</p>
+              <p>Share your experience for <strong>{feedbackModal.productName || feedbackModal.item?.product_name}</strong>.</p>
             </div>
 
             <form onSubmit={submitFeedback} className="cancel-modal-form">
