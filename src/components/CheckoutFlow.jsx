@@ -777,7 +777,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         orderingRef.current = true;
         payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
         if (walletUsableAmount > 0) window.dispatchEvent(new CustomEvent("bk:wallet-used", { detail: { deducted: walletUsableAmount } }));
-        navigate(`/order-placed?orderId=${dbRes.data.orderId}`);
+        navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
         return;
       }
 
@@ -845,7 +845,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
             orderingRef.current = true;
             payableCart.forEach((item) => removeFromCart(item.id, item.colorId));
             if (walletUsableAmount > 0) window.dispatchEvent(new CustomEvent("bk:wallet-used", { detail: { deducted: walletUsableAmount } }));
-            navigate(`/order-placed?orderId=${dbRes.data.orderId}`);
+            navigate(`/order-confirmation?orderId=${dbRes.data.orderId}`);
           } catch (error) {
             if (isMountedRef.current) {
               setPaymentVerifying(false);

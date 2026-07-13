@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import Layout from "./layout/Layout";
@@ -22,7 +22,6 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout/Checkout"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation/OrderConfirmation"));
-const ThankYou = lazy(() => import("./pages/ThankYou/ThankYou"));
 const Auth = lazy(() => import("./pages/Auth/Auth"));
 const About = lazy(() => import("./pages/About/About"));
 const Testimonials = lazy(() => import("./pages/Testimonials/Testimonials"));
@@ -42,6 +41,11 @@ const TermsConditions = lazy(() => import("./pages/Policy/TermsConditions"));
 const PrivacyPolicy = lazy(() => import("./pages/Policy/PrivacyPolicy"));
 
 
+
+const OrderPlacedRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/order-confirmation${search}`} replace />;
+};
 
 function App() {
   return (
@@ -115,14 +119,10 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/order-placed"
-                        element={
-                          <ProtectedRoute>
-                            <ThankYou />
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* Retired: orders now land straight on the confirmation page. The old
+                          URL still exists in browser history and in already-sent emails, so it
+                          forwards (keeping ?orderId=) rather than 404s. */}
+                      <Route path="/order-placed" element={<OrderPlacedRedirect />} />
                       <Route
                         path="/order-confirmation"
                         element={
