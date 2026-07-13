@@ -3425,19 +3425,22 @@ strong.oc-item-price {
   font-weight: 500;
 }
 
-/* ── Cancel-order modal: bottom sheet instead of the shared centered popup.
-   Scoped to cancelModal.type === "cancel" only — return/exchange, feedback,
-   support and RTO confirm all still use the plain centered .cancel-modal-*. ── */
-.oc-sheet-overlay {
-  align-items: flex-end;
+/* ── Bottom sheet: used by the Cancel, Return, Exchange and "Choose an action"
+   modals. Written with both classes so it beats the base .cancel-modal-* rules
+   (and their mobile @media overrides) on specificity, not just source order —
+   the base overlay is a grid with `place-items: center`, which would otherwise
+   keep re-centering the sheet. ── */
+.cancel-modal-overlay.oc-sheet-overlay {
+  align-items: end;
+  justify-items: center;
   padding: 0;
 }
 
-.oc-sheet-container {
+.cancel-modal-container.oc-sheet-container {
   width: 100%;
   max-width: 560px;
   max-height: 88dvh;
-  margin: 0 auto;
+  margin: 0;
   border-radius: 20px 20px 0 0;
   animation: oc-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -4173,4 +4176,189 @@ strong.oc-item-price {
 .oc-return-request-id button:hover {
   background: rgba(128, 0, 32, 0.06);
   color: #7b001b;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Exchange wizard — reuses the return wizard's shell, adds the
+   product picker, the swap markers and the summary note.
+   ══════════════════════════════════════════════════════════════════════ */
+.oc-exchange-line + .oc-exchange-line {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
+}
+
+.oc-return-section-title small {
+  color: rgba(50, 21, 15, 0.45);
+  font-weight: 400;
+}
+
+/* Swap badge on the item being exchanged. */
+.oc-exchange-swap-badge {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(185, 118, 47, 0.4);
+  color: #b9762f;
+  font-size: 15px;
+}
+
+/* ── Replacement product picker: horizontal, swipeable ── */
+.oc-exchange-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.oc-exchange-options::-webkit-scrollbar {
+  display: none;
+}
+
+.oc-exchange-option {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 108px;
+  padding: 8px;
+  border: 1.5px solid rgba(128, 0, 32, 0.14);
+  border-radius: 12px;
+  background: #fffdf8;
+  cursor: pointer;
+  text-align: center;
+}
+
+.oc-exchange-option.is-chosen {
+  border-color: #7b001b;
+  background: #fff8f4;
+}
+
+.oc-exchange-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.oc-exchange-option-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(50, 21, 15, 0.25);
+  background: #fffdf8;
+  color: #fff;
+  font-size: 11px;
+  z-index: 1;
+}
+
+.oc-exchange-option.is-chosen .oc-exchange-option-check {
+  border-color: #7b001b;
+  background: #7b001b;
+}
+
+.oc-exchange-option-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 108px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1dfbf;
+  color: #94663e;
+}
+
+.oc-exchange-option-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.oc-exchange-option-name {
+  color: #3d2817;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.oc-exchange-option small {
+  color: rgba(50, 21, 15, 0.5);
+  font-size: 10.5px;
+}
+
+.oc-exchange-option-price {
+  color: #800020;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+/* Boxed variant of the quantity row (used standalone, outside an item card). */
+.oc-return-qty-row.is-boxed {
+  margin-bottom: 12px;
+  border: 1px solid rgba(128, 0, 32, 0.14);
+  border-radius: 12px;
+  background: #fffdf8;
+}
+
+/* ── Step 3 review ── */
+.oc-exchange-review-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #7b001b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.oc-exchange-swap-divider {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: 10px auto;
+  border-radius: 50%;
+  border: 1px solid rgba(185, 118, 47, 0.4);
+  background: #fdf3ec;
+  color: #b9762f;
+  font-size: 16px;
+}
+
+.oc-exchange-summary-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fdf6e9;
+  color: #6b5648;
+  font-size: 11.5px;
+}
+
+.oc-exchange-summary-note svg {
+  flex: 0 0 auto;
+  color: #b9762f;
+  font-size: 13px;
+}
+
+.oc-exchange-footnote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  color: rgba(50, 21, 15, 0.45);
+  font-size: 11.5px;
+}
+
+.oc-exchange-footnote svg {
+  font-size: 13px;
 }

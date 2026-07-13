@@ -888,6 +888,10 @@ export default function OrderConfirmation() {
   // used, just split across steps instead of one long form.
   const [returnStep, setReturnStep] = useState(1);
   const [returnResult, setReturnResult] = useState(null);
+  // Exchange is the same idea: Select Item(s) → New Item → Review → Confirm. Same
+  // selection state, same exchangeTargets contract, same submit — just stepped.
+  const [exchangeStep, setExchangeStep] = useState(1);
+  const [exchangeResult, setExchangeResult] = useState(null);
   const [cancelForm, setCancelForm] = useState({
     reason: "Incorrect item/size selected",
     comments: ""
@@ -1218,6 +1222,8 @@ export default function OrderConfirmation() {
     setLoadingEstimate(false);
     setReturnStep(1);
     setReturnResult(null);
+    setExchangeStep(1);
+    setExchangeResult(null);
   };
 
   const closeActionModal = (force = false) => {
@@ -1227,6 +1233,8 @@ export default function OrderConfirmation() {
     setLoadingEstimate(false);
     setReturnStep(1);
     setReturnResult(null);
+    setExchangeStep(1);
+    setExchangeResult(null);
   };
 
   const openFeedbackModal = (item) => {
@@ -1488,6 +1496,9 @@ export default function OrderConfirmation() {
         // "submitted" step instead of closing straight away.
         setReturnResult(response.data || {});
         setReturnStep(4);
+      } else if (type === "exchange") {
+        setExchangeResult(response.data || {});
+        setExchangeStep(4);
       } else {
         closeActionModal(true);
       }
@@ -3127,7 +3138,475 @@ export default function OrderConfirmation() {
         );
       })()}
 
-      {cancelModal.isOpen && cancelModal.type !== "return" && (
+      {cancelModal.isOpen && cancelModal.type === "exchange" && (() => {
+        const EXCHANGE_STEPS = ["Select Item(s)", "New Item", "Review", "Confirm"];
+        const EXCHANGE_SUBTITLES = {
+          1: "Choose the item you want to exchange and select the quantity.",
+          2: "Select a new item of the same price and choose quantity.",
+          3: "Review the details of both items and confirm your exchange.",
+          4: "Your exchange request has been successfully placed.",
+        };
+        const eligibleItems = getEligibleActionItems(order, "exchange");
+        const selectedCount = selectedActionItems.length;
+        const requestId = `EXC${String(orderNumber).replace(/\D/g, "")}`;
+
+        const wantedQtyOf = (orderItemId) => {
+          const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+          const sel = cancelModal.selected?.[orderItemId];
+          return Number(sel?.quantity || getActionableQty(item));
+        };
+        const targetsOf = (orderItemId) => cancelModal.selected?.[orderItemId]?.exchangeTargets || [];
+        const allocatedOf = (orderItemId) => exchangeAllocatedQty(cancelModal.selected?.[orderItemId]);
+
+        // Total value of the lines going back — display only, mirrors the "same price"
+        // rule the backend enforces (an exchange never moves money).
+        const estPriceValue = selectedActionItems.reduce((sum, { orderItemId, quantity }) => {
+          const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+          if (!item) return sum;
+          return sum + toNumber(item.price) * Number(quantity || getActionableQty(item));
+        }, 0);
+
+        // Every selected line must have exactly as many replacements chosen as units
+        // being sent back — the same rule handleModalSubmit already enforces on submit.
+        const allAllocated = selectedCount > 0 && selectedActionItems.every(
+          ({ orderItemId }) => allocatedOf(orderItemId) === wantedQtyOf(orderItemId),
+        );
+        const optionsStillLoading = selectedActionItems.some(
+          ({ orderItemId }) => exchangeVariants[orderItemId]?.loading,
+        );
+
+        const setItemQuantity = (itemId, maxQty, nextQty) => {
+          const quantity = Math.min(maxQty, Math.max(1, nextQty));
+          setCancelModal((current) => {
+            const value = current.selected?.[itemId] || {};
+            // Lowering the quantity can leave more replacements allocated than are being
+            // exchanged — trim from the end, exactly as the original picker did.
+            let targets = [...(value.exchangeTargets || [])];
+            let allocated = targets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+            while (allocated > quantity && targets.length) {
+              const last = targets[targets.length - 1];
+              if (last.quantity > 1) targets[targets.length - 1] = { ...last, quantity: last.quantity - 1 };
+              else targets = targets.slice(0, -1);
+              allocated -= 1;
+            }
+            return {
+              ...current,
+              selected: { ...current.selected, [itemId]: { ...value, quantity, exchangeTargets: targets } },
+            };
+          });
+        };
+
+        // Picking a different replacement clears whatever was chosen before, then adds
+        // one unit of the new one — both via the existing target helpers.
+        const chooseExchangeTarget = (itemId, option, color) => {
+          const allocated = allocatedOf(itemId);
+          for (let i = 0; i < allocated; i += 1) removeExchangeTarget(itemId, 0);
+          addExchangeTarget(itemId, option, color);
+        };
+
+        return (
+          <div className="cancel-modal-overlay oc-sheet-overlay">
+            <div className="cancel-modal-container oc-sheet-container oc-return-sheet">
+              <span className="oc-sheet-handle" aria-hidden="true" />
+              <button
+                type="button"
+                className="cancel-modal-close"
+                onClick={closeActionModal}
+                aria-label="Close"
+              >
+                <Icon icon="lucide:x" />
+              </button>
+
+              <div className="cancel-modal-header oc-return-header">
+                <h3>Request Exchange</h3>
+                <p>{EXCHANGE_SUBTITLES[exchangeStep]}</p>
+              </div>
+
+              <ol className="oc-step-bar">
+                {EXCHANGE_STEPS.map((label, index) => {
+                  const stepNo = index + 1;
+                  const state = exchangeStep > stepNo ? "is-done" : exchangeStep === stepNo ? "is-current" : "";
+                  return (
+                    <li key={label} className={`oc-step ${state}`}>
+                      <span className="oc-step-dot">
+                        {exchangeStep > stepNo ? <Icon icon="lucide:check" /> : stepNo}
+                      </span>
+                      <small>{label}</small>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <form onSubmit={handleModalSubmit} className="cancel-modal-form oc-return-form">
+                {/* ── Step 1: pick the item(s) and how many units go back ── */}
+                {exchangeStep === 1 && (
+                  <>
+                    <span className="oc-return-section-title">1. Select item &amp; quantity to exchange</span>
+
+                    <div className="oc-return-items">
+                      {eligibleItems.map((item) => {
+                        const sel = cancelModal.selected?.[item.id] || { checked: false, quantity: getActionableQty(item) };
+                        const maxQty = getActionableQty(item);
+                        const qty = sel.checked ? (sel.quantity || maxQty) : 0;
+                        return (
+                          <div className={`oc-return-item${sel.checked ? " is-selected" : ""}`} key={item.id}>
+                            <label className="oc-return-item-main">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(sel.checked)}
+                                onChange={(event) => setCancelModal((current) => ({
+                                  ...current,
+                                  selected: {
+                                    ...current.selected,
+                                    [item.id]: { ...sel, checked: event.target.checked, quantity: sel.quantity || maxQty },
+                                  },
+                                }))}
+                              />
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                                <small>Qty Ordered: {maxQty}</small>
+                              </span>
+                            </label>
+
+                            <div className="oc-return-qty-row">
+                              <span>Exchange Quantity</span>
+                              <div className="oc-return-stepper">
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQuantity(item.id, maxQty, qty - 1)}
+                                  disabled={!sel.checked || qty <= 1}
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Icon icon="lucide:minus" />
+                                </button>
+                                <span>{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQuantity(item.id, maxQty, qty + 1)}
+                                  disabled={!sel.checked || qty >= maxQty}
+                                  aria-label="Increase quantity"
+                                >
+                                  <Icon icon="lucide:plus" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="oc-return-summary-bar">
+                      <span>{selectedCount} Item{selectedCount === 1 ? "" : "s"} Selected</span>
+                      <strong>Est. Price Value {formatPrice(estPriceValue)}</strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="oc-return-primary-btn"
+                      disabled={selectedCount === 0}
+                      onClick={() => setExchangeStep(2)}
+                    >
+                      Continue to Choose New Item <Icon icon="lucide:arrow-right" />
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 2: choose the replacement(s) at the same price ── */}
+                {exchangeStep === 2 && (
+                  <>
+                    <span className="oc-return-section-title">1. Selected item (to exchange)</span>
+
+                    {selectedActionItems.map(({ orderItemId }) => {
+                      const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+                      if (!item) return null;
+                      const variant = exchangeVariants[orderItemId];
+                      const wanted = wantedQtyOf(orderItemId);
+                      const targets = targetsOf(orderItemId);
+                      const allocated = allocatedOf(orderItemId);
+                      const chosen = targets[0] || null;
+                      const options = (variant?.options || []).filter((o) => (o.colors || []).length > 0);
+
+                      return (
+                        <div key={orderItemId} className="oc-exchange-line">
+                          <div className="oc-return-item is-readonly">
+                            <div className="oc-return-item-main">
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                                <small>Exchange Qty: {wanted}</small>
+                              </span>
+                              <span className="oc-exchange-swap-badge"><Icon icon="lucide:repeat-2" /></span>
+                            </div>
+                          </div>
+
+                          <span className="oc-return-section-title">
+                            2. Choose new item <small>(Same price only)</small>
+                          </span>
+
+                          {variant?.loading && (
+                            <div className="exchange-variant-note">Loading exchange options…</div>
+                          )}
+                          {variant?.error && (
+                            <div className="exchange-variant-note is-warn">
+                              Couldn&rsquo;t load exchange options. Please try again.
+                            </div>
+                          )}
+                          {variant && !variant.loading && !variant.error && !options.length && (
+                            <div className="exchange-variant-note is-warn">
+                              Nothing is in stock to exchange this for right now.
+                            </div>
+                          )}
+
+                          {options.length > 0 && (
+                            <div className="oc-exchange-options">
+                              {options.flatMap((option) => (option.colors || []).map((color) => {
+                                const thumb = Array.isArray(option.images)
+                                  ? (option.images[0]?.url || option.images[0])
+                                  : null;
+                                const isChosen = Boolean(chosen)
+                                  && Number(chosen.productId) === Number(option.product_id)
+                                  && String(chosen.colorId ?? "") === String(color.color_id ?? "");
+                                const soldOut = Number(color.stock || 0) < 1;
+                                return (
+                                  <button
+                                    key={`${option.product_id}-${color.color_id}`}
+                                    type="button"
+                                    className={`oc-exchange-option${isChosen ? " is-chosen" : ""}`}
+                                    disabled={soldOut}
+                                    onClick={() => chooseExchangeTarget(orderItemId, option, color)}
+                                  >
+                                    <span className="oc-exchange-option-check">
+                                      {isChosen && <Icon icon="lucide:check" />}
+                                    </span>
+                                    <span className="oc-exchange-option-media">
+                                      {thumb ? <img src={imgUrl(thumb, 200)} alt={option.name} /> : <Icon icon="lucide:image-off" />}
+                                    </span>
+                                    <span className="oc-exchange-option-name">{option.name}</span>
+                                    <small>{color.name}</small>
+                                    <span className="oc-exchange-option-price">{formatPrice(variant.paidPrice)}</span>
+                                  </button>
+                                );
+                              }))}
+                            </div>
+                          )}
+
+                          {chosen && (
+                            <>
+                              <span className="oc-return-section-title">3. Select quantity for new item</span>
+                              <div className="oc-return-qty-row is-boxed">
+                                <span>New Item Quantity</span>
+                                <div className="oc-return-stepper">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeExchangeTarget(orderItemId, 0)}
+                                    disabled={allocated <= 1}
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Icon icon="lucide:minus" />
+                                  </button>
+                                  <span>{allocated}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const option = options.find((o) => Number(o.product_id) === Number(chosen.productId));
+                                      const color = (option?.colors || []).find(
+                                        (c) => String(c.color_id ?? "") === String(chosen.colorId ?? ""),
+                                      );
+                                      if (option && color) addExchangeTarget(orderItemId, option, color);
+                                    }}
+                                    disabled={allocated >= wanted}
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Icon icon="lucide:plus" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <p className="oc-return-note">
+                                <Icon icon="lucide:info" />
+                                You can exchange only for the same price value ({formatPrice(variant?.paidPrice)}). No extra charge, no refund.
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      className="oc-return-primary-btn"
+                      disabled={!allAllocated || optionsStillLoading}
+                      onClick={() => setExchangeStep(3)}
+                    >
+                      Continue to Review <Icon icon="lucide:arrow-right" />
+                    </button>
+                    <button type="button" className="oc-return-ghost-btn" onClick={() => setExchangeStep(1)}>
+                      Go Back
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 3: review both sides, add comments, submit ── */}
+                {exchangeStep === 3 && (
+                  <>
+                    <span className="oc-return-section-title">Review Exchange Details</span>
+
+                    {selectedActionItems.map(({ orderItemId }) => {
+                      const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+                      if (!item) return null;
+                      const wanted = wantedQtyOf(orderItemId);
+                      const targets = targetsOf(orderItemId);
+                      const variant = exchangeVariants[orderItemId];
+                      return (
+                        <div key={orderItemId} className="oc-exchange-review">
+                          <span className="oc-exchange-review-label">Item You&rsquo;re Exchanging</span>
+                          <div className="oc-return-item is-readonly">
+                            <div className="oc-return-item-main">
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)} · Exchange Qty: {wanted}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className="oc-exchange-swap-divider"><Icon icon="lucide:repeat-2" /></span>
+
+                          <span className="oc-exchange-review-label">Item You&rsquo;ll Receive</span>
+                          {targets.map((t, index) => (
+                            <div className="oc-return-item is-readonly" key={`${t.productId}-${t.colorId ?? "x"}-${index}`}>
+                              <div className="oc-return-item-main">
+                                <span className="oc-return-item-media">
+                                  {t.image ? <img src={imgUrl(t.image, 160)} alt={t.productName} /> : <Icon icon="lucide:image-off" />}
+                                </span>
+                                <span className="oc-return-item-copy">
+                                  <strong>{t.productName}</strong>
+                                  <small>{t.colorName || "—"} · Qty: {t.quantity}</small>
+                                  <span className="oc-return-item-price">{formatPrice(variant?.paidPrice)}</span>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+
+                    <div className="oc-return-refund-box">
+                      <strong className="oc-return-refund-title">Exchange Summary</strong>
+                      <div>
+                        <span>Item Price ({selectedCount} item{selectedCount === 1 ? "" : "s"})</span>
+                        <strong>{formatPrice(estPriceValue)}</strong>
+                      </div>
+                      <div>
+                        <span>Price Difference</span>
+                        <strong>{formatPrice(0)}</strong>
+                      </div>
+                      <p className="oc-exchange-summary-note">
+                        <Icon icon="lucide:info" />
+                        Same price exchange · No extra charge, no refund
+                      </p>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="exchange-comments">Additional Comments (Optional)</label>
+                      <textarea
+                        id="exchange-comments"
+                        placeholder="Tell us more so we can help you better..."
+                        maxLength={250}
+                        value={cancelForm.comments}
+                        onChange={(e) => setCancelForm((prev) => ({ ...prev, comments: e.target.value }))}
+                        rows={3}
+                      />
+                      <small className="oc-return-charcount">{cancelForm.comments.length}/250</small>
+                    </div>
+
+                    <button type="submit" className="oc-return-primary-btn" disabled={modalSubmitLoading}>
+                      {modalSubmitLoading ? "Processing..." : <>Confirm Exchange Request <Icon icon="lucide:arrow-right" /></>}
+                    </button>
+                    <button
+                      type="button"
+                      className="oc-return-ghost-btn"
+                      onClick={() => setExchangeStep(2)}
+                      disabled={modalSubmitLoading}
+                    >
+                      Go Back
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 4: submitted ── */}
+                {exchangeStep === 4 && (
+                  <div className="oc-return-success">
+                    <span className="oc-return-success-icon"><Icon icon="lucide:package-check" /></span>
+                    <strong>Exchange Request Submitted!</strong>
+                    <p>{exchangeResult?.message || "We've received your exchange request and will start processing it shortly."}</p>
+
+                    <div className="oc-return-next">
+                      <strong>What happens next?</strong>
+                      <span><Icon icon="lucide:circle-check" /> We&rsquo;ll pick up the item from your address (24-48 hours).</span>
+                      <span><Icon icon="lucide:circle-check" /> Item will be inspected at our facility.</span>
+                      <span><Icon icon="lucide:circle-check" /> Once approved, your new item will be shipped within 5-7 working days.</span>
+                    </div>
+
+                    <div className="oc-return-request-id">
+                      <span>
+                        <small>Request ID</small>
+                        <strong>{requestId}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard?.writeText(requestId)}
+                        aria-label="Copy request ID"
+                      >
+                        <Icon icon="lucide:copy" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="oc-return-primary-btn is-solid"
+                      onClick={() => { closeActionModal(true); navigate("/my-orders"); }}
+                    >
+                      View My Exchanges
+                    </button>
+                    <button
+                      type="button"
+                      className="oc-return-ghost-btn"
+                      onClick={() => { closeActionModal(true); navigate("/collection"); }}
+                    >
+                      Continue Shopping
+                    </button>
+
+                    <p className="oc-exchange-footnote">
+                      <Icon icon="lucide:shield-check" /> Easy Exchange · Quality Assured
+                    </p>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+        );
+      })()}
+
+      {cancelModal.isOpen && cancelModal.type === "cancel" && (
         <div className="cancel-modal-overlay oc-sheet-overlay">
           <div className="cancel-modal-container oc-sheet-container">
             <span className="oc-sheet-handle" aria-hidden="true" />
