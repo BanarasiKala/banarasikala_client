@@ -70,7 +70,7 @@ const Layout = () => {
   const { user, loading } = useAuth();
   const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const footerlessAuthPages = ["/cart", "/wishlist", "/contact", "/feedback", "/profile"];
-  const footerlessPages = ["/cart", "/wishlist", "/my-orders", "/profile"];
+  const footerlessPages = ["/cart", "/wishlist", "/my-orders", "/profile", "/order-confirmation"];
   const chromeHiddenPages = ["/checkout", "/reels"];
   const hideChrome = chromeHiddenPages.includes(location.pathname);
   const isImmersive = location.pathname === "/reels";
