@@ -399,3 +399,113 @@ body.btt-visible .bk-chat-fab {
 .bk-chat-footer-brand strong {
   color: rgba(91, 7, 16, 0.55);
 }
+
+/* ── AI assistant: streamed bubble + product cards ──────────────────────────
+   Cards are rendered from the tool RESULT the server streams down — never parsed out of
+   the assistant's prose. The model describes the sarees; React renders them from real rows,
+   so a hallucinated price can never reach the screen. */
+
+/* The bubble and its cards stack in one column beside the avatar. */
+.bk-chat-msg-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Horizontally scrollable strip — the bot may return up to 8 sarees and the panel is narrow.
+   min-width:0 lets it actually scroll instead of stretching the chat window. */
+.bk-chat-products {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.bk-chat-products::-webkit-scrollbar {
+  display: none;
+}
+
+.bk-chat-product {
+  flex: 0 0 116px;
+  width: 116px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(123, 0, 27, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.bk-chat-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(123, 0, 27, 0.16);
+}
+
+.bk-chat-product img,
+.bk-chat-product-noimg {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #f5eadc;
+  display: block;
+}
+
+.bk-chat-product-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px 9px;
+  min-width: 0;
+}
+
+.bk-chat-product-name {
+  font-family: "Poppins", sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #2b1108;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bk-chat-product-price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7b001b;
+}
+
+.bk-chat-product-price s {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(43, 17, 8, 0.45);
+}
+
+.bk-chat-product-oos {
+  font-family: "Poppins", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b42318;
+}

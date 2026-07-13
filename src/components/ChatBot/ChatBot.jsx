@@ -1,20 +1,56 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "../../config/api";
 import "./ChatBot.css";
 
 const BOT_NAME = "Kala";
 const WELCOME = {
   from: "bot",
-  text: "Namaste! I'm Kala, your Banarasi Kala assistant. How can I help you today?\n\nYou can ask me about our sarees, pricing, shipping, returns, or anything else!",
+  text: "Namaste! I'm Kala, your Banarasi Kala assistant.\n\nAsk me about our sarees — a colour, a budget, an occasion — and I'll find them for you.",
 };
 
 const QUICK_REPLIES = [
-  "Types of sarees",
-  "Shipping info",
-  "Return policy",
+  "Sarees under ₹5,000",
+  "Something for a wedding",
+  "Lightweight for summer",
   "Track my order",
-  "Contact support",
+  "Return policy",
 ];
+
+const formatPrice = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
+/**
+ * Product cards are rendered from the TOOL RESULT the server streams down — never parsed out
+ * of the assistant's prose. The model describes the sarees; React renders them from real rows.
+ * That is what makes it impossible for a hallucinated price to reach the screen.
+ */
+const ProductCards = ({ products, onNavigate }) => (
+  <div className="bk-chat-products">
+    {products.map((p) => (
+      <Link
+        key={p.product_id}
+        to={`/product/${p.slug}`}
+        className="bk-chat-product"
+        onClick={onNavigate}
+      >
+        {p.image_url ? (
+          <img src={p.image_url} alt={p.name} loading="lazy" />
+        ) : (
+          <span className="bk-chat-product-noimg" aria-hidden="true" />
+        )}
+        <span className="bk-chat-product-body">
+          <span className="bk-chat-product-name">{p.name}</span>
+          <span className="bk-chat-product-price">
+            {formatPrice(p.price)}
+            {p.mrp > p.price && <s>{formatPrice(p.mrp)}</s>}
+          </span>
+          {!p.in_stock && <span className="bk-chat-product-oos">Sold out</span>}
+        </span>
+      </Link>
+    ))}
+  </div>
+);
 
 const ChatBot = () => {
   const [open, setOpen] = useState(false);
@@ -22,6 +58,8 @@ const ChatBot = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
+  // The server owns the transcript; this is just the handle to it.
+  const [chatId, setChatId] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const hasOpened = useRef(false);
@@ -57,20 +95,106 @@ const ChatBot = () => {
     if (!open) setUnread((n) => n + 1);
   };
 
+  /**
+   * Streams the reply over SSE.
+   *
+   * EventSource cannot POST (and cannot send an Authorization header), so we read the response
+   * body stream ourselves. Events arrive as `event: <name>\ndata: <json>\n\n`.
+   */
   const send = async (text) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+
     setMessages((prev) => [...prev, { from: "user", text: trimmed }]);
     setInput("");
     setLoading(true);
+
+    // The bot's bubble grows in place as deltas arrive.
+    let botIndex = -1;
+    const appendDelta = (delta) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        if (botIndex === -1) {
+          botIndex = next.length;
+          next.push({ from: "bot", text: delta });
+        } else {
+          next[botIndex] = { ...next[botIndex], text: (next[botIndex].text || "") + delta };
+        }
+        return next;
+      });
+    };
+
+    const attachProducts = (products) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        if (botIndex === -1) {
+          botIndex = next.length;
+          next.push({ from: "bot", text: "", products });
+        } else {
+          const existing = next[botIndex].products || [];
+          next[botIndex] = { ...next[botIndex], products: [...existing, ...products] };
+        }
+        return next;
+      });
+    };
+
     try {
+      const token =
+        localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+
       const res = await fetch(API_ENDPOINTS.chatbotMessage, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        // chat_id ties this turn to the stored conversation. The server holds the history —
+        // we never send it back, so a crafted request can't forge what the bot "already said".
+        body: JSON.stringify({ message: trimmed, chat_id: chatId }),
       });
-      const data = await res.json();
-      addBotMessage(data.reply || "I didn't quite catch that. Could you rephrase?");
+
+      if (!res.ok || !res.body) throw new Error("stream failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line. Keep the trailing partial in the buffer.
+        const frames = buffer.split("\n\n");
+        buffer = frames.pop() || "";
+
+        for (const frame of frames) {
+          const evLine = frame.split("\n").find((l) => l.startsWith("event: "));
+          const dataLine = frame.split("\n").find((l) => l.startsWith("data: "));
+          if (!evLine || !dataLine) continue;
+
+          const event = evLine.slice(7).trim();
+          let data = {};
+          try {
+            data = JSON.parse(dataLine.slice(6));
+          } catch {
+            continue;
+          }
+
+          if (event === "text" && data.delta) appendDelta(data.delta);
+          else if (event === "products" && data.products?.length) attachProducts(data.products);
+          else if (event === "cart_updated") window.dispatchEvent(new Event("cart:refresh"));
+          else if (event === "done") {
+            if (data.chat_id) setChatId(data.chat_id);
+          }
+        }
+      }
+
+      if (botIndex === -1) {
+        addBotMessage("I didn't quite catch that. Could you rephrase?");
+      } else if (!open) {
+        setUnread((n) => n + 1);
+      }
     } catch {
       addBotMessage("Sorry, I'm having trouble connecting. Please try again in a moment.");
     } finally {
@@ -148,15 +272,24 @@ const ChatBot = () => {
               {msg.from === "bot" && (
                 <span className="bk-chat-msg-avatar" aria-hidden="true">K</span>
               )}
-              <div className="bk-chat-msg-bubble">
-                {msg.text.split("\n").map((line, j) =>
-                  line ? <p key={j}>{line}</p> : <br key={j} />
-                )}
+              <div className="bk-chat-msg-col">
+                {msg.text ? (
+                  <div className="bk-chat-msg-bubble">
+                    {msg.text.split("\n").map((line, j) =>
+                      line ? <p key={j}>{line}</p> : <br key={j} />
+                    )}
+                  </div>
+                ) : null}
+                {msg.products?.length ? (
+                  <ProductCards products={msg.products} onNavigate={() => setOpen(false)} />
+                ) : null}
               </div>
             </div>
           ))}
 
-          {loading && (
+          {/* Only show the dots until the first delta lands — once text is streaming, the
+              growing bubble is its own progress indicator. */}
+          {loading && messages[messages.length - 1]?.from !== "bot" && (
             <div className="bk-chat-msg bk-chat-msg--bot">
               <span className="bk-chat-msg-avatar" aria-hidden="true">K</span>
               <div className="bk-chat-msg-bubble bk-chat-typing">
