@@ -247,11 +247,23 @@ const PRE_DELIVERY_STATUSES = new Set([
   "rto_in_transit",
 ]);
 
+// Feedback only. Kept status-gated to stay in lockstep with the backend's
+// FeedbackController, which applies this same PRE_DELIVERY_STATUSES guard.
 const wasDelivered = (order) => {
   const status = normalizeStatus(order?.status);
   if (PRE_DELIVERY_STATUSES.has(status)) return false;
   return status === "delivered" || Boolean(order?.delivered_at);
 };
+
+// Return / exchange / invoice. Mirrors the backend's isDeliveredEnoughForPostDeliveryAction
+// (utils/orderItemActions.js) EXACTLY: delivery is a fact stamped on delivered_at, and the
+// order's *status* can legitimately move on afterwards — shipping an exchange replacement
+// puts the order back into Processing (ExchangeReplacementService), and an RTO/re-dispatch
+// moves it too. Gating on status here would silently retract the still-open return window
+// and the invoice for a delivered order, even though the API would still honour both.
+const wasDeliveredForPostDeliveryAction = (order) => (
+  Boolean(order?.delivered_at) || normalizeStatus(order?.status) === "delivered"
+);
 
 const canReviewOrderItem = (order, item) => {
   const itemStatus = normalizeStatus(item?.status);
@@ -308,7 +320,7 @@ const getItemReturnWindowInfo = (order, item) => {
   if (getActionableQty(item) < 1) return null;
   if (itemStatus.includes("requested") || itemStatus.includes("initiated")) return null;
   if (hasUsableAction(item)) return null;
-  if (!wasDelivered(order)) return null;
+  if (!wasDeliveredForPostDeliveryAction(order)) return null;
 
   // Return and exchange are each usable once per ORDER — if both have already been
   // raised (on this or another item), there is nothing left to action here.
@@ -324,7 +336,7 @@ const getItemReturnWindowInfo = (order, item) => {
 };
 
 const getEligibleActionItems = (order, actionType) => {
-  const delivered = wasDelivered(order);
+  const delivered = wasDeliveredForPostDeliveryAction(order);
   const exchangeUsed = hasOrderExchangeHistory(order);
   const returnUsed = hasOrderReturnHistory(order);
   const inReturnWindow = withinReturnWindow(order);
@@ -2340,7 +2352,7 @@ export default function OrderConfirmation() {
             </button>
           </div>
 
-          {wasDelivered(order) && (
+          {wasDeliveredForPostDeliveryAction(order) && (
             <div className="order-card-actions">
               <button type="button" className="order-action-btn" onClick={downloadInvoice} disabled={invoiceLoading}>
                 <Icon icon={invoiceLoading ? "lucide:loader" : "lucide:download"} className={invoiceLoading ? "is-spinning" : ""} />
