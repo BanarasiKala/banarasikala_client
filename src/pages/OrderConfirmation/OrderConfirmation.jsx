@@ -880,6 +880,14 @@ export default function OrderConfirmation() {
     itemName: "",
     selected: {},
   });
+  // Bottom-sheet shown when BOTH return and exchange are available: the customer
+  // picks one, and that choice opens the existing (unchanged) action modal.
+  const [actionChooserOpen, setActionChooserOpen] = useState(false);
+  // Return flow is presented as a 4-step wizard (Select Items → Reason → Review →
+  // Confirm). Purely presentational: the same state, validation and submit call are
+  // used, just split across steps instead of one long form.
+  const [returnStep, setReturnStep] = useState(1);
+  const [returnResult, setReturnResult] = useState(null);
   const [cancelForm, setCancelForm] = useState({
     reason: "Incorrect item/size selected",
     comments: ""
@@ -1208,6 +1216,8 @@ export default function OrderConfirmation() {
     });
     setActionEstimate(null);
     setLoadingEstimate(false);
+    setReturnStep(1);
+    setReturnResult(null);
   };
 
   const closeActionModal = (force = false) => {
@@ -1215,6 +1225,8 @@ export default function OrderConfirmation() {
     setCancelModal({ isOpen: false, type: "cancel", orderId: null, itemName: "", selected: {} });
     setActionEstimate(null);
     setLoadingEstimate(false);
+    setReturnStep(1);
+    setReturnResult(null);
   };
 
   const openFeedbackModal = (item) => {
@@ -1471,7 +1483,14 @@ export default function OrderConfirmation() {
       }
       const updated = await api.get(`/api/orders/${orderId}`);
       setOrder(updated.data || response.data.order || order);
-      closeActionModal(true);
+      if (type === "return") {
+        // Same request, same order refresh — the sheet just stays open on its final
+        // "submitted" step instead of closing straight away.
+        setReturnResult(response.data || {});
+        setReturnStep(4);
+      } else {
+        closeActionModal(true);
+      }
     } catch (err) {
       showNotification(err?.response?.data?.message || "Unable to process this request.", "error");
     } finally {
@@ -2246,7 +2265,15 @@ export default function OrderConfirmation() {
                 <button
                   type="button"
                   className="oc-return-btn"
-                  onClick={() => openActionModal(canSelectReturnItems ? "return" : "exchange")}
+                  onClick={() => {
+                    // Both available → let the customer choose first. Only one → nothing
+                    // to choose, so go straight to that form (unchanged behaviour).
+                    if (canSelectReturnItems && canSelectExchangeItems) {
+                      setActionChooserOpen(true);
+                    } else {
+                      openActionModal(canSelectReturnItems ? "return" : "exchange");
+                    }
+                  }}
                 >
                   <Icon icon="lucide:package" /> {actionLabel}
                 </button>
@@ -2647,10 +2674,463 @@ export default function OrderConfirmation() {
         </div>
       )}
 
-      {cancelModal.isOpen && (
-        <div className={`cancel-modal-overlay ${cancelModal.type === "cancel" ? "oc-sheet-overlay" : ""}`}>
-          <div className={`cancel-modal-container ${cancelModal.type === "cancel" ? "oc-sheet-container" : ""}`}>
-            {cancelModal.type === "cancel" && <span className="oc-sheet-handle" aria-hidden="true" />}
+      {actionChooserOpen && (
+        <div className="cancel-modal-overlay oc-sheet-overlay" onClick={() => setActionChooserOpen(false)}>
+          <div
+            className="cancel-modal-container oc-sheet-container oc-chooser-sheet"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="oc-sheet-handle" aria-hidden="true" />
+            <button
+              type="button"
+              className="cancel-modal-close"
+              onClick={() => setActionChooserOpen(false)}
+              aria-label="Close"
+            >
+              <Icon icon="lucide:x" />
+            </button>
+
+            <div className="cancel-modal-header">
+              <h3>Choose an action</h3>
+              <p>What would you like to do with this item?</p>
+            </div>
+
+            <div className="oc-chooser-options">
+              <button
+                type="button"
+                className="oc-chooser-card"
+                onClick={() => {
+                  setActionChooserOpen(false);
+                  openActionModal("return");
+                }}
+              >
+                <span className="oc-chooser-icon is-return"><Icon icon="lucide:package-open" /></span>
+                <span className="oc-chooser-copy">
+                  <strong>Return</strong>
+                  <small>Return the item and get a refund</small>
+                </span>
+                <Icon icon="lucide:chevron-right" className="oc-chooser-chevron" />
+              </button>
+
+              <button
+                type="button"
+                className="oc-chooser-card"
+                onClick={() => {
+                  setActionChooserOpen(false);
+                  openActionModal("exchange");
+                }}
+              >
+                <span className="oc-chooser-icon is-exchange"><Icon icon="lucide:repeat-2" /></span>
+                <span className="oc-chooser-copy">
+                  <strong>Exchange</strong>
+                  <small>Replace with another product</small>
+                </span>
+                <Icon icon="lucide:chevron-right" className="oc-chooser-chevron" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelModal.isOpen && cancelModal.type === "return" && (() => {
+        const RETURN_STEPS = ["Select Items", "Reason", "Review", "Confirm"];
+        const RETURN_SUBTITLES = {
+          1: "Get a refund for the selected item(s)",
+          2: "Let us know the reason for return",
+          3: "Review your return details",
+          4: "Your return request has been submitted",
+        };
+        const eligibleItems = getEligibleActionItems(order, "return");
+        const totals = actionEstimate?.totals || null;
+        const isFullReturn = Boolean(totals?.is_full_return);
+        const estimatedRefund = totals
+          ? (isFullReturn ? toNumber(totals.gateway_refund) : toNumber(totals.estimated_refund_amount))
+          : 0;
+        const selectedCount = selectedActionItems.length;
+        const requestId = `RMA${String(orderNumber).replace(/\D/g, "")}`;
+
+        const setItemQuantity = (itemId, maxQty, nextQty) => {
+          const quantity = Math.min(maxQty, Math.max(1, nextQty));
+          setCancelModal((current) => ({
+            ...current,
+            selected: {
+              ...current.selected,
+              [itemId]: { ...(current.selected?.[itemId] || {}), quantity },
+            },
+          }));
+        };
+
+        return (
+          <div className="cancel-modal-overlay oc-sheet-overlay">
+            <div className="cancel-modal-container oc-sheet-container oc-return-sheet">
+              <span className="oc-sheet-handle" aria-hidden="true" />
+              <button
+                type="button"
+                className="cancel-modal-close"
+                onClick={closeActionModal}
+                aria-label="Close"
+              >
+                <Icon icon="lucide:x" />
+              </button>
+
+              <div className="cancel-modal-header oc-return-header">
+                <h3>Request Return</h3>
+                <p>{RETURN_SUBTITLES[returnStep]}</p>
+              </div>
+
+              <ol className="oc-step-bar">
+                {RETURN_STEPS.map((label, index) => {
+                  const stepNo = index + 1;
+                  const state = returnStep > stepNo ? "is-done" : returnStep === stepNo ? "is-current" : "";
+                  return (
+                    <li key={label} className={`oc-step ${state}`}>
+                      <span className="oc-step-dot">
+                        {returnStep > stepNo ? <Icon icon="lucide:check" /> : stepNo}
+                      </span>
+                      <small>{label}</small>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <form onSubmit={handleModalSubmit} className="cancel-modal-form oc-return-form">
+                {/* ── Step 1: pick items and quantities ── */}
+                {returnStep === 1 && (
+                  <>
+                    <span className="oc-return-section-title">Select item(s) &amp; quantity to return</span>
+
+                    <div className="oc-return-items">
+                      {eligibleItems.map((item) => {
+                        const sel = cancelModal.selected?.[item.id] || { checked: false, quantity: getActionableQty(item) };
+                        const maxQty = getActionableQty(item);
+                        const qty = sel.checked ? (sel.quantity || maxQty) : 0;
+                        return (
+                          <div className={`oc-return-item${sel.checked ? " is-selected" : ""}`} key={item.id}>
+                            <label className="oc-return-item-main">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(sel.checked)}
+                                onChange={(event) => setCancelModal((current) => ({
+                                  ...current,
+                                  selected: {
+                                    ...current.selected,
+                                    [item.id]: { ...sel, checked: event.target.checked, quantity: sel.quantity || maxQty },
+                                  },
+                                }))}
+                              />
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                                <small>Qty Ordered: {maxQty}</small>
+                              </span>
+                            </label>
+
+                            <div className="oc-return-qty-row">
+                              <span>Return Quantity</span>
+                              <div className="oc-return-stepper">
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQuantity(item.id, maxQty, qty - 1)}
+                                  disabled={!sel.checked || qty <= 1}
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Icon icon="lucide:minus" />
+                                </button>
+                                <span>{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQuantity(item.id, maxQty, qty + 1)}
+                                  disabled={!sel.checked || qty >= maxQty}
+                                  aria-label="Increase quantity"
+                                >
+                                  <Icon icon="lucide:plus" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="oc-return-summary-bar">
+                      <span>{selectedCount} Item{selectedCount === 1 ? "" : "s"} Selected</span>
+                      <strong>
+                        {loadingEstimate
+                          ? "Calculating…"
+                          : <>Est. Refund {formatPrice(estimatedRefund)}</>}
+                      </strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="oc-return-primary-btn"
+                      disabled={selectedCount === 0}
+                      onClick={() => setReturnStep(2)}
+                    >
+                      Continue to Reason <Icon icon="lucide:arrow-right" />
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 2: reason + comments ── */}
+                {returnStep === 2 && (
+                  <>
+                    <span className="oc-return-section-title">Selected Item{selectedCount === 1 ? "" : "s"}</span>
+                    <div className="oc-return-items">
+                      {selectedActionItems.map(({ orderItemId, quantity }) => {
+                        const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+                        if (!item) return null;
+                        return (
+                          <div className="oc-return-item is-readonly" key={orderItemId}>
+                            <div className="oc-return-item-main">
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)} · Qty Returning: {quantity || getActionableQty(item)}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="return-reason">Return Reason</label>
+                      <select
+                        id="return-reason"
+                        value={cancelForm.reason}
+                        onChange={(e) => setCancelForm((prev) => ({ ...prev, reason: e.target.value }))}
+                        required
+                      >
+                        {RETURN_REASONS.map((r, i) => (
+                          <option key={i} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="return-comments">Additional Comments (Optional)</label>
+                      <textarea
+                        id="return-comments"
+                        placeholder="Tell us more so we can help you better..."
+                        maxLength={250}
+                        value={cancelForm.comments}
+                        onChange={(e) => setCancelForm((prev) => ({ ...prev, comments: e.target.value }))}
+                        rows={4}
+                      />
+                      <small className="oc-return-charcount">{cancelForm.comments.length}/250</small>
+                    </div>
+
+                    <p className="oc-return-note">
+                      <Icon icon="lucide:info" />
+                      We&rsquo;ll pick up the item from your address. Original delivery charges are not deducted.
+                    </p>
+
+                    <button type="button" className="oc-return-primary-btn" onClick={() => setReturnStep(3)}>
+                      Continue to Review <Icon icon="lucide:arrow-right" />
+                    </button>
+                    <button type="button" className="oc-return-ghost-btn" onClick={() => setReturnStep(1)}>
+                      Go Back
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 3: review + refund summary, then submit ── */}
+                {returnStep === 3 && (
+                  <>
+                    <span className="oc-return-section-title">Items to be returned</span>
+                    <div className="oc-return-items">
+                      {selectedActionItems.map(({ orderItemId, quantity }) => {
+                        const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
+                        if (!item) return null;
+                        return (
+                          <div className="oc-return-item is-readonly" key={orderItemId}>
+                            <div className="oc-return-item-main">
+                              <span className="oc-return-item-media">
+                                {getItemImage(item)
+                                  ? <img src={imgUrl(getItemImage(item), 160)} alt={item.product_name} />
+                                  : <Icon icon="lucide:image-off" />}
+                              </span>
+                              <span className="oc-return-item-copy">
+                                <strong>{item.product_name}</strong>
+                                <small>{getItemColor(item)} · Qty: {quantity || getActionableQty(item)}</small>
+                                <span className="oc-return-item-price">{formatPrice(item.price)}</span>
+                              </span>
+                              <button type="button" className="oc-return-edit" onClick={() => setReturnStep(1)}>
+                                Edit <Icon icon="lucide:pencil" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="oc-return-review-row">
+                      <span>
+                        <small>Return Reason</small>
+                        <strong>{cancelForm.reason}</strong>
+                      </span>
+                      <button type="button" className="oc-return-edit" onClick={() => setReturnStep(2)}>
+                        Edit <Icon icon="lucide:pencil" />
+                      </button>
+                    </div>
+
+                    <div className="oc-return-review-row">
+                      <span>
+                        <small>Additional Comments</small>
+                        <strong>{cancelForm.comments.trim() || "No comments added"}</strong>
+                      </span>
+                      <button type="button" className="oc-return-edit" onClick={() => setReturnStep(2)}>
+                        Edit <Icon icon="lucide:pencil" />
+                      </button>
+                    </div>
+
+                    {loadingEstimate && (
+                      <div className="action-estimate-loading">
+                        <div className="action-estimate-spinner"></div>
+                        <span>Fetching details...</span>
+                      </div>
+                    )}
+
+                    {!loadingEstimate && totals && (
+                      <div className="oc-return-refund-box">
+                        <strong className="oc-return-refund-title">Refund Summary</strong>
+
+                        {isFullReturn ? (
+                          <>
+                            <div><span>Amount paid</span><strong>{formatPrice(totals.amount_paid)}</strong></div>
+                            {toNumber(totals.platform_fee) > 0 && (
+                              <div><span>Platform Fee (non-refundable)</span><strong>-{formatPrice(totals.platform_fee)}</strong></div>
+                            )}
+                            {toNumber(totals.cod_fee) > 0 && (
+                              <div><span>COD charge (non-refundable)</span><strong>-{formatPrice(totals.cod_fee)}</strong></div>
+                            )}
+                            {toNumber(totals.gift_charge) > 0 && (
+                              <div><span>Gift charge (non-refundable)</span><strong>-{formatPrice(totals.gift_charge)}</strong></div>
+                            )}
+                          </>
+                        ) : (
+                          <div>
+                            <span>Item Price ({selectedCount} item{selectedCount === 1 ? "" : "s"})</span>
+                            <strong>{formatPrice(totals.item_amount)}</strong>
+                          </div>
+                        )}
+
+                        <div>
+                          <span>
+                            Return Pickup Charge
+                            {toNumber(totals.return_shipping_weight_kg) > 0
+                              ? ` (${totals.return_shipping_weight_kg} kg)`
+                              : ""}
+                          </span>
+                          <strong>-{formatPrice(totals.return_shipping_charge)}</strong>
+                        </div>
+
+                        {!isFullReturn && toNumber(actionEstimate?.totals?.coupon_adjustment) > 0 && (
+                          <div>
+                            <span>Coupon difference deducted</span>
+                            <strong>-{formatPrice(actionEstimate.totals.coupon_adjustment)}</strong>
+                          </div>
+                        )}
+
+                        <div className="oc-return-refund-total">
+                          <span>Estimated Refund</span>
+                          <strong>{formatPrice(estimatedRefund)}</strong>
+                        </div>
+
+                        {isFullReturn && toNumber(totals.wallet_return) > 0 && (
+                          <div className="oc-return-refund-total">
+                            <span>Returned to wallet</span>
+                            <strong>{formatPrice(totals.wallet_return)}</strong>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <p className="oc-return-note">
+                      <Icon icon="lucide:info" />
+                      You will get back the amount paid for the returned item(s) minus the return pickup charge.
+                    </p>
+
+                    <button type="submit" className="oc-return-primary-btn" disabled={modalSubmitLoading}>
+                      {modalSubmitLoading ? "Processing..." : <>Confirm Return Request <Icon icon="lucide:arrow-right" /></>}
+                    </button>
+                    <button
+                      type="button"
+                      className="oc-return-ghost-btn"
+                      onClick={() => setReturnStep(2)}
+                      disabled={modalSubmitLoading}
+                    >
+                      Go Back
+                    </button>
+                  </>
+                )}
+
+                {/* ── Step 4: submitted ── */}
+                {returnStep === 4 && (
+                  <div className="oc-return-success">
+                    <span className="oc-return-success-icon"><Icon icon="lucide:package-check" /></span>
+                    <strong>Return Request Submitted!</strong>
+                    <p>{returnResult?.message || "We've received your return request and will pick up the item soon."}</p>
+
+                    <div className="oc-return-next">
+                      <strong>What happens next?</strong>
+                      <span><Icon icon="lucide:circle-check" /> Pickup will be scheduled within 24-48 hours</span>
+                      <span><Icon icon="lucide:circle-check" /> Item will be inspected at our facility</span>
+                      <span><Icon icon="lucide:circle-check" /> Refund will be initiated after inspection (5-7 working days)</span>
+                    </div>
+
+                    <div className="oc-return-request-id">
+                      <span>
+                        <small>Request ID</small>
+                        <strong>{requestId}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard?.writeText(requestId)}
+                        aria-label="Copy request ID"
+                      >
+                        <Icon icon="lucide:copy" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="oc-return-primary-btn is-solid"
+                      onClick={() => { closeActionModal(true); navigate("/my-orders"); }}
+                    >
+                      View Return Requests
+                    </button>
+                    <button
+                      type="button"
+                      className="oc-return-ghost-btn"
+                      onClick={() => { closeActionModal(true); navigate("/collection"); }}
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+        );
+      })()}
+
+      {cancelModal.isOpen && cancelModal.type !== "return" && (
+        <div className="cancel-modal-overlay oc-sheet-overlay">
+          <div className="cancel-modal-container oc-sheet-container">
+            <span className="oc-sheet-handle" aria-hidden="true" />
             <button
               type="button"
               className="cancel-modal-close"
