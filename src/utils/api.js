@@ -14,58 +14,102 @@ const clearStoredAuth = () => {
   });
 };
 
-// Request interceptor for API calls
+// Where this session's tokens live. A "keep me logged in" login writes to localStorage;
+// otherwise sessionStorage. Resolved per call rather than cached, because the choice is
+// made at login and this module outlives it.
+const tokenStore = () => (localStorage.getItem('refreshToken') ? localStorage : sessionStorage);
+
+const readToken = (key) => localStorage.getItem(key) || sessionStorage.getItem(key);
+
+/**
+ * The single in-flight refresh.
+ *
+ * The server ROTATES the refresh token on every use and checks it against the copy stored
+ * on the user row (AuthService.refreshToken: `user.refresh_token !== token` -> reject). So
+ * a refresh token is strictly single-use.
+ *
+ * Without this lock, returning to the site with an expired access token was a race: the
+ * page fires several authenticated requests at once, all get 401 together, and each one
+ * calls /refresh-token with the SAME token. The first rotates it; the rest present a token
+ * that no longer matches, get "Invalid refresh token", and wipe the session — so the user
+ * is bounced to login even though their session was perfectly renewable.
+ *
+ * That is why it only happened on *some* pages: a page making one authenticated request
+ * never raced, a page making several always did.
+ *
+ * Now the first 401 owns the refresh and everyone else awaits the same promise.
+ */
+let refreshPromise = null;
+
+const refreshAccessToken = () => {
+  if (refreshPromise) return refreshPromise;
+
+  const refreshToken = readToken('refreshToken');
+  if (!refreshToken) return Promise.reject(new Error('No refresh token'));
+
+  refreshPromise = axios
+    // Bare axios, not `api` — a 401 from the refresh endpoint itself must not re-enter
+    // this interceptor and recurse.
+    .post(`${API_ENDPOINTS.auth}/refresh-token`, { token: refreshToken })
+    .then((res) => {
+      const { accessToken, refreshToken: nextRefreshToken } = res.data || {};
+      if (!accessToken) throw new Error('Refresh returned no access token');
+
+      const storage = tokenStore();
+      storage.setItem('accessToken', accessToken);
+      // The rotated token MUST be persisted before any queued request retries — the old
+      // one is already dead server-side.
+      if (nextRefreshToken) storage.setItem('refreshToken', nextRefreshToken);
+
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      return accessToken;
+    })
+    .finally(() => {
+      // Cleared either way: a failed refresh must not pin every later request to the
+      // same rejected promise for the rest of the session.
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+};
+
 api.interceptors.request.use(
-  async config => {
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+  (config) => {
+    const token = readToken('accessToken');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
-  error => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
-// Response interceptor for API calls
 api.interceptors.response.use(
-  response => {
-    return response;
-  },
-  async error => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
-      
-      if (refreshToken) {
-        try {
-          const res = await axios.post(`${API_ENDPOINTS.auth}/refresh-token`, { token: refreshToken });
-          if (res.status === 200) {
-            const { accessToken, refreshToken: nextRefreshToken } = res.data;
-            const keepLoggedIn = !!localStorage.getItem('refreshToken');
-            const storage = keepLoggedIn ? localStorage : sessionStorage;
-            
-            storage.setItem('accessToken', accessToken);
-            if (nextRefreshToken) storage.setItem('refreshToken', nextRefreshToken);
-            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-            axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-            originalRequest.headers = originalRequest.headers || {};
-            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
-            return api(originalRequest);
-          }
-        } catch {
-          // Refresh token expired or invalid
-          clearStoredAuth();
-          window.location.href = "/login?refresh=session";
-        }
-      } else {
-        window.location.href = "/login?refresh=session";
-      }
+    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
+    originalRequest._retry = true;
+
+    try {
+      const accessToken = await refreshAccessToken();
+      originalRequest.headers = originalRequest.headers || {};
+      originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+      return api(originalRequest);
+    } catch {
+      // The session is genuinely gone (refresh expired, revoked, or absent).
+      clearStoredAuth();
+      // Guard against a redirect loop: already on /login means the login page itself made
+      // the failing call, and navigating again would reload it forever.
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login?refresh=session';
+      }
+      return Promise.reject(error);
+    }
+  },
 );
 
 export default api;

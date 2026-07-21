@@ -4,6 +4,7 @@ import { MessageSquare, Send, ShieldCheck, Sparkles, Star } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "../../config/api";
+import api from "../../utils/api";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { Icon } from "@iconify/react";
 
@@ -44,17 +45,15 @@ const Feedback = () => {
     setMessage({ type: "", text: "" });
 
     try {
-      const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-      const response = await fetch(API_ENDPOINTS.feedbackGeneral, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ rating, comment: trimmedComment })
+      // Via `api`, not raw fetch: attaching the token by hand skips the response
+      // interceptor, so an expired access token would fail here with no refresh attempt —
+      // the user sees "invalid token" on this page while others silently recover.
+      const response = await api.post(API_ENDPOINTS.feedbackGeneral, {
+        rating,
+        comment: trimmedComment,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setMessage({ type: "success", text: "Thank you! Your feedback has been submitted." });
