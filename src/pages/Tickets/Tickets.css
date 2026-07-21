@@ -463,14 +463,23 @@
 
 /* ── Realtime: typing indicator + read receipt ─────────────────────────────────────── */
 
-.ticket-bubble-seen {
+/* Delivery ticks: sent (single) -> delivered (double) -> read (double, blue).
+   Blue is the only colour change; the shape carries the sent/delivered distinction, so the
+   states stay legible to anyone who can't separate grey from blue. */
+.ticket-ticks {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-left: 8px;
-  color: #1a7f4b;
-  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+  line-height: 0;
 }
+
+.ticket-ticks svg { font-size: 15px; }
+
+.ticket-ticks.is-sent,
+.ticket-ticks.is-delivered { color: rgba(93, 23, 13, 0.42); }
+
+.ticket-ticks.is-read { color: #1da1f2; }
 
 .ticket-bubble-typing {
   display: flex;

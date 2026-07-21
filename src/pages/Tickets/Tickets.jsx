@@ -11,6 +11,29 @@ import "./Tickets.css";
 // EventSource needs an absolute URL — it does not inherit the axios baseURL.
 const API_BASE = API_ENDPOINTS.base;
 
+/**
+ * WhatsApp-style delivery state for one of OUR messages.
+ *
+ *   ✓        sent      — saved on the server
+ *   ✓✓ grey  delivered — reached the other side's browser
+ *   ✓✓ blue  read      — they opened the thread past this message
+ *
+ * Read is derived from the other side's watermark rather than stored per message: one
+ * timestamp answers it for the whole thread, and it can only ever move forward.
+ */
+const MessageTicks = ({ message, readAt }) => {
+  const read = readAt && new Date(readAt) >= new Date(message.createdAt);
+  const delivered = Boolean(message.delivered_at);
+  const state = read ? "is-read" : delivered ? "is-delivered" : "is-sent";
+  const label = read ? "Read" : delivered ? "Delivered" : "Sent";
+
+  return (
+    <span className={`ticket-ticks ${state}`} role="img" aria-label={label} title={label}>
+      <Icon icon={delivered || read ? "lucide:check-check" : "lucide:check"} />
+    </span>
+  );
+};
+
 const STATUS_META = {
   Open: { tone: "is-open", icon: "lucide:circle-dot", note: "Our team has your request." },
   "In Progress": { tone: "is-progress", icon: "lucide:loader", note: "Support is working on it." },
@@ -109,20 +132,37 @@ const Tickets = () => {
     setSupportTyping(false);
   }, [selectedId, fetchThread]);
 
+  /**
+   * Append a message once, whichever path delivers it first.
+   *
+   * A sent message arrives TWICE: from the POST response, and from our own SSE stream
+   * (the server broadcasts to everyone on the thread, including the sender). The stream
+   * usually wins, because the server emits synchronously inside the request handler —
+   * before the HTTP response has travelled back over the network.
+   *
+   * So both paths go through here and the id check lives in one place. When the append was
+   * split across two call sites with the guard on only one of them, every message the
+   * customer sent appeared twice.
+   */
+  const appendMessage = useCallback((incoming) => {
+    if (!incoming) return;
+    setActiveTicket((current) => {
+      if (!current) return current;
+      const messages = current.messages || [];
+      if (messages.some((m) => String(m.id) === String(incoming.id))) return current;
+      return { ...current, messages: [...messages, incoming] };
+    });
+  }, []);
+
   // ── Realtime ────────────────────────────────────────────────────────────────────────
   useSupportStream(
     selectedId ? `${API_BASE}/api/support/tickets/${selectedId}/stream` : null,
     (event) => {
       switch (event.type) {
         case "message":
-          setActiveTicket((current) => {
-            if (!current) return current;
-            // The sender already appended its own message optimistically, and the stream
-            // echoes to everyone — so drop anything we already hold rather than double it.
-            const messages = current.messages || [];
-            if (messages.some((m) => String(m.id) === String(event.message.id))) return current;
-            return { ...current, messages: [...messages, event.message] };
-          });
+          // Same appender as the POST path — the stream echoes to everyone including the
+          // sender, so this is frequently a message we already hold.
+          appendMessage(event.message);
           break;
         case "typing":
           // Only the OTHER side's typing is interesting; ours would be a mirror.
@@ -130,6 +170,19 @@ const Tickets = () => {
           break;
         case "read":
           if (event.side === "admin") setAdminReadAt(event.read_at);
+          break;
+        case "delivered":
+          // ✓ -> ✓✓ on the messages that just reached support's browser.
+          setActiveTicket((current) => {
+            if (!current) return current;
+            const ids = new Set((event.ids || []).map(String));
+            return {
+              ...current,
+              messages: (current.messages || []).map((m) => (
+                ids.has(String(m.id)) ? { ...m, delivered_at: event.delivered_at } : m
+              )),
+            };
+          });
           break;
         case "status":
           // Support closing the thread must disable our composer immediately — otherwise
@@ -172,11 +225,9 @@ const Tickets = () => {
       const response = await api.post(`/api/support/tickets/${activeTicket.id}/messages`, {
         message: text,
       });
-      const posted = response.data?.message;
       setReply("");
-      setActiveTicket((current) => (current
-        ? { ...current, messages: [...(current.messages || []), posted] }
-        : current));
+      // May already be here via our own stream — appendMessage is idempotent on id.
+      appendMessage(response.data?.message);
       // The list orders by last activity, so it is stale the moment a reply lands.
       fetchTickets();
     } catch (error) {
@@ -297,13 +348,11 @@ const Tickets = () => {
             {meta.note}
           </p>
 
-          {messages.map((message, index) => {
-            // "Seen" belongs on OUR last message only — repeating it under every bubble is
-            // noise, and it means nothing under a message support wrote themselves.
-            const isLastOwn = message.sender === "customer"
-              && !messages.slice(index + 1).some((m) => m.sender === "customer");
-            const seen = isLastOwn && adminReadAt
-              && new Date(adminReadAt) >= new Date(message.createdAt);
+          {messages.map((message) => {
+            // Ticks go on every message WE sent, like a chat app — not just the last one.
+            // The opening message is synthesised from the ticket row and has no delivery
+            // record of its own, so it is excluded.
+            const isOwn = message.sender === "customer" && !String(message.id).startsWith("ticket-");
             return (
               <div
                 key={message.id}
@@ -316,11 +365,7 @@ const Tickets = () => {
                   <p>{message.message}</p>
                   <span className="ticket-bubble-time">
                     {formatStamp(message.createdAt)}
-                    {seen && (
-                      <span className="ticket-bubble-seen" title="Seen by support">
-                        <Icon icon="lucide:check-check" /> Seen
-                      </span>
-                    )}
+                    {isOwn && <MessageTicks message={message} readAt={adminReadAt} />}
                   </span>
                 </div>
               </div>

@@ -1,8 +1,12 @@
-/* ── Track your Order — bottom-sheet modal (shared: order detail + my orders) ── */
+/* ── Track Your Order — bottom sheet (shared: order detail + my orders) ──────────────
+   Sheet, not a centred dialog, on every width: it is opened by a thumb from a list of
+   orders, so it belongs under the thumb. On desktop it stays bottom-anchored but caps
+   its width so it doesn't stretch across a monitor. */
+
 .track-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(50, 22, 14, 0.45);
+  background: rgba(50, 22, 14, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -13,17 +17,21 @@
 }
 
 .track-modal-sheet {
+  position: relative;
   width: min(560px, 100%);
-  max-height: 85dvh;
+  /* dvh, not vh: on mobile Safari the toolbar collapse makes vh taller than the visible
+     viewport, which would push the sheet's footer under the browser chrome. */
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
   background: #fffdf8;
-  border: 1px solid rgba(123, 0, 27, 0.14);
-  border-radius: 20px 20px 0 0;
+  border-radius: 26px 26px 0 0;
   box-shadow: 0 -18px 50px rgba(65, 29, 11, 0.22);
-  padding: 22px 22px 18px;
+  padding: 0 22px calc(18px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  animation: track-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: track-sheet-up 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 @keyframes track-modal-fade-in {
@@ -40,176 +48,254 @@
   to { transform: rotate(360deg); }
 }
 
-.track-modal-head {
+@media (prefers-reduced-motion: reduce) {
+  .track-modal-overlay,
+  .track-modal-sheet { animation: none; }
+  .track-modal-sheet { transition: none; }
+}
+
+/* ── Grab handle ─────────────────────────────────────────────────────────────────── */
+.track-modal-grab {
+  padding: 10px 0 6px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  justify-content: center;
+  cursor: grab;
+  /* The sheet scrolls vertically inside; without this the browser claims the gesture
+     and the drag never reaches the handler. */
+  touch-action: none;
+  flex-shrink: 0;
+  /* A drag that starts on the handle must not select the heading underneath. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.track-modal-grab:active { cursor: grabbing; }
+
+.track-modal-grabber {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(93, 23, 13, 0.18);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────────────── */
+.track-modal-head {
+  padding: 4px 44px 16px 0; /* right pad clears the close button */
+  flex-shrink: 0;
 }
 
 .track-modal-head h3 {
   margin: 0;
   color: #7b001b;
   font-family: "Cinzel", serif;
-  font-size: clamp(18px, 4vw, 22px);
+  font-size: clamp(20px, 5vw, 25px);
   font-weight: 700;
+  line-height: 1.2;
+}
+
+.track-modal-head p {
+  margin: 4px 0 0;
+  color: rgba(93, 23, 13, 0.6);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .track-modal-close {
-  width: 32px;
-  height: 32px;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  background: rgba(123, 0, 27, 0.05);
-  color: #7b001b;
+  background: rgba(93, 23, 13, 0.07);
+  color: #5d170d;
   border: 0;
   cursor: pointer;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  transition: background 150ms ease, transform 100ms ease;
+  z-index: 2;
+  transition: background 150ms ease;
 }
 
-.track-modal-close:hover {
-  background: rgba(123, 0, 27, 0.12);
-  transform: scale(1.05);
-}
+.track-modal-close:hover { background: rgba(93, 23, 13, 0.14); }
+.track-modal-close svg { font-size: 18px; }
 
-.track-modal-close svg {
-  font-size: 18px;
-}
-
-.track-modal-info {
-  background: #f4effa;
-  border: 1px solid rgba(104, 64, 170, 0.14);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  flex-shrink: 0;
-}
-
-.track-modal-info-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 5px 0;
-  font-size: 13px;
-  color: #6b5a4e;
-}
-
-.track-modal-info-row strong {
-  color: #3d1b12;
-  font-weight: 700;
-  text-align: right;
-}
-
+/* ── Timeline ────────────────────────────────────────────────────────────────────── */
 .track-modal-timeline {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 6px 4px 2px;
-  margin-right: -6px;
+  overscroll-behavior: contain; /* don't scroll the page behind at the ends */
+  padding-right: 4px;
+  margin-right: -4px;
 }
 
-.track-modal-timeline::-webkit-scrollbar {
-  width: 6px;
-}
-
+.track-modal-timeline::-webkit-scrollbar { width: 5px; }
 .track-modal-timeline::-webkit-scrollbar-thumb {
-  background: rgba(123, 0, 27, 0.2);
+  background: rgba(123, 0, 27, 0.18);
   border-radius: 999px;
 }
+.track-modal-timeline::-webkit-scrollbar-track { background: transparent; }
 
-.track-modal-timeline::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.track-modal-item {
+.track-step {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 0 22px 34px;
+  padding: 0 0 22px 44px;
 }
 
-.track-modal-item:last-child {
-  padding-bottom: 4px;
-}
+.track-step:last-child { padding-bottom: 6px; }
 
-.track-modal-dot {
+.track-step-dot {
   position: absolute;
   left: 0;
   top: 0;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  background: #087a55;
+  background: #7b001b;
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 12px;
 }
 
-.track-modal-dot svg {
-  font-size: 13px;
-}
+.track-step-dot svg { font-size: 15px; }
 
-.track-modal-line {
+/* Connector. Starts under the dot and runs to the next one — `bottom: -6px` overlaps the
+   next dot's top edge so no hairline gap shows at fractional device pixel ratios. */
+.track-step-line {
   position: absolute;
-  left: 10px;
-  top: 22px;
-  bottom: -22px;
+  left: 13px;
+  top: 28px;
+  bottom: -6px;
   width: 2px;
-  background: rgba(8, 122, 85, 0.25);
+  background: rgba(123, 0, 27, 0.35);
 }
 
-.track-modal-item-copy {
-  flex: 1;
-  min-width: 0;
-}
+.track-step-body { min-width: 0; }
 
-.track-modal-item-copy strong {
+.track-step-body strong {
   display: block;
-  color: #087a55;
-  font-size: 13.5px;
+  color: #7b001b;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 2px;
+  line-height: 1.35;
 }
 
-.track-modal-item-copy p {
-  margin: 0;
-  color: #8a7565;
-  font-size: 12px;
+.track-step-body time {
+  display: block;
+  margin-top: 2px;
+  color: rgba(93, 23, 13, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.track-step-body p {
+  margin: 4px 0 0;
+  color: rgba(93, 23, 13, 0.62);
+  font-size: 13.5px;
+  line-height: 1.5;
   word-break: break-word;
 }
 
-.track-modal-item-date {
-  flex-shrink: 0;
-  color: #5d170d;
-  font-size: 12px;
+/* ── Detail cards (AWB, courier) ─────────────────────────────────────────────────── */
+.track-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(123, 0, 27, 0.05);
+}
+
+.track-card-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.track-card-col span {
+  color: rgba(93, 23, 13, 0.55);
+  font-size: 11.5px;
   font-weight: 600;
-  white-space: nowrap;
+}
+
+.track-card-col strong {
+  color: #7b001b;
+  font-size: 14.5px;
+  font-weight: 700;
+  /* AWB numbers and phone numbers read better with even digit widths, and it stops the
+     two columns jittering as values change. */
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-card-call {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #7b001b;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.track-card-call:hover { background: rgba(123, 0, 27, 0.1); }
+.track-card-call svg { font-size: 19px; }
+
+/* ── Footer states ───────────────────────────────────────────────────────────────── */
+.track-modal-thanks {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(123, 0, 27, 0.05);
+  flex-shrink: 0;
+}
+
+.track-modal-thanks-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.22);
+  color: #a67c00;
+}
+
+.track-modal-thanks-icon svg { font-size: 17px; }
+
+.track-modal-thanks p {
+  margin: 0;
+  color: rgba(93, 23, 13, 0.78);
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
 .track-modal-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 30px 10px;
+  gap: 10px;
+  padding: 36px 16px;
   color: #8a7565;
-  font-size: 13px;
+  font-size: 13.5px;
+  line-height: 1.5;
   text-align: center;
 }
 
 .track-modal-empty svg {
-  font-size: 24px;
+  font-size: 26px;
   color: #b98b6f;
 }
 
-.track-modal-empty svg.is-spinning {
-  animation: track-modal-spin 0.8s linear infinite;
-}
+.track-modal-empty svg.is-spinning { animation: track-modal-spin 0.8s linear infinite; }
 
 .track-modal-external {
   display: flex;
@@ -217,16 +303,14 @@
   justify-content: center;
   gap: 8px;
   margin-top: 14px;
-  padding: 11px;
+  padding: 12px;
   border-radius: 12px;
-  border: 1.5px solid rgba(128, 0, 32, 0.4);
-  color: #800020;
-  font-size: 13px;
+  border: 1.5px solid rgba(123, 0, 27, 0.35);
+  color: #7b001b;
+  font-size: 13.5px;
   font-weight: 700;
   text-decoration: none;
   flex-shrink: 0;
 }
 
-.track-modal-external svg {
-  font-size: 14px;
-}
+.track-modal-external svg { font-size: 14px; }
