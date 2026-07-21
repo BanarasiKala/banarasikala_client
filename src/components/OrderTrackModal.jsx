@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../utils/api";
+import useBottomSheet from "../hooks/useBottomSheet";
 import "./OrderTrackModal.css";
 
 // ShipRocket sends scan timestamps as "YYYY-MM-DD HH:mm:ss" (no timezone) —
@@ -49,11 +50,9 @@ export default function OrderTrackModal({ order, statusLabel, tracking, loading,
   const selfFetch = tracking === undefined;
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(selfFetch);
-  // Drag-to-dismiss offset. The grabber promises the sheet can be pulled down, so it has
-  // to actually do it — a handle that doesn't drag is worse than no handle.
-  const [dragY, setDragY] = useState(0);
-  const dragStart = useRef(null);
-  const sheetRef = useRef(null);
+  // Drag-to-dismiss, Escape, and the body scroll lock — shared with the order details
+  // sheet so both behave identically.
+  const { sheetRef, grabHandlers, sheetStyle } = useBottomSheet(onClose);
 
   useEffect(() => {
     if (!selfFetch || !order?.id) return undefined;
@@ -73,18 +72,6 @@ export default function OrderTrackModal({ order, statusLabel, tracking, loading,
       cancelled = true;
     };
   }, [selfFetch, order?.id]);
-
-  // Close on Escape, and stop the page behind from scrolling while the sheet is up.
-  useEffect(() => {
-    const onKey = (event) => { if (event.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
 
   const trackingData = selfFetch ? fetched : tracking;
   const isLoading = selfFetch ? fetching : Boolean(loading);
@@ -142,26 +129,6 @@ export default function OrderTrackModal({ order, statusLabel, tracking, loading,
     };
   }, [steps]);
 
-  // ── Drag to dismiss ───────────────────────────────────────────────────────────────
-  const onDragStart = (event) => {
-    dragStart.current = event.touches?.[0]?.clientY ?? event.clientY;
-  };
-  const onDragMove = (event) => {
-    if (dragStart.current == null) return;
-    const y = event.touches?.[0]?.clientY ?? event.clientY;
-    // Downward only — dragging up must not lift the sheet off the bottom edge.
-    setDragY(Math.max(0, y - dragStart.current));
-  };
-  const onDragEnd = () => {
-    if (dragStart.current == null) return;
-    dragStart.current = null;
-    // Past a quarter of the sheet's height reads as intent to dismiss; anything less
-    // springs back, so a stray scroll doesn't close a sheet the customer is reading.
-    const threshold = (sheetRef.current?.offsetHeight || 400) * 0.25;
-    if (dragY > threshold) onClose?.();
-    else setDragY(0);
-  };
-
   return (
     <div className="track-modal-overlay" onClick={onClose} role="presentation">
       <div
@@ -171,20 +138,11 @@ export default function OrderTrackModal({ order, statusLabel, tracking, loading,
         aria-modal="true"
         aria-label="Track your order"
         onClick={(event) => event.stopPropagation()}
-        style={dragY ? { transform: `translateY(${dragY}px)`, transition: "none" } : undefined}
+        style={sheetStyle}
       >
-        {/* Grab area — the handle and the header both drag, which is what a thumb
-            actually lands on. */}
-        <div
-          className="track-modal-grab"
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
-          onMouseDown={onDragStart}
-          onMouseMove={onDragMove}
-          onMouseUp={onDragEnd}
-          onMouseLeave={onDragEnd}
-        >
+        {/* Grab area — the whole strip drags, not just the visible pill, which is what a
+            thumb actually lands on. */}
+        <div className="track-modal-grab" {...grabHandlers}>
           <span className="track-modal-grabber" />
         </div>
 

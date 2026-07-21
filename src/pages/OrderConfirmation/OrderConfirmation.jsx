@@ -11,6 +11,7 @@ import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads
 import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
 import OrderTrackModal from "../../components/OrderTrackModal";
+import useBottomSheet from "../../hooks/useBottomSheet";
 import "./OrderConfirmation.css";
 
 const PLATFORM_FEE_AMOUNT = numberEnv("VITE_PLATFORM_FEE_AMOUNT");
@@ -854,6 +855,52 @@ const OrderConfirmationSkeleton = () => (
   </main>
 );
 
+/**
+ * The full order details (timeline, items, refund, address) as a bottom sheet.
+ *
+ * "Track your order" is a thumb action on a phone, so the panel it opens belongs under the
+ * thumb — same shape as OrderTrackModal, which this deliberately mirrors: rounded top
+ * corners, grab handle, slide up from the bottom edge.
+ *
+ * The scroll lives on the inner body, not the overlay. This panel is long, and if the
+ * overlay scrolled instead, the close button — positioned against the sheet — would slide
+ * away with the content and strand the customer inside a full-screen panel.
+ */
+const OrderDetailsSheet = ({ onClose, children }) => {
+  const { sheetRef, grabHandlers, sheetStyle } = useBottomSheet(onClose);
+
+  return (
+    <div className="oc-details-overlay" onClick={onClose} role="presentation">
+      <div
+        ref={sheetRef}
+        className="oc-details-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Order details"
+        onClick={(event) => event.stopPropagation()}
+        style={sheetStyle}
+      >
+        {/* The handle is the whole strip, not just the visible pill — a thumb aiming for a
+            4px bar lands around it as often as on it. */}
+        <div className="oc-details-grab" {...grabHandlers}>
+          <span className="oc-details-grabber" />
+        </div>
+
+        <button
+          type="button"
+          className="oc-details-close"
+          onClick={onClose}
+          aria-label="Close order details"
+        >
+          <Icon icon="lucide:x" />
+        </button>
+
+        <div className="oc-details-body">{children}</div>
+      </div>
+    </div>
+  );
+};
+
 export default function OrderConfirmation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -902,6 +949,7 @@ export default function OrderConfirmation() {
   // (timeline, items, cancel/return/exchange, refund, address) in a modal instead
   // of it sitting inline on the page.
   const [orderDetailsModalOpen, setOrderDetailsModalOpen] = useState(false);
+  const closeOrderDetails = useCallback(() => setOrderDetailsModalOpen(false), []);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
@@ -1082,7 +1130,7 @@ export default function OrderConfirmation() {
       const tickets = Array.isArray(response.data) ? response.data : [];
       setTicket(tickets[0] || null);
     } catch {
-      // Non-blocking: the help box still offers "Contact Us" without a status.
+      // Non-blocking: the help box still offers "Query Us" without a status.
     }
   }, [orderId]);
 
@@ -1090,7 +1138,7 @@ export default function OrderConfirmation() {
     fetchTicket();
   }, [fetchTicket]);
 
-  // One ticket per order: once it exists, "Contact Us" leads back INTO that conversation
+  // One query per order: once it exists, "Query Us" leads back INTO that conversation
   // instead of starting a second one.
   const openSupportModal = () => {
     if (ticket?.id) {
@@ -1122,16 +1170,16 @@ export default function OrderConfirmation() {
         message: supportForm.message.trim(),
         phone: supportForm.phone.trim(),
       });
-      showNotification(response.data?.message || "Your ticket has been raised.", "success");
+      showNotification(response.data?.message || "Your query has been raised.", "success");
       setSupportModal(false);
       fetchTicket();
       if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
     } catch (err) {
-      // 409 = a ticket already exists for this order (raised elsewhere). Send the customer
+      // 409 = a query already exists for this order (raised elsewhere). Send the customer
       // to that conversation instead of leaving them on a dead error.
       const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
       showNotification(
-        err?.response?.data?.message || "Unable to raise your ticket right now.",
+        err?.response?.data?.message || "Unable to raise your query right now.",
         existing ? "warning" : "error",
       );
       if (existing?.id) {
@@ -2384,11 +2432,11 @@ export default function OrderConfirmation() {
                   {ticket.ticket_number} · {ticket.status}
                 </span>
               ) : (
-                <span>Contact our support team</span>
+                <span>Raise a query with our support team</span>
               )}
             </div>
             <button type="button" className="order-help-btn" onClick={openSupportModal}>
-              {ticket ? "View Ticket" : "Contact Us"}
+              {ticket ? "View Query" : "Query Us"}
             </button>
           </div>
 
@@ -2419,17 +2467,7 @@ export default function OrderConfirmation() {
       </section>
 
       {orderDetailsModalOpen && (
-        <div className="oc-details-overlay" onClick={() => setOrderDetailsModalOpen(false)}>
-          <div className="oc-details-sheet" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="oc-details-close"
-              onClick={() => setOrderDetailsModalOpen(false)}
-              aria-label="Close tracking"
-            >
-              <Icon icon="lucide:x" />
-            </button>
-
+        <OrderDetailsSheet onClose={closeOrderDetails}>
             <section className="order-panel">
               <div className="order-panel-head">
                 <h2>{hasLiveTracking ? "Live Tracking" : "Shipment Timeline"}</h2>
@@ -2531,8 +2569,7 @@ export default function OrderConfirmation() {
                 )}
               </section>
             )}
-          </div>
-        </div>
+        </OrderDetailsSheet>
       )}
 
       {rtoConfirmOpen && (
@@ -2729,7 +2766,7 @@ export default function OrderConfirmation() {
                   Go Back
                 </button>
                 <button type="submit" className="modal-action-btn primary" disabled={supportSubmitting}>
-                  {supportSubmitting ? "Raising ticket..." : "Raise Ticket"}
+                  {supportSubmitting ? "Raising query..." : "Raise Query"}
                 </button>
               </div>
             </form>

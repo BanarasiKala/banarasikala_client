@@ -109,7 +109,7 @@ const Tickets = () => {
       setAdminReadAt(response.data?.admin_read_at || null);
     } catch (error) {
       showNotification(
-        error?.response?.data?.message || "Unable to open this ticket.",
+        error?.response?.data?.message || "Unable to open this query.",
         "error",
       );
       setActiveTicket(null);
@@ -250,7 +250,7 @@ const Tickets = () => {
       return (
         <div className="tickets-empty">
           <Icon icon="lucide:loader-2" className="tickets-spin" />
-          <p>Loading your tickets…</p>
+          <p>Loading your queries…</p>
         </div>
       );
     }
@@ -259,8 +259,8 @@ const Tickets = () => {
       return (
         <div className="tickets-empty">
           <span className="tickets-empty-icon"><Icon icon="lucide:message-circle-question" /></span>
-          <h2>No tickets yet</h2>
-          <p>Raise a ticket from any order in My Orders and the conversation will show up here.</p>
+          <h2>No queries yet</h2>
+          <p>Raise a query from any order in My Orders and the conversation will show up here.</p>
           <button type="button" className="tickets-primary-btn" onClick={() => navigate("/my-orders")}>
             Go to My Orders
           </button>
@@ -313,8 +313,8 @@ const Tickets = () => {
       return (
         <div className="tickets-empty tickets-empty--panel">
           <span className="tickets-empty-icon"><Icon icon="lucide:messages-square" /></span>
-          <h2>Select a ticket</h2>
-          <p>Pick a ticket on the left to read the conversation and reply to our support team.</p>
+          <h2>Select a query</h2>
+          <p>Pick a query on the left to read the conversation and reply to our support team.</p>
         </div>
       );
     }
@@ -325,7 +325,7 @@ const Tickets = () => {
     return (
       <div className="ticket-thread">
         <div className="ticket-thread-head">
-          <button type="button" className="ticket-back" onClick={backToList} aria-label="Back to tickets">
+          <button type="button" className="ticket-back" onClick={backToList} aria-label="Back to queries">
             <Icon icon="lucide:arrow-left" />
           </button>
           <div className="ticket-thread-title">
@@ -400,7 +400,7 @@ const Tickets = () => {
         ) : (
           <div className="ticket-reply-closed">
             <Icon icon="lucide:lock" />
-            <span>This ticket is closed. Raise a new one from the order if you still need help.</span>
+            <span>This query is closed. Raise a new one from the order if you still need help.</span>
           </div>
         )}
       </div>
@@ -410,7 +410,7 @@ const Tickets = () => {
   return (
     <div className={`tickets-page${selectedId ? " has-selection" : ""}`}>
       <section className="tickets-hero">
-        <h1>Support Tickets</h1>
+        <h1>My Queries</h1>
         <span>
           {openCount > 0
             ? `${openCount} active ${openCount === 1 ? "conversation" : "conversations"} with our support team`

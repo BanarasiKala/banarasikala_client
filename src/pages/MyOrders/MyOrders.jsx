@@ -697,11 +697,11 @@ const OrderCard = ({ order, ticket, closedTicket, onFeedback, onContact, onNotif
                 {closedTicket.ticket_number} · Closed — view
               </button>
             ) : (
-              <span>Contact our support team</span>
+              <span>Raise a query with our support team</span>
             )}
           </div>
           <button type="button" className="order-help-btn" onClick={() => onContact(order)}>
-            {ticket ? "View Ticket" : "Contact Us"}
+            {ticket ? "View Query" : "Query Us"}
           </button>
         </div>
 
@@ -786,8 +786,8 @@ export default function MyOrders() {
    * at all when a fresh problem appears weeks later. (This mirrors the server: see the
    * status filter in SupportController.createTicket.)
    *
-   *   live ticket   -> "View Ticket"   (continue the conversation)
-   *   only closed   -> "Contact Us"    (raise a new one; the old one stays readable)
+   *   live ticket   -> "View Query"    (continue the conversation)
+   *   only closed   -> "Query Us"      (raise a new one; the old one stays readable)
    *
    * `tickets` arrives newest-first, so the first match in each bucket is the right one.
    */
@@ -843,7 +843,7 @@ export default function MyOrders() {
       const response = await api.get("/api/support/tickets/my");
       setTickets(Array.isArray(response.data) ? response.data : []);
     } catch {
-      // Non-blocking: the cards still offer "Contact Us", just without a status.
+      // Non-blocking: the cards still offer "Query Us", just without a status.
     }
   }, [user]);
 
@@ -881,16 +881,16 @@ export default function MyOrders() {
         message: supportForm.message.trim(),
         phone: supportForm.phone.trim(),
       });
-      showNotification(response.data?.message || "Your ticket has been raised.", "success");
+      showNotification(response.data?.message || "Your query has been raised.", "success");
       setSupportModal({ isOpen: false, order: null });
       fetchTickets();
       if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
     } catch (err) {
-      // 409 = a ticket already exists for this order (raised on another tab/device). Take the
+      // 409 = a query already exists for this order (raised on another tab/device). Take the
       // customer to that conversation rather than leaving them staring at an error.
       const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
       showNotification(
-        err?.response?.data?.message || "Unable to raise your ticket right now.",
+        err?.response?.data?.message || "Unable to raise your query right now.",
         existing ? "warning" : "error",
       );
       if (existing?.id) {
@@ -1275,7 +1275,7 @@ export default function MyOrders() {
                   Go Back
                 </button>
                 <button type="submit" className="modal-action-btn primary" disabled={supportSubmitting}>
-                  {supportSubmitting ? "Raising ticket..." : "Raise Ticket"}
+                  {supportSubmitting ? "Raising query..." : "Raise Query"}
                 </button>
               </div>
             </form>

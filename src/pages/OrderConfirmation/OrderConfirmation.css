@@ -1,10 +1,49 @@
 .order-confirmation-page {
   /* The gutter the page reserves either side; the hero cancels it to bleed. */
   --oc-gutter: max(18px, calc((100vw - 1120px) / 2));
+
+  /* Page backdrop: the site's header artwork under a light wash.
+     Relative path, NOT "/src/assets/…": a leading slash makes Vite treat the URL as a
+     public-directory file, so it is neither hashed nor emitted and 404s in a production
+     build. This form is resolved and fingerprinted at build time. Same image and layer
+     order the body already uses (index.css), so it is cached by the time this page loads.
+     The wash is what keeps the page legible — the artwork is busy and #32150f body text
+     sits on it. Raise the two alphas to mute the image, lower them to show more of it. */
+  --oc-page-bg:
+    linear-gradient(rgba(255, 253, 248, 0.82), rgba(255, 253, 248, 0.9)),
+    url("../../assets/header_backgroung.png"),
+    #fffdf8;
+
   min-height: calc(100vh - 120px);
-  background: var(--bk-section-bg, #fff7e8);
+  background: #fffdf8;
   color: #34170f;
   padding: 28px var(--oc-gutter) 52px;
+
+  /* Anchors the ::before backdrop below, and isolate gives this element its own stacking
+     context so the backdrop's z-index:-1 lands above this element's own background but
+     still behind every child — without isolate it can slide behind the body and vanish. */
+  position: relative;
+  isolation: isolate;
+}
+
+/* The backdrop is a fixed pseudo-element rather than a background on the page itself.
+   `cover` resolves against the box it paints into: on the page that box is the full
+   document, which on a phone is a narrow column several screens tall, so a wide landscape
+   artwork is scaled up until only a flat patch of it shows — the image is "there" but
+   reads as nothing. Painting into a viewport-sized fixed layer keeps the artwork at
+   screen scale on mobile, and it stays put as the page scrolls instead of stretching.
+   `position: fixed` on a real element, not `background-attachment: fixed`, because iOS
+   Safari sizes attachment-fixed backgrounds to the document and reintroduces the bug. */
+.order-confirmation-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--oc-page-bg);
+  background-size: 100% 100%, cover, 100% 100%;
+  background-position: center top;
+  background-repeat: no-repeat;
+  pointer-events: none;
 }
 
 .order-panel-head span,
@@ -232,34 +271,83 @@
 /* ── Order details modal (opened by "Track your order") ──
    Everything below the hero — timeline, items, cancel/return/exchange, refund,
    address — now lives inside this sheet instead of sitting inline on the page. */
+/* ── Order details — bottom sheet ────────────────────────────────────────────────────
+   Opened by "Track your order", so it matches OrderTrackModal: anchored to the bottom
+   edge and slid up, on every width. On desktop it stays bottom-anchored but caps its
+   width rather than stretching across a monitor. */
 .oc-details-overlay {
   position: fixed;
   inset: 0;
   z-index: 2000;
   display: flex;
+  align-items: flex-end;
   justify-content: center;
-  padding: 4vh 16px;
   background: rgba(50, 22, 14, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  overflow-y: auto;
   animation: oc-details-fade-in 200ms ease-out;
 }
 
 .oc-details-sheet {
   position: relative;
   width: min(1120px, 100%);
-  height: fit-content;
-  padding: 44px var(--oc-gutter) 36px;
-  border-radius: 20px;
+  /* dvh, not vh: on mobile Safari a collapsing toolbar makes vh taller than the visible
+     viewport, which would push the bottom of the sheet under the browser chrome. */
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 26px 26px 0 0;
   background: var(--bk-section-bg, #fff7e8);
-  box-shadow: 0 24px 64px rgba(40, 16, 8, 0.32);
+  box-shadow: 0 -18px 50px rgba(40, 16, 8, 0.32);
+  animation: oc-details-up 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* ── Grab handle ─────────────────────────────────────────────────────────────────── */
+.oc-details-grab {
+  padding: 10px 0 6px;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  /* The body below scrolls vertically; without this the browser claims the gesture as a
+     scroll and the drag handler never sees it. */
+  touch-action: none;
+  flex-shrink: 0;
+  /* A drag starting on the handle must not select the heading underneath. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.oc-details-grab:active { cursor: grabbing; }
+
+.oc-details-grabber {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(123, 0, 27, 0.22);
+}
+
+/* The scroll region. min-height: 0 is what actually makes it scroll: a flex item's
+   automatic minimum size is its content, so without it this refuses to shrink below the
+   full height of the order details and overflows the sheet instead of scrolling. */
+.oc-details-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Top padding clears the close button, which is absolute against the sheet and so does
+     NOT push content down: the grab strip is 20px and the button runs to 50px, hence 36px
+     here. Too little and the status pill in the first panel head slides under the X. */
+  padding: 36px var(--oc-gutter) calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
 .oc-details-close {
   position: absolute;
   top: 14px;
   right: 14px;
+  z-index: 1;
   width: 36px;
   height: 36px;
   border: 0;
@@ -282,16 +370,24 @@
   to { opacity: 1; }
 }
 
-@media (max-width: 760px) {
-  .oc-details-overlay {
-    padding: 0;
-  }
+@keyframes oc-details-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 
+@media (prefers-reduced-motion: reduce) {
+  .oc-details-overlay,
+  .oc-details-sheet { animation: none; }
+  .oc-details-sheet { transition: none; }
+}
+
+@media (max-width: 760px) {
   .oc-details-sheet {
     width: 100%;
-    min-height: 100%;
-    padding: 46px 14px 28px;
-    border-radius: 0;
+  }
+
+  .oc-details-body {
+    padding: 36px 14px calc(24px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2049,9 +2145,10 @@
 .order-confirmation-page {
   min-height: calc(100vh - 120px);
   padding: 18px max(14px, calc((100vw - 1040px) / 2)) 38px;
-  background:
-    linear-gradient(rgba(255, 248, 235, 0.9), rgba(255, 248, 235, 0.95)),
-    var(--bk-section-bg, #fff7e8);
+  /* Same specificity as the base rule but later in the file, so this one wins. Only the
+     flat fallback belongs here — the artwork is painted by ::before, which this rule
+     cannot reset. */
+  background: #fffdf8;
   color: #32150f;
   font-size: 13px;
 }
