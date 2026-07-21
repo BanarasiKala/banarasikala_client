@@ -170,7 +170,7 @@
   display: grid;
   place-items: center;
   padding: 0;
-  color: #d7cfc8;
+  color: var(--bk-star-empty);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -179,7 +179,7 @@
 
 .feedback-stars button:hover,
 .feedback-stars button.is-active {
-  color: #5b0710;
+  color: var(--bk-star);
   transform: translateY(-1px);
 }
 

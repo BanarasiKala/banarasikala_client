@@ -12,6 +12,7 @@ import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import OrderTrackModal from "../../components/OrderTrackModal";
 import QuerySheet from "../../components/QuerySheet";
+import ReviewImagePicker from "../../components/ReviewImagePicker";
 import "./MyOrders.css";
 
 const STATUS_CONFIG = {
@@ -1329,8 +1330,14 @@ export default function MyOrders() {
       )}
 
       {feedbackModal.isOpen && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal-container feedback-modal-container">
+        // Bottom sheet: rating a delivered saree is a thumb action from a list of orders,
+        // so it belongs under the thumb like every other sheet on this page.
+        <div className="cancel-modal-overlay mo-sheet-overlay" onClick={closeFeedbackModal}>
+          <div
+            className="cancel-modal-container feedback-modal-container mo-sheet-container"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="mo-sheet-handle" aria-hidden="true" />
             <button type="button" className="cancel-modal-close" onClick={closeFeedbackModal} disabled={feedbackSubmitting}>
               <Icon icon="lucide:x" />
             </button>
@@ -1373,24 +1380,12 @@ export default function MyOrders() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="feedback-images">Upload product photos (optional)</label>
-                <input
-                  id="feedback-images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files || []).slice(0, MAX_REVIEW_IMAGES);
-                    setFeedbackForm((current) => ({ ...current, images: files }));
-                  }}
+                <label>Upload product photos <small>(optional, up to {MAX_REVIEW_IMAGES})</small></label>
+                <ReviewImagePicker
+                  files={feedbackForm.images}
+                  disabled={feedbackSubmitting}
+                  onChange={(images) => setFeedbackForm((current) => ({ ...current, images }))}
                 />
-                {feedbackForm.images.length > 0 && (
-                  <div className="feedback-image-preview">
-                    {feedbackForm.images.map((file) => (
-                      <span key={`${file.name}-${file.size}`}>{file.name}</span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="modal-actions">

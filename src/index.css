@@ -2,6 +2,15 @@
 
 :root {
   font-family: 'Poppins', sans-serif;
+  /* Rating stars, everywhere they appear. The picker in the feedback sheet, the summary
+     stars on a My Orders card and the ones on the order detail page had drifted to three
+     different values (#008767, #d4a135, #d09a2e), so the same rating looked like a
+     different thing depending on where you saw it. One token, one colour.
+     Gold, not the green the pickers used: on an orders page green is a status colour —
+     Delivered, and the ACTIVE query pill — so a green star read as a state rather than a
+     rating. This is the midpoint of the two golds already in use. */
+  --bk-star: #d2a12f;
+  --bk-star-empty: rgba(50, 21, 15, 0.24);
   --bk-loader-base: #e2ccaa;
   --bk-loader-gradient: linear-gradient(90deg, #ead3b1 0%, #fffaf2 48%, #dfbd8d 100%);
   --bk-loader-sheen: linear-gradient(100deg, transparent 0%, rgba(255, 250, 242, 0.86) 48%, transparent 100%);

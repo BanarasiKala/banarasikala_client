@@ -3,7 +3,7 @@
   align-items: center;
   gap: 5px;
   width: fit-content;
-  color: #d39a2d;
+  color: var(--bk-star);
   font-size: 12px;
   line-height: 1;
 }

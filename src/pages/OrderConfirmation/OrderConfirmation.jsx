@@ -12,6 +12,7 @@ import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
 import OrderTrackModal from "../../components/OrderTrackModal";
 import QuerySheet from "../../components/QuerySheet";
+import ReviewImagePicker from "../../components/ReviewImagePicker";
 import useBottomSheet from "../../hooks/useBottomSheet";
 import "./OrderConfirmation.css";
 
@@ -2628,8 +2629,14 @@ export default function OrderConfirmation() {
       )}
 
       {feedbackModal.isOpen && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal-container feedback-detail-modal">
+        // Bottom sheet, same as the Cancel / Return / Exchange modals on this page — the
+        // oc-sheet-* modifiers exist for exactly this and were the odd one out here.
+        <div className="cancel-modal-overlay oc-sheet-overlay" onClick={closeFeedbackModal}>
+          <div
+            className="cancel-modal-container feedback-detail-modal oc-sheet-container"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="oc-sheet-handle" aria-hidden="true" />
             <button type="button" className="cancel-modal-close" onClick={closeFeedbackModal} disabled={feedbackSubmitting}>
               <Icon icon="lucide:x" />
             </button>
@@ -2680,16 +2687,11 @@ export default function OrderConfirmation() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="feedback-images">Upload photos (optional)</label>
-                <input
-                  id="feedback-images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files || []).slice(0, MAX_REVIEW_IMAGES);
-                    setFeedbackForm((current) => ({ ...current, images: files }));
-                  }}
+                <label>Upload photos <small>(optional, up to {MAX_REVIEW_IMAGES})</small></label>
+                <ReviewImagePicker
+                  files={feedbackForm.images}
+                  disabled={feedbackSubmitting}
+                  onChange={(images) => setFeedbackForm((current) => ({ ...current, images }))}
                 />
               </div>
 

@@ -359,7 +359,7 @@
   min-width: 34px;
   border: 0;
   background: transparent;
-  color: rgba(50, 21, 15, 0.38);
+  color: var(--bk-star-empty);
   cursor: pointer;
   padding: 0;
 }
@@ -373,7 +373,7 @@
 }
 
 .order-review-stars button.active {
-  color: #008767;
+  color: var(--bk-star);
 }
 
 .order-review-stars small {
@@ -1133,6 +1133,46 @@
   color: rgba(50, 21, 15, 0.6);
 }
 
+/* ── Bottom-sheet modifiers ──────────────────────────────────────────────────────────
+   Turns the centred .cancel-modal-* shell into a sheet without duplicating it. The base
+   overlay is a grid with `place-items: center`, so both axes have to be reset — align-items
+   alone leaves it vertically centred. */
+.cancel-modal-overlay.mo-sheet-overlay {
+  align-items: end;
+  justify-items: center;
+  padding: 0;
+}
+
+.cancel-modal-container.mo-sheet-container {
+  width: 100%;
+  max-width: 560px;
+  /* dvh, not vh: mobile Safari's collapsing toolbar makes vh taller than the visible
+     viewport, which would push the submit button under the browser chrome. */
+  max-height: 88dvh;
+  margin: 0;
+  border-radius: 20px 20px 0 0;
+  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  animation: mo-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mo-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancel-modal-container.mo-sheet-container { animation: none; }
+}
+
+.mo-sheet-handle {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: rgba(50, 21, 15, 0.2);
+}
+
 .cancel-modal-close {
   position: absolute;
   top: 20px;
@@ -1278,21 +1318,8 @@
   max-height: calc(100dvh - 32px);
 }
 
-.feedback-image-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.feedback-image-preview span {
-  max-width: 100%;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(123, 0, 27, 0.08);
-  color: #7b001b;
-  font-size: 11px;
-  font-weight: 600;
-}
+/* .feedback-image-preview removed with the filename chips it styled — the review form
+   shows thumbnails now (ReviewImagePicker). */
 
 .order-rating-entry {
   width: fit-content;
@@ -1309,7 +1336,7 @@
 
 .order-card-stars {
   display: inline-flex;
-  color: #d4a135;
+  color: var(--bk-star);
   font-size: 18px;
   line-height: 1;
 }

@@ -1359,7 +1359,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  color: #d4a135;
+  color: var(--bk-star);
   line-height: 1;
 }
 
@@ -1384,7 +1384,7 @@
 }
 
 .product-rating-row--empty .product-rating-stars {
-  color: rgba(53, 23, 15, 0.2);
+  color: var(--bk-star-empty);
 }
 .product-rating-row--empty:hover {
   box-shadow: none;
@@ -1478,7 +1478,7 @@
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  color: #b7832a;
+  color: var(--bk-star);
   line-height: 1;
 }
 
@@ -1525,7 +1525,7 @@
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  color: #b7832a;
+  color: var(--bk-star);
   line-height: 1;
 }
 
