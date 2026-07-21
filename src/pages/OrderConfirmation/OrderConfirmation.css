@@ -2,15 +2,17 @@
   /* The gutter the page reserves either side; the hero cancels it to bleed. */
   --oc-gutter: max(18px, calc((100vw - 1120px) / 2));
 
-  /* Page backdrop: the site's header artwork under a light wash.
+  /* Page backdrop: the site's header artwork under the same haze the header bar uses.
      Relative path, NOT "/src/assets/…": a leading slash makes Vite treat the URL as a
      public-directory file, so it is neither hashed nor emitted and 404s in a production
-     build. This form is resolved and fingerprinted at build time. Same image and layer
-     order the body already uses (index.css), so it is cached by the time this page loads.
-     The wash is what keeps the page legible — the artwork is busy and #32150f body text
-     sits on it. Raise the two alphas to mute the image, lower them to show more of it. */
+     build. This form is resolved and fingerprinted at build time. Same image the body
+     already uses (index.css), so it is cached by the time this page loads.
+     The wash is copied from .bk-header (Header.css) — a flat 0.16 alpha, same value top
+     and bottom. Flat matters: a gradient wash reads as a fade down the page rather than a
+     haze. Earlier this sat at 0.82/0.9, which buried the artwork and looked like a blur.
+     The flat colour underneath is only a fallback for the image failing to load. */
   --oc-page-bg:
-    linear-gradient(rgba(255, 253, 248, 0.82), rgba(255, 253, 248, 0.9)),
+    linear-gradient(rgba(255, 250, 241, 0.16), rgba(255, 250, 241, 0.16)),
     url("../../assets/header_backgroung.png"),
     #fffdf8;
 
@@ -40,8 +42,10 @@
   inset: 0;
   z-index: -1;
   background: var(--oc-page-bg);
+  /* One size per layer, in the same order: wash fills, image covers, fallback fills.
+     Same three values the header uses. */
   background-size: 100% 100%, cover, 100% 100%;
-  background-position: center top;
+  background-position: center;
   background-repeat: no-repeat;
   pointer-events: none;
 }
