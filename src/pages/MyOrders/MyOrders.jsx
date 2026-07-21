@@ -376,7 +376,9 @@ const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
   </div>
 );
 
-const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
+// `ticket` is the LIVE thread (continue it); `closedTicket` is the most recent closed one
+// (readable, but a new ticket is raised instead of replying to it).
+const OrderCard = ({ order, ticket, closedTicket, onFeedback, onContact, onNotify, onViewTicket }) => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [trackOpen, setTrackOpen] = useState(false);
@@ -684,6 +686,16 @@ const OrderCard = ({ order, ticket, onFeedback, onContact, onNotify }) => {
               <span className={`order-help-ticket ${TICKET_STATUS_TONE[ticket.status] || "is-open"}`}>
                 {ticket.ticket_number} · {ticket.status}
               </span>
+            ) : closedTicket ? (
+              // The old thread is closed: say so, keep it readable, but the button below
+              // opens a NEW ticket rather than a conversation that can't be replied to.
+              <button
+                type="button"
+                className={`order-help-ticket is-linkish ${TICKET_STATUS_TONE.Closed || ""}`}
+                onClick={() => onViewTicket(closedTicket)}
+              >
+                {closedTicket.ticket_number} · Closed — view
+              </button>
             ) : (
               <span>Contact our support team</span>
             )}
@@ -766,13 +778,31 @@ export default function MyOrders() {
   const [supportForm, setSupportForm] = useState({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
   const [supportSubmitting, setSupportSubmitting] = useState(false);
 
-  // Newest ticket per order — the card shows its live status next to "Contact Us".
-  const ticketByOrder = useMemo(() => {
-    const map = new Map();
+  /**
+   * Per order: the LIVE ticket, and failing that the most recent CLOSED one.
+   *
+   * The rule is one *open* ticket per order, not one ever — a closed thread cannot be
+   * replied to, so blocking a new ticket behind it would leave the customer with no route
+   * at all when a fresh problem appears weeks later. (This mirrors the server: see the
+   * status filter in SupportController.createTicket.)
+   *
+   *   live ticket   -> "View Ticket"   (continue the conversation)
+   *   only closed   -> "Contact Us"    (raise a new one; the old one stays readable)
+   *
+   * `tickets` arrives newest-first, so the first match in each bucket is the right one.
+   */
+  const { liveTicketByOrder, closedTicketByOrder } = useMemo(() => {
+    const live = new Map();
+    const closed = new Map();
     tickets.forEach((ticket) => {
-      if (!map.has(String(ticket.order_id))) map.set(String(ticket.order_id), ticket);
+      const key = String(ticket.order_id);
+      if (ticket.status === "Closed") {
+        if (!closed.has(key)) closed.set(key, ticket);
+      } else if (!live.has(key)) {
+        live.set(key, ticket);
+      }
     });
-    return map;
+    return { liveTicketByOrder: live, closedTicketByOrder: closed };
   }, [tickets]);
 
   const filteredOrders = useMemo(() => {
@@ -817,12 +847,12 @@ export default function MyOrders() {
     }
   }, [user]);
 
-  // One ticket per order: once it exists, "Contact Us" is a way back INTO that conversation,
-  // not a way to start a second one.
+  // A LIVE ticket makes this a way back INTO that conversation. A closed one does not —
+  // it can't be replied to, so the customer needs a fresh thread, not a dead end.
   const openSupportModal = (order) => {
-    const existing = ticketByOrder.get(String(order?.id));
-    if (existing) {
-      navigate(`/tickets?id=${existing.id}`);
+    const live = liveTicketByOrder.get(String(order?.id));
+    if (live) {
+      navigate(`/tickets?id=${live.id}`);
       return;
     }
     setSupportModal({ isOpen: true, order });
@@ -1093,7 +1123,9 @@ export default function MyOrders() {
                       <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={ticketByOrder.get(String(order.id))}
+                        ticket={liveTicketByOrder.get(String(order.id))}
+                        closedTicket={closedTicketByOrder.get(String(order.id))}
+                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
                         onContact={openSupportModal}
                         onNotify={showNotification}
@@ -1116,7 +1148,9 @@ export default function MyOrders() {
                       <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={ticketByOrder.get(String(order.id))}
+                        ticket={liveTicketByOrder.get(String(order.id))}
+                        closedTicket={closedTicketByOrder.get(String(order.id))}
+                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
                         onContact={openSupportModal}
                         onNotify={showNotification}
@@ -1130,7 +1164,9 @@ export default function MyOrders() {
                 <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={ticketByOrder.get(String(order.id))}
+                        ticket={liveTicketByOrder.get(String(order.id))}
+                        closedTicket={closedTicketByOrder.get(String(order.id))}
+                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
                         onContact={openSupportModal}
                         onNotify={showNotification}

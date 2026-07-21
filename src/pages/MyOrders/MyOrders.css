@@ -2510,3 +2510,16 @@
     font-size: 16px;
   }
 }
+
+/* The closed-ticket chip is a button (it opens the old thread read-only) but must not
+   look like one — it sits inline with the status chips, so it inherits their shape and
+   only picks up a pointer and a hover tint. */
+.order-help-ticket.is-linkish {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 150ms ease;
+}
+
+.order-help-ticket.is-linkish:hover { filter: brightness(0.95); }
