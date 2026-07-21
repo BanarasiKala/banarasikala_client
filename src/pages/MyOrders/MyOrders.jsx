@@ -758,38 +758,49 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
 
           return (
             <div className="order-card-refund-box">
-              <div className="refund-box-header">
-                <Icon icon="lucide:badge-indian-rupee" />
-                <h4>Refund Breakdown</h4>
-              </div>
-
-              <div className="refund-breakdown-details">
-                <div className="refund-detail-row">
-                  <span>Returned Items Value:</span>
-                  <span>{formatPrice(totalItemAmount)}</span>
-                </div>
-                {totalForwardDeduction > 0 && (
-                  <div className="refund-detail-row deduction">
-                    <span>Delivery Charges Deduction:</span>
-                    <span>-{formatPrice(totalForwardDeduction)}</span>
-                  </div>
-                )}
-                {totalReverseDeduction > 0 && (
-                  <div className="refund-detail-row deduction">
-                    <span>RTO / Reverse Shipping Charges:</span>
-                    <span>-{formatPrice(totalReverseDeduction)}</span>
-                  </div>
-                )}
-                <div className="refund-detail-row final-refund">
-                  <span>Total Refund Processed:</span>
+              {/* The card now leads with the figure — the amount refunded. The working
+                  (items value, delivery/reverse deductions) is behind the ⓘ: it is how the
+                  figure was reached, not the figure itself, so it does not need to occupy
+                  the card. Hover for a mouse, focus-within for keyboard and touch. */}
+              <div className="refund-box-lead">
+                <span className="refund-box-lead-icon"><Icon icon="lucide:badge-indian-rupee" /></span>
+                <span className="refund-box-lead-copy">
+                  <small>Refund Processed</small>
                   <strong>{formatPrice(finalRefund)}</strong>
-                </div>
-              </div>
+                </span>
 
-              <p className="refund-box-note">
-                <Icon icon="lucide:info" />
-                Refund has been processed after successful quality check. Forward delivery charges and RTO/reverse shipping charges have been deducted from the original paid amount.
-              </p>
+                <span className="refund-info-wrap">
+                  <button type="button" className="refund-info-btn" aria-label="How this refund was calculated">
+                    <Icon icon="lucide:info" />
+                  </button>
+                  <span className="refund-info-tip" role="tooltip">
+                    <span className="refund-tip-row">
+                      <span>Returned items value</span>
+                      <span>{formatPrice(totalItemAmount)}</span>
+                    </span>
+                    {totalForwardDeduction > 0 && (
+                      <span className="refund-tip-row is-deduction">
+                        <span>Delivery charges</span>
+                        <span>-{formatPrice(totalForwardDeduction)}</span>
+                      </span>
+                    )}
+                    {totalReverseDeduction > 0 && (
+                      <span className="refund-tip-row is-deduction">
+                        <span>Return / reverse shipping</span>
+                        <span>-{formatPrice(totalReverseDeduction)}</span>
+                      </span>
+                    )}
+                    <span className="refund-tip-row is-total">
+                      <span>Refund processed</span>
+                      <span>{formatPrice(finalRefund)}</span>
+                    </span>
+                    <span className="refund-tip-note">
+                      Charged after a successful quality check. Forward delivery and any
+                      reverse-shipping charges are deducted from the amount paid.
+                    </span>
+                  </span>
+                </span>
+              </div>
             </div>
           );
         }
