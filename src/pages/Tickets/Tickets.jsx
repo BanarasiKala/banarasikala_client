@@ -6,6 +6,8 @@ import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
 import API_ENDPOINTS from "../../config/api";
 import useSupportStream, { useTypingPing } from "../../hooks/useSupportStream";
+import { MAX_SUPPORT_IMAGES, uploadSupportImages } from "../../utils/supportUploads";
+import ImageLightbox from "../../components/ImageLightbox";
 import "./Tickets.css";
 
 // EventSource needs an absolute URL — it does not inherit the axios baseURL.
@@ -76,6 +78,12 @@ const Tickets = () => {
   const [threadLoading, setThreadLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  // Photos picked for the message being composed — already uploaded, awaiting send.
+  const [pendingImages, setPendingImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  // { images, index } while the full-screen viewer is open, null otherwise.
+  const [lightbox, setLightbox] = useState(null);
   // Live state. `supportTyping` is ephemeral (server-side TTL, never persisted);
   // `adminReadAt` is the watermark that renders "Seen" under our own last message.
   const [supportTyping, setSupportTyping] = useState(false);
@@ -215,17 +223,46 @@ const Tickets = () => {
   const openTicket = (id) => setSearchParams({ id: String(id) });
   const backToList = () => setSearchParams({});
 
+  // Photos upload the moment they are picked and sit as pending thumbnails above the
+  // composer, so the send button posts URLs and returns instantly — and an upload failure
+  // surfaces while you are still typing rather than when you hit send.
+  const handlePickImages = async (event) => {
+    const picked = Array.from(event.target.files || []);
+    // Cleared immediately so re-picking the same file still fires a change event.
+    event.target.value = "";
+    if (!picked.length) return;
+
+    const room = MAX_SUPPORT_IMAGES - pendingImages.length;
+    if (picked.length > room) {
+      showNotification(`You can attach up to ${MAX_SUPPORT_IMAGES} photos per message.`, "warning");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploaded = await uploadSupportImages(picked);
+      setPendingImages((current) => [...current, ...uploaded].slice(0, MAX_SUPPORT_IMAGES));
+    } catch (error) {
+      showNotification(error?.message || "Could not upload that photo.", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const sendReply = async (event) => {
     event.preventDefault();
     const text = reply.trim();
-    if (!text || !activeTicket || sending) return;
+    // A photo on its own is a complete message, so either one is enough to send.
+    if ((!text && !pendingImages.length) || !activeTicket || sending || uploading) return;
 
     setSending(true);
     try {
       const response = await api.post(`/api/support/tickets/${activeTicket.id}/messages`, {
         message: text,
+        attachments: pendingImages,
       });
       setReply("");
+      setPendingImages([]);
       // May already be here via our own stream — appendMessage is idempotent on id.
       appendMessage(response.data?.message);
       // The list orders by last activity, so it is stale the moment a reply lands.
@@ -349,10 +386,12 @@ const Tickets = () => {
           </p>
 
           {messages.map((message) => {
-            // Ticks go on every message WE sent, like a chat app — not just the last one.
-            // The opening message is synthesised from the ticket row and has no delivery
-            // record of its own, so it is excluded.
-            const isOwn = message.sender === "customer" && !String(message.id).startsWith("ticket-");
+            // Ticks go on every message WE sent, like a chat app — including the opening
+            // one. That message is synthesised from the ticket row rather than the messages
+            // table, and it used to be excluded because it had no delivery record; the row
+            // now carries opening_delivered_at, so the very first thing a customer sends is
+            // no longer the only message in the thread without a tick.
+            const isOwn = message.sender === "customer";
             return (
               <div
                 key={message.id}
@@ -362,7 +401,29 @@ const Tickets = () => {
                   <span className="ticket-bubble-sender">
                     {message.sender === "admin" ? "Banarasi Kala Support" : (message.sender_name || "You")}
                   </span>
-                  <p>{message.message}</p>
+
+                  {message.attachments?.length > 0 && (
+                    <div className="ticket-bubble-images">
+                      {message.attachments.map((image, imageIndex) => (
+                        // Opens in the in-page viewer. It used to be a link to the raw
+                        // Cloudinary URL in a new tab, which dropped the customer out of
+                        // the conversation and left them to navigate back.
+                        <button
+                          type="button"
+                          key={image.url}
+                          onClick={() => setLightbox({ images: message.attachments, index: imageIndex })}
+                          aria-label="View photo"
+                        >
+                          <img src={image.url} alt="Attachment" loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* An image-only message has no text — rendering an empty <p> would leave
+                      a stray gap under the photo. */}
+                  {message.message && <p>{message.message}</p>}
+
                   <span className="ticket-bubble-time">
                     {formatStamp(message.createdAt)}
                     {isOwn && <MessageTicks message={message} readAt={adminReadAt} />}
@@ -384,19 +445,64 @@ const Tickets = () => {
         </div>
 
         {activeTicket.can_reply ? (
-          <form className="ticket-reply" onSubmit={sendReply}>
-            <textarea
-              rows={2}
-              value={reply}
-              maxLength={2000}
-              placeholder="Write a message to our support team…"
-              onChange={(event) => { setReply(event.target.value); pingTyping(); }}
-            />
-            <button type="submit" disabled={sending || !reply.trim()}>
-              {sending ? <Icon icon="lucide:loader-2" className="tickets-spin" /> : <Icon icon="lucide:send" />}
-              <span>{sending ? "Sending" : "Send"}</span>
-            </button>
-          </form>
+          <div className="ticket-composer">
+            {(pendingImages.length > 0 || uploading) && (
+              <div className="ticket-pending-images">
+                {pendingImages.map((image) => (
+                  <div className="ticket-pending-thumb" key={image.public_id}>
+                    <img src={image.url} alt="Attached" />
+                    <button
+                      type="button"
+                      onClick={() => setPendingImages((current) => current.filter((i) => i.public_id !== image.public_id))}
+                      aria-label="Remove photo"
+                      disabled={sending}
+                    >
+                      <Icon icon="lucide:x" />
+                    </button>
+                  </div>
+                ))}
+                {uploading && (
+                  <div className="ticket-pending-thumb is-loading" aria-live="polite">
+                    <Icon icon="lucide:loader-2" className="tickets-spin" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <form className="ticket-reply" onSubmit={sendReply}>
+              <button
+                type="button"
+                className="ticket-attach-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending || uploading || pendingImages.length >= MAX_SUPPORT_IMAGES}
+                aria-label="Attach a photo"
+                title="Attach a photo"
+              >
+                <Icon icon="lucide:paperclip" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={handlePickImages}
+              />
+
+              <textarea
+                rows={2}
+                value={reply}
+                maxLength={2000}
+                placeholder="Write a message to our support team…"
+                onChange={(event) => { setReply(event.target.value); pingTyping(); }}
+              />
+              {/* Sendable with photos alone — a caption is not required. */}
+              <button type="submit" disabled={sending || uploading || (!reply.trim() && !pendingImages.length)}>
+                {sending ? <Icon icon="lucide:loader-2" className="tickets-spin" /> : <Icon icon="lucide:send" />}
+                <span>{sending ? "Sending" : "Send"}</span>
+              </button>
+            </form>
+          </div>
         ) : (
           <div className="ticket-reply-closed">
             <Icon icon="lucide:lock" />
@@ -422,6 +528,14 @@ const Tickets = () => {
         <div className="tickets-col tickets-col--list">{renderList()}</div>
         <div className="tickets-col tickets-col--thread">{renderThread()}</div>
       </section>
+
+      {lightbox && (
+        <ImageLightbox
+          images={lightbox.images}
+          startIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 };

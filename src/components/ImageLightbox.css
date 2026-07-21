@@ -1,0 +1,94 @@
+/* ── Full-screen photo viewer ────────────────────────────────────────────────────────
+   Sits above every sheet and modal in the app (the tracking sheet is 9999), because it is
+   opened FROM one and must not appear behind it. */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  background: rgba(18, 8, 4, 0.9);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: lightbox-fade 160ms ease-out;
+}
+
+@keyframes lightbox-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-overlay { animation: none; }
+}
+
+.lightbox-image {
+  max-width: 100%;
+  /* Bounded by the overlay's own padding so the image never slides under the close button
+     or the safe-area inset at the bottom of a phone. */
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  /* Cancels the overlay's dismiss-on-click for the image area itself. */
+  cursor: default;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 21px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.lightbox-nav:hover { background: rgba(255, 255, 255, 0.26); }
+.lightbox-nav.is-prev { left: 10px; }
+.lightbox-nav.is-next { right: 10px; }
+
+.lightbox-count {
+  position: absolute;
+  bottom: max(16px, calc(10px + env(safe-area-inset-bottom, 0px)));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

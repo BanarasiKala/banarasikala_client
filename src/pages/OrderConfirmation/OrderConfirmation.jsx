@@ -11,6 +11,7 @@ import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads
 import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
 import OrderTrackModal from "../../components/OrderTrackModal";
+import QuerySheet from "../../components/QuerySheet";
 import useBottomSheet from "../../hooks/useBottomSheet";
 import "./OrderConfirmation.css";
 
@@ -32,16 +33,6 @@ const formatDateTime = (value) => {
   return `${datePart}, ${timePart}`;
 };
 
-// Mirror of TICKET_CATEGORIES in the server's SupportController — it rejects
-// anything not on this list. Same "Need Help with this order?" box as My Orders.
-const TICKET_CATEGORIES = [
-  "Delivery or shipping issue",
-  "Payment or refund issue",
-  "Damaged or defective product",
-  "Wrong or missing item",
-  "Return or exchange help",
-  "Other",
-];
 
 const TICKET_STATUS_TONE = {
   Open: "is-open",
@@ -913,7 +904,8 @@ export default function OrderConfirmation() {
 
   const [ticket, setTicket] = useState(null);
   const [supportModal, setSupportModal] = useState(false);
-  const [supportForm, setSupportForm] = useState({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
+  // The form's own fields live in QuerySheet, which is unmounted between opens and so
+  // resets itself; this page keeps only what it needs to post.
   const [supportSubmitting, setSupportSubmitting] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
@@ -1145,7 +1137,6 @@ export default function OrderConfirmation() {
       navigate(`/tickets?id=${ticket.id}`);
       return;
     }
-    setSupportForm({ category: TICKET_CATEGORIES[0], message: "", phone: "" });
     setSupportModal(true);
   };
 
@@ -1154,21 +1145,18 @@ export default function OrderConfirmation() {
     setSupportModal(false);
   };
 
-  const submitSupportTicket = async (event) => {
-    event.preventDefault();
+  // Called by QuerySheet, which owns the form, has validated it and has already uploaded
+  // any photos — `attachments` arrives as [{ url, public_id }].
+  const submitSupportTicket = async ({ message, phone, attachments }) => {
     if (!order?.id) return;
-    if (supportForm.message.trim().length < 10) {
-      showNotification("Please describe your issue in a little more detail.", "warning");
-      return;
-    }
 
     setSupportSubmitting(true);
     try {
       const response = await api.post("/api/support/tickets", {
         orderId: order.id,
-        category: supportForm.category,
-        message: supportForm.message.trim(),
-        phone: supportForm.phone.trim(),
+        message,
+        phone,
+        attachments,
       });
       showNotification(response.data?.message || "Your query has been raised.", "success");
       setSupportModal(false);
@@ -2710,68 +2698,14 @@ export default function OrderConfirmation() {
       )}
 
       {supportModal && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal-container">
-            <button type="button" className="cancel-modal-close" onClick={closeSupportModal} disabled={supportSubmitting}>
-              <Icon icon="lucide:x" />
-            </button>
-            <div className="cancel-modal-header">
-              <h3>Need help with this order?</h3>
-              <p>
-                Tell us what went wrong with order <strong>#{orderNumber}</strong> and our support team will get back to you.
-              </p>
-            </div>
-
-            <form className="cancel-modal-form" onSubmit={submitSupportTicket}>
-              <div className="form-group">
-                <label htmlFor="oc-support-category">What is your query about?</label>
-                <select
-                  id="oc-support-category"
-                  value={supportForm.category}
-                  onChange={(event) => setSupportForm((current) => ({ ...current, category: event.target.value }))}
-                  required
-                >
-                  {TICKET_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="oc-support-message">Describe your issue</label>
-                <textarea
-                  id="oc-support-message"
-                  required
-                  rows={4}
-                  maxLength={2000}
-                  value={supportForm.message}
-                  onChange={(event) => setSupportForm((current) => ({ ...current, message: event.target.value }))}
-                  placeholder="Share the details so we can resolve this faster."
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="oc-support-phone">Phone number (optional)</label>
-                <input
-                  id="oc-support-phone"
-                  type="tel"
-                  value={supportForm.phone}
-                  onChange={(event) => setSupportForm((current) => ({ ...current, phone: event.target.value }))}
-                  placeholder="10-digit mobile number we can call you on"
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="modal-action-btn secondary" onClick={closeSupportModal} disabled={supportSubmitting}>
-                  Go Back
-                </button>
-                <button type="submit" className="modal-action-btn primary" disabled={supportSubmitting}>
-                  {supportSubmitting ? "Raising query..." : "Raise Query"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <QuerySheet
+          orderNumber={orderNumber}
+          defaultPhone={order?.customer_phone || ""}
+          submitting={supportSubmitting}
+          onClose={closeSupportModal}
+          onNotify={showNotification}
+          onSubmit={submitSupportTicket}
+        />
       )}
 
       {actionChooserOpen && (
