@@ -460,3 +460,51 @@
     max-height: none;
   }
 }
+
+/* ── Realtime: typing indicator + read receipt ─────────────────────────────────────── */
+
+.ticket-bubble-seen {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  color: #1a7f4b;
+  font-weight: 600;
+}
+
+.ticket-bubble-typing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Three dots with staggered bounce. Sized to match a line of bubble text so the thread
+   doesn't jump when the indicator is replaced by the real message. */
+.ticket-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+}
+
+.ticket-typing-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: ticket-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.ticket-typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.ticket-typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ticket-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.35; }
+  30%           { transform: translateY(-4px); opacity: 0.9; }
+}
+
+/* Respect a reduced-motion preference — the indicator still shows, it just doesn't move. */
+@media (prefers-reduced-motion: reduce) {
+  .ticket-typing-dots i { animation: none; opacity: 0.6; }
+}

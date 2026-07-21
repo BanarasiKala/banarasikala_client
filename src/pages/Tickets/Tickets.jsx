@@ -4,7 +4,12 @@ import { Icon } from "@iconify/react";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
+import API_ENDPOINTS from "../../config/api";
+import useSupportStream, { useTypingPing } from "../../hooks/useSupportStream";
 import "./Tickets.css";
+
+// EventSource needs an absolute URL — it does not inherit the axios baseURL.
+const API_BASE = API_ENDPOINTS.base;
 
 const STATUS_META = {
   Open: { tone: "is-open", icon: "lucide:circle-dot", note: "Our team has your request." },
@@ -48,6 +53,10 @@ const Tickets = () => {
   const [threadLoading, setThreadLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  // Live state. `supportTyping` is ephemeral (server-side TTL, never persisted);
+  // `adminReadAt` is the watermark that renders "Seen" under our own last message.
+  const [supportTyping, setSupportTyping] = useState(false);
+  const [adminReadAt, setAdminReadAt] = useState(null);
   const threadEndRef = useRef(null);
 
   const selectedId = searchParams.get("id");
@@ -72,6 +81,9 @@ const Tickets = () => {
     try {
       const response = await api.get(`/api/support/tickets/${id}`);
       setActiveTicket(response.data || null);
+      // Seed the read watermark here rather than in an effect reacting to activeTicket —
+      // stream `read` events keep it current from this point on.
+      setAdminReadAt(response.data?.admin_read_at || null);
     } catch (error) {
       showNotification(
         error?.response?.data?.message || "Unable to open this ticket.",
@@ -94,12 +106,58 @@ const Tickets = () => {
   useEffect(() => {
     fetchThread(selectedId);
     setReply("");
+    setSupportTyping(false);
   }, [selectedId, fetchThread]);
 
-  // Land on the newest message whenever the thread grows.
+  // ── Realtime ────────────────────────────────────────────────────────────────────────
+  useSupportStream(
+    selectedId ? `${API_BASE}/api/support/tickets/${selectedId}/stream` : null,
+    (event) => {
+      switch (event.type) {
+        case "message":
+          setActiveTicket((current) => {
+            if (!current) return current;
+            // The sender already appended its own message optimistically, and the stream
+            // echoes to everyone — so drop anything we already hold rather than double it.
+            const messages = current.messages || [];
+            if (messages.some((m) => String(m.id) === String(event.message.id))) return current;
+            return { ...current, messages: [...messages, event.message] };
+          });
+          break;
+        case "typing":
+          // Only the OTHER side's typing is interesting; ours would be a mirror.
+          if (event.side === "admin") setSupportTyping(Boolean(event.typing));
+          break;
+        case "read":
+          if (event.side === "admin") setAdminReadAt(event.read_at);
+          break;
+        case "status":
+          // Support closing the thread must disable our composer immediately — otherwise
+          // the customer types a reply into a box the server will reject.
+          setActiveTicket((current) => (current
+            ? { ...current, status: event.status, can_reply: event.can_reply }
+            : current));
+          break;
+        default:
+          break;
+      }
+    },
+  );
+
+  const pingTyping = useTypingPing(selectedId);
+
+  // Opening a thread marks it read, and tells support their reply landed.
+  useEffect(() => {
+    if (!selectedId) return;
+    api.post(`/api/support/tickets/${selectedId}/read`).catch(() => {});
+  }, [selectedId, activeTicket?.messages?.length]);
+
+
+  // Land on the newest message whenever the thread grows — and when the typing bubble
+  // appears, since it adds height below the last message and would otherwise be clipped.
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ block: "nearest" });
-  }, [activeTicket?.messages?.length]);
+  }, [activeTicket?.messages?.length, supportTyping]);
 
   const openTicket = (id) => setSearchParams({ id: String(id) });
   const backToList = () => setSearchParams({});
@@ -239,20 +297,44 @@ const Tickets = () => {
             {meta.note}
           </p>
 
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`ticket-bubble-row ${message.sender === "admin" ? "is-admin" : "is-customer"}`}
-            >
-              <div className="ticket-bubble">
-                <span className="ticket-bubble-sender">
-                  {message.sender === "admin" ? "Banarasi Kala Support" : (message.sender_name || "You")}
-                </span>
-                <p>{message.message}</p>
-                <span className="ticket-bubble-time">{formatStamp(message.createdAt)}</span>
+          {messages.map((message, index) => {
+            // "Seen" belongs on OUR last message only — repeating it under every bubble is
+            // noise, and it means nothing under a message support wrote themselves.
+            const isLastOwn = message.sender === "customer"
+              && !messages.slice(index + 1).some((m) => m.sender === "customer");
+            const seen = isLastOwn && adminReadAt
+              && new Date(adminReadAt) >= new Date(message.createdAt);
+            return (
+              <div
+                key={message.id}
+                className={`ticket-bubble-row ${message.sender === "admin" ? "is-admin" : "is-customer"}`}
+              >
+                <div className="ticket-bubble">
+                  <span className="ticket-bubble-sender">
+                    {message.sender === "admin" ? "Banarasi Kala Support" : (message.sender_name || "You")}
+                  </span>
+                  <p>{message.message}</p>
+                  <span className="ticket-bubble-time">
+                    {formatStamp(message.createdAt)}
+                    {seen && (
+                      <span className="ticket-bubble-seen" title="Seen by support">
+                        <Icon icon="lucide:check-check" /> Seen
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+
+          {supportTyping && (
+            <div className="ticket-bubble-row is-admin">
+              <div className="ticket-bubble ticket-bubble-typing" aria-live="polite">
+                <span className="ticket-bubble-sender">Banarasi Kala Support</span>
+                <span className="ticket-typing-dots"><i /><i /><i /></span>
               </div>
             </div>
-          ))}
+          )}
           <div ref={threadEndRef} />
         </div>
 
@@ -263,7 +345,7 @@ const Tickets = () => {
               value={reply}
               maxLength={2000}
               placeholder="Write a message to our support team…"
-              onChange={(event) => setReply(event.target.value)}
+              onChange={(event) => { setReply(event.target.value); pingTyping(); }}
             />
             <button type="submit" disabled={sending || !reply.trim()}>
               {sending ? <Icon icon="lucide:loader-2" className="tickets-spin" /> : <Icon icon="lucide:send" />}
