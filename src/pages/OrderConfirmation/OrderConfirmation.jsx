@@ -13,6 +13,7 @@ import { useCart } from "../../context/CartContext";
 import OrderTrackModal from "../../components/OrderTrackModal";
 import QuerySheet from "../../components/QuerySheet";
 import ReviewImagePicker from "../../components/ReviewImagePicker";
+import InvoiceViewer from "../../components/InvoiceViewer";
 import useBottomSheet from "../../hooks/useBottomSheet";
 import "./OrderConfirmation.css";
 
@@ -849,6 +850,92 @@ const OrderConfirmationSkeleton = () => (
 );
 
 /**
+ * The working behind one refund figure — what was returned, what was withheld.
+ *
+ * Pulled out of the ledger row so it can be rendered inside the "Refunds" tooltip instead.
+ * It used to sit inline under each entry behind a click-toggle, which pushed the totals up
+ * and down the card every time it was opened.
+ */
+const RefundBreakdown = ({ bd }) => {
+  if (!bd) return null;
+  return bd.is_full_return ? (
+    <>
+      {/* Full return: what you paid (amount_paid) is refunded to the gateway minus the
+          non-refundable fees + pickup charge; the wallet credit is returned to the wallet
+          in full (called out below, NOT added into the refund figure — it goes to a
+          different destination). */}
+      <div>
+        <span>Amount paid</span>
+        <strong>{formatPrice(bd.amount_paid)}</strong>
+      </div>
+      {toNumber(bd.platform_fee) > 0 && (
+        <div><span>Platform fee (not refunded)</span><strong>-{formatPrice(bd.platform_fee)}</strong></div>
+      )}
+      {toNumber(bd.cod_fee) > 0 && (
+        <div><span>COD charge (not refunded)</span><strong>-{formatPrice(bd.cod_fee)}</strong></div>
+      )}
+      {toNumber(bd.gift_charge) > 0 && (
+        <div><span>Gift charge (not refunded)</span><strong>-{formatPrice(bd.gift_charge)}</strong></div>
+      )}
+      {toNumber(bd.return_shipping_charge) > 0 && (
+        <div>
+          <span>
+            Return pickup charge
+            {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
+          </span>
+          <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
+        </div>
+      )}
+      {/* LEGACY ONLY. The gateway charge is no longer deducted, so this is absent from every
+          new refund. It stays for refunds settled while that policy was live — without the
+          line, the money they were actually charged would just be missing. */}
+      {toNumber(bd.payment_gateway_charge) > 0 && (
+        <div>
+          <span>
+            Payment gateway charge
+            {toNumber(bd.payment_gateway_fee_percent) > 0
+              ? ` (${bd.payment_gateway_fee_percent}% + ${bd.payment_gateway_gst_percent}% GST)`
+              : ""}
+          </span>
+          <strong>-{formatPrice(bd.payment_gateway_charge)}</strong>
+        </div>
+      )}
+      {toNumber(bd.wallet_return) > 0 && (
+        <div className="refund-ledger-wallet">
+          <span>Plus returned to your wallet (in full)</span>
+          <strong>+{formatPrice(bd.wallet_return)}</strong>
+        </div>
+      )}
+    </>
+  ) : (
+    <>
+      <div>
+        <span>Returned product value</span>
+        <strong>{formatPrice(bd.returned_value)}</strong>
+      </div>
+      {bd.coupon && toNumber(bd.coupon.adjustment) > 0 && (
+        <div>
+          <span>
+            Coupon difference ({bd.coupon.original_code}
+            {bd.coupon.applied_code && bd.coupon.applied_code !== bd.coupon.original_code ? ` → ${bd.coupon.applied_code}` : ""})
+          </span>
+          <strong>-{formatPrice(bd.coupon.adjustment)}</strong>
+        </div>
+      )}
+      {toNumber(bd.return_shipping_charge) > 0 && (
+        <div>
+          <span>
+            Return pickup charge
+            {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
+          </span>
+          <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
+        </div>
+      )}
+    </>
+  );
+};
+
+/**
  * The full order details (timeline, items, refund, address) as a bottom sheet.
  *
  * "Track your order" is a thumb action on a phone, so the panel it opens belongs under the
@@ -910,6 +997,8 @@ export default function OrderConfirmation() {
   // resets itself; this page keeps only what it needs to post.
   const [supportSubmitting, setSupportSubmitting] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  // The fetched invoice document; non-null while the viewer is open.
+  const [invoiceHtml, setInvoiceHtml] = useState(null);
 
   const [cancelModal, setCancelModal] = useState({
     isOpen: false,
@@ -1115,6 +1204,9 @@ export default function OrderConfirmation() {
     }
   }, [order?.id, order?.shiprocket_awb, order?.shiprocket_order_id, fetchTracking]);
 
+  // The "same price" note is a CSS hover/focus-within tooltip now — no state, and no
+  // document listeners to dismiss it.
+
   // Newest support ticket already raised on THIS order, so the help box can show
   // its live status instead of always inviting a new one. Same feature as My Orders.
   const fetchTicket = useCallback(async () => {
@@ -1188,21 +1280,17 @@ export default function OrderConfirmation() {
   // The invoice is an authenticated endpoint, so it can't be a plain link — fetch
   // it with the auth header and hand the HTML to a tab the browser can print. The
   // tab is opened synchronously inside the click so the pop-up blocker allows it.
+  // Opens the invoice in the InvoiceViewer below rather than a new tab. The old version
+  // pre-opened a blank tab before fetching, because a popup is only allowed while the click
+  // is still "user-initiated" — and when the request ran long the browser blocked it anyway,
+  // which is what the "allow pop-ups" warning existed to explain.
   const downloadInvoice = async () => {
     if (invoiceLoading || !order?.id) return;
-    const tab = window.open("", "_blank");
     setInvoiceLoading(true);
     try {
       const response = await api.get(`/api/orders/${order.id}/invoice`);
-      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "text/html" }));
-      if (tab) {
-        tab.location.href = blobUrl;
-      } else {
-        showNotification("Allow pop-ups for this site to open your invoice.", "warning");
-      }
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      setInvoiceHtml(response.data);
     } catch (err) {
-      tab?.close();
       showNotification(err?.response?.data?.message || "Could not open your invoice right now.", "error");
     } finally {
       setInvoiceLoading(false);
@@ -1979,9 +2067,11 @@ export default function OrderConfirmation() {
                       {(item.actions || [])
                         .filter((action) => String(action.action_type || "").toLowerCase() !== "cancel")
                         .map((action) => (
+                        // One line: "Return · Qty 1 · 21 Jul 2026 ——— Pickup Scheduled".
+                        // The qty/date used to wrap onto a second row of its own, which gave
+                        // a two-word status the height of a card.
                         <div key={action.id || `${action.action_type}-${action.created_at}`}>
                           <span>{getActionLabel(action)}</span>
-                          <strong>{getActionStatusLabel(action, item)}</strong>
                           <small>
                             Qty {action.quantity || 1}
                             {/* The saree(s) swapped in are shown properly below (exchange_swap),
@@ -1990,6 +2080,7 @@ export default function OrderConfirmation() {
                               ? ` · ${getActionStatusLabel(action, item) === "Item received" ? "Received" : "Completed"} ${formatDate(action.completed_at)}`
                               : action.created_at ? ` · ${formatDate(action.created_at)}` : ""}
                           </small>
+                          <strong>{getActionStatusLabel(action, item)}</strong>
                         </div>
                       ))}
                     </div>
@@ -2000,6 +2091,12 @@ export default function OrderConfirmation() {
                       without this the customer would see no sign of what is actually coming. */}
                   {item.exchange_swap?.to?.length > 0 && (
                     <div className="exchange-swap-card">
+                      {/* Wrapper exists purely to anchor the note: it is a full-width block,
+                          so the note's left:0/right:0 resolve to the card's width, and
+                          top:100% puts it under the heading rather than under the whole
+                          card. The title itself is inline-flex and would only be as wide as
+                          its own text. */}
+                      <div className="exchange-swap-head">
                       <span className="exchange-swap-title">
                         <Icon icon="lucide:repeat" />
                         {/* Keyed off the ITEM, not the action: the action is "Completed" as soon
@@ -2009,7 +2106,23 @@ export default function OrderConfirmation() {
                         {normalizeStatus(item.status) === "exchange completed"
                           ? "Exchanged for"
                           : "Being exchanged for"}
+                        {/* Same tooltip behaviour as the ⓘ beside Refunds: hover for a
+                            mouse, focus-within for keyboard and touch. No click toggle, so
+                            nothing expands and collapses the card underneath it. */}
+                        <span className="exchange-info-wrap">
+                          <button
+                            type="button"
+                            className="exchange-swap-info"
+                            aria-label="Why is there nothing to pay?"
+                          >
+                            <Icon icon="lucide:info" />
+                          </button>
+                          <span className="exchange-swap-note" role="tooltip">
+                            Same price — nothing extra to pay, nothing to refund.
+                          </span>
+                        </span>
                       </span>
+                      </div>
                       <ul className="exchange-swap-list">
                         {item.exchange_swap.to.map((target, i) => {
                           const targetUrl = target.product_slug ? `/product/${target.product_slug}` : null;
@@ -2064,9 +2177,6 @@ export default function OrderConfirmation() {
                           );
                         })}
                       </ul>
-                      <small className="exchange-swap-foot">
-                        Same price — nothing extra to pay, nothing to refund.
-                      </small>
                     </div>
                   )}
 
@@ -2172,9 +2282,37 @@ export default function OrderConfirmation() {
                 <div className="refund-ledger-head">
                   <Icon icon="lucide:receipt-text" />
                   <strong>Refunds</strong>
+                  {/* A tooltip, not a toggle. The breakdown used to expand inline on click,
+                      which shifted the totals down the card every time it was opened and
+                      needed a second click to put them back. Now it floats above the ledger
+                      on hover, and on focus so it is reachable by keyboard and by tap
+                      (a tap focuses the button; tapping elsewhere blurs it). */}
+                  <span className="refund-info-wrap">
+                    <button
+                      type="button"
+                      className="refund-ledger-info"
+                      aria-label="How this refund was calculated"
+                    >
+                      <Icon icon="lucide:info" />
+                    </button>
+                    <span className="refund-ledger-tip" role="tooltip">
+                      {refunds.map((r, i) => r.breakdown && (
+                        <span className="refund-tip-block" key={r.id || `tip-${i}`}>
+                          {/* Only worth naming which refund this is when there are several. */}
+                          {refunds.length > 1 && (
+                            <em className="refund-tip-heading">{formatRefundType(r.refund_type)}</em>
+                          )}
+                          <span className="refund-ledger-breakdown">
+                            <RefundBreakdown bd={r.breakdown} />
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  </span>
                 </div>
                 {refunds.map((r, i) => {
-                  const bd = r.breakdown || null;
+                  // The breakdown is no longer read here — it renders inside the ⓘ tooltip
+                  // on the head above.
                   return (
                     <div key={r.id || `${r.refund_type}-${i}`} className="refund-ledger-entry">
                       <div className="refund-ledger-row">
@@ -2191,87 +2329,6 @@ export default function OrderConfirmation() {
                             than it was. Wallet is called out separately underneath. */}
                         <strong>{formatPrice(refundToPaymentMethod(r))}</strong>
                       </div>
-                      {bd && (
-                        <div className="refund-ledger-breakdown">
-                          {bd.is_full_return ? (
-                            <>
-                              {/* Full return: what you paid (amount_paid) is refunded
-                                  to the gateway minus the non-refundable fees +
-                                  pickup charge; the wallet credit is returned to the
-                                  wallet in full (called out below, NOT added into the
-                                  refund figure — it goes to a different destination). */}
-                              <div>
-                                <span>Amount paid</span>
-                                <strong>{formatPrice(bd.amount_paid)}</strong>
-                              </div>
-                              {toNumber(bd.platform_fee) > 0 && (
-                                <div><span>Platform fee (not refunded)</span><strong>-{formatPrice(bd.platform_fee)}</strong></div>
-                              )}
-                              {toNumber(bd.cod_fee) > 0 && (
-                                <div><span>COD charge (not refunded)</span><strong>-{formatPrice(bd.cod_fee)}</strong></div>
-                              )}
-                              {toNumber(bd.gift_charge) > 0 && (
-                                <div><span>Gift charge (not refunded)</span><strong>-{formatPrice(bd.gift_charge)}</strong></div>
-                              )}
-                              {toNumber(bd.return_shipping_charge) > 0 && (
-                                <div>
-                                  <span>
-                                    Return pickup charge
-                                    {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
-                                  </span>
-                                  <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
-                                </div>
-                              )}
-                              {/* LEGACY ONLY. The gateway charge is no longer deducted, so this is
-                                  absent from every new refund. It stays for refunds settled while
-                                  that policy was live — without the line, the money they were
-                                  actually charged would just be missing from the breakdown. */}
-                              {toNumber(bd.payment_gateway_charge) > 0 && (
-                                <div>
-                                  <span>
-                                    Payment gateway charge
-                                    {toNumber(bd.payment_gateway_fee_percent) > 0
-                                      ? ` (${bd.payment_gateway_fee_percent}% + ${bd.payment_gateway_gst_percent}% GST)`
-                                      : ""}
-                                  </span>
-                                  <strong>-{formatPrice(bd.payment_gateway_charge)}</strong>
-                                </div>
-                              )}
-                              {toNumber(bd.wallet_return) > 0 && (
-                                <div className="refund-ledger-wallet">
-                                  <span>Plus returned to your wallet (in full)</span>
-                                  <strong>+{formatPrice(bd.wallet_return)}</strong>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div>
-                                <span>Returned product value</span>
-                                <strong>{formatPrice(bd.returned_value)}</strong>
-                              </div>
-                              {bd.coupon && toNumber(bd.coupon.adjustment) > 0 && (
-                                <div>
-                                  <span>
-                                    Coupon difference ({bd.coupon.original_code}
-                                    {bd.coupon.applied_code && bd.coupon.applied_code !== bd.coupon.original_code ? ` → ${bd.coupon.applied_code}` : ""})
-                                  </span>
-                                  <strong>-{formatPrice(bd.coupon.adjustment)}</strong>
-                                </div>
-                              )}
-                              {toNumber(bd.return_shipping_charge) > 0 && (
-                                <div>
-                                  <span>
-                                    Return pickup charge
-                                    {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
-                                  </span>
-                                  <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -2437,6 +2494,7 @@ export default function OrderConfirmation() {
               {ticket ? "View Query" : "Query Us"}
             </button>
           </div>
+
 
           {wasDeliveredForPostDeliveryAction(order) && (
             <div className="order-card-actions">
@@ -4169,6 +4227,14 @@ export default function OrderConfirmation() {
           tracking={tracking}
           loading={trackingLoading}
           onClose={() => setTrackModalOpen(false)}
+        />
+      )}
+
+      {invoiceHtml && (
+        <InvoiceViewer
+          html={invoiceHtml}
+          orderNumber={orderNumber}
+          onClose={() => setInvoiceHtml(null)}
         />
       )}
     </main>

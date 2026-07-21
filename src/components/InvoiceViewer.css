@@ -1,0 +1,158 @@
+/* ── Invoice viewer ──────────────────────────────────────────────────────────────────
+   A document, not a form: it wants as much of the screen as it can get, so it is a
+   near-full-screen panel rather than a bottom sheet. */
+
+.invoice-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above every sheet on the page (9999) — an invoice can be opened from the ⋮ menu inside
+     one, and it must not render behind it. */
+  z-index: 10040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(28, 12, 6, 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: invoice-fade 160ms ease-out;
+}
+
+@keyframes invoice-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invoice-overlay { animation: none; }
+}
+
+.invoice-shell {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  /* dvh so a mobile browser's collapsing toolbar cannot push the frame's bottom out of
+     the visible viewport. */
+  height: min(92dvh, 100%);
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fffdf8;
+  box-shadow: 0 24px 60px rgba(28, 12, 6, 0.4);
+}
+
+.invoice-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(123, 0, 27, 0.14);
+  background: #fff;
+}
+
+.invoice-bar > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #3a1b12;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.invoice-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.invoice-bar-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(123, 0, 27, 0.24);
+  border-radius: 9px;
+  background: transparent;
+  color: #7b001b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 130ms ease;
+}
+
+.invoice-bar-actions button:hover {
+  background: rgba(123, 0, 27, 0.07);
+}
+
+.invoice-close {
+  width: 34px;
+  padding: 0 !important;
+  justify-content: center;
+}
+
+/* The label is the first thing to go on a narrow screen — the icons still read, and the
+   invoice itself is what the space belongs to. */
+@media (max-width: 520px) {
+  .invoice-bar-actions button span {
+    display: none;
+  }
+
+  .invoice-bar-actions button {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* The scroll region. min-height: 0 is what lets it shrink inside the flex column; without
+   it the iframe's intrinsic height wins and pushes the toolbar off the top. */
+.invoice-frame-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+}
+
+/* Absolute so the scaled frame does not also reserve its unscaled height — the spacer div
+   beside it reserves the scaled height instead. */
+.invoice-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.invoice-loading {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  align-content: center;
+  color: rgba(58, 27, 18, 0.6);
+  font-size: 13px;
+}
+
+.invoice-spin {
+  font-size: 22px;
+  color: #7b001b;
+  animation: invoice-spin 900ms linear infinite;
+}
+
+@keyframes invoice-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invoice-spin { animation: none; }
+}

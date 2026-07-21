@@ -21,11 +21,22 @@
   color: #34170f;
   padding: 28px var(--oc-gutter) 52px;
 
-  /* Anchors the ::before backdrop below, and isolate gives this element its own stacking
-     context so the backdrop's z-index:-1 lands above this element's own background but
-     still behind every child — without isolate it can slide behind the body and vanish. */
+  /* NO isolation and NO z-index here, deliberately.
+     `isolation: isolate` used to sit on this rule to keep the backdrop below in place. It
+     also made this element a STACKING CONTEXT — which trapped every modal rendered inside
+     the page. A modal's z-index:9999 then only ranked against its siblings within the page,
+     never against the fixed header (z-index:1000) in the root context, so the header
+     painted on top of the Track Order sheet and every other modal on this page.
+     `position: relative` with z-index:auto does NOT create a context, so it is safe to keep;
+     the backdrop is layered by the two rules below instead. */
   position: relative;
-  isolation: isolate;
+}
+
+/* Page content sits above the backdrop. Positioned (z-index auto) puts these in the same
+   paint step as the ::before below, where DOM order decides — and they all come after it.
+   `relative` with no offsets moves nothing, so no layout changes. */
+.order-confirmation-page > * {
+  position: relative;
 }
 
 /* The backdrop is a fixed pseudo-element rather than a background on the page itself.
@@ -40,7 +51,12 @@
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -1;
+  /* 0, not -1. At -1 this needed an isolating ancestor to stop it sliding behind .App's
+     own background — and that isolation is exactly what buried the modals under the header.
+     At 0 it is a positioned element in the ROOT context: it paints above .App's background
+     and below the page content above (which is positioned by the rule further up), with no
+     stacking context needed anywhere. */
+  z-index: 0;
   background: var(--oc-page-bg);
   /* One size per layer, in the same order: wash fills, image covers, fallback fills.
      Same three values the header uses. */
@@ -742,11 +758,143 @@
   gap: 7px;
   margin-bottom: 8px;
   color: #5d170d;
+  /* Anchor for the ⓘ tooltip. It is this row — not the ⓘ itself — because the tooltip pins
+     to left:0/right:0 and needs the full ledger width to do that. */
+  position: relative;
 }
 
 .refund-ledger-head strong {
   font-size: 13px;
   font-weight: 400;
+}
+
+/* ⓘ beside "Refunds" — toggles the per-refund working.
+   Same treatment as .exchange-swap-info: a tinted disc so it reads as pressable, and a
+   negative-margin/padding pair that widens the tap target to ~26px without growing the
+   disc itself (18px is under what a fingertip can reliably hit). */
+.refund-ledger-info {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin: -4px -4px -4px 0;
+  padding: 4px;
+  box-sizing: content-box;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(128, 0, 32, 0.1);
+  background-clip: content-box;
+  color: #800020;
+  line-height: 0;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.refund-ledger-info:hover {
+  background: rgba(128, 0, 32, 0.18);
+  background-clip: content-box;
+}
+
+/* ── Refund working, as a tooltip ────────────────────────────────────────────────────
+   Anchored to .refund-ledger-head (a full-width flex row) and pinned to both its edges, so
+   the panel is exactly the ledger's width — it cannot be wider than its card, so it cannot
+   run off the screen at any size. No viewport measuring, nothing to fail at an edge. */
+.refund-info-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.refund-ledger-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  /* Opaque: it floats over the refund rows, and a translucent panel would leave the
+     figures underneath bleeding through the ones on top. */
+  background: #34120b;
+  color: #fff6e6;
+  box-shadow: 0 12px 28px rgba(40, 16, 8, 0.38);
+  /* Hidden by default without display:none, so it can transition and stays measurable. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity 130ms ease, transform 130ms ease, visibility 130ms;
+  pointer-events: none;
+}
+
+/* Hover for a mouse, focus-within for keyboard and touch — a tap focuses the button, and
+   tapping anywhere else blurs it, which dismisses this. */
+.refund-info-wrap:hover .refund-ledger-tip,
+.refund-info-wrap:focus-within .refund-ledger-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.refund-ledger-tip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 26px;
+  border: 5px solid transparent;
+  border-bottom-color: #34120b;
+}
+
+.refund-tip-block {
+  display: grid;
+  gap: 3px;
+}
+
+.refund-tip-heading {
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 246, 230, 0.6);
+}
+
+/* Inside the tooltip the rows sit on dark, so the ledger's own row colours are overridden. */
+.refund-ledger-tip .refund-ledger-breakdown {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.refund-ledger-tip .refund-ledger-breakdown div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.refund-ledger-tip .refund-ledger-breakdown span,
+.refund-ledger-tip .refund-ledger-breakdown strong {
+  color: #fff6e6;
+  font-size: 10.5px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.refund-ledger-tip .refund-ledger-breakdown strong {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Two classes deliberately: `.refund-ledger-head svg` below has equal specificity and
+   comes later in the file, so a single-class rule here would lose and the ⓘ would render
+   at 15px inside an 18px disc. */
+.refund-ledger-head .refund-ledger-info svg {
+  font-size: 12px;
+  color: inherit;
 }
 
 .refund-ledger-head svg {
@@ -1377,10 +1525,10 @@
   grid-column: 1 / -1;
   width: 100%;
   min-width: 0;
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin-top: 7px;
+  padding: 7px 9px;
   border: 1px dashed rgba(123, 0, 27, 0.28);
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(123, 0, 27, 0.035);
 }
 
@@ -1388,9 +1536,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   color: #7b001b;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1402,13 +1550,15 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .exchange-swap-list li {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  /* flex-start, not center: now that a long name wraps to two or three lines, centring
+     floats the thumbnail against the middle of the text block and the row reads crooked. */
+  align-items: flex-start;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1416,8 +1566,8 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 52px;
+  width: 32px;
+  height: 42px;
   border-radius: 6px;
   overflow: hidden;
   background: #fff;
@@ -1438,38 +1588,151 @@
 }
 
 /* `.confirmation-item strong` (the price) sets colour + white-space:nowrap on ALL nested
-   strongs, including these product names. Restate both here so a long saree name truncates
-   cleanly inside the card instead of inheriting the price's styling and overflowing. */
+   strongs, including these product names — which is why nowrap has to be overridden here
+   rather than simply left unset.
+   Full name, wrapped over as many lines as it needs. It used to truncate with an ellipsis,
+   which on a card this narrow cut most saree names mid-word: the customer could not tell
+   which product is actually coming, and that is the entire purpose of this card.
+   overflow-wrap guards the one case wrapping cannot solve — a single token longer than the
+   column, which would otherwise push the card wider than the screen. */
 .exchange-swap-copy strong {
   display: block;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #5d170d;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
   max-width: 100%;
 }
 
-/* The name is wrapped in a <Link>; text-overflow needs a block box with a real width to
-   truncate against, or the anchor just runs past the card. */
+/* The name is wrapped in a <Link>, which needs a block box with a real width for the name
+   inside it to wrap against rather than run past the card.
+   `overflow: hidden` was removed with the truncation — left in place it would clip the
+   second and later lines of a wrapped name to the height of the first. */
 .exchange-swap-copy .confirmation-product-link {
   display: block;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
 }
 
 .exchange-swap-copy small {
-  font-size: 11px;
+  font-size: 9px;
   color: rgba(93, 23, 13, 0.7);
 }
 
-.exchange-swap-foot {
-  display: block;
-  margin-top: 8px;
+/* The ⓘ beside "Being exchanged for". Carries the same-price note that used to sit on its
+   own footer line — reassurance, not an instruction, so it earns a hint rather than a row.
+   .exchange-swap-title is inline-flex with align-items:center, so this sits on the
+   baseline of the label without any extra alignment. */
+/* Given its own tinted disc rather than a bare glyph: at 9px uppercase the title around it
+   is already faint, and a plain outline icon disappeared into it. The disc also makes it
+   read as something you can press. */
+.exchange-swap-info {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  /* Negative margin extends the tappable area to ~26px without the disc growing to match —
+     18px is well under the ~24px minimum a fingertip can reliably hit. */
+  margin: -4px;
+  padding: 4px;
+  box-sizing: content-box;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(123, 0, 27, 0.1);
+  background-clip: content-box;
+  color: #7b001b;
+  font-size: 13px;
+  line-height: 0;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.exchange-swap-info:hover {
+  background: rgba(123, 0, 27, 0.18);
+  background-clip: content-box;
+}
+
+/* Inverted while the tooltip is up, so it is obvious which icon the note belongs to. */
+.exchange-info-wrap:hover .exchange-swap-info,
+.exchange-info-wrap:focus-within .exchange-swap-info {
+  background: #7b001b;
+  background-clip: content-box;
+  color: #fff6e6;
+}
+
+/* Hover for a mouse, focus-within for keyboard and touch — a tap focuses the button, and
+   tapping anywhere else blurs it, which dismisses the note. Matches .refund-ledger-tip. */
+.exchange-info-wrap:hover .exchange-swap-note,
+.exchange-info-wrap:focus-within .exchange-swap-note {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Anchors the note. Block-level, so it spans the card's content width. */
+.exchange-swap-head {
+  position: relative;
+}
+
+.exchange-info-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The note itself — same tooltip mechanics as .refund-ledger-tip.
+   Pinned to both edges of the heading block (left:0 / right:0), so its width IS the card's
+   content width — it cannot be wider than the card, and the card cannot be wider than the
+   screen. That removes the whole class of "tooltip runs off the right edge on a narrow
+   phone" bugs without measuring the viewport or flipping sides at runtime.
+   Absolute, so showing it does not shove the sarees below it down. */
+.exchange-swap-card .exchange-swap-note {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 9px 11px;
+  border-radius: 9px;
+  /* TWO classes deliberately. This is a <span> inside .confirmation-item, and
+     `.confirmation-item span` — which sets colour #766457 and font-size 9px — scores
+     (0,1,1) against a single class's (0,1,0) and wins. The result was 9px brown-grey text
+     on a near-black panel, i.e. barely readable. The extra class settles it.
+     text-transform is reset for the same reason from the other direction: it is inherited
+     from .exchange-swap-title (uppercase), which is right for the heading and wrong for a
+     sentence. */
+  text-transform: none;
+  /* Hidden without display:none so it can transition and stays measurable. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity 130ms ease, transform 130ms ease, visibility 130ms;
+  pointer-events: none;
+  /* Near-black maroon rather than the card's translucent tint: this floats OVER product
+     rows and thumbnails, so it needs its own opaque surface — a semi-transparent panel
+     would have saree photos showing through the text. */
+  background: #34120b;
+  color: #fff6e6;
+  /* 11px, not the 9px used for the compacted status labels. Those are glanceable tags next
+     to a value; this is a sentence someone actually reads, and it is the only place the
+     "nothing to pay" reassurance now lives. */
   font-size: 11px;
-  color: rgba(93, 23, 13, 0.6);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  /* Lifts it clearly off the card underneath. */
+  box-shadow: 0 12px 28px rgba(40, 16, 8, 0.38);
+}
+
+/* Small pointer back up to the ⓘ. Left-offset rather than centred because the icon sits at
+   the end of the title, near the left of the card. */
+.exchange-swap-note::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 14px;
+  border: 5px solid transparent;
+  border-bottom-color: #34120b;
 }
 
 /* ── Exchange: pick any saree at exactly the price paid, then its colour ── */
@@ -2061,15 +2324,19 @@
 .confirmation-item-actions {
   grid-column: 1 / -1;
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin-top: 4px;
 }
 
+/* Single row: label · qty · date on the left, status pushed right. It was a two-column
+   grid with the qty/date forced onto its own full-width row underneath, so a line with
+   four short words occupied the height of a card. */
 .confirmation-item-actions div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 10px;
-  padding: 8px 10px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 7px;
+  padding: 5px 9px;
   border-radius: 8px;
   background: rgba(123, 0, 27, 0.055);
 }
@@ -2077,15 +2344,24 @@
 .confirmation-item-actions span,
 .confirmation-item-actions strong {
   color: #5d170d;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 500;
 }
 
+/* margin-left:auto keeps the status on the right edge; on a narrow card the row wraps and
+   it drops below rather than crushing the label. */
+.confirmation-item-actions strong {
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .confirmation-item-actions small {
-  grid-column: 1 / -1;
   margin: 0;
+  min-width: 0;
   color: #766457;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 .confirmation-feedback-note {
@@ -3065,6 +3341,22 @@ span.oc-item-delivered-at {
 .oc-summary-card {
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(255, 247, 234, 0.86));
+}
+
+/* Breathing room inside the summary cards (Payment Summary, Address).
+   Written with BOTH classes deliberately: a later top-level `.order-panel { padding: 5px }`
+   trims every panel on the page, and at equal specificity it wins on source order — so a
+   plain `.oc-summary-card { padding }` here would be silently overridden and look like the
+   edit never applied. The extra class settles it regardless of where either rule sits.
+   5px left the totals almost touching the card border. */
+.order-panel.oc-summary-card {
+  padding: 16px 18px;
+}
+
+@media (max-width: 576px) {
+  .order-panel.oc-summary-card {
+    padding: 14px 14px;
+  }
 }
 
 .oc-summary-head {

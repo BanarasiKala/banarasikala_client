@@ -13,6 +13,7 @@ import EmptyStateIcon from "../../components/EmptyStateIcon";
 import OrderTrackModal from "../../components/OrderTrackModal";
 import QuerySheet from "../../components/QuerySheet";
 import ReviewImagePicker from "../../components/ReviewImagePicker";
+import InvoiceViewer from "../../components/InvoiceViewer";
 import "./MyOrders.css";
 
 const STATUS_CONFIG = {
@@ -381,6 +382,8 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
   const [copied, setCopied] = useState(false);
   const [trackOpen, setTrackOpen] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  // The fetched invoice document; non-null while the viewer is open.
+  const [invoiceHtml, setInvoiceHtml] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -450,21 +453,18 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
   // The invoice is an authenticated endpoint, so it can't be a plain link — fetch
   // it with the auth header and hand the HTML to a tab the browser can print. The
   // tab is opened synchronously inside the click so the pop-up blocker allows it.
+  // Opens the invoice in the InvoiceViewer below rather than a new tab. The old version
+  // pre-opened a blank tab before fetching, because a popup is only allowed while the click
+  // is still "user-initiated" — and when the request ran long the browser blocked it anyway,
+  // which is what the "allow pop-ups" warning existed to explain. Rendering in-page removes
+  // the whole problem and keeps the customer on their orders.
   const downloadInvoice = async () => {
     if (invoiceLoading) return;
-    const tab = window.open("", "_blank");
     setInvoiceLoading(true);
     try {
       const response = await api.get(`/api/orders/${order.id}/invoice`);
-      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "text/html" }));
-      if (tab) {
-        tab.location.href = blobUrl;
-      } else {
-        onNotify?.("Allow pop-ups for this site to open your invoice.", "warning");
-      }
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      setInvoiceHtml(response.data);
     } catch (err) {
-      tab?.close();
       onNotify?.(err?.response?.data?.message || "Could not open your invoice right now.", "error");
     } finally {
       setInvoiceLoading(false);
@@ -834,6 +834,14 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
           order={order}
           statusLabel={getStatus(getEffectiveOrderStatus(order)).label}
           onClose={() => setTrackOpen(false)}
+        />
+      )}
+
+      {invoiceHtml && (
+        <InvoiceViewer
+          html={invoiceHtml}
+          orderNumber={orderNumber}
+          onClose={() => setInvoiceHtml(null)}
         />
       )}
 
