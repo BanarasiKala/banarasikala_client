@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
@@ -682,31 +683,50 @@ const Header = () => {
               )}
 
               {profileOpen && user && (
-                <div className="bk-profile-panel">
+                <div className="bk-profile-panel" role="menu">
                   <div className="bk-profile-head">
-                    <p>Hello {firstName}</p>
-                    <span>{userPhone}</span>
+                    <span className="bk-profile-avatar" aria-hidden="true">
+                      {firstName?.trim()?.[0]?.toUpperCase() || "U"}
+                    </span>
+                    <span className="bk-profile-head-copy">
+                      <p>Hello {firstName}</p>
+                      <span>{userPhone}</span>
+                    </span>
                   </div>
-                  <button type="button" onClick={() => goProtected("/my-orders")}>
-                    Orders
-                  </button>
-                  <button type="button" onClick={() => goProtected("/tickets")}>
-                    Queries
-                  </button>
-                  <button type="button" onClick={() => goProtected("/profile")}>
-                    Account
-                  </button>
-                  <button type="button" onClick={openReferModal}>
-                    Refer & Earn
-                  </button>
-                  <button type="button" onClick={() => goProtected("/wishlist")}>
-                    Wishlist
-                  </button>
-                  <button type="button" onClick={() => goProtected("/feedback")}>
-                    Feedback
-                  </button>
-                  <button type="button" onClick={handleLogout}>
-                    Logout
+
+                  <div className="bk-profile-links">
+                    <button type="button" role="menuitem" onClick={() => goProtected("/my-orders")}>
+                      <Icon icon="lucide:package" />
+                      <span>Orders</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => goProtected("/tickets")}>
+                      <Icon icon="lucide:messages-square" />
+                      <span>Queries</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => goProtected("/profile")}>
+                      <Icon icon="lucide:user-round" />
+                      <span>Account</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => goProtected("/wishlist")}>
+                      <Icon icon="lucide:heart" />
+                      <span>Wishlist</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => goProtected("/feedback")}>
+                      <Icon icon="lucide:star" />
+                      <span>Feedback</span>
+                    </button>
+                    {/* The one that earns the customer something sits apart and highlighted,
+                        so it does not read as just another navigation row. */}
+                    <button type="button" role="menuitem" className="bk-profile-refer" onClick={openReferModal}>
+                      <Icon icon="lucide:gift" />
+                      <span>Refer &amp; Earn</span>
+                      <em>Get ₹{SIGNUP_BONUS_AMOUNT}</em>
+                    </button>
+                  </div>
+
+                  <button type="button" role="menuitem" className="bk-profile-logout" onClick={handleLogout}>
+                    <Icon icon="lucide:log-out" />
+                    <span>Logout</span>
                   </button>
                 </div>
               )}
