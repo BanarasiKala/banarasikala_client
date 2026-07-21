@@ -1092,7 +1092,7 @@
   background: transparent;
   color: #3a1b12;
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
@@ -1118,7 +1118,7 @@
   border-radius: 999px;
   font-size: 9.5px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2495,13 +2495,15 @@
   flex-wrap: wrap;
   gap: 4px 7px;
   font-size: 10.5px !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
   letter-spacing: 0.04em;
 }
 
-/* The number is the identifier — it keeps the full weight and the darker ink. */
+/* The number is the identifier, so it stays the darker ink — but only a step above the
+   date in weight. At 700 it competed with "Need Help with this order?" directly above it
+   for a line that is meant to be a quiet reference. */
 .order-help-ticket b {
-  font-weight: 700;
+  font-weight: 600;
   color: #3a1b12;
 }
 
@@ -2514,10 +2516,10 @@
 }
 
 /* Beside the date, not pushed to the far edge — the card's copy column is wider than the
-   menu and margin-left:auto would strand the pill on the other side of the card. */
+   menu and margin-left:auto would strand the pill on the other side of the card. Weight is
+   inherited from .order-menu-tag; only the position differs here. */
 .order-help-ticket .order-menu-tag {
   margin-left: 0;
-  letter-spacing: 0.06em;
 }
 
 .order-help-btn {

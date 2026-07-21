@@ -34,11 +34,12 @@ const formatDateTime = (value) => {
 };
 
 
-const TICKET_STATUS_TONE = {
-  Open: "is-open",
-  "In Progress": "is-progress",
-  Resolved: "is-resolved",
-  Closed: "is-closed",
+// "21 Jul 2026" — how the help box labels a live query. The customer raised it, so the
+// date is what identifies it to them; the number is there for quoting back to support.
+const formatQueryDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
 const formatDate = (value) => {
@@ -1120,7 +1121,10 @@ export default function OrderConfirmation() {
     try {
       const response = await api.get(`/api/support/tickets/my?orderId=${orderId}`);
       const tickets = Array.isArray(response.data) ? response.data : [];
-      setTicket(tickets[0] || null);
+      // The LIVE query only, matching My Orders. Taking tickets[0] regardless of status
+      // meant a closed thread showed "View Query" here and dropped the customer into a
+      // conversation they cannot reply to, with no way to raise a new one.
+      setTicket(tickets.find((entry) => entry.status !== "Closed") || null);
     } catch {
       // Non-blocking: the help box still offers "Query Us" without a status.
     }
@@ -2415,9 +2419,14 @@ export default function OrderConfirmation() {
             <span className="order-help-icon"><Icon icon="lucide:message-circle-question" /></span>
             <div className="order-help-copy">
               <strong>Need Help with this order?</strong>
+              {/* Same line as the My Orders card: number, then the date it was raised,
+                  then the status pill. Only ever a live query — closed ones are history,
+                  not the state of this order. */}
               {ticket ? (
-                <span className={`order-help-ticket ${TICKET_STATUS_TONE[ticket.status] || "is-open"}`}>
-                  {ticket.ticket_number} · {ticket.status}
+                <span className="order-help-ticket">
+                  <b>{ticket.ticket_number}</b>
+                  <i>Raised {formatQueryDate(ticket.createdAt)}</i>
+                  <em className="order-query-tag">Active</em>
                 </span>
               ) : (
                 <span>Raise a query with our support team</span>

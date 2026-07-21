@@ -3262,15 +3262,47 @@ strong.oc-item-price {
   font-weight: 500;
 }
 
+/* "TKT000124 · Raised 21 Jul 2026 · [ACTIVE]" — mirrors the My Orders card so the same
+   query reads identically on both pages.
+   Wraps rather than overflowing: three fragments plus a pill do not fit beside the
+   View Query button on a narrow phone.
+   The per-status colour modifiers are gone with the status text — only a live query
+   renders here now, so there was one branch left and the pill carries it. */
 .order-help-ticket {
-  font-weight: 500 !important;
-  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  font-weight: 400 !important;
+  letter-spacing: 0.04em;
 }
 
-.order-help-ticket.is-open { color: #9a6200 !important; }
-.order-help-ticket.is-progress { color: #2454a6 !important; }
-.order-help-ticket.is-resolved { color: #087a55 !important; }
-.order-help-ticket.is-closed { color: rgba(50, 21, 15, 0.55) !important; }
+/* The number is the identifier, so it keeps the darker ink — one step above the date, not
+   heavy enough to compete with "Need Help with this order?" on the line above. */
+.order-help-ticket b {
+  font-weight: 600;
+  color: #3a1b12;
+}
+
+/* Not italic despite the <i>: the tag is being used for "set apart", and slanted small
+   text on a card reads as a rendering fault rather than emphasis. */
+.order-help-ticket i {
+  font-style: normal;
+  font-weight: 500;
+  color: rgba(50, 21, 15, 0.6);
+}
+
+.order-query-tag {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(8, 122, 85, 0.12);
+  color: #087a55;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
 .order-help-btn {
   flex: 0 0 auto;

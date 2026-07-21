@@ -1179,7 +1179,13 @@ export default function MyOrders() {
             </label>
             <button type="button" onClick={openFilterModal}>
               <Icon icon="lucide:list-filter" />
-              {FILTER_OPTIONS.find((item) => item.id === selectedFilter)?.label || "Filters"}
+              {/* "all" is the absence of a filter, so the button says what it DOES rather
+                  than echoing a selection — "All" read like a state that had been chosen.
+                  Once a real filter is on, its name replaces this so the list never looks
+                  short for no visible reason. "All" stays a choice inside the sheet. */}
+              {selectedFilter === "all"
+                ? "Filters"
+                : FILTER_OPTIONS.find((item) => item.id === selectedFilter)?.label || "Filters"}
             </button>
           </div>
         )}
