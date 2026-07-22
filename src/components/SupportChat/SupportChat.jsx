@@ -137,6 +137,7 @@ export default function SupportChat({
   const [sending, setSending] = useState(false);
   const [pendingImages, setPendingImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   // Live state. `supportTyping` is ephemeral (server-side TTL, never persisted);
@@ -332,6 +333,32 @@ export default function SupportChat({
   const meta = statusMeta(strand?.status);
   const canSend = !sending && !uploading && (reply.trim() || pendingImages.length);
   const hasHistory = messages.length > 0;
+  // Only Closed. Resolved still takes a reply directly — "we think this is sorted" is an
+  // invitation to say it isn't, and a gate there would be on the wrong door.
+  const isClosed = strand?.status === "Closed";
+
+  const reopen = async () => {
+    if (reopening) return;
+    setReopening(true);
+    try {
+      const { data } = await api.post("/api/support/conversation/reopen", {
+        ...(strand?.id ? { topicId: strand.id } : {}),
+        ...(order?.id ? { orderId: order.id } : {}),
+      });
+      if (data?.topic) setStrand(data.topic);
+      // "Conversation reopened", shown the same way the closing line is. It also comes over
+      // the stream — appendMessage is idempotent on id, so whichever arrives first wins and
+      // the customer sees their click land either way.
+      appendMessage(data?.message);
+    } catch (err) {
+      notifyRef.current?.(
+        err?.response?.data?.message || "Could not reopen this conversation.",
+        "error",
+      );
+    } finally {
+      setReopening(false);
+    }
+  };
 
   // Messages paired with the date separator that precedes them. Derived rather than tracked
   // with a rolling variable inside the map: a strand can live for months, and a `let` the
@@ -355,15 +382,10 @@ export default function SupportChat({
             <Icon icon={dismissible ? "lucide:x" : "lucide:arrow-left"} />
           </button>
         )}
+        {/* Name only. There used to be a status line under it as well, which said the same
+            word as the chip on the right — "Open" twice, two inches apart. */}
         <div className="sc-head-title">
           <strong>Banarasi Kala Support</strong>
-          <span>
-            {supportTyping
-              ? "typing…"
-              : strand?.status
-                ? meta.label
-                : "Usually replies within a few hours"}
-          </span>
         </div>
         {strand?.status && (
           <span className={`sc-status ${meta.tone}`}>
@@ -469,8 +491,18 @@ export default function SupportChat({
         <div ref={threadEndRef} />
       </div>
 
-      {/* Always available. Support closing a strand does not lock it — writing again reopens
-          that strand, because the customer has nowhere else to take the same problem. */}
+      {/* A closed strand takes the composer away and asks instead.
+          Support ended this conversation, so the next message should be a decision rather
+          than something typed into a thread nobody is assigned to. Answering yes reopens it
+          — see reopenMyTopic — and the composer comes back. */}
+      {isClosed ? (
+        <div className="sc-closed">
+          <span>Do you still have any query?</span>
+          <button type="button" onClick={reopen} disabled={reopening}>
+            {reopening ? "Reopening…" : "Chat with us"}
+          </button>
+        </div>
+      ) : (
       <div className="sc-composer">
         {(pendingImages.length > 0 || uploading) && (
           <div className="sc-pending-images">
@@ -527,6 +559,7 @@ export default function SupportChat({
           </button>
         </form>
       </div>
+      )}
 
       {lightbox && (
         <ImageLightbox

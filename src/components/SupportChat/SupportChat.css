@@ -109,24 +109,25 @@
   letter-spacing: 0.02em;
 }
 
-/* A status line belongs to neither side, so it sits centred across the thread rather than in
-   a bubble on one edge. The customer reads it as something that happened TO the conversation
-   — which is exactly what it is. */
+/* A status line belongs to neither side, so it spans the full width of the thread instead of
+   sitting in a bubble on one edge. Full width is the point: a bubble reads as somebody
+   speaking, and nobody said this — it happened TO the conversation. Running edge to edge is
+   what separates it from the messages above and below at a glance. */
 .sc-system {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0;
+  display: block;
+  margin: 6px 0;
 }
 
 .sc-system span {
-  max-width: 84%;
-  padding: 7px 14px;
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
   border-radius: 10px;
   border: 1px solid rgba(154, 98, 0, 0.22);
-  background: rgba(212, 175, 55, 0.13);
+  background: rgba(212, 175, 55, 0.16);
   color: #7a5a12;
   text-align: center;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.45;
 }
@@ -558,4 +559,49 @@
 @media (prefers-reduced-motion: reduce) {
   .sc-sheet-overlay,
   .sc-sheet { animation: none; }
+}
+
+/* ---------- closed strand ---------- */
+
+/* Replaces the composer when support has closed the conversation. One line, with the way
+   back as an inline link rather than a button: a disabled text box is a dead end the customer
+   has to interpret, and a large button overstates a choice they may not want to make. */
+.sc-closed {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 15px 16px;
+  border-top: 1px solid rgba(116, 40, 19, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sc-closed > span {
+  color: rgba(50, 21, 15, 0.72);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Green, the one colour in this palette that means "go" — it is the only action on screen,
+   and it has to read as an invitation rather than a warning about being closed. */
+.sc-closed > button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #087a55;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sc-closed > button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.sc-closed > button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
