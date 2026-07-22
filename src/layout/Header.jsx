@@ -554,10 +554,13 @@ const Header = () => {
           <Link to="/reels" onClick={refreshNavClick("/reels")}>Reels</Link>
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
           <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
-          {/* The support chat belongs to an account — there is nothing to show a guest. The
-              badge carries the unread count, so a reply is noticed from any page on the site. */}
+          {/* The support chat belongs to an account — there is nothing to show a guest.
+              Points at My Orders rather than a support page of its own: the chat is opened
+              from an order now, so that is where a reply is read. The badge stays because it
+              is the only sitewide signal that support has answered — without it a customer
+              browsing the shop has no idea, and the count is what makes it worth a trip. */}
           {user && (
-            <Link to="/support" onClick={refreshNavClick("/support")} className="bk-support-link">
+            <Link to="/my-orders" onClick={refreshNavClick("/my-orders")} className="bk-support-link">
               Support
               {supportUnread > 0 && (
                 <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
@@ -708,13 +711,12 @@ const Header = () => {
                   </div>
 
                   <div className="bk-profile-links">
+                    {/* The support badge rides on Orders rather than an entry of its own:
+                        the chat opens from an order, so a second row pointing at the same
+                        page would be two names for one destination. */}
                     <button type="button" role="menuitem" onClick={() => goProtected("/my-orders")}>
                       <Icon icon="lucide:package" />
                       <span>Orders</span>
-                    </button>
-                    <button type="button" role="menuitem" onClick={() => goProtected("/support")}>
-                      <Icon icon="lucide:messages-square" />
-                      <span>Support</span>
                       {supportUnread > 0 && (
                         <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
                       )}
@@ -953,11 +955,9 @@ const Header = () => {
             </Link>
             {user ? (
               <>
+                {/* Badge on Orders — see the profile menu above. */}
                 <button type="button" onClick={() => goProtected("/my-orders")}>
                   Orders
-                </button>
-                <button type="button" onClick={() => goProtected("/support")}>
-                  Support
                   {supportUnread > 0 && (
                     <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
                   )}

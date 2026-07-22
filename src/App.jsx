@@ -28,7 +28,8 @@ const About = lazy(() => import("./pages/About/About"));
 const Testimonials = lazy(() => import("./pages/Testimonials/Testimonials"));
 const Wishlist = lazy(() => import("./pages/Wishlist/Wishlist"));
 const MyOrders = lazy(() => import("./pages/MyOrders/MyOrders"));
-const Support = lazy(() => import("./pages/Support/Support"));
+// Parked with the /support route below — the chat is reached from an order instead.
+// const Support = lazy(() => import("./pages/Support/Support"));
 const Contact = lazy(() => import("./pages/Contact/Contact"));
 const Feedback = lazy(() => import("./pages/Feedback/Feedback"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
@@ -105,14 +106,25 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
+                      {/* The standalone support page is parked: the chat is reached from an
+                          order, in My Orders or on the confirmation page, which is where the
+                          customer already is when they have something to ask.
+
+                          Everything it needs is still here — pages/Support/, the strand-list
+                          UI, and the server's unscoped + ?topicId= reads — so restoring it is
+                          uncommenting this route and the import above.
+
+                          One thing goes with it: the GENERAL strand (questions not about any
+                          order) has no entry point while this is off, since every other route
+                          into the chat comes from an order. The server still supports it. */}
+                      {/* <Route
                         path="/support"
                         element={
                           <ProtectedRoute>
                             <Support />
                           </ProtectedRoute>
                         }
-                      />
+                      /> */}
                       <Route
                         path="/profile"
                         element={
