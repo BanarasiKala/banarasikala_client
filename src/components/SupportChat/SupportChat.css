@@ -256,45 +256,6 @@
   letter-spacing: 0.02em;
 }
 
-/* ---------- opening prompts ---------- */
-
-.sc-bubble.sc-prompts {
-  gap: 7px;
-  width: min(300px, 78vw);
-  max-width: 100%;
-}
-
-.sc-bubble.sc-prompts > button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  padding: 9px 11px;
-  border: 1px solid rgba(128, 0, 32, 0.22);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #800020;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.35;
-  transition: background 140ms ease, border-color 140ms ease;
-}
-
-.sc-bubble.sc-prompts > button:hover {
-  border-color: rgba(128, 0, 32, 0.45);
-  background: rgba(128, 0, 32, 0.06);
-}
-
-.sc-bubble.sc-prompts > button svg {
-  flex: 0 0 auto;
-  font-size: 15px;
-  opacity: 0.6;
-}
-
 /* ---------- photos in a bubble ---------- */
 
 /* Natural aspect ratio, capped by height — the same thing every chat app does. A square

@@ -190,7 +190,6 @@ const Support = () => {
               // costs no extra request to learn what it is about.
               order={selected?.order ? { id: selected.order_id, ...selected.order } : null}
               topicId={selected?.id || null}
-              customerName={user?.name || ""}
               onActivity={fetchTopics}
               onBack={backToList}
               onNotify={showNotification}

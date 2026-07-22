@@ -2688,10 +2688,8 @@ export default function OrderConfirmation() {
       {chatOpen && (
         <SupportChatSheet
           order={supportOrderContext(order, {
-            status: order?.status,
             statusLabel: getItemStatusVisual(order?.status).label,
           })}
-          customerName={order?.customer_name || ""}
           onNotify={showNotification}
           onClose={() => setChatOpen(false)}
         />

@@ -17,38 +17,6 @@ export const STATUS_META = {
 export const statusMeta = (status) => STATUS_META[status] || STATUS_META.Open;
 
 /**
- * Opening prompts, split on whether the parcel has landed.
- *
- * Offering "Item arrived damaged" on an order still in transit — or "Where is my order?" on
- * one delivered a week ago — invites a message support cannot act on, so the two sets never
- * overlap. Each carries a first-person sentence rather than its own label: the label is a
- * category, and a message that says only "Wrong item received" tells support no more than the
- * category did.
- *
- * Tapping PREFILLS the composer, it does not send. The customer finishes the sentence, which
- * is what turns a chosen category into something workable — and a mis-tap costs a keystroke.
- */
-const QUICK_REPLIES = {
-  transit: [
-    { label: "Where is my order?", text: "I'd like an update on where my order has reached. " },
-    { label: "Delivery is delayed", text: "My order hasn't arrived by the date I was expecting. " },
-    { label: "Change my delivery address", text: "I need to change the delivery address on this order. " },
-    { label: "Something else", text: "" },
-  ],
-  delivered: [
-    { label: "Item arrived damaged", text: "The item arrived damaged. " },
-    { label: "Wrong item received", text: "I received the wrong item. " },
-    { label: "Return or exchange help", text: "I'd like help with a return or exchange for this order. " },
-    { label: "Something else", text: "" },
-  ],
-  general: [
-    { label: "Question about a product", text: "I have a question about one of your sarees. " },
-    { label: "Payment or refund", text: "I have a question about a payment or refund. " },
-    { label: "Something else", text: "" },
-  ],
-};
-
-/**
  * WhatsApp-style delivery state for one of OUR messages.
  *
  *   ✓        sent      — saved on the server
@@ -149,7 +117,6 @@ const dayLabel = (value) => {
  * @param {object|null} order       `{ id, number, productName, productImage, statusLabel,
  *                                  extraItems, delivered }`. Null = the general strand.
  * @param {number|null} topicId     Existing strand to load, when the caller already knows it.
- * @param {string}      customerName Used in the greeting.
  * @param {Function}    onActivity  Called after a successful send (hosts refresh their lists).
  * @param {Function}    onBack      Renders the leading button when provided.
  * @param {boolean}     dismissible Marks onBack as "close" (✕) rather than "back" (←).
@@ -158,7 +125,6 @@ const dayLabel = (value) => {
 export default function SupportChat({
   order = null,
   topicId = null,
-  customerName = "",
   onActivity,
   onBack,
   dismissible = false,
@@ -179,7 +145,6 @@ export default function SupportChat({
   const [adminReadAt, setAdminReadAt] = useState(null);
 
   const fileInputRef = useRef(null);
-  const composerRef = useRef(null);
   const threadEndRef = useRef(null);
 
   // Host callbacks live in refs: every one is typically an inline arrow, so reading them
@@ -328,16 +293,6 @@ export default function SupportChat({
     }
   };
 
-  // A prompt drops its sentence into the composer and parks the caret at the end, ready for
-  // the detail that makes it something support can act on.
-  const applyPrompt = (text) => {
-    setReply(text);
-    const box = composerRef.current;
-    if (!box) return;
-    box.focus();
-    box.setSelectionRange(text.length, text.length);
-  };
-
   const send = async (event) => {
     event.preventDefault();
     const text = reply.trim();
@@ -377,10 +332,6 @@ export default function SupportChat({
   const meta = statusMeta(strand?.status);
   const canSend = !sending && !uploading && (reply.trim() || pendingImages.length);
   const hasHistory = messages.length > 0;
-
-  const quickReplies = !order
-    ? QUICK_REPLIES.general
-    : (order.delivered ? QUICK_REPLIES.delivered : QUICK_REPLIES.transit);
 
   // Messages paired with the date separator that precedes them. Derived rather than tracked
   // with a rolling variable inside the map: a strand can live for months, and a `let` the
@@ -443,8 +394,7 @@ export default function SupportChat({
                 <div className="sc-bubble">
                   <span className="sc-sender">Banarasi Kala Support</span>
                   <p>
-                    {customerName ? `Hi ${customerName} 👋` : "Hi 👋"} — how can we help
-                    {order ? " with this order?" : " today?"}
+                    Hi, I&rsquo;m Banarasi Kala Support — how can I assist you?
                   </p>
                 </div>
               </div>
@@ -506,20 +456,6 @@ export default function SupportChat({
               );
             })}
 
-            {!hasHistory && (
-              <div className="sc-row is-admin">
-                <div className="sc-bubble sc-prompts">
-                  <p>What do you need help with?</p>
-                  {quickReplies.map((prompt) => (
-                    <button key={prompt.label} type="button" onClick={() => applyPrompt(prompt.text)}>
-                      <span>{prompt.label}</span>
-                      <Icon icon="lucide:chevron-right" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {supportTyping && (
               <div className="sc-row is-admin">
                 <div className="sc-bubble sc-typing" aria-live="polite">
@@ -580,7 +516,6 @@ export default function SupportChat({
           />
 
           <textarea
-            ref={composerRef}
             rows={1}
             value={reply}
             maxLength={2000}

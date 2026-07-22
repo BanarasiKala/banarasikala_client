@@ -185,7 +185,6 @@ const getEffectiveOrderStatus = (order) => {
 // The order as the support chat shows it. Both this page and the order confirmation open
 // the same chat, so the mapping lives in one place — see utils/supportOrderContext.
 const chatOrderContext = (order) => supportOrderContext(order, {
-  status: getEffectiveOrderStatus(order),
   statusLabel: getStatus(getEffectiveOrderStatus(order)).label,
 });
 
@@ -1200,7 +1199,6 @@ export default function MyOrders() {
       {chat.isOpen && (
         <SupportChatSheet
           order={chatOrderContext(chat.order)}
-          customerName={user?.name || ""}
           onNotify={showNotification}
           onClose={closeChat}
         />

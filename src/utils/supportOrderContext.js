@@ -24,7 +24,7 @@ const itemImage = (item) => item?.image_url || item?.product_image_url || "";
  * @param {{status?: string, statusLabel?: string}} resolved Status as the host renders it.
  * @returns {object|null} Consumed by SupportChat's `order` prop.
  */
-export default function supportOrderContext(order, { status = "", statusLabel = "" } = {}) {
+export default function supportOrderContext(order, { statusLabel = "" } = {}) {
   if (!order?.id) return null;
 
   const all = order.OrderItems || [];
@@ -32,7 +32,6 @@ export default function supportOrderContext(order, { status = "", statusLabel = 
   const shown = live.length ? live : all;
   const lead = shown[0] || null;
   const image = itemImage(lead);
-  const normalized = String(status || order.status || "").toLowerCase();
 
   return {
     id: order.id,
@@ -41,9 +40,5 @@ export default function supportOrderContext(order, { status = "", statusLabel = 
     productImage: image ? imgUrl(image, 200) : "",
     statusLabel,
     extraItems: Math.max(0, shown.length - 1),
-    // Picks which set of opening prompts to offer. An RTO reads as "rto delivered" but came
-    // back to us — the customer never received it, so they need the in-transit prompts, not
-    // "item arrived damaged".
-    delivered: normalized.includes("delivered") && !normalized.includes("rto"),
   };
 }
