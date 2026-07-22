@@ -10,6 +10,7 @@ import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { NOTIFICATION_TOASTER_OPTIONS, NotificationProvider } from "./context/NotificationContext";
 import { LocationProvider } from "./context/LocationContext";
+import { SupportRealtimeProvider } from "./context/SupportRealtimeContext";
 import PreLoader from "./components/PreLoader/PreLoader";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import headerBackground from "./assets/header_backgroung.png";
@@ -27,7 +28,7 @@ const About = lazy(() => import("./pages/About/About"));
 const Testimonials = lazy(() => import("./pages/Testimonials/Testimonials"));
 const Wishlist = lazy(() => import("./pages/Wishlist/Wishlist"));
 const MyOrders = lazy(() => import("./pages/MyOrders/MyOrders"));
-const Tickets = lazy(() => import("./pages/Tickets/Tickets"));
+const Support = lazy(() => import("./pages/Support/Support"));
 const Contact = lazy(() => import("./pages/Contact/Contact"));
 const Feedback = lazy(() => import("./pages/Feedback/Feedback"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
@@ -54,6 +55,7 @@ function App() {
         <LocationProvider>
         <WishlistProvider>
           <CartProvider>
+            <SupportRealtimeProvider>
             <Router>
               <ScrollToTop />
               <div
@@ -104,10 +106,10 @@ function App() {
                         }
                       />
                       <Route
-                        path="/tickets"
+                        path="/support"
                         element={
                           <ProtectedRoute>
-                            <Tickets />
+                            <Support />
                           </ProtectedRoute>
                         }
                       />
@@ -151,6 +153,7 @@ function App() {
               </div>
               <Toaster {...NOTIFICATION_TOASTER_OPTIONS} />
             </Router>
+            </SupportRealtimeProvider>
           </CartProvider>
         </WishlistProvider>
         </LocationProvider>

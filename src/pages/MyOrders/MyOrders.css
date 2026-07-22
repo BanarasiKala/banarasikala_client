@@ -1109,30 +1109,6 @@
   color: #7b001b;
 }
 
-/* Active / Closed pill. In the ⋮ menu margin-left:auto pins it to the right edge so the
-   tags line up down the list; the card overrides that to sit it beside the date. */
-.order-menu-tag {
-  margin-left: auto;
-  flex: 0 0 auto;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 9.5px;
-  font-style: normal;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.order-menu-tag.is-active {
-  background: rgba(8, 122, 85, 0.12);
-  color: #087a55;
-}
-
-.order-menu-tag.is-closed {
-  background: rgba(50, 21, 15, 0.09);
-  color: rgba(50, 21, 15, 0.6);
-}
-
 /* ── Bottom-sheet modifiers ──────────────────────────────────────────────────────────
    Turns the centred .cancel-modal-* shell into a sheet without duplicating it. The base
    overlay is a grid with `place-items: center`, so both axes have to be reset — align-items
@@ -2585,43 +2561,6 @@
   font-weight: 500;
 }
 
-/* "TKT000124 · Raised 21 Jul 2026 · [ACTIVE]" — only ever a live query, so the whole line
-   is set small: a quiet reference under the heading, not a headline of its own.
-   Wraps rather than overflowing: three pieces of text plus a pill do not fit beside the
-   View Query button on a narrow phone. */
-.order-help-ticket {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 7px;
-  font-size: 10.5px !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.04em;
-}
-
-/* The number is the identifier, so it stays the darker ink — but only a step above the
-   date in weight. At 700 it competed with "Need Help with this order?" directly above it
-   for a line that is meant to be a quiet reference. */
-.order-help-ticket b {
-  font-weight: 600;
-  color: #3a1b12;
-}
-
-/* The date is context, so it steps back. Not italic despite the <i>: the tag is being used
-   for its "set apart" meaning, and slanted 10px text on a card reads as a mistake. */
-.order-help-ticket i {
-  font-style: normal;
-  font-weight: 500;
-  color: rgba(50, 21, 15, 0.6);
-}
-
-/* Beside the date, not pushed to the far edge — the card's copy column is wider than the
-   menu and margin-left:auto would strand the pill on the other side of the card. Weight is
-   inherited from .order-menu-tag; only the position differs here. */
-.order-help-ticket .order-menu-tag {
-  margin-left: 0;
-}
-
 .order-help-btn {
   flex: 0 0 auto;
   min-height: 32px;
@@ -2727,5 +2666,3 @@
   }
 }
 
-/* The .is-linkish closed-query chip was removed from the card — closed threads are reached
-   from the ⋮ menu now, so the card never renders a clickable chip here. */

@@ -7,7 +7,7 @@ import api from "../utils/api";
  * Two things make this less trivial than `new EventSource(url)`:
  *
  * 1. EventSource cannot send an Authorization header, and our auth is a Bearer token in
- *    localStorage. So we first POST /support/stream-ticket (a normal authenticated request)
+ *    localStorage. So we first POST /support/stream-token (a normal authenticated request)
  *    to trade the JWT for a 60-second single-use token, and put THAT in the stream URL.
  *    The real credential never lands in a URL, an access log, or browser history.
  *
@@ -15,7 +15,8 @@ import api from "../utils/api";
  *    would retry the same spent URL forever and every attempt would 401. So reconnect is
  *    handled here: mint a fresh token, then reopen, with backoff.
  *
- * @param {string|null} path   `/api/support/tickets/12/stream` or `/api/support/stream/admin`.
+ * @param {string|null} path   `/api/support/stream` (the customer's own conversation, which
+ *                             the server resolves from the token — there is no id in it).
  *                             Pass null to stay disconnected (modal closed, logged out).
  * @param {function}    onEvent Called with each parsed payload. Kept in a ref so a caller
  *                             that defines it inline doesn't tear down the stream on every
@@ -39,7 +40,7 @@ export default function useSupportStream(path, onEvent) {
     const connect = async () => {
       if (cancelled) return;
       try {
-        const { data } = await api.post("/api/support/stream-ticket");
+        const { data } = await api.post("/api/support/stream-token");
         if (cancelled || !data?.token) return;
 
         source = new EventSource(
@@ -90,13 +91,13 @@ export default function useSupportStream(path, onEvent) {
  * The server re-arms a 6s TTL on each call, so pinging once every 3s while the user types
  * keeps the indicator alive without a request per keystroke.
  */
-export function useTypingPing(ticketId) {
+export function useTypingPing(enabled = true) {
   const lastSent = useRef(0);
   return () => {
-    if (!ticketId) return;
+    if (!enabled) return;
     const now = Date.now();
     if (now - lastSent.current < 3000) return;
     lastSent.current = now;
-    api.post(`/api/support/tickets/${ticketId}/typing`).catch(() => {});
+    api.post("/api/support/conversation/typing").catch(() => {});
   };
 }

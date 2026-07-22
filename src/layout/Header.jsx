@@ -8,6 +8,7 @@ import { useWishlist } from "../context/WishlistContext";
 import { API_ENDPOINTS } from "../config/api";
 import api from "../utils/api";
 import { getProductCoverImage } from "../utils/productMedia";
+import { useSupport } from "../context/SupportRealtimeContext";
 import verticalLogo from "../assets/vertical_logo.png";
 import headerBackground from "../assets/header_backgroung.png";
 import "./Header.css";
@@ -32,6 +33,10 @@ const Header = () => {
   const { showNotification } = useNotification();
   const { getCartCount } = useCart();
   const { getWishlistCount } = useWishlist();
+  // Support replies are the one thing that arrives without the customer asking for it. The
+  // count comes from the shared support stream rather than a connection of its own — see
+  // SupportRealtimeContext.
+  const { unread: supportUnread } = useSupport();
 
   const [sareeOpen, setSareeOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -549,8 +554,16 @@ const Header = () => {
           <Link to="/reels" onClick={refreshNavClick("/reels")}>Reels</Link>
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
           <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
-          {/* Support threads belong to an account — there is nothing to show a guest. */}
-          {user && <Link to="/tickets" onClick={refreshNavClick("/tickets")}>Queries</Link>}
+          {/* The support chat belongs to an account — there is nothing to show a guest. The
+              badge carries the unread count, so a reply is noticed from any page on the site. */}
+          {user && (
+            <Link to="/support" onClick={refreshNavClick("/support")} className="bk-support-link">
+              Support
+              {supportUnread > 0 && (
+                <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
+              )}
+            </Link>
+          )}
         </nav>
 
         <Link
@@ -699,9 +712,12 @@ const Header = () => {
                       <Icon icon="lucide:package" />
                       <span>Orders</span>
                     </button>
-                    <button type="button" role="menuitem" onClick={() => goProtected("/tickets")}>
+                    <button type="button" role="menuitem" onClick={() => goProtected("/support")}>
                       <Icon icon="lucide:messages-square" />
-                      <span>Queries</span>
+                      <span>Support</span>
+                      {supportUnread > 0 && (
+                        <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
+                      )}
                     </button>
                     <button type="button" role="menuitem" onClick={() => goProtected("/profile")}>
                       <Icon icon="lucide:user-round" />
@@ -940,8 +956,11 @@ const Header = () => {
                 <button type="button" onClick={() => goProtected("/my-orders")}>
                   Orders
                 </button>
-                <button type="button" onClick={() => goProtected("/tickets")}>
-                  Queries
+                <button type="button" onClick={() => goProtected("/support")}>
+                  Support
+                  {supportUnread > 0 && (
+                    <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
+                  )}
                 </button>
                 <button type="button" onClick={() => goProtected("/profile")}>
                   Account

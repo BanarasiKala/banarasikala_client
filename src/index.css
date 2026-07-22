@@ -7,7 +7,7 @@
      different values (#008767, #d4a135, #d09a2e), so the same rating looked like a
      different thing depending on where you saw it. One token, one colour.
      Gold, not the green the pickers used: on an orders page green is a status colour —
-     Delivered, and the ACTIVE query pill — so a green star read as a state rather than a
+     Delivered, and the support unread badge — so a green star read as a state rather than a
      rating. This is the midpoint of the two golds already in use. */
   --bk-star: #d2a12f;
   --bk-star-empty: rgba(50, 21, 15, 0.24);

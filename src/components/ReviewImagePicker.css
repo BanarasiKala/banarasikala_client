@@ -1,7 +1,7 @@
-/* Review photo tiles. Deliberately the same shape and sizing as .query-thumb in
-   QuerySheet.css — both are "pick a few photos" controls, and a customer who has used one
-   should recognise the other. Kept as its own file rather than shared because the two live
-   in different forms with different surrounding padding. */
+/* Review photo tiles. Deliberately the same shape and sizing as .sc-thumb in the support
+   chat — both are "pick a few photos" controls, and a customer who has used one should
+   recognise the other. Kept as its own file rather than shared because the two live in
+   different forms with different surrounding padding. */
 
 .review-picker {
   display: flex;

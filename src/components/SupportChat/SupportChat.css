@@ -1,0 +1,600 @@
+/* The support chat. One component, three hosts: the bottom sheet on My Orders and the order
+   confirmation, and the /support page. Everything is scoped under .sc-chat so the sheet and
+   the page differ only in the frame around it. */
+
+.sc-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid rgba(116, 40, 19, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  overflow: hidden;
+}
+
+/* ---------- header ---------- */
+
+.sc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(116, 40, 19, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.sc-head-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid rgba(116, 40, 19, 0.18);
+  border-radius: 9px;
+  background: transparent;
+  color: #800020;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.sc-head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-head-title strong {
+  color: #3b1710;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.sc-head-title span {
+  color: rgba(50, 21, 15, 0.55);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sc-status svg { font-size: 12px; }
+
+.sc-status.is-open     { color: #9a6200; border-color: rgba(154, 98, 0, 0.28); background: rgba(154, 98, 0, 0.08); }
+.sc-status.is-progress { color: #2454a6; border-color: rgba(36, 84, 166, 0.28); background: rgba(36, 84, 166, 0.08); }
+.sc-status.is-resolved { color: #087a55; border-color: rgba(8, 122, 85, 0.28); background: rgba(8, 122, 85, 0.08); }
+.sc-status.is-closed   { color: rgba(50, 21, 15, 0.6); border-color: rgba(50, 21, 15, 0.2); background: rgba(50, 21, 15, 0.05); }
+
+/* ---------- thread ---------- */
+
+.sc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Date separators. A conversation that lives for years is unreadable without them — "12:38
+   pm" says nothing about which of the last forty days it was. */
+.sc-day {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 2px;
+}
+
+.sc-day span {
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: rgba(116, 40, 19, 0.08);
+  color: rgba(50, 21, 15, 0.6);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* A status line belongs to neither side, so it sits centred across the thread rather than in
+   a bubble on one edge. The customer reads it as something that happened TO the conversation
+   — which is exactly what it is. */
+.sc-system {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.sc-system span {
+  max-width: 84%;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(154, 98, 0, 0.22);
+  background: rgba(212, 175, 55, 0.13);
+  color: #7a5a12;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.sc-row { display: flex; }
+.sc-row.is-customer { justify-content: flex-end; }
+.sc-row.is-admin    { justify-content: flex-start; }
+
+.sc-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: min(80%, 460px);
+  padding: 9px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(116, 40, 19, 0.12);
+  background: #fff;
+}
+
+.sc-row.is-customer .sc-bubble {
+  border-color: rgba(128, 0, 32, 0.18);
+  background: rgba(128, 0, 32, 0.05);
+  border-bottom-right-radius: 4px;
+}
+
+.sc-row.is-admin .sc-bubble {
+  border-bottom-left-radius: 4px;
+}
+
+.sc-sender {
+  color: #800020;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sc-row.is-customer .sc-sender { color: rgba(50, 21, 15, 0.6); }
+
+.sc-bubble p {
+  margin: 0;
+  color: #32150f;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sc-time {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(50, 21, 15, 0.42);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+/* ---------- pinned strand context ---------- */
+
+/* The order this strand is about, under the header rather than in the scroll. It cannot
+   change while the customer is reading, so putting it in the message list would mean
+   scrolling back up to check what you are even talking about. */
+.sc-context {
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(116, 40, 19, 0.1);
+  background: rgba(128, 0, 32, 0.035);
+}
+
+.sc-order-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: min(230px, 58vw);
+}
+
+.sc-order-card img,
+.sc-order-fallback {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  border: 1px solid rgba(116, 40, 19, 0.14);
+  background: rgba(116, 40, 19, 0.05);
+  object-fit: cover;
+  display: block;
+}
+
+.sc-order-fallback {
+  display: grid;
+  place-items: center;
+  color: rgba(128, 0, 32, 0.5);
+  font-size: 20px;
+}
+
+.sc-order-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sc-order-copy strong {
+  color: #32150f;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  /* Two lines tells one saree from another; a full product title is longer than the bubble
+     and would push the order number out of sight. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sc-order-copy small {
+  color: rgba(50, 21, 15, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sc-order-copy em {
+  color: #087a55;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- opening prompts ---------- */
+
+.sc-bubble.sc-prompts {
+  gap: 7px;
+  width: min(300px, 78vw);
+  max-width: 100%;
+}
+
+.sc-bubble.sc-prompts > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid rgba(128, 0, 32, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #800020;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.sc-bubble.sc-prompts > button:hover {
+  border-color: rgba(128, 0, 32, 0.45);
+  background: rgba(128, 0, 32, 0.06);
+}
+
+.sc-bubble.sc-prompts > button svg {
+  flex: 0 0 auto;
+  font-size: 15px;
+  opacity: 0.6;
+}
+
+/* ---------- photos in a bubble ---------- */
+
+/* Natural aspect ratio, capped by height — the same thing every chat app does. A square
+   `object-fit: cover` crop is wrong for exactly the photos people send here: a full-length
+   saree shot arrives portrait, and the defect being reported is often the part cut away. */
+.sc-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.sc-images button {
+  /* 0 0 auto: as a flex item it would otherwise shrink to fit the row, squeezing a photo
+     into a sliver as soon as two share a line. */
+  flex: 0 0 auto;
+  display: block;
+  padding: 0;
+  border: 0;
+  max-width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  line-height: 0;
+  cursor: zoom-in;
+  /* Shows through while the image loads, so the bubble doesn't jump. */
+  background: rgba(116, 40, 19, 0.06);
+}
+
+.sc-images img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 240px;
+}
+
+/* Two or more share a row, so they get a ceiling that lets both fit. Scoped to the BUTTON's
+   siblings, not the img's: the img is always the only child of its button. */
+.sc-images button:not(:only-child) img { max-height: 132px; }
+
+/* ---------- ticks + typing ---------- */
+
+/* sent (single) -> delivered (double) -> read (double, blue). Blue is the only colour change;
+   the shape carries the sent/delivered distinction, so the states stay legible to anyone who
+   cannot separate grey from blue. */
+.sc-ticks {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  line-height: 0;
+}
+
+.sc-ticks svg { font-size: 15px; }
+.sc-ticks.is-sent,
+.sc-ticks.is-delivered { color: rgba(93, 23, 13, 0.42); }
+.sc-ticks.is-read { color: #1da1f2; }
+
+.sc-typing { gap: 6px; }
+
+/* Three dots with staggered bounce, sized to a line of bubble text so the thread doesn't
+   jump when the indicator is replaced by the real message. */
+.sc-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+}
+
+.sc-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: sc-bounce 1.2s infinite ease-in-out;
+}
+
+.sc-dots i:nth-child(2) { animation-delay: 0.15s; }
+.sc-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes sc-bounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.35; }
+  30%           { transform: translateY(-4px); opacity: 0.9; }
+}
+
+/* ---------- composer ---------- */
+
+/* Wrapped so the pending-photo strip and the input row read as one surface; the border and
+   background sit on the wrapper, otherwise the strip floats above the composer's top edge
+   looking detached from it. */
+.sc-composer {
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(116, 40, 19, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sc-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.sc-form textarea {
+  flex: 1 1 auto;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid rgba(116, 40, 19, 0.18);
+  border-radius: 20px;
+  background: #fff;
+  color: #32150f;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+}
+
+.sc-form textarea:focus { border-color: rgba(128, 0, 32, 0.45); }
+
+.sc-attach,
+.sc-send {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 17px;
+  transition: opacity 140ms ease;
+}
+
+.sc-attach {
+  border: 1px solid rgba(116, 40, 19, 0.18);
+  background: #fff;
+  color: #800020;
+}
+
+.sc-send {
+  border: 0;
+  background: #800020;
+  color: #fff;
+}
+
+.sc-attach:disabled,
+.sc-send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sc-pending-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px 0;
+}
+
+.sc-thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(116, 40, 19, 0.18);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sc-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sc-thumb > button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(28, 12, 6, 0.66);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sc-thumb.is-loading {
+  display: grid;
+  place-items: center;
+  color: #800020;
+  font-size: 18px;
+}
+
+/* ---------- loading ---------- */
+
+.sc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 20px;
+  color: rgba(50, 21, 15, 0.6);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.sc-spin {
+  animation: sc-spin 900ms linear infinite;
+  font-size: 20px;
+}
+
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-dots i { animation: none; opacity: 0.6; }
+  .sc-spin   { animation: none; }
+}
+
+/* ---------- full-screen sheet ---------- */
+
+.sc-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(50, 22, 14, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: sc-fade 200ms ease-out;
+}
+
+.sc-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  /* Fixed height, not max-height: the thread scrolls INSIDE the sheet, so the composer stays
+     pinned to the bottom edge whether the conversation is one message or five hundred. */
+  height: min(720px, 100%);
+  animation: sc-rise 220ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.sc-sheet .sc-chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #fffdf9;
+  box-shadow: 0 24px 60px rgba(28, 12, 6, 0.28);
+}
+
+@keyframes sc-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes sc-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Edge to edge on a phone, and anchored to the bottom — this is a sheet that comes up from
+   under the thumb, not a dialog that lands in the middle of the screen. */
+@media (max-width: 640px) {
+  .sc-sheet-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .sc-sheet {
+    width: 100%;
+    height: 100%;
+  }
+
+  .sc-sheet .sc-chat {
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* Keeps the composer clear of the home indicator. */
+  .sc-sheet .sc-composer {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @keyframes sc-rise {
+    from { opacity: 0.4; transform: translateY(100%); }
+    to   { opacity: 1;   transform: translateY(0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-sheet-overlay,
+  .sc-sheet { animation: none; }
+}

@@ -8,10 +8,11 @@ import api from "../../utils/api";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { getOrderDisplayNumber } from "../../utils/itemCode";
 import { numberEnv } from "../../utils/env";
+import supportOrderContext from "../../utils/supportOrderContext";
 import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import OrderTrackModal from "../../components/OrderTrackModal";
-import QuerySheet from "../../components/QuerySheet";
+import SupportChatSheet from "../../components/SupportChat/SupportChatSheet";
 import ReviewImagePicker from "../../components/ReviewImagePicker";
 import InvoiceViewer from "../../components/InvoiceViewer";
 import "./MyOrders.css";
@@ -181,6 +182,13 @@ const getEffectiveOrderStatus = (order) => {
   return hasExchange ? "Exchange Received" : status;
 };
 
+// The order as the support chat shows it. Both this page and the order confirmation open
+// the same chat, so the mapping lives in one place — see utils/supportOrderContext.
+const chatOrderContext = (order) => supportOrderContext(order, {
+  status: getEffectiveOrderStatus(order),
+  statusLabel: getStatus(getEffectiveOrderStatus(order)).label,
+});
+
 const FILTER_OPTIONS = [
   { id: "all", label: "All" },
   { id: "ordered", label: "Ordered" },
@@ -341,20 +349,6 @@ const CANCEL_EXCHANGE_REASONS = [
   "Other reason"
 ];
 
-// "21 Jul 2026" — how a query row is labelled in the ⋮ menu. The customer raised it, so
-// the date is the thing that tells two of them apart; the TKT number means nothing to them
-// until support quotes it back.
-const formatQueryDate = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-};
-
-// Shared frozen default for OrderCard's `orderTickets`. A literal [] in the parameter
-// default would be a new array on every render, so every card would re-render whenever any
-// sibling did.
-const EMPTY_TICKETS = [];
-
 const RATING_LABELS = ["Very Bad", "Bad", "Ok-Ok", "Good", "Very Good"];
 
 const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
@@ -374,10 +368,10 @@ const ReviewStars = ({ rating = 0, onSelect, disabled = false }) => (
     ))}
   </div>
 );
+// One conversation covers every order, so this card no longer carries a query of its own
+// — it is purely a way into the chat, opened on this order.
+const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
 
-// `ticket` is the LIVE thread (continue it); `orderTickets` is every query ever raised on
-// this order, newest first, which the ⋮ menu lists so closed threads stay reachable.
-const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, onContact, onNotify, onViewTicket }) => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [trackOpen, setTrackOpen] = useState(false);
@@ -554,47 +548,17 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
                   </button>
                 )}
 
-                {/* Every query raised on this order, newest first — active and closed
-                    alike. A closed thread can't be replied to but stays readable, and this
-                    is the only route back to it.
-                    Tagged Active / Closed rather than the raw status: Open, In Progress and
-                    Resolved are all still repliable, and the only thing that changes what
-                    the customer can DO here is whether the thread is closed. */}
-                {orderTickets.map((entry) => {
-                  const isClosed = entry.status === "Closed";
-                  return (
-                    <button
-                      key={entry.id}
-                      type="button"
-                      className="order-menu-item"
-                      role="menuitem"
-                      onClick={() => { setMenuOpen(false); onViewTicket(entry); }}
-                    >
-                      <Icon icon={isClosed ? "lucide:archive" : "lucide:messages-square"} />
-                      <span>Query {entry.ticket_number}</span>
-                      <em className={`order-menu-tag ${isClosed ? "is-closed" : "is-active"}`}>
-                        {isClosed ? "Closed" : "Active"}
-                      </em>
-                    </button>
-                  );
-                })}
-
-                {/* Only when nothing is live. With an active query this used to render a
-                    "View Query" row that went to the same thread already listed above it —
-                    the same conversation twice in a four-item menu. The server rejects a
-                    second open query with a 409 anyway, so there is nothing to offer here
-                    until the current one is closed. */}
-                {!ticket && (
-                  <button
-                    type="button"
-                    className="order-menu-item"
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); onContact(order); }}
-                  >
-                    <Icon icon="lucide:message-circle-question" />
-                    <span>Query Us</span>
-                  </button>
-                )}
+                {/* One entry, because there is one conversation — it opens on this order and
+                    already holds everything said about every other one. */}
+                <button
+                  type="button"
+                  className="order-menu-item"
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); onContact(order); }}
+                >
+                  <Icon icon="lucide:messages-square" />
+                  <span>Chat with support</span>
+                </button>
               </div>
             )}
           </div>
@@ -808,34 +772,19 @@ const OrderCard = ({ order, ticket, orderTickets = EMPTY_TICKETS, onFeedback, on
       })()}
 
       {/* The invoice / track button row that used to sit alongside this has moved into the
-          ⋮ menu. The help box stays on the card: it is not just a button — it also shows
-          whether a query is already open on this order, which is worth seeing without
-          opening a menu. Both routes call the same handler. */}
+          ⋮ menu. The help box stays on the card, and it is now purely an entry point: it used
+          to double as a status readout ("TKT000009 · Active"), which only existed because a
+          query was a separate object the customer had to keep track of. The conversation is
+          just there, so the box says how to reach it and nothing else. */}
       <div className="order-card-footer">
         <div className="order-help-box">
           <span className="order-help-icon"><Icon icon="lucide:message-circle-question" /></span>
           <div className="order-help-copy">
-            <strong>Need Help with this order?</strong>
-            {/* Only a LIVE query appears here. A closed thread is history, not the state of
-                this order, and showing it made a settled order look like it still had
-                something outstanding; closed ones stay reachable from the ⋮ menu.
-                Labelled by the date it was raised, not the TKT number — the customer raised
-                it, so the date is what identifies it to them. */}
-            {ticket ? (
-              <span className="order-help-ticket">
-                {/* Number first — it is what support quotes back in email, so it is the
-                    thing a customer needs to be able to find and read out. The date sits
-                    after it, dimmed, as the human-readable half. */}
-                <b>{ticket.ticket_number}</b>
-                <i>Raised {formatQueryDate(ticket.createdAt)}</i>
-                <em className="order-menu-tag is-active">Active</em>
-              </span>
-            ) : (
-              <span>Raise a query with our support team</span>
-            )}
+            <strong>Need help with this order?</strong>
+            <span>Chat with our support team — we usually reply within a few hours.</span>
           </div>
           <button type="button" className="order-help-btn" onClick={() => onContact(order)}>
-            {ticket ? "View Query" : "Query Us"}
+            Chat with us
           </button>
         </div>
       </div>
@@ -899,38 +848,10 @@ export default function MyOrders() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
 
-  const [tickets, setTickets] = useState([]);
-  const [supportModal, setSupportModal] = useState({ isOpen: false, order: null });
-  // The form's own fields live in QuerySheet — it is unmounted between opens, so it resets
-  // itself and this page keeps only what it needs to post.
-  const [supportSubmitting, setSupportSubmitting] = useState(false);
-
-  /**
-   * Per order: the LIVE query, plus every query ever raised on that order.
-   *
-   * The rule is one *open* query per order, not one ever — a closed thread cannot be
-   * replied to, so blocking a new one behind it would leave the customer with no route at
-   * all when a fresh problem appears weeks later. (This mirrors the server: see the status
-   * filter in SupportController.createTicket.)
-   *
-   *   live query -> "View Query" (continue it)
-   *   otherwise  -> "Query Us"   (raise a new one; the old ones stay readable in the menu)
-   *
-   * The full list feeds the ⋮ menu, which lists every query on the order regardless of
-   * status. `tickets` arrives newest-first, so both the live lookup and the list order
-   * fall out of a single pass.
-   */
-  const { liveTicketByOrder, ticketsByOrder } = useMemo(() => {
-    const live = new Map();
-    const all = new Map();
-    tickets.forEach((ticket) => {
-      const key = String(ticket.order_id);
-      if (!all.has(key)) all.set(key, []);
-      all.get(key).push(ticket);
-      if (ticket.status !== "Closed" && !live.has(key)) live.set(key, ticket);
-    });
-    return { liveTicketByOrder: live, ticketsByOrder: all };
-  }, [tickets]);
+  // The support chat, opened over this page on a particular order. No id and no list: the
+  // customer has one conversation, resolved server-side from their token, and `order` is
+  // only the context card it opens on.
+  const [chat, setChat] = useState({ isOpen: false, order: null });
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) =>
@@ -964,68 +885,17 @@ export default function MyOrders() {
     }
   }, [user]);
 
-  const fetchTickets = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const response = await api.get("/api/support/tickets/my");
-      setTickets(Array.isArray(response.data) ? response.data : []);
-    } catch {
-      // Non-blocking: the cards still offer "Query Us", just without a status.
-    }
-  }, [user]);
+  /**
+   * Open the support chat on an order. No form, no navigation — it comes to the order the
+   * customer is already looking at.
+   *
+   * There is nothing to look up first: the conversation already exists (or will, the moment
+   * they say something), the server finds it from their token, and `order` is only the card
+   * the chat opens on.
+   */
+  const openChat = (order) => setChat({ isOpen: true, order });
 
-  // A LIVE ticket makes this a way back INTO that conversation. A closed one does not —
-  // it can't be replied to, so the customer needs a fresh thread, not a dead end.
-  const openSupportModal = (order) => {
-    const live = liveTicketByOrder.get(String(order?.id));
-    if (live) {
-      navigate(`/tickets?id=${live.id}`);
-      return;
-    }
-    setSupportModal({ isOpen: true, order });
-  };
-
-  const closeSupportModal = () => {
-    if (supportSubmitting) return;
-    setSupportModal({ isOpen: false, order: null });
-  };
-
-  // Called by QuerySheet, which owns the form and has already validated it and uploaded any
-  // photos — `attachments` arrives as [{ url, public_id }]. No category: the form no longer
-  // asks for one and the server defaults it.
-  const submitSupportTicket = async ({ message, phone, attachments }) => {
-    const order = supportModal.order;
-    if (!order?.id) return;
-
-    setSupportSubmitting(true);
-    try {
-      const response = await api.post("/api/support/tickets", {
-        orderId: order.id,
-        message,
-        phone,
-        attachments,
-      });
-      showNotification(response.data?.message || "Your query has been raised.", "success");
-      setSupportModal({ isOpen: false, order: null });
-      fetchTickets();
-      if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
-    } catch (err) {
-      // 409 = a query already exists for this order (raised on another tab/device). Take the
-      // customer to that conversation rather than leaving them staring at an error.
-      const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
-      showNotification(
-        err?.response?.data?.message || "Unable to raise your query right now.",
-        existing ? "warning" : "error",
-      );
-      if (existing?.id) {
-        setSupportModal({ isOpen: false, order: null });
-        fetchTickets();
-        navigate(`/tickets?id=${existing.id}`);
-      }
-    } finally {
-      setSupportSubmitting(false);
-    }
-  };
+  const closeChat = () => setChat({ isOpen: false, order: null });
 
   const handleActionTrigger = ({ type, orderId, itemId = null, itemName }) => {
     let defaultReason = "";
@@ -1153,8 +1023,7 @@ export default function MyOrders() {
       return;
     }
     fetchOrders();
-    fetchTickets();
-  }, [user, navigate, fetchOrders, fetchTickets]);
+  }, [user, navigate, fetchOrders]);
 
   const openFilterModal = () => {
     setDraftFilter(selectedFilter);
@@ -1253,11 +1122,8 @@ export default function MyOrders() {
                       <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={liveTicketByOrder.get(String(order.id))}
-                        orderTickets={ticketsByOrder.get(String(order.id))}
-                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
-                        onContact={openSupportModal}
+                        onContact={openChat}
                         onNotify={showNotification}
                       />
                     ))}
@@ -1278,11 +1144,8 @@ export default function MyOrders() {
                       <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={liveTicketByOrder.get(String(order.id))}
-                        orderTickets={ticketsByOrder.get(String(order.id))}
-                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
-                        onContact={openSupportModal}
+                        onContact={openChat}
                         onNotify={showNotification}
                       />
                     ))}
@@ -1294,11 +1157,8 @@ export default function MyOrders() {
                 <OrderCard
                         key={order.id}
                         order={order}
-                        ticket={liveTicketByOrder.get(String(order.id))}
-                        orderTickets={ticketsByOrder.get(String(order.id))}
-                        onViewTicket={(t) => navigate(`/tickets?id=${t.id}`)}
                         onFeedback={handleFeedbackTrigger}
-                        onContact={openSupportModal}
+                        onContact={openChat}
                         onNotify={showNotification}
                       />
               ))
@@ -1337,14 +1197,12 @@ export default function MyOrders() {
         </div>
       )}
 
-      {supportModal.isOpen && (
-        <QuerySheet
-          orderNumber={getOrderDisplayNumber(supportModal.order)}
-          defaultPhone={user?.phone || ""}
-          submitting={supportSubmitting}
-          onClose={closeSupportModal}
+      {chat.isOpen && (
+        <SupportChatSheet
+          order={chatOrderContext(chat.order)}
+          customerName={user?.name || ""}
           onNotify={showNotification}
-          onSubmit={submitSupportTicket}
+          onClose={closeChat}
         />
       )}
 

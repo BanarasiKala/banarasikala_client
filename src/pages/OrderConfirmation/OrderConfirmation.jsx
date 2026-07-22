@@ -11,7 +11,8 @@ import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads
 import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
 import OrderTrackModal from "../../components/OrderTrackModal";
-import QuerySheet from "../../components/QuerySheet";
+import SupportChatSheet from "../../components/SupportChat/SupportChatSheet";
+import supportOrderContext from "../../utils/supportOrderContext";
 import ReviewImagePicker from "../../components/ReviewImagePicker";
 import InvoiceViewer from "../../components/InvoiceViewer";
 import useBottomSheet from "../../hooks/useBottomSheet";
@@ -35,14 +36,6 @@ const formatDateTime = (value) => {
   return `${datePart}, ${timePart}`;
 };
 
-
-// "21 Jul 2026" — how the help box labels a live query. The customer raised it, so the
-// date is what identifies it to them; the number is there for quoting back to support.
-const formatQueryDate = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-};
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -991,11 +984,9 @@ export default function OrderConfirmation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [ticket, setTicket] = useState(null);
-  const [supportModal, setSupportModal] = useState(false);
-  // The form's own fields live in QuerySheet, which is unmounted between opens and so
-  // resets itself; this page keeps only what it needs to post.
-  const [supportSubmitting, setSupportSubmitting] = useState(false);
+  // The support chat, opened over this page. Nothing is written until the customer's first
+  // message, so opening it to look and closing it again leaves no trace.
+  const [chatOpen, setChatOpen] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   // The fetched invoice document; non-null while the viewer is open.
   const [invoiceHtml, setInvoiceHtml] = useState(null);
@@ -1207,75 +1198,14 @@ export default function OrderConfirmation() {
   // The "same price" note is a CSS hover/focus-within tooltip now — no state, and no
   // document listeners to dismiss it.
 
-  // Newest support ticket already raised on THIS order, so the help box can show
-  // its live status instead of always inviting a new one. Same feature as My Orders.
-  const fetchTicket = useCallback(async () => {
-    if (!orderId) return;
-    try {
-      const response = await api.get(`/api/support/tickets/my?orderId=${orderId}`);
-      const tickets = Array.isArray(response.data) ? response.data : [];
-      // The LIVE query only, matching My Orders. Taking tickets[0] regardless of status
-      // meant a closed thread showed "View Query" here and dropped the customer into a
-      // conversation they cannot reply to, with no way to raise a new one.
-      setTicket(tickets.find((entry) => entry.status !== "Closed") || null);
-    } catch {
-      // Non-blocking: the help box still offers "Query Us" without a status.
-    }
-  }, [orderId]);
-
-  useEffect(() => {
-    fetchTicket();
-  }, [fetchTicket]);
-
-  // One query per order: once it exists, "Query Us" leads back INTO that conversation
-  // instead of starting a second one.
-  const openSupportModal = () => {
-    if (ticket?.id) {
-      navigate(`/tickets?id=${ticket.id}`);
-      return;
-    }
-    setSupportModal(true);
-  };
-
-  const closeSupportModal = () => {
-    if (supportSubmitting) return;
-    setSupportModal(false);
-  };
-
-  // Called by QuerySheet, which owns the form, has validated it and has already uploaded
-  // any photos — `attachments` arrives as [{ url, public_id }].
-  const submitSupportTicket = async ({ message, phone, attachments }) => {
-    if (!order?.id) return;
-
-    setSupportSubmitting(true);
-    try {
-      const response = await api.post("/api/support/tickets", {
-        orderId: order.id,
-        message,
-        phone,
-        attachments,
-      });
-      showNotification(response.data?.message || "Your query has been raised.", "success");
-      setSupportModal(false);
-      fetchTicket();
-      if (response.data?.ticket?.id) navigate(`/tickets?id=${response.data.ticket.id}`);
-    } catch (err) {
-      // 409 = a query already exists for this order (raised elsewhere). Send the customer
-      // to that conversation instead of leaving them on a dead error.
-      const existing = err?.response?.status === 409 ? err.response.data?.ticket : null;
-      showNotification(
-        err?.response?.data?.message || "Unable to raise your query right now.",
-        existing ? "warning" : "error",
-      );
-      if (existing?.id) {
-        setSupportModal(false);
-        fetchTicket();
-        navigate(`/tickets?id=${existing.id}`);
-      }
-    } finally {
-      setSupportSubmitting(false);
-    }
-  };
+  // The chat opens over this page rather than navigating away — the customer has just placed
+  // this order and is reading the confirmation; sending them to another route to ask a
+  // question about it, then back, was always the wrong direction of travel.
+  //
+  // Nothing is fetched to decide what this button does. There used to be a lookup here for
+  // "is there already a query on this order", because the answer changed the label and the
+  // destination. With one conversation per customer there is only ever one place to go.
+  const openChat = () => setChatOpen(true);
 
   // The invoice is an authenticated endpoint, so it can't be a plain link — fetch
   // it with the auth header and hand the HTML to a tab the browser can print. The
@@ -2476,22 +2406,11 @@ export default function OrderConfirmation() {
           <div className="order-help-box">
             <span className="order-help-icon"><Icon icon="lucide:message-circle-question" /></span>
             <div className="order-help-copy">
-              <strong>Need Help with this order?</strong>
-              {/* Same line as the My Orders card: number, then the date it was raised,
-                  then the status pill. Only ever a live query — closed ones are history,
-                  not the state of this order. */}
-              {ticket ? (
-                <span className="order-help-ticket">
-                  <b>{ticket.ticket_number}</b>
-                  <i>Raised {formatQueryDate(ticket.createdAt)}</i>
-                  <em className="order-query-tag">Active</em>
-                </span>
-              ) : (
-                <span>Raise a query with our support team</span>
-              )}
+              <strong>Need help with this order?</strong>
+              <span>Chat with our support team — we usually reply within a few hours.</span>
             </div>
-            <button type="button" className="order-help-btn" onClick={openSupportModal}>
-              {ticket ? "View Query" : "Query Us"}
+            <button type="button" className="order-help-btn" onClick={openChat}>
+              Chat with us
             </button>
           </div>
 
@@ -2766,14 +2685,15 @@ export default function OrderConfirmation() {
         </div>
       )}
 
-      {supportModal && (
-        <QuerySheet
-          orderNumber={orderNumber}
-          defaultPhone={order?.customer_phone || ""}
-          submitting={supportSubmitting}
-          onClose={closeSupportModal}
+      {chatOpen && (
+        <SupportChatSheet
+          order={supportOrderContext(order, {
+            status: order?.status,
+            statusLabel: getItemStatusVisual(order?.status).label,
+          })}
+          customerName={order?.customer_name || ""}
           onNotify={showNotification}
-          onSubmit={submitSupportTicket}
+          onClose={() => setChatOpen(false)}
         />
       )}
 

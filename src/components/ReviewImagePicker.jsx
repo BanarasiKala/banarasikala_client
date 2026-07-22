@@ -4,15 +4,15 @@ import { MAX_REVIEW_IMAGES } from "../utils/reviewUploads";
 import "./ReviewImagePicker.css";
 
 /**
- * Photo picker for the review form — thumbnail tiles, matching the one in QuerySheet.
+ * Photo picker for the review form — thumbnail tiles.
  *
  * Both feedback forms used a bare <input type="file"> that rendered the browser's default
  * "Choose files / 3 files selected" control and, on My Orders, a list of raw filenames.
  * A customer picking photos of a saree has no way to tell from `IMG_20260721_154430.jpg`
  * whether they chose the right one.
  *
- * Unlike QuerySheet these files are NOT uploaded on pick: the review form uploads on submit
- * (uploadReviewImages), so previews come from object URLs held only while the form is open.
+ * These files are NOT uploaded on pick, unlike the support chat composer: the review form
+ * uploads on submit (uploadReviewImages), so previews come from object URLs held only while
  *
  * @param {File[]}   files    Currently selected files (owned by the parent form).
  * @param {Function} onChange (files: File[]) => void

@@ -1608,3 +1608,29 @@ body.menu-open {
     grid-template-rows: 72px;
   }
 }
+
+/* ── Support unread badge ──────────────────────────────────────────────────────────────
+   A support reply is the only thing that arrives unprompted, so it gets a count rather than
+   a plain dot: "3 replies waiting" is worth interrupting for, an unread marker on a page you
+   were not going to visit is not. Positioned relative to the link so it rides the text
+   wherever the nav wraps. */
+.bk-support-link {
+  position: relative;
+}
+
+.bk-support-dot {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #087a55;
+  color: #fff;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
