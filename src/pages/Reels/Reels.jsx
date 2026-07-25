@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, Eye } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, ChevronDown, Eye } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -67,6 +67,9 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
+  // The shoppable card at the bottom can cover part of the video, so the viewer can tuck it
+  // away and bring it back. Per-reel, defaulting to shown so the products stay discoverable.
+  const [showProducts, setShowProducts] = useState(true);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -162,15 +165,38 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
               </h3>
             )}
             {descOpen && reel.description && <p className="bk-reel-desc">{reel.description}</p>}
-            {products.length === 1 ? (
-              <ProductChip product={products[0]} full onView={onViewProduct} onAdd={onAddToCart} />
-            ) : products.length > 1 ? (
-              <div className="bk-reel-products">
-                {products.map((p) => (
-                  <ProductChip key={p.id} product={p} onView={onViewProduct} onAdd={onAddToCart} />
-                ))}
+            {products.length > 0 && (showProducts ? (
+              <div className="bk-reel-shop">
+                {/* Hide handle, pinned to the card's top-right corner. */}
+                <button
+                  type="button"
+                  className="bk-reel-shop-toggle"
+                  onClick={() => setShowProducts(false)}
+                  aria-label="Hide product card"
+                >
+                  <ChevronDown size={16} />
+                </button>
+                {products.length === 1 ? (
+                  <ProductChip product={products[0]} full onView={onViewProduct} onAdd={onAddToCart} />
+                ) : (
+                  <div className="bk-reel-products">
+                    {products.map((p) => (
+                      <ProductChip key={p.id} product={p} onView={onViewProduct} onAdd={onAddToCart} />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : null}
+            ) : (
+              // Card tucked away — a compact button in its place brings it back.
+              <button
+                type="button"
+                className="bk-reel-shop-show"
+                onClick={() => setShowProducts(true)}
+                aria-label="Show product card"
+              >
+                <ShoppingBag size={15} /> Shop
+              </button>
+            ))}
           </div>
         </div>
       </div>
