@@ -62,14 +62,11 @@ const ProductChip = ({ product, onView, onAdd, full = false }) => {
 };
 
 // ─── A single full-screen reel ───────────────────────────────────────────────
-const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
+const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
   const videoRef = useRef(null);
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
-  // The shoppable card at the bottom can cover part of the video, so the viewer can tuck it
-  // away and bring it back. Per-reel, defaulting to shown so the products stay discoverable.
-  const [showProducts, setShowProducts] = useState(true);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -171,7 +168,7 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
                 <button
                   type="button"
                   className="bk-reel-shop-toggle"
-                  onClick={() => setShowProducts(false)}
+                  onClick={onToggleProducts}
                   aria-label="Hide product card"
                 >
                   <ChevronDown size={16} />
@@ -191,7 +188,7 @@ const ReelItem = ({ reel, muted, isActive, inter, onActivate, onToggleMute, onLi
               <button
                 type="button"
                 className="bk-reel-shop-show"
-                onClick={() => setShowProducts(true)}
+                onClick={onToggleProducts}
                 aria-label="Show product card"
               >
                 <ShoppingBag size={15} /> Shop
@@ -214,6 +211,10 @@ export default function Reels() {
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [muted, setMuted] = useState(false); // audio on by default
+  // One shoppable-card preference for the whole feed: hiding on any reel hides it on all of
+  // them. It lives here (not per reel and not persisted), so it resets to "shown" whenever the
+  // viewer leaves the page and comes back, since that unmounts and remounts this component.
+  const [showProducts, setShowProducts] = useState(true);
   const [activeKey, setActiveKey] = useState(null);
   const [interactions, setInteractions] = useState({}); // { [id]: { liked, like_count, comment_count } }
 
@@ -495,6 +496,8 @@ export default function Reels() {
             muted={muted}
             isActive={activeKey === reel._key}
             inter={interOf(reel)}
+            showProducts={showProducts}
+            onToggleProducts={() => setShowProducts((v) => !v)}
             onActivate={handleActivate}
             onToggleMute={() => setMuted((m) => !m)}
             onLike={handleLike}
