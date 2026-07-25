@@ -9,6 +9,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { API_ENDPOINTS } from "../../config/api";
 import api from "../../utils/api";
 import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
+import { varietyNames, materialNames, varietyLabel, materialLabel } from "../../utils/productAttributes";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import { LocationPickerModal } from "../Profile/Profile";
 import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
@@ -1763,8 +1764,8 @@ const ProductDetail = () => {
     ? [
         ["SKU", selectedSku],
         ["Selected Color", selectedColor?.name],
-        ["Variety", product.Variety?.name],
-        ["Fabric", product.Material?.name],
+        [varietyNames(product).length > 1 ? "Varieties" : "Variety", varietyLabel(product)],
+        [materialNames(product).length > 1 ? "Fabrics" : "Fabric", materialLabel(product)],
         ["Occasion", product.Occasion?.name],
         ["Saree Length", product.length ? `${formatNumber(product.length)} Meter` : ""],
         ["Weight", product.weight ? `${formatNumber(Number(product.weight) > 5 ? Number(product.weight) : Number(product.weight) * 1000)} gram` : ""],
@@ -1909,11 +1910,11 @@ const ProductDetail = () => {
             <h1 className="product-detail-title">{productName}</h1>
             <ReviewRatingBadge summary={reviewSummary} onClick={scrollToReviews} />
           </div>
-          {(product.short_description || product.Variety?.name || product.Material?.name) && (
+          {(product.short_description || varietyNames(product).length || materialNames(product).length) ? (
             <p className="product-mobile-header-desc">
-              {product.short_description || [product.Variety?.name, product.Material?.name].filter(Boolean).join(" · ")}
+              {product.short_description || [varietyLabel(product), materialLabel(product)].filter(Boolean).join(" · ")}
             </p>
-          )}
+          ) : null}
         </div>
 
         <div className="product-detail-grid">
@@ -2279,8 +2280,8 @@ const ProductDetail = () => {
                     <li key={text}><Icon icon="lucide:check-circle" /><span>{text}</span></li>
                   ))
                 : [
-                    product.Variety?.name ? { icon: "lucide:sparkles", text: `Rich ${product.Variety.name} Weaving` } : null,
-                    product.Material?.name ? { icon: "lucide:layers", text: `Premium ${product.Material.name} Fabric` } : null,
+                    varietyNames(product).length ? { icon: "lucide:sparkles", text: `Rich ${varietyLabel(product)} Weaving` } : null,
+                    materialNames(product).length ? { icon: "lucide:layers", text: `Premium ${materialLabel(product)} Fabric` } : null,
                     product.Occasion?.name ? { icon: "lucide:calendar-check", text: `Perfect for ${product.Occasion.name}` } : null,
                     product.blouse_piece ? { icon: "lucide:shirt", text: "Blouse Piece Included" } : null,
                     { icon: "lucide:gift", text: "Premium Gift Packaging" },
@@ -2429,7 +2430,7 @@ const ProductDetail = () => {
                 const relatedDescription =
                   item.short_description ||
                   item.description ||
-                  [item.Variety?.name, item.Material?.name].filter(Boolean).join(" ");
+                  [varietyLabel(item), materialLabel(item)].filter(Boolean).join(" ");
                 const relatedDiscountPercent = Number(item.discount_percent || (
                   hasDiscount
                     ? Math.round(((Number(item.mrp_price) - Number(item.selling_price)) / Number(item.mrp_price)) * 100)

@@ -9,6 +9,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { API_ENDPOINTS } from "../../config/api";
 import api from "../../utils/api";
 import { getColorStock, getProductImages } from "../../utils/productMedia";
+import { varietyLabel, materialLabel } from "../../utils/productAttributes";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
@@ -335,7 +336,7 @@ const Wishlist = () => {
                   const sliderImages = getWishlistImages(item);
                   const cardKey = item.wishlistItemId || item.id;
                   const activeSlide = Math.min(activeSlides[cardKey] || 0, sliderImages.length - 1);
-                  const description = item.short_description || item.description || [item.Variety?.name, item.Material?.name].filter(Boolean).join(" ");
+                  const description = item.short_description || item.description || [varietyLabel(item), materialLabel(item)].filter(Boolean).join(" ");
                   return (
                     <>
                       <div

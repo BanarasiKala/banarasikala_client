@@ -8,6 +8,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { useNotification } from "../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../config/api";
 import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
+import { varietyLabel, materialLabel } from "../../utils/productAttributes";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
@@ -401,7 +402,7 @@ const Collection = () => {
     const productDescription =
       product.short_description ||
       product.description ||
-      [product.Variety?.name, product.Material?.name].filter(Boolean).join(" ");
+      [varietyLabel(product), materialLabel(product)].filter(Boolean).join(" ");
 
     return (
       <div
