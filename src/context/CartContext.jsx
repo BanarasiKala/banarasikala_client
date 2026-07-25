@@ -191,9 +191,23 @@ export const CartProvider = ({ children }) => {
     }
 
     // 2. Applicability Check
+    //
+    // A product now carries MANY varieties and materials, so an item qualifies if any of its
+    // ids is in the coupon's target set — the same "shares any" rule the storefront filter
+    // uses. `variety_ids` is the current shape; the singular `variety_id` is read as a
+    // one-element fallback so an item cached under the old shape still matches.
+    const idsOf = (item, key) => {
+      const arr = item[`${key}_ids`];
+      if (Array.isArray(arr) && arr.length) return arr;
+      return item[`${key}_id`] != null ? [item[`${key}_id`]] : [];
+    };
+    const sharesAny = (ids, target) => Array.isArray(target)
+      && ids.some((id) => target.includes(id));
+
     let applicableSubtotal = 0;
-    const hasRestrictions = coupon.applicable_product_id?.length || 
-                           coupon.applicable_variety_id?.length;
+    const hasRestrictions = coupon.applicable_product_id?.length
+      || coupon.applicable_variety_id?.length
+      || coupon.applicable_material_id?.length;
 
     if (!hasRestrictions) {
       applicableSubtotal = currentSubtotal;
@@ -201,8 +215,9 @@ export const CartProvider = ({ children }) => {
       cart.forEach(item => {
         let isMatch = false;
         if (coupon.applicable_product_id?.includes(item.id)) isMatch = true;
-        if (coupon.applicable_variety_id?.includes(item.variety_id)) isMatch = true;
-        
+        if (sharesAny(idsOf(item, "variety"), coupon.applicable_variety_id)) isMatch = true;
+        if (sharesAny(idsOf(item, "material"), coupon.applicable_material_id)) isMatch = true;
+
         if (isMatch) applicableSubtotal += (item.price * item.quantity);
       });
     }
