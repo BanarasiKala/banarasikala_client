@@ -277,17 +277,16 @@
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border: 0;
+  background: transparent;
   color: #fff;
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.12s ease;
+  /* Just the icon — no box or backdrop. A drop-shadow keeps it legible over any video frame. */
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
+  transition: transform 0.12s ease;
 }
-.bk-royale-fs-btn:hover { background: rgba(0, 0, 0, 0.62); }
+.bk-royale-fs-btn:hover { transform: scale(1.08); }
 .bk-royale-fs-btn:active { transform: scale(0.9); }
 
 .bk-royale-fs-overlay {
