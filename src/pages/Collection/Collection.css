@@ -460,11 +460,13 @@
     background: transparent;
     color: #800020;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 600;
     letter-spacing: normal;
     text-transform: uppercase;
     text-decoration: none;
 }
+/* Chevron weight is the strokeWidth attribute on the inline SVG in Collection.jsx, matching
+   how the rest of the page's inline icons are set. */
 .collection-more-footer .collection-more-link svg {
     transition: transform 0.25s ease;
 }
