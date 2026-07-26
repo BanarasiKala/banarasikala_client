@@ -353,6 +353,24 @@
     text-transform: uppercase;
 }
 
+/* "View All" now sits centered below the cards, styled as a proper pill CTA. */
+.collection-more-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+.collection-more-footer .collection-more-link {
+    padding: 11px 34px;
+    border: 1.5px solid #800020;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.16s ease, color 0.16s ease;
+}
+.collection-more-footer .collection-more-link:hover {
+    background: #800020;
+    color: #fff;
+}
+
 .collection-more-grid {
     margin-top: 0;
 }

@@ -625,7 +625,7 @@ const Collection = () => {
         const params = new URLSearchParams({
           paginated: "true",
           page: "1",
-          pageSize: "8",
+          pageSize: "12",
           status: "active",
           view: "collection",
           sortBy: "special",
@@ -743,14 +743,11 @@ const Collection = () => {
           {!loading && products.length === 0 && hasResultCriteria && (fallbackLoading || fallbackProducts.length > 0) && (
             <section className="collection-more-section">
               <div className="collection-more-head">
-                <h2>More Items Like This</h2>
-                <button type="button" className="collection-more-link" onClick={showAllProducts}>
-                  View All
-                </button>
+                <h2>More Products Like This</h2>
               </div>
               <div className="product-grid collection-more-grid">
                 {fallbackLoading ? (
-                  Array(4).fill(0).map((_, i) => (
+                  Array(8).fill(0).map((_, i) => (
                     <div key={i} className="product-card">
                       <div className="card-img-container skeleton"></div>
                       <div className="card-details">
@@ -764,6 +761,13 @@ const Collection = () => {
                   fallbackProducts.map(renderProductCard)
                 )}
               </div>
+              {!fallbackLoading && fallbackProducts.length > 0 && (
+                <div className="collection-more-footer">
+                  <button type="button" className="collection-more-link" onClick={showAllProducts}>
+                    View All
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
