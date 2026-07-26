@@ -7,6 +7,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { getOrderDisplayNumber } from "../../utils/itemCode";
 import { numberEnv, requiredEnv } from "../../utils/env";
 import { buildRazorpayPrefill } from "../../utils/razorpay";
+import { normalizeScans, formatTrackDate, formatDate, buildSteps, buildOrderTimeline } from "../../utils/tracking";
 import { MAX_REVIEW_IMAGES, uploadReviewImages } from "../../utils/reviewUploads";
 import { useNotification } from "../../context/NotificationContext";
 import { useCart } from "../../context/CartContext";
@@ -36,13 +37,6 @@ const formatDateTime = (value) => {
   return `${datePart}, ${timePart}`;
 };
 
-
-const formatDate = (value) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-};
 
 const formatRefundType = (type) => {
   const t = String(type || "").toLowerCase();
@@ -436,76 +430,6 @@ const getOrderActions = (order) => ({
   canReturnExchange: getEligibleActionItems(order, "return").length > 0 || getEligibleActionItems(order, "exchange").length > 0,
 });
 
-const stepState = (status, currentIndex, steps) => {
-  // Last matching step wins — a broad early match must not shadow a specific
-  // later one (e.g. "rto in transit" contains "in transit", which the Shipped
-  // step also matches; the RTO step further down is the real position).
-  const matchedIndex = steps.reduce(
-    (found, step, index) => (step.matches.some((match) => status.includes(match)) ? index : found),
-    -1,
-  );
-  if (matchedIndex === -1) return currentIndex === 0 ? "current" : "pending";
-  if (currentIndex < matchedIndex) return "done";
-  if (currentIndex === matchedIndex) return "current";
-  return "pending";
-};
-
-const buildSteps = (status, steps) => steps.map((step, index) => ({
-  ...step,
-  state: stepState(status, index, steps),
-}));
-
-const buildTimeline = (order, tracking) => {
-  const status = String(order?.status || "Pending").toLowerCase();
-  const activities = tracking?.tracking?.tracking_data?.shipment_track_activities || [];
-  if (activities.length) {
-    return activities.map((activity, index) => ({
-      title: activity.activity || "Shipment update",
-      detail: [activity.location, activity.date].filter(Boolean).join(" • "),
-      active: index === 0,
-      icon: index === 0 ? "lucide:radio" : "lucide:circle",
-    }));
-  }
-
-  return [
-    {
-      title: "Order placed",
-      detail: `${formatDate(order?.createdAt)} • Confirmation email sent`,
-      active: true,
-      icon: "lucide:check-circle-2",
-    },
-    {
-      title: "Picked up",
-      detail: "Courier pickup scheduled or completed",
-      active: ["processing", "awb assigned", "shipped", "out for delivery", "delivered", "undelivered", "rto initiated", "rto in transit", "rto delivered", "seller cancelled"].includes(status),
-      icon: "lucide:package",
-    },
-    {
-      title: "Shipped",
-      detail: order?.shiprocket_awb ? `AWB ${order.shiprocket_awb}` : "Tracking appears after dispatch",
-      active: ["awb assigned", "shipped", "out for delivery", "delivered", "undelivered", "rto initiated", "rto in transit", "rto delivered", "seller cancelled"].includes(status),
-      icon: "lucide:truck",
-    },
-    {
-      title: "Out for delivery",
-      detail: "Courier will attempt delivery at your address",
-      active: ["out for delivery", "delivered", "undelivered", "rto initiated", "rto in transit", "rto delivered", "seller cancelled"].includes(status),
-      icon: "lucide:navigation",
-    },
-    ...(status.includes("rto") || status === "undelivered" || status === "seller cancelled" ? [{
-      title: status === "rto delivered" || status === "seller cancelled" ? "Order returned to seller" : "Returning to seller",
-      detail: order?.refund_note || "The courier could not complete delivery.",
-      active: ["rto initiated", "rto in transit", "rto delivered", "seller cancelled"].includes(status),
-      icon: "lucide:warehouse",
-    }] : []),
-    {
-      title: "Delivered",
-      detail: order?.delivered_at ? formatDate(order.delivered_at) : "Final delivery scan pending",
-      active: status === "delivered",
-      icon: "lucide:badge-check",
-    },
-  ];
-};
 
 // Steps for the Return / Exchange panel, driven by the REVERSE shipment's OWN lifecycle
 // (shipment_status: CREATED -> PICKUP_SCHEDULED -> PICKED_UP -> IN_TRANSIT -> RECEIVED),
@@ -646,77 +570,12 @@ const ReverseStepsTimeline = ({ steps }) => <CollapsibleTimeline steps={steps} /
 // Map a reverse (return/exchange) shipment's ShipRocket scan activities to timeline steps.
 const buildReverseActivities = (shipment) => {
   const activities = shipment?.tracking?.tracking_data?.shipment_track_activities || [];
-  return activities.map((activity, index) => ({
-    title: activity.activity || "Pickup update",
-    detail: [activity.location, activity.date].filter(Boolean).join(" • "),
+  return normalizeScans(activities).map((scan, index) => ({
+    title: scan.title,
+    detail: [scan.location, formatTrackDate(scan.date)].filter(Boolean).join(" • "),
     state: index === 0 ? "current" : "done",
     icon: index === 0 ? "lucide:radio" : "lucide:circle",
   }));
-};
-
-const buildOrderTimeline = (order) => {
-  const status = String(order?.status || "Pending").toLowerCase();
-
-  const forwardSteps = [
-    { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", matches: ["pending", "order placed"] },
-    { title: "Processing", detail: "Seller is preparing your order", icon: "lucide:package-2", matches: ["processing"] },
-    { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["pickup scheduled", "pickup_scheduled", "awb assigned", "awb_assigned", "out for pickup", "out_for_pickup"] },
-    { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up"] },
-    { title: "Shipped", detail: order?.shiprocket_awb ? `AWB ${order.shiprocket_awb}` : "Tracking appears after dispatch", icon: "lucide:truck", matches: ["shipped", "in transit"] },
-    { title: "Out for delivery", detail: "Courier will attempt delivery at your address", icon: "lucide:navigation", matches: ["out for delivery"] },
-    { title: "Delivered", detail: order?.delivered_at ? formatDate(order.delivered_at) : "Final delivery scan pending", icon: "lucide:badge-check", matches: ["delivered"] },
-  ];
-
-  const rtoSteps = [
-    ...forwardSteps.slice(0, 6),
-    { title: "Delivery attempt failed", detail: "Courier could not complete delivery", icon: "lucide:triangle-alert", matches: ["undelivered"] },
-    { title: "RTO initiated", detail: "Shipment is returning to seller", icon: "lucide:undo-2", matches: ["rto initiated"] },
-    { title: "RTO in transit", detail: "Shipment is on the way back", icon: "lucide:truck", matches: ["rto in transit"] },
-    { title: "Order returned to seller", detail: order?.refund_note || "Order returned to seller", icon: "lucide:warehouse", matches: ["rto delivered", "seller cancelled"] },
-  ];
-
-  const cancelledSteps = [
-    { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", matches: ["order placed", "pending", "cancelled", "seller cancelled"] },
-    { title: status === "seller cancelled" ? "Cancelled by seller" : "Cancelled", detail: "This order has been cancelled", icon: "lucide:x-circle", matches: ["cancelled", "seller cancelled"] },
-  ];
-
-  // Return/exchange progress lives in its own "Return / Exchange tracking"
-  // panel below — the shipment timeline keeps showing the completed forward
-  // journey undisturbed (reverse flows only exist after delivery).
-  if (status.includes("exchange") || status.includes("return")) {
-    return buildSteps("delivered", forwardSteps);
-  }
-  if (status === "cancelled" || status === "seller cancelled") return buildSteps(status, cancelledSteps);
-  if (status.includes("rto") || status === "undelivered") {
-    // The bare "RTO" status (prepaid parcel back with the seller, awaiting the
-    // customer's re-dispatch / refund choice) is the terminal RTO step — the
-    // short string matches no step keyword, which used to fall back to step 0.
-    return buildSteps(status === "rto" ? "rto delivered" : status, rtoSteps);
-  }
-  if (status.includes("partial") && status.includes("cancel")) {
-    return [
-      { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", state: "done" },
-      { title: "Order modified", detail: `Some items removed${order?.modified_at ? ` · ${formatDate(order.modified_at)}` : ""}`, icon: "lucide:file-edit", state: "current" },
-      { title: "Remaining items in transit", detail: "The rest of your order will be shipped as scheduled", icon: "lucide:truck", state: "pending" },
-    ];
-  }
-
-  // order.delivered_at survives from the FIRST delivery even after a second forward
-  // shipment starts (an exchange replacement, or a paid RTO redispatch) cycles the
-  // order back through early statuses (Processing, AWB Assigned, Shipped…). Left as
-  // plain forwardSteps, step 1 would replay "Order placed" with the original order's
-  // date — reading as if the whole order restarted, instead of a new shipment going
-  // out after the first one already finished.
-  if (order?.delivered_at && status !== "delivered") {
-    const redispatchSteps = forwardSteps.map((step, index) => (
-      index === 0
-        ? { ...step, title: "Replacement dispatched", detail: "A new shipment was arranged after your return/exchange", icon: "lucide:repeat-2" }
-        : step
-    ));
-    return buildSteps(status, redispatchSteps);
-  }
-
-  return buildSteps(status, forwardSteps);
 };
 
 const CANCEL_REASONS = [
@@ -1054,14 +913,10 @@ export default function OrderConfirmation() {
   // would silently drop the shipping savings every time. Wallet is excluded, same as
   // checkout: spending your own balance isn't a saving.
   const totalSaved = breakdown.mrpSavings + breakdown.couponDiscount + breakdown.paymentDiscount + breakdown.deliveryChargeShown;
-  // Live ShipRocket scan activities (only exist once the parcel is picked up and
-  // an AWB is generated). Before that we fall back to the status stepper.
-  const liveActivities = tracking?.tracking?.tracking_data?.shipment_track_activities || [];
-  const hasLiveTracking = liveActivities.length > 0;
-  const timeline = useMemo(
-    () => (hasLiveTracking ? buildTimeline(order, tracking) : buildOrderTimeline(order)),
-    [order, tracking, hasLiveTracking],
-  );
+  // The shipment timeline follows the order's STATUS — a fixed Order placed → Processing →
+  // Pickup scheduled → Picked up → Shipped → Out for delivery → Delivered hierarchy — rather
+  // than the courier's raw scan feed, whose wording ("ReadyForReceive / NA") reads like a log.
+  const timeline = useMemo(() => buildOrderTimeline(order), [order]);
   const courierName = order?.courier_name
     || tracking?.tracking?.tracking_data?.shipment_track?.[0]?.courier_name
     || "";
@@ -2445,7 +2300,7 @@ export default function OrderConfirmation() {
         <OrderDetailsSheet onClose={closeOrderDetails}>
             <section className="order-panel">
               <div className="order-panel-head">
-                <h2>{hasLiveTracking ? "Live Tracking" : "Shipment Timeline"}</h2>
+                <h2>Shipment Timeline</h2>
                 <div className="order-track-head-right">
                   <span className={`oc-status-pill is-${statusTone}`}>
                     {statusLabel}
@@ -2469,11 +2324,7 @@ export default function OrderConfirmation() {
               {!hasCurrentAwb(order) && (
                 <div className="order-track-pending">
                   <Icon icon="lucide:package-search" />
-                  <span>
-                    {hasLiveTracking
-                      ? "Live tracking is now available."
-                      : "Your order is being prepared. Live tracking will appear here once the courier picks it up and an AWB is generated."}
-                  </span>
+                  <span>Your order is being prepared. This timeline updates as your order moves through each stage.</span>
                 </div>
               )}
 
