@@ -39,6 +39,15 @@
   position: relative;
 }
 
+/* …except the Track Order sheet, which is rendered here as a direct child but must stay a
+   FIXED overlay. The rule above and `.track-modal-overlay { position: fixed }` have equal
+   specificity, so whichever loads last wins — and the modal's own CSS loads first, so it lost
+   and the sheet fell into page flow, buried behind the order-details sheet ("opening in the
+   background"). A two-class selector outranks `> *` regardless of load order, so fixed sticks. */
+.order-confirmation-page > .track-modal-overlay {
+  position: fixed;
+}
+
 /* The backdrop is a fixed pseudo-element rather than a background on the page itself.
    `cover` resolves against the box it paints into: on the page that box is the full
    document, which on a phone is a narrow column several screens tall, so a wide landscape
