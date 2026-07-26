@@ -715,28 +715,23 @@ const Header = () => {
                         the chat opens from an order, so a second row pointing at the same
                         page would be two names for one destination. */}
                     <button type="button" role="menuitem" onClick={() => goProtected("/my-orders")}>
-                      <Icon icon="lucide:package" />
                       <span>Orders</span>
                       {supportUnread > 0 && (
                         <i className="bk-support-dot">{supportUnread > 9 ? "9+" : supportUnread}</i>
                       )}
                     </button>
                     <button type="button" role="menuitem" onClick={() => goProtected("/profile")}>
-                      <Icon icon="lucide:user-round" />
                       <span>Account</span>
                     </button>
                     <button type="button" role="menuitem" onClick={() => goProtected("/wishlist")}>
-                      <Icon icon="lucide:heart" />
                       <span>Wishlist</span>
                     </button>
                     <button type="button" role="menuitem" onClick={() => goProtected("/feedback")}>
-                      <Icon icon="lucide:star" />
                       <span>Feedback</span>
                     </button>
                     {/* The one that earns the customer something sits apart and highlighted,
                         so it does not read as just another navigation row. */}
                     <button type="button" role="menuitem" className="bk-profile-refer" onClick={openReferModal}>
-                      <Icon icon="lucide:gift" />
                       <span>Refer &amp; Earn</span>
                       <em>Get ₹{SIGNUP_BONUS_AMOUNT}</em>
                     </button>
