@@ -1773,7 +1773,9 @@ export default function OrderConfirmation() {
             </div>
             <div className="confirmation-items">
               {(order.OrderItems || []).map((item, index) => {
-                const productUrl = item.product_slug ? `/product/${item.product_slug}` : null;
+                // Inactive products stay visible (image + name) but aren't links — the storefront
+                // hides them, so clicking through would 404 or offer an unbuyable page.
+                const productUrl = item.product_slug && item.product_active !== false ? `/product/${item.product_slug}` : null;
                 const itemRating = Number(item.feedback?.rating || 0);
                 const returnWindow = getItemReturnWindowInfo(order, item);
                 const itemStatusMeta = getItemStatusMeta(order, item);
@@ -1910,7 +1912,7 @@ export default function OrderConfirmation() {
                       </div>
                       <ul className="exchange-swap-list">
                         {item.exchange_swap.to.map((target, i) => {
-                          const targetUrl = target.product_slug ? `/product/${target.product_slug}` : null;
+                          const targetUrl = target.product_slug && target.product_active !== false ? `/product/${target.product_slug}` : null;
                           const media = target.image_url ? (
                             <img src={imgUrl(target.image_url, 120)} alt={target.product_name} />
                           ) : (

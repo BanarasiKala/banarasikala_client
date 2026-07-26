@@ -600,7 +600,10 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
             const isItemCancelled = String(item.status || "").toLowerCase() === "cancelled";
             const itemRating = Number(item.feedback?.rating || 0);
             const itemStatusMeta = getItemStatusMeta(order, item);
-            const productUrl = item.product_slug
+            // An inactive product still shows its image and name here, but the storefront hides
+            // it, so the row isn't a link — clicking does nothing. (product_active undefined means
+            // an older API response; treat as clickable so nothing regresses before redeploy.)
+            const productUrl = item.product_slug && item.product_active !== false
               ? `/product/${item.product_slug}${item.colorId ? `?color=${item.colorId}` : ""}`
               : null;
 
