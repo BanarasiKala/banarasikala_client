@@ -1,0 +1,128 @@
+.bk-pdf-action {
+  display: flex;
+  justify-content: center;
+  margin: 26px 0 4px;
+}
+
+.bk-pdf-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid rgba(176, 122, 43, 0.42);
+  border-radius: 999px;
+  background: rgba(247, 231, 204, 0.45);
+  color: #800020;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.14s ease;
+}
+
+.bk-pdf-button:hover {
+  background: rgba(247, 231, 204, 0.85);
+  border-color: rgba(176, 122, 43, 0.7);
+  transform: translateY(-1px);
+}
+
+.bk-pdf-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Print / Save as PDF ────────────────────────────────────────────────────────────────
+   What lands in the PDF should be the document, not a screenshot of the website. Everything
+   that only makes sense on a live page comes out: the fixed header, the footer, the chat
+   launcher, the signup popup, the back-to-top control, and the download button itself.
+
+   Scoped to @media print, so none of this affects the page on screen. */
+@media print {
+  .bk-header,
+  .bk-footer,
+  .bk-chat-fab,
+  .bk-signup-gift,
+  .bk-back-to-top,
+  .bk-route-refresh-veil,
+  .bk-pdf-action {
+    display: none !important;
+  }
+
+  /* The layout reserves space for the fixed header; with the header gone that becomes a
+     blank band at the top of page one. */
+  .bk-layout-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Ink, not screen: the decorative hero background and the FAQ section's maroon band both
+     print as heavy flat colour. Reset them to plain text on white. */
+  .bk-policy-page,
+  .bk-policy-hero,
+  .bk-faq-section,
+  .bk-faqs-page {
+    background: #fff !important;
+    color: #1c1108 !important;
+  }
+
+  .bk-policy-hero {
+    padding: 0 0 18px !important;
+    border-bottom: 1px solid #999 !important;
+    text-align: left !important;
+  }
+
+  .bk-policy-shell,
+  .bk-faq-shell {
+    max-width: none !important;
+    width: auto !important;
+    padding: 0 !important;
+  }
+
+  /* Every answer prints, whether or not the reader had expanded it on screen. */
+  .bk-faq-answer {
+    display: block !important;
+    color: #1c1108 !important;
+    font-weight: 400 !important;
+  }
+
+  .bk-faq-question,
+  .bk-faq-shell h2 {
+    color: #1c1108 !important;
+  }
+
+  .bk-faq-question svg,
+  .bk-faq-view-all {
+    display: none !important;
+  }
+
+  .bk-faq-item {
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+
+  .bk-faq-grid {
+    display: block !important;
+  }
+
+  /* Keep a question with its answer, and never split a section across a page break. */
+  .bk-policy-section,
+  .bk-faq-item,
+  .bk-faqs-group {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: #1c1108 !important;
+    text-decoration: none !important;
+  }
+}

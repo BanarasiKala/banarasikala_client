@@ -1,4 +1,5 @@
 import FaqSection from "../Home/FaqSection/FaqSection";
+import DownloadPdfButton from "../../components/DownloadPdfButton";
 import { FAQ_ITEMS } from "../../data/faqs";
 import "./Faqs.css";
 
@@ -9,7 +10,12 @@ import "./Faqs.css";
  */
 const Faqs = () => (
   <main className="bk-faqs-page">
-    <FaqSection items={FAQ_ITEMS} showViewAll={false} headingId="faqs-page-title" />
+    <FaqSection
+      items={FAQ_ITEMS}
+      showViewAll={false}
+      headingId="faqs-page-title"
+      footer={<DownloadPdfButton label="Download FAQs (PDF)" />}
+    />
   </main>
 );
 

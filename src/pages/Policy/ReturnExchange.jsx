@@ -123,6 +123,7 @@ const ReturnExchange = () => (
     title="Return & Exchange"
     subtitle="Seven days from delivery, one return and one exchange per order, reverse pickup arranged by us."
     sections={sections}
+    downloadable
   />
 );
 

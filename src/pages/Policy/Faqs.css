@@ -21,6 +21,20 @@
   font-size: 24px;
 }
 
+/* The shared button is styled for the cream policy pages; on this maroon band it needs the
+   section's own gold-on-maroon treatment instead. */
+.bk-faqs-page .bk-pdf-button {
+  border-color: rgba(212, 175, 55, 0.45);
+  background: rgba(255, 246, 232, 0.08);
+  color: #d4af37;
+}
+
+.bk-faqs-page .bk-pdf-button:hover {
+  background: rgba(255, 246, 232, 0.16);
+  border-color: rgba(212, 175, 55, 0.8);
+  color: #fff3d2;
+}
+
 @media (max-width: 768px) {
   .bk-faqs-page .bk-faq-shell {
     padding-block: 32px 40px;

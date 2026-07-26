@@ -77,6 +77,12 @@
   line-height: 1.55;
 }
 
+/* Collapsed answers stay in the DOM so the print stylesheet can reveal them for a PDF.
+   display:none also keeps them out of the accessibility tree while collapsed. */
+.bk-faq-item:not(.is-open) .bk-faq-answer {
+  display: none;
+}
+
 /* Gold on the maroon band, matching the section heading rather than the maroon "View All"
    used on the cream sections elsewhere. */
 .bk-faq-footer {

@@ -8,7 +8,13 @@ import "./FaqSection.css";
  * /faqs, which passes the full list with no link — so the two are the same component rather
  * than one styled to imitate the other.
  */
-const FaqSection = ({ items = FAQ_ITEMS.slice(0, HOME_FAQ_COUNT), showViewAll = true, headingId = "faq-title" }) => {
+const FaqSection = ({
+  items = FAQ_ITEMS.slice(0, HOME_FAQ_COUNT),
+  showViewAll = true,
+  headingId = "faq-title",
+  // Rendered under the grid in place of the "View All" link — /faqs puts its PDF button here.
+  footer = null,
+}) => {
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleItem = (index) => {
@@ -44,11 +50,16 @@ const FaqSection = ({ items = FAQ_ITEMS.slice(0, HOME_FAQ_COUNT), showViewAll = 
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>
-                {isOpen && <p>{answer}</p>}
+                {/* Always in the DOM, hidden by CSS when collapsed. Conditional rendering
+                    would leave nothing for the print stylesheet to reveal, so a saved PDF
+                    would be a list of questions with no answers. */}
+                <p className="bk-faq-answer">{answer}</p>
               </div>
             );
           })}
         </div>
+
+        {footer}
 
         {showViewAll && (
           <div className="bk-faq-footer">
