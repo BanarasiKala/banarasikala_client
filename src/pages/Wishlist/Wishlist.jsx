@@ -9,6 +9,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { API_ENDPOINTS } from "../../config/api";
 import api from "../../utils/api";
 import { getColorStock, getProductImages } from "../../utils/productMedia";
+import useStockNotify from "../../hooks/useStockNotify";
 import { varietyLabel, materialLabel } from "../../utils/productAttributes";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
@@ -20,6 +21,7 @@ const Wishlist = () => {
   const { user } = useAuth();
   const { wishlist, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
+  const { notify } = useStockNotify();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [colors, setColors] = useState([]);
@@ -294,7 +296,9 @@ const Wishlist = () => {
                     {isDirect ? "Adding..." : "Add to Bag"}
                   </button>
                 ) : (
-                  <button type="button" disabled>Unavailable</button>
+                  <button type="button" className="wishlist-notify-btn" onClick={() => notify(item, item.colorId || null)}>
+                    <Icon icon="lucide:bell" /> Notify Me
+                  </button>
                 );
               } else {
                 // Has color variants — open modal to pick
@@ -304,7 +308,9 @@ const Wishlist = () => {
                     Add to Bag
                   </button>
                 ) : (
-                  <button type="button" disabled>Unavailable</button>
+                  <button type="button" className="wishlist-notify-btn" onClick={() => notify(item, item.colorId || null)}>
+                    <Icon icon="lucide:bell" /> Notify Me
+                  </button>
                 );
               }
             } else if (savedColorInStock) {

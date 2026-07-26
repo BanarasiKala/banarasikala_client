@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { imgUrl } from "../../../utils/cloudinary";
@@ -9,6 +10,7 @@ import { API_ENDPOINTS } from "../../../config/api";
 import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../../utils/productMedia";
 import { varietyLabel, materialLabel } from "../../../utils/productAttributes";
 import { getProductStockInfo } from "../../../utils/stockStatus";
+import useStockNotify from "../../../hooks/useStockNotify";
 import ProductRating from "../../../components/ProductRating";
 import DeliveryBadge from "../../../components/DeliveryBadge";
 import "./NewArrivals.css";
@@ -24,6 +26,7 @@ const NewArrivals = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const { notify } = useStockNotify();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
   const sectionRef = useRef(null);
@@ -272,9 +275,15 @@ const NewArrivals = () => {
                           )}
                         </div>
                         {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
-                        <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
-                          Add to Cart
-                        </button>
+                        {isOutOfStock ? (
+                          <button type="button" className="bk-arrival-atc-btn bk-notify-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); notify(product, currentColorId); }}>
+                            <Icon icon="lucide:bell" /> Notify Me
+                          </button>
+                        ) : (
+                          <button type="button" className="bk-arrival-atc-btn" onClick={(e) => handleAddToCart(e, product, currentColorId)}>
+                            Add to Cart
+                          </button>
+                        )}
                       </div>
                     </Link>
                   </article>

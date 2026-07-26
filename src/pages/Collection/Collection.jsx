@@ -10,6 +10,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
 import { varietyLabel, materialLabel } from "../../utils/productAttributes";
 import { getProductStockInfo } from "../../utils/stockStatus";
+import useStockNotify from "../../hooks/useStockNotify";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import "./Collection.css";
@@ -40,6 +41,7 @@ const Collection = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const { notify } = useStockNotify();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -483,13 +485,23 @@ const Collection = () => {
               )}
             </div>
             {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
-            <button
-              type="button"
-              className="collection-atc-btn"
-              onClick={(e) => handleAddToCart(e, product, currentColorId)}
-            >
-              Add to Cart
-            </button>
+            {isOutOfStock ? (
+              <button
+                type="button"
+                className="collection-atc-btn collection-notify-btn"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); notify(product, currentColorId); }}
+              >
+                <Icon icon="lucide:bell" /> Notify Me
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="collection-atc-btn"
+                onClick={(e) => handleAddToCart(e, product, currentColorId)}
+              >
+                Add to Cart
+              </button>
+            )}
           </div>
         </Link>
       </div>

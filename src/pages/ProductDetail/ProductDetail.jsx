@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { imgUrl } from "../../utils/cloudinary";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -229,6 +229,7 @@ VideoSlide.displayName = "VideoSlide";
 const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
@@ -545,6 +546,7 @@ const ProductDetail = () => {
   const [orderCountdown, setOrderCountdown] = useState(() => getOrderCutoff());
   const autoCheckedRef = useRef("");
   const [addingToBag, setAddingToBag] = useState(false);
+  const [notifying, setNotifying] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowStep, setBuyNowStep] = useState("details");
   const [buyNowLoading, setBuyNowLoading] = useState(false);
@@ -1040,6 +1042,30 @@ const ProductDetail = () => {
     } else {
       showNotification(result?.message || "Could not add to bag. Try again.", "error");
     }
+  };
+
+  // Register the shopper for a back-in-stock email. If they aren't logged in, remember what they
+  // wanted, send them to login, and (via `from`) bring them right back to this product — where
+  // the effect below completes the request automatically.
+  const registerNotify = async (colorId) => {
+    setNotifying(true);
+    try {
+      const res = await api.post(`/api/stock-notifications/product/${product.id}`, { colorId: colorId ?? null });
+      showNotification(res.data?.message || "We'll email you when it's back in stock.", "success");
+    } catch (error) {
+      showNotification(error?.response?.data?.message || "Could not register you right now. Please try again.", "error");
+    } finally {
+      setNotifying(false);
+    }
+  };
+
+  const handleNotifyMe = () => {
+    if (!user) {
+      localStorage.setItem("bk_pending_notify", JSON.stringify({ productId: product.id, colorId: selectedColorId || null }));
+      navigate("/login", { state: { from: location } });
+      return;
+    }
+    registerNotify(selectedColorId);
   };
 
   const handleRemoveFromBag = () => {
@@ -2215,27 +2241,40 @@ const ProductDetail = () => {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className={`product-add-btn${existingBagQuantity > 0 ? " in-bag" : ""}`}
-                disabled={existingBagQuantity > 0 || !canAddToBag || addingToBag}
-              >
-                {existingBagQuantity > 0 ? (
-                  <><Icon icon="lucide:check" /> In Bag</>
-                ) : addingToBag ? (
-                  <>Adding...</>
-                ) : isSelectedOutOfStock ? (
-                  <>Out of Stock</>
-                ) : isChangingColor ? (
-                  <>Loading...</>
-                ) : (
-                  <><Icon icon="lucide:shopping-bag" /> ADD TO BAG</>
-                )}
-              </button>
-              <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
-                <Icon icon="lucide:zap" /> BUY NOW
-              </button>
+              {isSelectedOutOfStock ? (
+                // Out of stock → let them ask to be emailed when it returns, instead of a dead
+                // "Out of Stock" button. Buy Now is hidden (there's nothing to buy yet).
+                <button
+                  type="button"
+                  onClick={handleNotifyMe}
+                  className="product-add-btn product-notify-btn"
+                  disabled={notifying}
+                >
+                  {notifying ? <>Adding you…</> : <><Icon icon="lucide:bell" /> NOTIFY ME</>}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className={`product-add-btn${existingBagQuantity > 0 ? " in-bag" : ""}`}
+                    disabled={existingBagQuantity > 0 || !canAddToBag || addingToBag}
+                  >
+                    {existingBagQuantity > 0 ? (
+                      <><Icon icon="lucide:check" /> In Bag</>
+                    ) : addingToBag ? (
+                      <>Adding...</>
+                    ) : isChangingColor ? (
+                      <>Loading...</>
+                    ) : (
+                      <><Icon icon="lucide:shopping-bag" /> ADD TO BAG</>
+                    )}
+                  </button>
+                  <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
+                    <Icon icon="lucide:zap" /> BUY NOW
+                  </button>
+                </>
+              )}
             </div>
 
             {pageCoupons.length > 0 && (

@@ -135,6 +135,21 @@ export const CartProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Complete a "notify me when back in stock" request saved before login — from a product page
+  // OR any product card. Centralised here so it fires once on login wherever the shopper lands.
+  useEffect(() => {
+    if (!user) return;
+    const raw = localStorage.getItem("bk_pending_notify");
+    if (!raw) return;
+    localStorage.removeItem("bk_pending_notify");
+    let pending;
+    try { pending = JSON.parse(raw); } catch { return; }
+    if (!pending?.productId) return;
+    api.post(`/api/stock-notifications/product/${pending.productId}`, { colorId: pending.colorId ?? null })
+      .then((res) => showNotification(res.data?.message || "We'll email you when it's back in stock.", "success"))
+      .catch(() => {});
+  }, [user, showNotification]);
+
   const removeFromCart = async (productId, colorId = null) => {
     if (!user) return;
     const snapshot = cart;

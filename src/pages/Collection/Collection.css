@@ -698,6 +698,14 @@
     filter: brightness(1.12);
     transform: translateY(-1px);
 }
+/* Notify Me carries a bell icon, so center the icon + label together as one group. */
+.collection-notify-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.collection-notify-btn svg { width: 15px; height: 15px; flex: none; }
 
 .collection-atc-btn:disabled {
     background: linear-gradient(135deg, #9a9a9a, #6f6f6f);
