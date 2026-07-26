@@ -506,8 +506,8 @@ const Header = () => {
             onFocus={() => setSareeOpen(true)}
             onBlur={(event) => closeMenuWhenFocusLeaves(event, setSareeOpen)}
           >
-            <button type="button">
-              Sarees
+            <button type="button" aria-expanded={sareeOpen}>
+              Patterns
               <svg
                 width="10"
                 height="10"
@@ -520,32 +520,47 @@ const Header = () => {
               </svg>
             </button>
             {sareeOpen && (
-              <div className="bk-dropdown">
-                {sareeVarietiesStatus === "loading" && (
-                  <span className="bk-dropdown-status">Loading sarees...</span>
-                )}
-                {sareeVarietiesStatus === "error" && (
-                  <span className="bk-dropdown-status bk-dropdown-status--error">
-                    Unable to load sarees
-                    <button type="button" className="bk-dropdown-retry" onClick={fetchSareeVarieties}>
-                      Retry
-                    </button>
+              <div className="bk-dropdown" role="menu">
+                {/* Same head/rows as the profile panel, so the header's two menus read as one
+                    component. Rows stay text-only to match it. */}
+                <div className="bk-dropdown-head">
+                  <span className="bk-dropdown-badge" aria-hidden="true">
+                    <Icon icon="lucide:layers" />
                   </span>
-                )}
-                {sareeVarietiesStatus === "success" &&
-                  sareeVarieties.map((variety) => (
-                    <Link
-                      key={variety.id}
-                      to={`/collection?variety=${variety.id}`}
-                      onClick={refreshNavClick(`/collection?variety=${variety.id}`)}
-                    >
-                      {variety.name}
-                    </Link>
-                  ))}
-                {sareeVarietiesStatus === "success" &&
-                  sareeVarieties.length === 0 && (
-                    <span className="bk-dropdown-status">No sarees found</span>
+                  <span className="bk-dropdown-head-copy">
+                    <p>Patterns</p>
+                    <span>Browse by weave</span>
+                  </span>
+                </div>
+
+                <div className="bk-dropdown-links">
+                  {sareeVarietiesStatus === "loading" && (
+                    <span className="bk-dropdown-status">Loading patterns...</span>
                   )}
+                  {sareeVarietiesStatus === "error" && (
+                    <span className="bk-dropdown-status bk-dropdown-status--error">
+                      Unable to load patterns
+                      <button type="button" className="bk-dropdown-retry" onClick={fetchSareeVarieties}>
+                        Retry
+                      </button>
+                    </span>
+                  )}
+                  {sareeVarietiesStatus === "success" &&
+                    sareeVarieties.map((variety) => (
+                      <Link
+                        key={variety.id}
+                        role="menuitem"
+                        to={`/collection?variety=${variety.id}`}
+                        onClick={refreshNavClick(`/collection?variety=${variety.id}`)}
+                      >
+                        {variety.name}
+                      </Link>
+                    ))}
+                  {sareeVarietiesStatus === "success" &&
+                    sareeVarieties.length === 0 && (
+                      <span className="bk-dropdown-status">No patterns found</span>
+                    )}
+                </div>
               </div>
             )}
           </div>
