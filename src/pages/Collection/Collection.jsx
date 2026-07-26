@@ -664,7 +664,7 @@ const Collection = () => {
               <circle cx="8" cy="8" r="7.5" fill={col.hex_code || "#cccccc"} />
             </svg>
           ))}
-          {renderFilterGroup("variety", "Variety", varieties, "variety")}
+          {renderFilterGroup("variety", "Pattern", varieties, "variety")}
           {renderFilterGroup("material", "Fabric", materials, "material")}
           {renderFilterGroup("occasion", "Occasions", occasions, "occasion")}
           

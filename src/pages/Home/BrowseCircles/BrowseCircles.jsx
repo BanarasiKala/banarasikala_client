@@ -140,8 +140,8 @@ const BrowseCircles = () => {
     <section className="bk-browse-section">
       <div className="bk-browse-shell">
         <div className="bk-browse-header">
-          <span>Variety of Authentic Banarasi Sarees</span>
-          <h2>Premium Variety</h2>
+          <span>Pattern of Authentic Banarasi Sarees</span>
+          <h2>Premium Pattern</h2>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ const BrowseCircles = () => {
         </div>
       ) : items.length === 0 ? (
         <div className="bk-browse-shell">
-          <div className="bk-browse-empty" role="status">Varieties will appear here soon.</div>
+          <div className="bk-browse-empty" role="status">Patterns will appear here soon.</div>
         </div>
       ) : (
         <div

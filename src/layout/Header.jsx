@@ -921,7 +921,7 @@ const Header = () => {
             <Link to="/reels" onClick={refreshNavClick("/reels")}>
               Reels
             </Link>
-            <span className="bk-mobile-nav-heading">Variety</span>
+            <span className="bk-mobile-nav-heading">Pattern</span>
             {sareeVarietiesStatus === "loading" && (
               <span className="bk-mobile-panel-muted">Loading varieties...</span>
             )}

@@ -26,6 +26,7 @@ export default function useStockNotify() {
     if (!product?.id) return;
     if (!user) {
       localStorage.setItem("bk_pending_notify", JSON.stringify({ productId: product.id, colorId: colorId ?? null }));
+      showNotification("Please log in first to get notified when it's back in stock.", "info");
       navigate("/login", { state: { from: location } });
       return;
     }

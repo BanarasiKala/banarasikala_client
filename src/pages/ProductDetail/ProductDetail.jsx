@@ -1062,6 +1062,7 @@ const ProductDetail = () => {
   const handleNotifyMe = () => {
     if (!user) {
       localStorage.setItem("bk_pending_notify", JSON.stringify({ productId: product.id, colorId: selectedColorId || null }));
+      showNotification("Please log in first to get notified when it's back in stock.", "info");
       navigate("/login", { state: { from: location } });
       return;
     }
@@ -1790,7 +1791,7 @@ const ProductDetail = () => {
     ? [
         ["SKU", selectedSku],
         ["Selected Color", selectedColor?.name],
-        [varietyNames(product).length > 1 ? "Varieties" : "Variety", varietyLabel(product)],
+        [varietyNames(product).length > 1 ? "Patterns" : "Pattern", varietyLabel(product)],
         [materialNames(product).length > 1 ? "Fabrics" : "Fabric", materialLabel(product)],
         ["Occasion", product.Occasion?.name],
         ["Saree Length", product.length ? `${formatNumber(product.length)} Meter` : ""],
