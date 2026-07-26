@@ -2153,10 +2153,14 @@
   box-shadow: none;
 }
 
-/* Out-of-stock "Notify me" replaces both buttons, so it spans the full row. */
+/* Out-of-stock "Notify me" replaces both buttons, so it spans the full row. Colours are inverted
+   from Add to Bag — gold fill, maroon text — so it reads as a different action. */
 .product-notify-btn {
   grid-column: 1 / -1;
+  background: #f5cf72;
+  color: #800020;
 }
+.product-notify-btn:hover { filter: brightness(1.05); }
 
 .product-add-btn:disabled,
 .product-buy-btn:disabled {

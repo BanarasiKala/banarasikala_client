@@ -292,6 +292,13 @@
   transform: translateY(-1px);
 }
 
+/* Notify Me: inverted from Add to Bag — gold fill, maroon text. Scoped past the base button
+   rule above (class + element) so the colours actually win. */
+.wishlist-card-actions button.wishlist-notify-btn {
+  background: #f5cf72;
+  color: #800020;
+}
+
 .wishlist-card-actions a {
   background: #fff8ef;
   color: #800020;

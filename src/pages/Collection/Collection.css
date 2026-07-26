@@ -698,13 +698,17 @@
     filter: brightness(1.12);
     transform: translateY(-1px);
 }
-/* Notify Me carries a bell icon, so center the icon + label together as one group. */
+/* Notify Me carries a bell icon, so center the icon + label together as one group. Colours are
+   inverted from Add to Cart — gold fill, maroon text — so it reads as a different action. */
 .collection-notify-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    background: #f5cf72;
+    color: #800020;
 }
+.collection-notify-btn:hover { filter: brightness(1.05); }
 .collection-notify-btn svg { width: 15px; height: 15px; flex: none; }
 
 .collection-atc-btn:disabled {
