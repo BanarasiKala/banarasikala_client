@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { API_ENDPOINTS } from "../config/api";
 import { Icon } from "@iconify/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -14,10 +14,16 @@ import logo from "../assets/vertical_logo.png";
 import footerBackground from "../assets/header_backgroung.png";
 import "./Footer.css";
 
+// A null path marks the expandable Patterns group rather than a plain link, so the column's
+// order stays declared in one place.
+const PATTERNS_GROUP = null;
+
 const quickLinks = [
   ["Home", "/"],
-  ["Sarees", "/collection"],
-  ["New Arrivals", "/#new-arrivals"],
+  ["Patterns", PATTERNS_GROUP],
+  // Both point at the collection with the matching filter applied, so they land on the same
+  // grid the home page's rails link into.
+  ["New Arrivals", "/collection?newArrival=true"],
   ["Special Collections", "/collection?specialCollection=true"],
   ["About Us", "/about"],
   ["Contact Us", "/contact"],
@@ -25,21 +31,21 @@ const quickLinks = [
 ];
 
 const supportLinks = [
-  ["FAQs", "/contact"],
+  ["FAQs", "/faqs"],
   ["Track Order", "/my-orders"],
-  ["Shipping Policy", "/shipping-policy"],
   ["Return & Exchange", "/return-exchange"],
-  ["Cancellation Policy", "/refund-policy"],
-  ["Size Guide", "/collection"],
-  ["Care Instructions", "/about"],
+  ["Cancellation Policy", "/cancellation-policy"],
+  ["Size Guide", "/size-guide"],
+  ["Care Instructions", "/care-instructions"],
 ];
 
 const policyLinks = [
+  ["Shipping Policy", "/shipping-policy"],
   ["Terms & Conditions", "/terms-conditions"],
   ["Privacy Policy", "/privacy-policy"],
   ["Refund Policy", "/refund-policy"],
-  ["Secure Payments", "/terms-conditions"],
-  ["Disclaimer", "/privacy-policy"],
+  ["Secure Payments", "/secure-payments"],
+  ["Disclaimer", "/disclaimer"],
 ];
 
 const payments = [
@@ -70,6 +76,75 @@ const Footer = () => {
   const [subError, setSubError] = useState("");
   const [subSuccess, setSubSuccess] = useState("");
   const [subLoading, setSubLoading] = useState(false);
+
+  const [patternsOpen, setPatternsOpen] = useState(false);
+  const [patterns, setPatterns] = useState([]);
+  const [patternsStatus, setPatternsStatus] = useState("idle");
+  const patternsAbortRef = useRef(null);
+  const patternsRef = useRef(null);
+
+  const fetchPatterns = useCallback(async () => {
+    patternsAbortRef.current?.abort();
+    const controller = new AbortController();
+    patternsAbortRef.current = controller;
+
+    setPatternsStatus("loading");
+    try {
+      const response = await fetch(API_ENDPOINTS.varieties, { signal: controller.signal });
+      if (!response.ok) throw new Error("Unable to load patterns");
+      const data = await response.json();
+      setPatterns(
+        Array.isArray(data)
+          ? data.filter((item) => item?.id && item?.name).map((item) => ({ id: item.id, name: item.name }))
+          : [],
+      );
+      setPatternsStatus("success");
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        setPatterns([]);
+        setPatternsStatus("error");
+      }
+    }
+  }, []);
+
+  useEffect(() => () => patternsAbortRef.current?.abort(), []);
+
+  // Loaded on first open, not on mount: the footer renders on every page and most visitors
+  // never expand this list.
+  const togglePatterns = () => {
+    const next = !patternsOpen;
+    setPatternsOpen(next);
+    if (next && patternsStatus === "idle") fetchPatterns();
+  };
+
+  // A disclosure left hanging open in a footer is just noise, so anything that reads as
+  // "done with it" puts it away: a click outside the group, Escape, or the pointer leaving
+  // the footer (handled on the element itself).
+  useEffect(() => {
+    if (!patternsOpen) return undefined;
+
+    const closeOnOutside = (event) => {
+      if (!patternsRef.current?.contains(event.target)) setPatternsOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setPatternsOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutside);
+    document.addEventListener("touchstart", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      document.removeEventListener("touchstart", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [patternsOpen]);
+
+  // Navigating anywhere closes it too — the footer survives route changes, so without this the
+  // list would still be sitting open on the page you land on.
+  useEffect(() => {
+    setPatternsOpen(false);
+  }, [location.pathname, location.search]);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -144,6 +219,7 @@ const Footer = () => {
       ref={footerRef}
       className="bk-footer"
       style={{ "--bk-footer-bg": `url(${footerBackground})` }}
+      onMouseLeave={() => setPatternsOpen(false)}
     >
       <div className="bk-footer-main">
         <div className="bk-footer-brand">
@@ -186,14 +262,61 @@ const Footer = () => {
           <h3>Quick Links</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
           <ul>
-            {quickLinks.map(([label, path]) => (
-              <li key={label}>
-                <Link to={path} onClick={refreshFooterLink(path)}>
-                  {label}
-                  {label === "Sarees" && <ChevronRight size={12} />}
-                </Link>
-              </li>
-            ))}
+            {quickLinks.map(([label, path]) =>
+              path === PATTERNS_GROUP ? (
+                <li key={label} className="bk-footer-patterns" ref={patternsRef}>
+                  <button
+                    type="button"
+                    className="bk-footer-patterns-toggle"
+                    aria-expanded={patternsOpen}
+                    onClick={togglePatterns}
+                  >
+                    {label}
+                    <ChevronRight size={12} aria-hidden="true" />
+                  </button>
+
+                  {patternsOpen && (
+                    <ul className="bk-footer-patterns-list">
+                      {patternsStatus === "loading" && (
+                        <li className="bk-footer-patterns-status">Loading patterns…</li>
+                      )}
+                      {patternsStatus === "error" && (
+                        <li className="bk-footer-patterns-status">
+                          Unable to load patterns
+                          <button type="button" onClick={fetchPatterns}>Retry</button>
+                        </li>
+                      )}
+                      {patternsStatus === "success" && patterns.length === 0 && (
+                        <li className="bk-footer-patterns-status">No patterns found</li>
+                      )}
+                      {patterns.map((pattern) => {
+                        const to = `/collection?variety=${pattern.id}`;
+                        return (
+                          <li key={pattern.id}>
+                            {/* Closed explicitly rather than relying on the navigation effect:
+                                re-picking the pattern you are already viewing does not change
+                                the location, so that effect would never fire. */}
+                            <Link
+                              to={to}
+                              onClick={(event) => {
+                                setPatternsOpen(false);
+                                refreshFooterLink(to)(event);
+                              }}
+                            >
+                              {pattern.name}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </li>
+              ) : (
+                <li key={label}>
+                  <Link to={path} onClick={refreshFooterLink(path)}>{label}</Link>
+                </li>
+              ),
+            )}
           </ul>
         </nav>
 

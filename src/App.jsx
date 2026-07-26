@@ -41,6 +41,12 @@ const ReturnExchange = lazy(() => import("./pages/Policy/ReturnExchange"));
 const RefundPolicy = lazy(() => import("./pages/Policy/RefundPolicy"));
 const TermsConditions = lazy(() => import("./pages/Policy/TermsConditions"));
 const PrivacyPolicy = lazy(() => import("./pages/Policy/PrivacyPolicy"));
+const CancellationPolicy = lazy(() => import("./pages/Policy/CancellationPolicy"));
+const SecurePayments = lazy(() => import("./pages/Policy/SecurePayments"));
+const Disclaimer = lazy(() => import("./pages/Policy/Disclaimer"));
+const SizeGuide = lazy(() => import("./pages/Policy/SizeGuide"));
+const CareInstructions = lazy(() => import("./pages/Policy/CareInstructions"));
+const Faqs = lazy(() => import("./pages/Policy/Faqs"));
 
 
 
@@ -152,8 +158,14 @@ function App() {
                       <Route path="/shipping-policy" element={<ShippingPolicy />} />
                       <Route path="/return-exchange" element={<ReturnExchange />} />
                       <Route path="/refund-policy" element={<RefundPolicy />} />
+                      <Route path="/cancellation-policy" element={<CancellationPolicy />} />
                       <Route path="/terms-conditions" element={<TermsConditions />} />
                       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      <Route path="/secure-payments" element={<SecurePayments />} />
+                      <Route path="/disclaimer" element={<Disclaimer />} />
+                      <Route path="/size-guide" element={<SizeGuide />} />
+                      <Route path="/care-instructions" element={<CareInstructions />} />
+                      <Route path="/faqs" element={<Faqs />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPassword />} />

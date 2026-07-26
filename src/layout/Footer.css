@@ -137,6 +137,77 @@
   text-underline-offset: 3px;
 }
 
+/* Patterns — a disclosure rather than a link, so the weaves can be reached from the footer
+   without a trip through the collection page. Styled to sit flush with its sibling links. */
+.bk-footer-patterns-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f2118;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.bk-footer-patterns-toggle:hover,
+.bk-footer-patterns-toggle:focus-visible {
+  color: #800020;
+  transform: translateX(3px);
+}
+
+.bk-footer-patterns-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.bk-footer-patterns-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+/* Indented under the toggle, with a hairline rule standing in for the nesting. Selector is
+   doubled up to outrank `.bk-footer-column ul`, which zeroes the margin and padding. */
+.bk-footer-column .bk-footer-patterns-list {
+  margin: 12px 0 2px;
+  padding: 0 0 0 12px;
+  border-left: 1px solid rgba(185, 134, 42, 0.35);
+  gap: 10px;
+}
+
+.bk-footer-patterns-list a {
+  font-size: 13px;
+  font-weight: 400;
+  color: #4a382c;
+}
+
+.bk-footer-patterns-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6f5a4b;
+  font-size: 12.5px;
+}
+
+.bk-footer-patterns-status button {
+  padding: 2px 10px;
+  border: 1px solid rgba(128, 0, 32, 0.3);
+  border-radius: 999px;
+  background: transparent;
+  color: #800020;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bk-footer-patterns-status button:hover {
+  background: rgba(128, 0, 32, 0.06);
+}
+
 .bk-footer-updates p,
 .bk-footer-marketplaces p {
   margin: 0 0 24px;
