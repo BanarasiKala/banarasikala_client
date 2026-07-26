@@ -743,7 +743,7 @@ const Collection = () => {
           {!loading && products.length === 0 && hasResultCriteria && (fallbackLoading || fallbackProducts.length > 0) && (
             <section className="collection-more-section">
               <div className="collection-more-head">
-                <h2>More Products Like This</h2>
+                <h2>More Products</h2>
               </div>
               <div className="product-grid collection-more-grid">
                 {fallbackLoading ? (
@@ -765,6 +765,9 @@ const Collection = () => {
                 <div className="collection-more-footer">
                   <button type="button" className="collection-more-link" onClick={showAllProducts}>
                     View All
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
                   </button>
                 </div>
               )}

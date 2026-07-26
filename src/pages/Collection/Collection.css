@@ -353,22 +353,33 @@
     text-transform: uppercase;
 }
 
-/* "View All" now sits centered below the cards, styled as a proper pill CTA. */
+/* "View All" sits centered below the cards, styled exactly like the home page's
+   "View Collection" link — an uppercase maroon label with a chevron that slides on hover. */
 .collection-more-footer {
     display: flex;
     justify-content: center;
     margin-top: 24px;
 }
 .collection-more-footer .collection-more-link {
-    padding: 11px 34px;
-    border: 1.5px solid #800020;
-    border-radius: 999px;
+    width: max-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #800020;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: uppercase;
     text-decoration: none;
-    transition: background 0.16s ease, color 0.16s ease;
 }
-.collection-more-footer .collection-more-link:hover {
-    background: #800020;
-    color: #fff;
+.collection-more-footer .collection-more-link svg {
+    transition: transform 0.25s ease;
+}
+.collection-more-footer .collection-more-link:hover svg {
+    transform: translateX(4px);
 }
 
 .collection-more-grid {

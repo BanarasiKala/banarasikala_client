@@ -22,7 +22,8 @@ const BrowseCircles = () => {
   const xRef = useRef(0);              // shared between rAF and drag
   const loopWidthRef = useRef(0);
   const dragRef = useRef({ active: false, startX: 0, startTrackX: 0 });
-  const suppressClickRef = useRef(false);
+  const pressedHrefRef = useRef(null); // which circle was pressed, read on pointer-up
+  const movedRef = useRef(false);      // did this gesture become a real drag?
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,14 +86,15 @@ const BrowseCircles = () => {
     return () => cancelAnimationFrame(raf);
   }, [marqueeItems.length, copies]);
 
-  const openItem = (href) => {
-    if (suppressClickRef.current) { suppressClickRef.current = false; return; }
-    navigate(href);
-  };
-
   const onPointerDown = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     isPausedRef.current = true;
+    movedRef.current = false;
+    // Remember the pressed circle now, and open it on pointer-up if this turns out to be a tap.
+    // The child <button>'s own click is unreliable here — the wrapper's pointer capture can
+    // swallow it — so navigation is driven off the pointer gesture instead.
+    const card = e.target.closest?.(".bk-browse-card");
+    pressedHrefRef.current = card?.getAttribute("data-href") || null;
 
     // Silently shift startTrackX into [-2*lw, -lw] so a full swipe right
     // never crosses 0 and triggers a wrap mid-gesture.
@@ -111,7 +113,8 @@ const BrowseCircles = () => {
   const onPointerMove = (e) => {
     if (!dragRef.current.active) return;
     const delta = e.clientX - dragRef.current.startX;
-    if (Math.abs(delta) > 5) suppressClickRef.current = true;
+    // Past this it's a real drag (a swipe), not finger jitter on a tap.
+    if (Math.abs(delta) > 8) movedRef.current = true;
 
     // No normalization here — free movement so the gesture feels 1:1
     const newX = dragRef.current.startTrackX + delta;
@@ -133,7 +136,11 @@ const BrowseCircles = () => {
     }
 
     isPausedRef.current = false;
-    window.setTimeout(() => { suppressClickRef.current = false; }, 80);
+    // A tap (no real drag) opens the circle that was pressed.
+    if (!movedRef.current && pressedHrefRef.current) {
+      navigate(pressedHrefRef.current);
+    }
+    pressedHrefRef.current = null;
   };
 
   return (
@@ -177,7 +184,8 @@ const BrowseCircles = () => {
                 type="button"
                 key={`${item.id}-${i}`}
                 className="bk-browse-card"
-                onClick={() => openItem(item.href)}
+                data-href={item.href}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(item.href); } }}
               >
                 <span className="bk-browse-circle">
                   {item.image
