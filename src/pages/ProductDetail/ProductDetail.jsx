@@ -2217,31 +2217,35 @@ const ProductDetail = () => {
             )}
 
             <div className="product-action-panel">
-              <div className="product-qty-row">
-                <p className="product-qty-label">Quantity</p>
-                <div className="product-qty">
-                  <div className="product-qty-stepper">
-                    <button
-                      type="button"
-                      onClick={existingBagQuantity > 0 && quantity <= 1 ? handleRemoveFromBag : decrementQty}
-                      disabled={existingBagQuantity === 0 && quantity <= 1}
-                      aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from bag" : "Decrease quantity"}
-                      className={existingBagQuantity > 0 && quantity <= 1 ? "is-trash" : ""}
-                    >
-                      <Icon icon={existingBagQuantity > 0 && quantity <= 1 ? "lucide:trash-2" : "lucide:minus"} />
-                    </button>
-                    <span>{isSelectedOutOfStock ? 0 : quantity}</span>
-                    <button
-                      type="button"
-                      onClick={incrementQty}
-                      disabled={isSelectedOutOfStock || quantity >= selectedStockInfo.quantity}
-                      aria-label="Increase quantity"
-                    >
-                      <Icon icon="lucide:plus" />
-                    </button>
+              {/* No quantity stepper when out of stock — there's nothing to add; Notify Me takes
+                  the full width on its own. */}
+              {!isSelectedOutOfStock && (
+                <div className="product-qty-row">
+                  <p className="product-qty-label">Quantity</p>
+                  <div className="product-qty">
+                    <div className="product-qty-stepper">
+                      <button
+                        type="button"
+                        onClick={existingBagQuantity > 0 && quantity <= 1 ? handleRemoveFromBag : decrementQty}
+                        disabled={existingBagQuantity === 0 && quantity <= 1}
+                        aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from bag" : "Decrease quantity"}
+                        className={existingBagQuantity > 0 && quantity <= 1 ? "is-trash" : ""}
+                      >
+                        <Icon icon={existingBagQuantity > 0 && quantity <= 1 ? "lucide:trash-2" : "lucide:minus"} />
+                      </button>
+                      <span>{quantity}</span>
+                      <button
+                        type="button"
+                        onClick={incrementQty}
+                        disabled={quantity >= selectedStockInfo.quantity}
+                        aria-label="Increase quantity"
+                      >
+                        <Icon icon="lucide:plus" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               {isSelectedOutOfStock ? (
                 // Out of stock → let them ask to be emailed when it returns, instead of a dead
                 // "Out of Stock" button. Buy Now is hidden (there's nothing to buy yet).
@@ -2317,17 +2321,17 @@ const ProductDetail = () => {
             <ul className="product-highlights-list">
               {Array.isArray(product.key_highlights) && product.key_highlights.length > 0
                 ? product.key_highlights.map((text) => (
-                    <li key={text}><Icon icon="lucide:check-circle" /><span>{text}</span></li>
+                    <li key={text}>{text}</li>
                   ))
                 : [
-                    varietyNames(product).length ? { icon: "lucide:sparkles", text: `Rich ${varietyLabel(product)} Weaving` } : null,
-                    materialNames(product).length ? { icon: "lucide:layers", text: `Premium ${materialLabel(product)} Fabric` } : null,
-                    product.Occasion?.name ? { icon: "lucide:calendar-check", text: `Perfect for ${product.Occasion.name}` } : null,
-                    product.blouse_piece ? { icon: "lucide:shirt", text: "Blouse Piece Included" } : null,
-                    { icon: "lucide:gift", text: "Premium Gift Packaging" },
-                    { icon: "lucide:map-pin", text: "Made in Banaras" },
-                  ].filter(Boolean).map(({ icon, text }) => (
-                    <li key={text}><Icon icon={icon} /><span>{text}</span></li>
+                    varietyNames(product).length ? `Rich ${varietyLabel(product)} Weaving` : null,
+                    materialNames(product).length ? `Premium ${materialLabel(product)} Fabric` : null,
+                    product.Occasion?.name ? `Perfect for ${product.Occasion.name}` : null,
+                    product.blouse_piece ? "Blouse Piece Included" : null,
+                    "Premium Gift Packaging",
+                    "Made in Banaras",
+                  ].filter(Boolean).map((text) => (
+                    <li key={text}>{text}</li>
                   ))
               }
             </ul>
