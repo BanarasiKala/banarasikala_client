@@ -171,6 +171,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* The card is a link. Without this, a tap lands on the <video> and mobile browsers flash
+     their native (blue) play overlay before the link navigates. Ignoring pointer events lets
+     the tap pass straight through to the link, so no play button ever appears. */
+  pointer-events: none;
 }
 
 .bk-motion-scrim {
