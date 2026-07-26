@@ -270,29 +270,17 @@
   color: #ff5c7a;
 }
 
-/* Big play button — fades in on hover as the tap-through invitation. */
-.bk-motion-play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(212, 175, 55, 0.92);
-  color: #2a0a10;
-  font-size: 22px;
-  transform: translate(-50%, -50%) scale(0.7);
-  opacity: 0;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.bk-motion-card:hover .bk-motion-play {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+/* No play icon on the reel cards — not ours, and not the browser's native one. The native
+   button is a shadow-DOM pseudo-element (the big centre "play" a mobile browser shows on a
+   video that hasn't started / was tapped), so it can only be removed by hiding these. */
+.bk-motion-video::-webkit-media-controls,
+.bk-motion-video::-webkit-media-controls-enclosure,
+.bk-motion-video::-webkit-media-controls-panel,
+.bk-motion-video::-webkit-media-controls-start-playback-button,
+.bk-motion-video::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* Bottom meta: title + shoppable product chip */

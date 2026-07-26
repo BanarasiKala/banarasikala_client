@@ -126,10 +126,6 @@ const BanarasInMotion = () => {
                         </span>
                       </span>
 
-                      {/* Big play appears on hover, inviting the tap-through. */}
-                      <span className="bk-motion-play" aria-hidden="true">
-                        <Icon icon="lucide:play" />
-                      </span>
 
                       <span className="bk-motion-meta">
                         {reel.title && <strong>{reel.title}</strong>}
