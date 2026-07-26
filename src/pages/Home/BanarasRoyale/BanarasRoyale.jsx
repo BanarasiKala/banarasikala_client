@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
 import "./BanarasRoyale.css";
@@ -10,6 +11,10 @@ import "./BanarasRoyale.css";
 const RoyaleStage = ({ entry }) => {
   const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
   const [imageIndex, setImageIndex] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fsPaused, setFsPaused] = useState(false);
+  const [fsMuted, setFsMuted] = useState(false);
+  const fsVideoRef = useRef(null);
   // null → the CSS default spot (with the bob animation); {x,y} once dragged.
   const [floatPos, setFloatPos] = useState(null);
   // While dragging: lift effect + tilt that leans into the movement direction.
@@ -19,12 +24,79 @@ const RoyaleStage = ({ entry }) => {
   const dragRef = useRef(null); // pointer offset inside the polaroid while dragging
   const lastXRef = useRef(0);
   const tiltSettleRef = useRef(null);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     if (images.length <= 1) return undefined;
     const timer = setInterval(() => setImageIndex((index) => index + 1), 3400);
     return () => clearInterval(timer);
   }, [images.length]);
+
+  // Keep the cinematic backdrop playing forever. `autoPlay` only fires once, on mount — but
+  // mobile browsers pause a muted video when the tab is backgrounded (switching apps, another
+  // tab) and frequently do NOT resume it on return, leaving a frozen frame that reads as the
+  // video "closing". We re-issue play() whenever the page becomes visible again, whenever the
+  // page is restored from the back/forward cache (pageshow), and whenever the element reports it
+  // was paused while still on-screen. A muted video is always allowed to autoplay, so play() is
+  // safe to call repeatedly (a no-op when already playing; the rejection is swallowed if blocked).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !entry.video) return undefined;
+
+    const play = () => { const p = video.play(); if (p && typeof p.catch === "function") p.catch(() => {}); };
+    play();
+
+    const onVisible = () => { if (!document.hidden) play(); };
+    const onPageShow = () => play();
+    // The browser pausing it for any reason (backgrounding, low-power mode) — resume if we're
+    // actually on-screen. `loop` videos don't fire `pause` when they wrap, so this never fights
+    // the loop.
+    const onPause = () => { if (!document.hidden) play(); };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onPageShow);
+    video.addEventListener("pause", onPause);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onPageShow);
+      video.removeEventListener("pause", onPause);
+    };
+  }, [entry.video]);
+
+  // While the full-screen viewer is open: lock the page behind it, let Escape close it, and kick
+  // off playback (reflecting a blocked autoplay so the centre Play button shows instead).
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event) => { if (event.key === "Escape") setFullscreen(false); };
+    document.addEventListener("keydown", onKey);
+
+    const video = fsVideoRef.current;
+    if (video) {
+      setFsMuted(video.muted);
+      const played = video.play();
+      if (played && typeof played.catch === "function") played.catch(() => setFsPaused(true));
+    }
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [fullscreen]);
+
+  const toggleFsPlay = () => {
+    const video = fsVideoRef.current;
+    if (!video) return;
+    if (video.paused) { const p = video.play(); if (p && typeof p.catch === "function") p.catch(() => {}); }
+    else video.pause();
+  };
+
+  const toggleFsMute = () => {
+    const video = fsVideoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setFsMuted(video.muted);
+  };
 
   const startDrag = (event) => {
     const stage = stageRef.current;
@@ -80,6 +152,7 @@ const RoyaleStage = ({ entry }) => {
     <div className={`bk-royale-stage${dragFx ? " is-drag-live" : ""}`} ref={stageRef}>
       {entry.video ? (
         <video
+          ref={videoRef}
           className="bk-royale-media"
           src={entry.video}
           autoPlay
@@ -133,6 +206,62 @@ const RoyaleStage = ({ entry }) => {
           </Link>
         )}
       </div>
+
+      {/* Full-screen toggle, bottom-right of the stage. Opens a viewer with just the video. */}
+      {entry.video && (
+        <button
+          type="button"
+          className="bk-royale-fs-btn"
+          onClick={() => setFullscreen(true)}
+          aria-label="Play video in full screen"
+          title="Full screen"
+        >
+          <Icon icon="lucide:maximize-2" />
+        </button>
+      )}
+
+      {fullscreen && entry.video && (
+        <div className="bk-royale-fs-overlay" role="dialog" aria-modal="true" aria-label={entry.title || "Banaras Royale video"}>
+          <button
+            type="button"
+            className="bk-royale-fs-close"
+            onClick={() => setFullscreen(false)}
+            aria-label="Close full screen"
+          >
+            <Icon icon="lucide:x" />
+          </button>
+
+          {/* No native `controls` on purpose — that bar is the only thing that shows a fullscreen
+              icon / three-dots / download, and `controlsList` isn't honoured on every browser. A
+              small custom set (tap to play-pause, mute, close) keeps the viewer clean everywhere. */}
+          <video
+            ref={fsVideoRef}
+            className="bk-royale-fs-video"
+            src={entry.video}
+            autoPlay
+            loop
+            playsInline
+            onClick={toggleFsPlay}
+            onPlay={() => setFsPaused(false)}
+            onPause={() => setFsPaused(true)}
+          />
+
+          {fsPaused && (
+            <button type="button" className="bk-royale-fs-play" onClick={toggleFsPlay} aria-label="Play">
+              <Icon icon="lucide:play" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="bk-royale-fs-mute"
+            onClick={toggleFsMute}
+            aria-label={fsMuted ? "Unmute" : "Mute"}
+          >
+            <Icon icon={fsMuted ? "lucide:volume-x" : "lucide:volume-2"} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

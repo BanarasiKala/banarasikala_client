@@ -266,3 +266,114 @@
     bottom: 14px;
   }
 }
+
+/* ── Full-screen video viewer ─────────────────────────────────────────────── */
+.bk-royale-fs-btn {
+  position: absolute;
+  right: clamp(12px, 3vw, 20px);
+  bottom: clamp(12px, 3vw, 20px);
+  z-index: 6;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.bk-royale-fs-btn:hover { background: rgba(0, 0, 0, 0.62); }
+.bk-royale-fs-btn:active { transform: scale(0.9); }
+
+.bk-royale-fs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bk-royale-fs-in 180ms ease-out;
+}
+@keyframes bk-royale-fs-in { from { opacity: 0; } to { opacity: 1; } }
+
+.bk-royale-fs-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.bk-royale-fs-close {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top, 0px));
+  right: 14px;
+  z-index: 4001;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.bk-royale-fs-close:hover { background: rgba(255, 255, 255, 0.3); }
+.bk-royale-fs-close:active { transform: scale(0.92); }
+
+/* Centre play button — only shown while paused. */
+.bk-royale-fs-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4001;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 34px;
+  padding-left: 4px; /* optically centre the play triangle */
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.bk-royale-fs-play:hover { background: rgba(0, 0, 0, 0.6); }
+.bk-royale-fs-play:active { transform: translate(-50%, -50%) scale(0.92); }
+
+.bk-royale-fs-mute {
+  position: absolute;
+  left: 14px;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 4001;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.bk-royale-fs-mute:hover { background: rgba(255, 255, 255, 0.3); }
+.bk-royale-fs-mute:active { transform: scale(0.92); }
