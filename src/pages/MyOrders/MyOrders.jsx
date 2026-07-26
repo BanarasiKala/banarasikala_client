@@ -601,20 +601,27 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
             const itemRating = Number(item.feedback?.rating || 0);
             const itemStatusMeta = getItemStatusMeta(order, item);
             // An inactive product still shows its image and name here, but the storefront hides
-            // it, so the row isn't a link — clicking does nothing. (product_active undefined means
-            // an older API response; treat as clickable so nothing regresses before redeploy.)
+            // it. Rather than navigate to a page that no longer exists on the store, clicking it
+            // tells the customer so. (product_active undefined = older API response → stay a
+            // normal link so nothing regresses before redeploy.)
             const productUrl = item.product_slug && item.product_active !== false
               ? `/product/${item.product_slug}${item.colorId ? `?color=${item.colorId}` : ""}`
               : null;
+            const isUnavailable = item.product_active === false;
+            const isInteractive = Boolean(productUrl) || isUnavailable;
+            const handleItemClick = () => {
+              if (productUrl) navigate(productUrl);
+              else if (isUnavailable) onNotify?.("This product is no longer available.", "info");
+            };
 
             return (
               <div
                 key={`${item.product_id}-${item.colorId || index}`}
-                className={`order-product-item ${isItemCancelled ? "item-cancelled" : ""}${productUrl ? " is-clickable" : ""}`}
-                onClick={productUrl ? () => navigate(productUrl) : undefined}
-                role={productUrl ? "button" : undefined}
-                tabIndex={productUrl ? 0 : undefined}
-                onKeyDown={productUrl ? (e) => e.key === "Enter" && navigate(productUrl) : undefined}
+                className={`order-product-item ${isItemCancelled ? "item-cancelled" : ""}${isInteractive ? " is-clickable" : ""}`}
+                onClick={isInteractive ? handleItemClick : undefined}
+                role={isInteractive ? "button" : undefined}
+                tabIndex={isInteractive ? 0 : undefined}
+                onKeyDown={isInteractive ? (e) => e.key === "Enter" && handleItemClick() : undefined}
               >
                 <div className="order-product-media">
                   {imageUrl ? (

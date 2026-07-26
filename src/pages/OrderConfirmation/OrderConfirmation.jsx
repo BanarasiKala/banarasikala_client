@@ -1774,8 +1774,11 @@ export default function OrderConfirmation() {
             <div className="confirmation-items">
               {(order.OrderItems || []).map((item, index) => {
                 // Inactive products stay visible (image + name) but aren't links — the storefront
-                // hides them, so clicking through would 404 or offer an unbuyable page.
+                // hides them, so clicking through would 404 or offer an unbuyable page. Clicking
+                // says so with a toast instead of navigating.
                 const productUrl = item.product_slug && item.product_active !== false ? `/product/${item.product_slug}` : null;
+                const isUnavailable = item.product_active === false;
+                const notifyUnavailable = () => showNotification("This product is no longer available.", "info");
                 const itemRating = Number(item.feedback?.rating || 0);
                 const returnWindow = getItemReturnWindowInfo(order, item);
                 const itemStatusMeta = getItemStatusMeta(order, item);
@@ -1787,13 +1790,24 @@ export default function OrderConfirmation() {
                         {getItemImage(item) ? <img src={imgUrl(getItemImage(item), 200)} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
                       </Link>
                     ) : (
-                      <div className="confirmation-item-media">
+                      <div
+                        className="confirmation-item-media"
+                        onClick={isUnavailable ? notifyUnavailable : undefined}
+                        role={isUnavailable ? "button" : undefined}
+                        tabIndex={isUnavailable ? 0 : undefined}
+                        onKeyDown={isUnavailable ? (e) => e.key === "Enter" && notifyUnavailable() : undefined}
+                        style={isUnavailable ? { cursor: "pointer" } : undefined}
+                      >
                         {getItemImage(item) ? <img src={imgUrl(getItemImage(item), 200)} alt={item.product_name} /> : <Icon icon="lucide:image-off" />}
                       </div>
                     )}
                     <div className="confirmation-item-copy">
                       <div className="oc-item-headline">
-                        {productUrl ? <Link to={productUrl} className="confirmation-product-link"><h3>{item.product_name}</h3></Link> : <h3>{item.product_name}</h3>}
+                        {productUrl
+                          ? <Link to={productUrl} className="confirmation-product-link"><h3>{item.product_name}</h3></Link>
+                          : isUnavailable
+                            ? <span className="confirmation-product-link" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={notifyUnavailable} onKeyDown={(e) => e.key === "Enter" && notifyUnavailable()}><h3>{item.product_name}</h3></span>
+                            : <h3>{item.product_name}</h3>}
                         <strong className="oc-item-price">
                           {(() => {
                             const billedQty = Math.max(0, toNumber(item.quantity) - toNumber(item.cancelled_quantity));
