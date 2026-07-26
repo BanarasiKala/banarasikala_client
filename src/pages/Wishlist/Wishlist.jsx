@@ -443,7 +443,7 @@ const Wishlist = () => {
         <section className="wishlist-bottom-cta">
           <div>
             <span>Still exploring?</span>
-            <p>Discover more handpicked Banarasi sarees for your wardrobe.</p>
+            <p>Your next favorite awaits.</p>
           </div>
           <Link to="/collection" className="wishlist-primary-link">
             Continue Shopping

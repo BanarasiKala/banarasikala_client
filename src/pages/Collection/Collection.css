@@ -308,6 +308,96 @@
     pointer-events: none;
 }
 
+/* Applied filter chips — one per active filter, click anywhere on the chip to drop it. */
+.applied-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.applied-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 6px 6px 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(128, 0, 32, 0.2);
+    background: rgba(255, 248, 239, 0.94);
+    color: #3d2817;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(88, 39, 13, 0.07);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.applied-filter-chip:hover {
+    border-color: rgba(128, 0, 32, 0.45);
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(88, 39, 13, 0.12);
+}
+
+.applied-filter-swatch {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(61, 40, 23, 0.22);
+}
+
+.applied-filter-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 190px;
+}
+
+/* The round ✕ badge. Not a nested <button> — the whole chip is the control, so a click
+   anywhere on it (including here) removes the filter. */
+.applied-filter-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(128, 0, 32, 0.1);
+    color: var(--primary);
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.applied-filter-chip:hover .applied-filter-x {
+    background: var(--primary);
+    color: #fff;
+}
+
+.applied-filter-x svg {
+    width: 11px;
+    height: 11px;
+    stroke-width: 3;
+}
+
+.applied-filter-clear {
+    padding: 6px 4px;
+    background: transparent;
+    border: 0;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.applied-filter-clear:hover {
+    color: #b07824;
+}
+
 /* Product Grid */
 .product-grid {
     display: grid;

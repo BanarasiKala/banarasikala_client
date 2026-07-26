@@ -16,6 +16,10 @@ import DeliveryBadge from "../../components/DeliveryBadge";
 import "./Collection.css";
 
 const PAGE_SIZE = 20;
+// Only used when /price-range cannot be reached; the real ceiling comes from the catalogue.
+const FALLBACK_PRICE_CEILING = 200000;
+// Keep the slider usable for both a ₹5k and a ₹2L catalogue.
+const priceStep = (ceiling) => (ceiling > 20000 ? 1000 : 100);
 
 const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const calcDiscount = (mrp, sell) => {
@@ -38,7 +42,7 @@ const getSortParam = (params) => {
 };
 
 const Collection = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { addToCart } = useCart();
   const { notify } = useStockNotify();
@@ -62,6 +66,7 @@ const Collection = () => {
   const [fallbackProducts, setFallbackProducts] = useState([]);
   const [fallbackLoading, setFallbackLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [priceCeiling, setPriceCeiling] = useState(FALLBACK_PRICE_CEILING);
   const productsRequestId = useRef(0);
   const fallbackRequestId = useRef(0);
   const isFirstSearchParamsRun = useRef(true);
@@ -74,7 +79,8 @@ const Collection = () => {
     material: [],
     color: [],
     minPrice: 0,
-    maxPrice: 200000,
+    // null = no cap; the slider shows the catalogue ceiling until the shopper drags it down.
+    maxPrice: null,
     sortBy: "",
     search: searchParams.get("search") || "",
   }));
@@ -106,22 +112,30 @@ const Collection = () => {
       setFiltersLoading(true);
       try {
         const leanFields = "fields=id,name,slug";
+        // The price ceiling is fetched alongside the taxonomy but failure-isolated: if it
+        // cannot be read the slider keeps the fallback ceiling rather than blanking every filter.
+        const priceRangePromise = fetch(API_ENDPOINTS.productPriceRange)
+          .then((res) => res.json())
+          .catch(() => null);
         const [occRes, matRes, colRes, varRes] = await Promise.all([
           fetch(`${API_ENDPOINTS.occasions}?${leanFields}`),
           fetch(`${API_ENDPOINTS.materials}?${leanFields}`),
           fetch(API_ENDPOINTS.colors),
           fetch(`${API_ENDPOINTS.varieties}?${leanFields}`),
         ]);
-        const [occData, matData, colData, varData] = await Promise.all([
+        const [occData, matData, colData, varData, priceData] = await Promise.all([
           occRes.json(),
           matRes.json(),
           colRes.json(),
           varRes.json(),
+          priceRangePromise,
         ]);
         setOccasions(occData);
         setMaterials(matData);
         setColors(colData);
         setVarieties(varData);
+        const catalogueMax = Number(priceData?.maxPrice);
+        if (Number.isFinite(catalogueMax) && catalogueMax > 0) setPriceCeiling(catalogueMax);
       } catch (error) {
         console.error("Error fetching metadata:", error);
       } finally {
@@ -150,8 +164,10 @@ const Collection = () => {
       if (filters.occasion.length) params.append("occasion", filters.occasion.join(","));
       if (filters.material.length) params.append("material", filters.material.join(","));
       if (filters.color.length) params.append("color", filters.color.join(","));
-      if (filters.minPrice > 0) params.append("minPrice", filters.minPrice);
-      if (filters.maxPrice < 200000) params.append("maxPrice", filters.maxPrice);
+      if (Number(filters.minPrice) > 0) params.append("minPrice", filters.minPrice);
+      if (filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling) {
+        params.append("maxPrice", filters.maxPrice);
+      }
       if (filters.sortBy) params.append("sortBy", filters.sortBy);
       if (filters.search && filters.search.trim()) params.append("search", filters.search.trim());
 
@@ -224,7 +240,7 @@ const Collection = () => {
 
   const handlePriceChange = (e) => {
     setCurrentPage(1);
-    setFilters((prev) => ({ ...prev, maxPrice: e.target.value }));
+    setFilters((prev) => ({ ...prev, maxPrice: Number(e.target.value) }));
   };
 
   const handleSortChange = (e) => {
@@ -322,6 +338,51 @@ const Collection = () => {
     return Math.round(((m - s) / m) * 100);
   };
 
+  // variety/occasion/sort/search can arrive in the URL, and the searchParams effect above
+  // re-applies whatever is there. Removing such a filter from state alone would let the URL
+  // put it straight back, so the URL is rewritten to match the new state — but only when the
+  // key is actually present, otherwise a rewrite would trigger that effect and clobber
+  // selections the shopper made in the sidebar.
+  const syncUrlList = (key, values) => {
+    if (!searchParams.get(key)) return;
+    const next = new URLSearchParams(searchParams);
+    if (values.length) next.set(key, values.join(","));
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
+
+  const dropUrlKeys = (keys) => {
+    const present = keys.filter((key) => searchParams.get(key));
+    if (!present.length) return;
+    const next = new URLSearchParams(searchParams);
+    present.forEach((key) => next.delete(key));
+    setSearchParams(next, { replace: true });
+  };
+
+  // Removes a single applied filter — the chip's ✕ above the product grid.
+  const removeFilter = (type, id) => {
+    setCurrentPage(1);
+
+    if (type === "price") {
+      setFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: null }));
+      return;
+    }
+    if (type === "sortBy") {
+      setFilters((prev) => ({ ...prev, sortBy: "" }));
+      dropUrlKeys(["sort"]);
+      return;
+    }
+    if (type === "search") {
+      setFilters((prev) => ({ ...prev, search: "" }));
+      dropUrlKeys(["search"]);
+      return;
+    }
+
+    const remaining = filters[type].filter((value) => value !== id);
+    setFilters((prev) => ({ ...prev, [type]: prev[type].filter((value) => value !== id) }));
+    if (type === "variety" || type === "occasion") syncUrlList(type, remaining);
+  };
+
   const clearAllFilters = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
@@ -330,10 +391,12 @@ const Collection = () => {
       material: [],
       color: [],
       minPrice: 0,
-      maxPrice: 200000,
+      maxPrice: null,
       sortBy: "",
       search: prev.search,
     }));
+    // `search` is deliberately kept, so its URL key is left alone too.
+    dropUrlKeys(["variety", "occasion", "sort"]);
   };
 
   const showAllProducts = () => {
@@ -344,7 +407,7 @@ const Collection = () => {
       material: [],
       color: [],
       minPrice: 0,
-      maxPrice: 200000,
+      maxPrice: null,
       sortBy: "",
       search: "",
     });
@@ -551,25 +614,29 @@ const Collection = () => {
     );
   };
 
-  const renderPriceFilter = () => (
-    <div className="filter-section collection-price-section">
-      <h3 className="filter-title">Price</h3>
-      <div className="collection-price-filter">
-        <input
-          type="range"
-          min="0"
-          max="200000"
-          step="1000"
-          value={filters.maxPrice}
-          onChange={handlePriceChange}
-        />
-        <div className="collection-price-range">
-          <span>₹0</span>
-          <span>₹{Number(filters.maxPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+  const renderPriceFilter = () => {
+    // Unset maxPrice means "everything", so the handle sits at the catalogue ceiling.
+    const sliderValue = filters.maxPrice === null ? priceCeiling : filters.maxPrice;
+    return (
+      <div className="filter-section collection-price-section">
+        <h3 className="filter-title">Price</h3>
+        <div className="collection-price-filter">
+          <input
+            type="range"
+            min="0"
+            max={priceCeiling}
+            step={priceStep(priceCeiling)}
+            value={sliderValue}
+            onChange={handlePriceChange}
+          />
+          <div className="collection-price-range">
+            <span>₹0</span>
+            <span>{formatMoney(sliderValue)}</span>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderFilterSkeleton = (priceFirst = false) => (
     <div className="filter-skeleton-wrap" aria-label="Loading filters">
@@ -604,10 +671,57 @@ const Collection = () => {
     filters.material.length > 0 ||
     filters.color.length > 0 ||
     Number(filters.minPrice) > 0 ||
-    Number(filters.maxPrice) < 200000 ||
+    (filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling) ||
     filters.sortBy !== "";
 
   const hasResultCriteria = hasActiveFilters || Boolean(filters.search.trim());
+
+  // One removable chip per applied filter, shown above the grid. Ids are resolved to names
+  // against the loaded taxonomy; an id with no match yet (metadata still in flight) is skipped
+  // rather than rendered as a nameless chip.
+  const taxonomyChips = (type, list) =>
+    filters[type]
+      .map((id) => {
+        const item = list.find((entry) => Number(entry.id) === Number(id));
+        if (!item) return null;
+        return { key: `${type}-${id}`, type, id, label: item.name, hex: item.hex_code || null };
+      })
+      .filter(Boolean);
+
+  const priceChipLabel = () => {
+    const min = Number(filters.minPrice) > 0 ? Number(filters.minPrice) : null;
+    const max = filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling
+      ? Number(filters.maxPrice)
+      : null;
+    const short = (value) => `₹${value.toLocaleString("en-IN")}`;
+    if (min && max) return `${short(min)} - ${short(max)}`;
+    if (max) return `Under ${short(max)}`;
+    if (min) return `Above ${short(min)}`;
+    return null;
+  };
+
+  const SORT_LABELS = {
+    newest: "New Arrivals",
+    price_asc: "Price: Low to High",
+    price_desc: "Price: High to Low",
+    special: "Exclusive Picks",
+  };
+
+  const appliedFilters = [
+    ...taxonomyChips("color", colors),
+    ...taxonomyChips("variety", varieties),
+    ...taxonomyChips("material", materials),
+    ...taxonomyChips("occasion", occasions),
+  ];
+
+  const priceLabel = priceChipLabel();
+  if (priceLabel) appliedFilters.push({ key: "price", type: "price", label: priceLabel });
+  if (filters.sortBy && SORT_LABELS[filters.sortBy]) {
+    appliedFilters.push({ key: "sort", type: "sortBy", label: SORT_LABELS[filters.sortBy] });
+  }
+  if (filters.search.trim()) {
+    appliedFilters.push({ key: "search", type: "search", label: `“${filters.search.trim()}”` });
+  }
 
   useEffect(() => {
     if (loading || products.length > 0 || !hasResultCriteria) {
@@ -630,6 +744,13 @@ const Collection = () => {
           view: "collection",
           sortBy: "special",
         });
+        // This section relaxes the narrow filters (colour, pattern, fabric, search) to recover
+        // from a zero-result page, but the shopper's budget is not one of them — suggesting a
+        // ₹7,399 saree under a ₹739 cap reads as the price filter leaking.
+        if (Number(filters.minPrice) > 0) params.append("minPrice", filters.minPrice);
+        if (filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling) {
+          params.append("maxPrice", filters.maxPrice);
+        }
 
         const res = await fetch(`${API_ENDPOINTS.products}?${params.toString()}`, {
           signal: controller.signal,
@@ -649,7 +770,7 @@ const Collection = () => {
     fetchFallbackProducts();
 
     return () => controller.abort();
-  }, [loading, products.length, hasResultCriteria]);
+  }, [loading, products.length, hasResultCriteria, filters.minPrice, filters.maxPrice, priceCeiling]);
 
   const renderFiltersBody = ({ priceFirst = false } = {}) => (
     <>
@@ -718,6 +839,38 @@ const Collection = () => {
               </select>
             </div>
           </div>
+
+          {appliedFilters.length > 0 && (
+            <div className="applied-filters" aria-label="Applied filters">
+              {appliedFilters.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  className="applied-filter-chip"
+                  onClick={() => removeFilter(chip.type, chip.id)}
+                  aria-label={`Remove filter ${chip.label}`}
+                  title={`Remove ${chip.label}`}
+                >
+                  {chip.hex && (
+                    <span
+                      className="applied-filter-swatch"
+                      style={{ background: chip.hex }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="applied-filter-text">{chip.label}</span>
+                  <span className="applied-filter-x" aria-hidden="true">
+                    <Icon icon="lucide:x" />
+                  </span>
+                </button>
+              ))}
+              {appliedFilters.length > 1 && (
+                <button type="button" className="applied-filter-clear" onClick={clearAllFilters}>
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="product-grid">
             {loading ? (

@@ -5,6 +5,7 @@ const API_BASE_URL = requiredEnv("VITE_API_URL");
 export const API_ENDPOINTS = {
   base: API_BASE_URL,
   products: `${API_BASE_URL}/api/products`,
+  productPriceRange: `${API_BASE_URL}/api/products/price-range`,
   reels: `${API_BASE_URL}/api/reels`,
   stats: `${API_BASE_URL}/api/stats`,
   colors: `${API_BASE_URL}/api/colors`,
