@@ -800,9 +800,7 @@ const Collection = () => {
       <nav className="breadcrumb">
         <Link to="/">Home</Link>
         <span className="mx-2">/</span>
-        <span>Clothing</span>
-        <span className="mx-2">/</span>
-        <span className="font-bold">Sarees</span>
+        <span className="font-bold">Collection</span>
       </nav>
 
       <div className="main-content">
