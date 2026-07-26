@@ -77,6 +77,39 @@
   line-height: 1.55;
 }
 
+/* Gold on the maroon band, matching the section heading rather than the maroon "View All"
+   used on the cream sections elsewhere. */
+.bk-faq-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.bk-faq-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #d4af37;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.bk-faq-view-all svg {
+  transition: transform 0.25s ease;
+}
+
+.bk-faq-view-all:hover {
+  color: #fff3d2;
+}
+
+.bk-faq-view-all:hover svg {
+  transform: translateX(4px);
+}
+
 @media (max-width: 768px) {
   .bk-faq-shell {
     padding: 20px 14px 24px;

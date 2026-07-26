@@ -1,20 +1,14 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { FAQ_ITEMS, HOME_FAQ_COUNT } from "../../../data/faqs";
 import "./FaqSection.css";
 
-const FAQ_ITEMS = [
-  ["How can I track my order?", "Once your order is shipped, you will receive a tracking link via SMS/email powered by Shiprocket."],
-  ["How many days does delivery take?", "Orders are usually delivered within 4-7 business days depending on your location."],
-  ["Do you offer Cash on Delivery (COD)?", "Yes, Cash on Delivery is available on selected pin codes."],
-  ["Do sarees include blouse pieces?", "Yes, most sarees come with an unstitched blouse piece unless otherwise mentioned."],
-  ["Will the product color exactly match the images?", "Slight color variations may occur due to photography lighting and screen settings."],
-  ["How can I contact customer support?", "You can contact us via WhatsApp, email, or phone during business hours."],
-  ["My payment failed but money was deducted. What should I do?", "If your payment was deducted but the order was not confirmed, the amount is usually refunded automatically within 5-7 business days."],
-  ["Can I return or exchange my saree?", "Yes, eligible products can be returned or exchanged as per our Return & Exchange Policy."],
-  ["Do you accept bulk or wholesale orders?", "Yes, we accept bulk and wedding collection orders. Please contact us for special pricing."],
-  ["Are online payments secure?", "Yes, all transactions are encrypted and securely processed through Razorpay."],
-];
-
-const FaqSection = () => {
+/**
+ * The FAQ accordion. Shared by the home page, which shows a taster and links onward, and
+ * /faqs, which passes the full list with no link — so the two are the same component rather
+ * than one styled to imitate the other.
+ */
+const FaqSection = ({ items = FAQ_ITEMS.slice(0, HOME_FAQ_COUNT), showViewAll = true, headingId = "faq-title" }) => {
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleItem = (index) => {
@@ -22,11 +16,11 @@ const FaqSection = () => {
   };
 
   return (
-    <section className="bk-faq-section" aria-labelledby="faq-title">
+    <section className="bk-faq-section" aria-labelledby={headingId}>
       <div className="bk-faq-shell">
-        <h2 id="faq-title">Frequently Asked Questions</h2>
+        <h2 id={headingId}>Frequently Asked Questions</h2>
         <div className="bk-faq-grid">
-          {FAQ_ITEMS.map(([question, answer], index) => {
+          {items.map(({ question, answer }, index) => {
             const isOpen = openIndex === index;
 
             return (
@@ -55,6 +49,17 @@ const FaqSection = () => {
             );
           })}
         </div>
+
+        {showViewAll && (
+          <div className="bk-faq-footer">
+            <Link to="/faqs" className="bk-faq-view-all">
+              View All
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

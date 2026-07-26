@@ -1,0 +1,33 @@
+/* On the home page this section is one band among many and its own padding is enough. Standing
+   alone as a page it needs to fill the viewport, so the footer does not ride up under a short
+   list, and it needs more room above and below the grid. */
+.bk-faqs-page {
+  display: flex;
+  min-height: 70vh;
+}
+
+.bk-faqs-page .bk-faq-section {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.bk-faqs-page .bk-faq-shell {
+  padding-block: 46px 56px;
+}
+
+.bk-faqs-page .bk-faq-shell h2 {
+  margin-bottom: 26px;
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .bk-faqs-page .bk-faq-shell {
+    padding-block: 32px 40px;
+  }
+
+  .bk-faqs-page .bk-faq-shell h2 {
+    margin-bottom: 20px;
+    font-size: 19px;
+  }
+}
