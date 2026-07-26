@@ -809,11 +809,6 @@ const Collection = () => {
         <aside className="filters-sidebar">
           <div className="sidebar-header">
             <h2>FILTERS</h2>
-            {hasActiveFilters && (
-                <button className="clear-btn" onClick={clearAllFilters}>
-                  Clear All
-                </button>
-              )}
           </div>
 
           {renderFiltersBody()}
