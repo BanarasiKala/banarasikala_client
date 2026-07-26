@@ -34,7 +34,6 @@ const supportLinks = [
   ["FAQs", "/faqs"],
   ["Track Order", "/my-orders"],
   ["Return & Exchange", "/return-exchange"],
-  ["Cancellation Policy", "/cancellation-policy"],
   ["Size Guide", "/size-guide"],
   ["Care Instructions", "/care-instructions"],
 ];
@@ -44,6 +43,8 @@ const policyLinks = [
   ["Terms & Conditions", "/terms-conditions"],
   ["Privacy Policy", "/privacy-policy"],
   ["Refund Policy", "/refund-policy"],
+  // Sits next to Refund Policy — cancelling before dispatch is what triggers most refunds.
+  ["Cancellation Policy", "/cancellation-policy"],
   ["Secure Payments", "/secure-payments"],
   ["Disclaimer", "/disclaimer"],
 ];
