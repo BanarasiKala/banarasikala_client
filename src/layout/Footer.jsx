@@ -18,7 +18,7 @@ const quickLinks = [
   ["Home", "/"],
   ["Sarees", "/collection"],
   ["New Arrivals", "/#new-arrivals"],
-  ["Special Collections", "/collection?sort=special"],
+  ["Special Collections", "/collection?specialCollection=true"],
   ["About Us", "/about"],
   ["Contact Us", "/contact"],
   ["Feedback", "/feedback"],

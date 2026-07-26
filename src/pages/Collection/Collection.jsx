@@ -33,12 +33,24 @@ const getIdListParam = (params, key) =>
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value) && value > 0);
 
-const getSortParam = (params) => {
+// Everything the URL can encode, normalised to the shape the filter state uses. All values are
+// primitives so the effect below can diff them with ===.
+//
+// `sortBy` now holds ORDERINGS only. `sort=newest` / `sort=special` were the weak sorts that
+// merely floated the two curated sets to the top of the whole catalogue; the dropdown offers
+// the real filters instead, so those legacy values — and old bookmarks carrying them — resolve
+// onto the matching filter rather than a sort that no longer exists.
+const readUrlFilters = (params) => {
   const sort = params.get("sort");
-  if (sort === "special" || sort === "price_asc" || sort === "price_desc") return sort;
-  if (sort === "popular") return "special";
-  if (sort === "newest") return "newest";
-  return "";
+  return {
+    search: params.get("search") || "",
+    variety: params.get("variety") || "",
+    occasion: params.get("occasion") || "",
+    sortBy: sort === "price_asc" || sort === "price_desc" ? sort : "",
+    newArrival: params.get("newArrival") === "true" || sort === "newest",
+    specialCollection:
+      params.get("specialCollection") === "true" || sort === "special" || sort === "popular",
+  };
 };
 
 const Collection = () => {
@@ -69,37 +81,72 @@ const Collection = () => {
   const [priceCeiling, setPriceCeiling] = useState(FALLBACK_PRICE_CEILING);
   const productsRequestId = useRef(0);
   const fallbackRequestId = useRef(0);
-  const isFirstSearchParamsRun = useRef(true);
   const swipeRef = useRef({});
   const swipeBlockRef = useRef(new Set());
 
-  const [filters, setFilters] = useState(() => ({
-    variety: getIdListParam(searchParams, "variety"),
-    occasion: getIdListParam(searchParams, "occasion"),
-    material: [],
-    color: [],
-    minPrice: 0,
-    // null = no cap; the slider shows the catalogue ceiling until the shopper drags it down.
-    maxPrice: null,
-    sortBy: "",
-    search: searchParams.get("search") || "",
-  }));
+  const [filters, setFilters] = useState(() => {
+    // Seeded from the URL, including `sortBy` — the sync effect below deliberately no-ops on
+    // the first run, so anything not read here would be ignored until the next URL change.
+    const url = readUrlFilters(searchParams);
+    return {
+      variety: getIdListParam(searchParams, "variety"),
+      occasion: getIdListParam(searchParams, "occasion"),
+      material: [],
+      color: [],
+      minPrice: 0,
+      // null = no cap; the slider shows the catalogue ceiling until the shopper drags it down.
+      maxPrice: null,
+      sortBy: url.sortBy,
+      search: url.search,
+      // Arrive from the home page's New Arrivals "View Collection" / Exclusive Picks "View All".
+      newArrival: url.newArrival,
+      specialCollection: url.specialCollection,
+    };
+  });
 
+  // The URL-backed filters, as raw strings, so the effect below can tell which ones actually
+  // moved. Seeded from the first render so the initial state above is not re-applied.
+  const lastUrlFiltersRef = useRef(readUrlFilters(searchParams));
+
+  // Only the URL keys that CHANGED are pushed into state. Copying every key on each run would
+  // mean any rewrite — removing an occasion chip, say — also stamped `variety` and `sort` back
+  // to whatever the URL held, wiping sidebar picks and the sort the shopper chose from the
+  // dropdown, neither of which is in the URL. Diffing keeps back/forward navigation working
+  // (the key genuinely changes there) without that collateral damage.
   useEffect(() => {
-    if (isFirstSearchParamsRun.current) {
-      isFirstSearchParamsRun.current = false;
-      return;
-    }
-    const urlSearch = searchParams.get("search") || "";
-    const urlVarieties = getIdListParam(searchParams, "variety");
-    const urlOccasions = getIdListParam(searchParams, "occasion");
-    setFilters((prev) => ({
-      ...prev,
-      search: urlSearch,
-      variety: urlVarieties,
-      occasion: urlOccasions.length ? urlOccasions : prev.occasion,
-      sortBy: getSortParam(searchParams),
-    }));
+    const current = readUrlFilters(searchParams);
+    const previous = lastUrlFiltersRef.current;
+    const changed = Object.keys(current).filter((key) => current[key] !== previous[key]);
+    lastUrlFiltersRef.current = current;
+    if (!changed.length) return;
+
+    setFilters((prev) => {
+      const next = { ...prev };
+      let dirty = false;
+      const applyValue = (key, value) => {
+        if (prev[key] === value) return;
+        next[key] = value;
+        dirty = true;
+      };
+      const applyIdList = (key, list) => {
+        const held = prev[key];
+        if (held.length === list.length && held.every((id, index) => id === list[index])) return;
+        next[key] = list;
+        dirty = true;
+      };
+
+      if (changed.includes("search")) applyValue("search", current.search);
+      if (changed.includes("variety")) applyIdList("variety", getIdListParam(searchParams, "variety"));
+      if (changed.includes("occasion")) applyIdList("occasion", getIdListParam(searchParams, "occasion"));
+      if (changed.includes("sortBy")) applyValue("sortBy", current.sortBy);
+      if (changed.includes("newArrival")) applyValue("newArrival", current.newArrival);
+      if (changed.includes("specialCollection")) applyValue("specialCollection", current.specialCollection);
+
+      // Handing back `prev` untouched preserves object identity, so the products effect —
+      // which is keyed on `filters` — does not fire a second, identical request every time we
+      // write the URL to match a change the handlers already applied to state.
+      return dirty ? next : prev;
+    });
     setCurrentPage(1);
   }, [searchParams]);
 
@@ -170,6 +217,10 @@ const Collection = () => {
       }
       if (filters.sortBy) params.append("sortBy", filters.sortBy);
       if (filters.search && filters.search.trim()) params.append("search", filters.search.trim());
+      // Match the home rails' own queries, so each grid lists the same sarees the section did.
+      // `newArrival` also carries the merchandiser's manual new_arrival_order arrangement.
+      if (filters.newArrival) params.append("newArrival", "true");
+      if (filters.specialCollection) params.append("specialCollection", "true");
 
       const res = await fetch(`${API_ENDPOINTS.products}?${params.toString()}`);
       const data = await res.json();
@@ -243,9 +294,32 @@ const Collection = () => {
     setFilters((prev) => ({ ...prev, maxPrice: Number(e.target.value) }));
   };
 
+  // The dropdown is one control over three URL keys, so it always writes all three together —
+  // leaving a stale one behind would resurrect the previous choice on reload or on a shared link.
+  const syncUrlSelection = ({ newArrival, specialCollection, sortBy }) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("sort");
+    next.delete("newArrival");
+    next.delete("specialCollection");
+    if (newArrival) next.set("newArrival", "true");
+    if (specialCollection) next.set("specialCollection", "true");
+    if (sortBy) next.set("sort", sortBy);
+    if (next.toString() === searchParams.toString()) return;
+    setSearchParams(next, { replace: true });
+  };
+
+  // Two of the entries pick a curated collection (a real filter) and two pick a price ordering.
+  // They are mutually exclusive because one <select> can only show one of them.
   const handleSortChange = (e) => {
+    const value = e.target.value;
+    const selection = {
+      newArrival: value === "newArrival",
+      specialCollection: value === "specialCollection",
+      sortBy: value === "newArrival" || value === "specialCollection" ? "" : value,
+    };
     setCurrentPage(1);
-    setFilters((prev) => ({ ...prev, sortBy: e.target.value }));
+    setFilters((prev) => ({ ...prev, ...selection }));
+    syncUrlSelection(selection);
   };
 
   const toggleFilterExpand = (key) => {
@@ -367,14 +441,21 @@ const Collection = () => {
       setFilters((prev) => ({ ...prev, minPrice: 0, maxPrice: null }));
       return;
     }
-    if (type === "sortBy") {
-      setFilters((prev) => ({ ...prev, sortBy: "" }));
-      dropUrlKeys(["sort"]);
-      return;
-    }
     if (type === "search") {
       setFilters((prev) => ({ ...prev, search: "" }));
       dropUrlKeys(["search"]);
+      return;
+    }
+    // The three the dropdown owns. Each clears only itself, but the URL is rewritten as a whole
+    // so a legacy `sort=newest` cannot leave the filter it maps to switched back on.
+    if (type === "sortBy" || type === "newArrival" || type === "specialCollection") {
+      const selection = {
+        newArrival: type === "newArrival" ? false : filters.newArrival,
+        specialCollection: type === "specialCollection" ? false : filters.specialCollection,
+        sortBy: type === "sortBy" ? "" : filters.sortBy,
+      };
+      setFilters((prev) => ({ ...prev, ...selection }));
+      syncUrlSelection(selection);
       return;
     }
 
@@ -394,9 +475,11 @@ const Collection = () => {
       maxPrice: null,
       sortBy: "",
       search: prev.search,
+      newArrival: false,
+      specialCollection: false,
     }));
     // `search` is deliberately kept, so its URL key is left alone too.
-    dropUrlKeys(["variety", "occasion", "sort"]);
+    dropUrlKeys(["variety", "occasion", "sort", "newArrival", "specialCollection"]);
   };
 
   const showAllProducts = () => {
@@ -410,6 +493,8 @@ const Collection = () => {
       maxPrice: null,
       sortBy: "",
       search: "",
+      newArrival: false,
+      specialCollection: false,
     });
     navigate("/collection");
   };
@@ -672,7 +757,9 @@ const Collection = () => {
     filters.color.length > 0 ||
     Number(filters.minPrice) > 0 ||
     (filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling) ||
-    filters.sortBy !== "";
+    filters.sortBy !== "" ||
+    filters.newArrival ||
+    filters.specialCollection;
 
   const hasResultCriteria = hasActiveFilters || Boolean(filters.search.trim());
 
@@ -700,12 +787,20 @@ const Collection = () => {
     return null;
   };
 
+  // Orderings only. "New Arrivals" / "Exclusive Picks" are filters now and label their own
+  // chips — listing them here too is what produced two identical chips for one selection.
   const SORT_LABELS = {
-    newest: "New Arrivals",
     price_asc: "Price: Low to High",
     price_desc: "Price: High to Low",
-    special: "Exclusive Picks",
   };
+
+  // What the dropdown displays. A curated collection wins over an ordering, since only a
+  // hand-written URL can carry both at once.
+  const sortSelectValue = filters.newArrival
+    ? "newArrival"
+    : filters.specialCollection
+      ? "specialCollection"
+      : filters.sortBy;
 
   const appliedFilters = [
     ...taxonomyChips("color", colors),
@@ -713,6 +808,13 @@ const Collection = () => {
     ...taxonomyChips("material", materials),
     ...taxonomyChips("occasion", occasions),
   ];
+
+  if (filters.newArrival) {
+    appliedFilters.push({ key: "newArrival", type: "newArrival", label: "New Arrivals" });
+  }
+  if (filters.specialCollection) {
+    appliedFilters.push({ key: "specialCollection", type: "specialCollection", label: "Exclusive Picks" });
+  }
 
   const priceLabel = priceChipLabel();
   if (priceLabel) appliedFilters.push({ key: "price", type: "price", label: priceLabel });
@@ -823,12 +925,12 @@ const Collection = () => {
               Filters
             </button>
             <div className="sort-container">
-              <select value={filters.sortBy} onChange={handleSortChange}>
-                <option value="">{filters.sortBy ? "Clear sort" : "Sort by"}</option>
-                <option value="newest">New Arrivals</option>
+              <select value={sortSelectValue} onChange={handleSortChange}>
+                <option value="">{sortSelectValue ? "Clear" : "Sort by"}</option>
+                <option value="newArrival">New Arrivals</option>
+                <option value="specialCollection">Exclusive Picks</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
-                <option value="special">Exclusive Picks</option>
               </select>
             </div>
           </div>
