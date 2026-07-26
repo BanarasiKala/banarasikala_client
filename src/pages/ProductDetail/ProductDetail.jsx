@@ -784,7 +784,13 @@ const ProductDetail = () => {
   const hasApprovedReviews = Number(reviewSummary.count || 0) > 0;
   const scrollToReviews = () => {
     const section = document.getElementById("product-reviews");
-    if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!section) return;
+    // scrollIntoView({ block: "start" }) tucks the section under the fixed header, hiding its
+    // heading. Compute the target and subtract the header height so it lands just below it.
+    const header = document.querySelector(".bk-header");
+    const headerHeight = header?.getBoundingClientRect().height || 0;
+    const top = section.getBoundingClientRect().top + window.scrollY - headerHeight - 14;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   };
   const buyNowSubtotal = Number(product?.selling_price || 0) * Math.max(1, Number(quantity || 1));
 

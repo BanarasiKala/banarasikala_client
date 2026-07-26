@@ -20,14 +20,21 @@ const STORY_IMAGES = {
   ghat: getSectionImage(storySectionImages, "banaras-ghat"),
 };
 
+// The card row is a fixed 4-up grid, so the arrows slide a 4-wide window one card at a time
+// instead of paging — that way the last step never leaves a ragged half-empty row.
+const VISIBLE_COUNT = 4;
+
 const ReviewsStory = () => {
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [windowStart, setWindowStart] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch(`${API_ENDPOINTS.feedback}/approved`, { signal: controller.signal })
+    // fallback=1 → when no real review has been approved yet the API returns its curated
+    // site reviews (flagged is_seed) so this section is never empty on the home page.
+    fetch(`${API_ENDPOINTS.feedback}/approved?fallback=1`, { signal: controller.signal })
       .then((response) => response.json())
       .then((data) => {
         if (data.success) setReviews(data.data || []);
@@ -41,6 +48,18 @@ const ReviewsStory = () => {
   }, []);
 
   const hasReviews = reviews.length > 0;
+  // The window wraps around the end of the list rather than stopping there, so the arrows keep
+  // working however few reviews exist. With 5 reviews and 4 slots a stop-at-the-end window gave
+  // exactly one usable click before both arrows went dead.
+  const canRotate = reviews.length > VISIBLE_COUNT;
+  // Resolved on render, not stored: the list arrives after the first paint and can change size
+  // on a refetch, which would leave a stored index pointing at nothing.
+  const start = canRotate ? ((windowStart % reviews.length) + reviews.length) % reviews.length : 0;
+  const visibleReviews = canRotate
+    ? Array.from({ length: VISIBLE_COUNT }, (_, i) => reviews[(start + i) % reviews.length])
+    : reviews;
+
+  const step = (direction) => setWindowStart((current) => current + direction);
 
   return (
     <section className="bk-reviews-story">
@@ -74,7 +93,13 @@ const ReviewsStory = () => {
       {(loadingReviews || hasReviews) && (
         <div className="bk-review-shell">
           <div className="bk-review-row">
-            <button className="bk-review-arrow" type="button" aria-label="Previous reviews">
+            <button
+              className="bk-review-arrow"
+              type="button"
+              aria-label="Previous reviews"
+              onClick={() => step(-1)}
+              disabled={!canRotate}
+            >
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
@@ -90,7 +115,7 @@ const ReviewsStory = () => {
                     <div className="bk-review-skeleton-line short" />
                   </article>
                 ))
-              ) : reviews.slice(0, 4).map((item, i) => {
+              ) : visibleReviews.map((item, i) => {
                 const rating = Number(item.rating || 0);
                 const reviewerName = item.Customer?.name || item.name;
 
@@ -112,7 +137,13 @@ const ReviewsStory = () => {
               })}
             </div>
 
-            <button className="bk-review-arrow" type="button" aria-label="Next reviews">
+            <button
+              className="bk-review-arrow"
+              type="button"
+              aria-label="Next reviews"
+              onClick={() => step(1)}
+              disabled={!canRotate}
+            >
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M9 18l6-6-6-6" />
               </svg>

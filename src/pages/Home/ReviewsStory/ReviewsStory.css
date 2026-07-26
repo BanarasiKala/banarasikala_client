@@ -145,6 +145,17 @@
   cursor: pointer;
 }
 
+.bk-review-arrow:hover:not(:disabled) {
+  color: #90602d;
+}
+
+/* Both arrows sit disabled only when there are 4 or fewer reviews, i.e. nothing to rotate —
+   they stay in the layout so the card grid keeps its centred position. */
+.bk-review-arrow:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
 .bk-review-arrow svg {
   width: 28px;
   height: 28px;
