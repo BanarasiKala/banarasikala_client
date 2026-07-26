@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import chiffonImg from "../../../assets/fabric/chiffon.png";
 import cottonSilkImg from "../../../assets/fabric/cotton_silk.png";
 import georgetteImg from "../../../assets/fabric/georgette.png";
@@ -37,38 +36,25 @@ const FabricImage = ({ fabric }) => {
 };
 
 const FabricStrip = () => {
-  const navigate = useNavigate();
   const marqueeFabrics = [...FABRICS, ...FABRICS];
-  const selectFabric = (name) => {
-    navigate(`/collection?fabric=${encodeURIComponent(name)}`);
-  };
 
+  // Display only — the swatches no longer navigate anywhere on click.
   return (
   <div className="bk-fabric-strip">
     <div className="bk-fabric-grid bk-fabric-grid-desktop">
       {FABRICS.map((fabric) => (
-        <button
-          type="button"
-          key={fabric.name}
-          className="bk-fabric-item"
-          onClick={() => selectFabric(fabric.name)}
-        >
+        <div key={fabric.name} className="bk-fabric-item">
           <FabricImage fabric={fabric} />
           <span className="bk-fabric-label">{fabric.name}</span>
-        </button>
+        </div>
       ))}
     </div>
     <div className="bk-fabric-grid bk-fabric-grid-mobile">
       {marqueeFabrics.map((fabric, index) => (
-        <button
-          type="button"
-          key={`${fabric.name}-${index}`}
-          className="bk-fabric-item"
-          onClick={() => selectFabric(fabric.name)}
-        >
+        <div key={`${fabric.name}-${index}`} className="bk-fabric-item">
           <FabricImage fabric={fabric} />
           <span className="bk-fabric-label">{fabric.name}</span>
-        </button>
+        </div>
       ))}
     </div>
   </div>

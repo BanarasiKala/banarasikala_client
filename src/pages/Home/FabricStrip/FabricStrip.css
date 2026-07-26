@@ -45,7 +45,7 @@
   color: #2d1b0e;
   background: transparent;
   border: 0;
-  cursor: pointer;
+  cursor: default;
 }
 
 .bk-fabric-swatch {
