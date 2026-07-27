@@ -68,8 +68,8 @@
   margin: 0 auto 14px;
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(28px, 2.8vw, 40px);
-  font-weight: 600;
+  font-size: clamp(20px, 2.4vw, 34px);
+  font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.08;
   text-transform: uppercase;
@@ -354,7 +354,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 60vh;
+  min-height: 50vh;
 }
 
 .feedback-login-prompt .bk-empty-illustration {
@@ -367,8 +367,8 @@
   margin: 0 0 8px;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: 22px;
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1.18;
   text-transform: uppercase;
 }
