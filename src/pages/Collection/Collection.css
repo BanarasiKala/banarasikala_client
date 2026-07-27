@@ -680,7 +680,14 @@
     font-size: 20px;
 }
 
+/* `.product-card` is a two-row grid (auto 1fr) because the LOADING SKELETON puts the image and
+   the details in as two direct children. A real card has a single child — this link — which
+   would otherwise sit in row 1 at content height while the empty 1fr row below swallowed the
+   rest of the card. `.card-details` then never stretched, so `margin-top: auto` on the button
+   had no free space to push into and it sat directly under the price instead of at the bottom
+   edge. Spanning both rows makes the link fill the card, the way .bk-arrival-link does. */
 .card-link {
+    grid-row: 1 / -1;
     display: grid;
     grid-template-rows: auto 1fr;
     height: 100%;
