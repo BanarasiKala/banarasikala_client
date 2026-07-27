@@ -2,18 +2,19 @@
   min-height: 80vh;
   font-family: "Poppins", sans-serif;
   color: #2d1b0e;
-  background:
-    radial-gradient(circle at 12% 0%, rgba(212, 175, 55, 0.09), transparent 42%),
-    radial-gradient(circle at 88% 8%, rgba(128, 0, 32, 0.06), transparent 38%),
-    #fffdf9;
+  /* Flat, deliberately. A tinted wash behind a long document makes the text sit on shifting
+     contrast as you scroll, and it is the sort of thing that prints badly too. */
+  background: #fffdf9;
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────────────────────────── */
 .bk-policy-hero {
   padding: 62px 24px 48px;
   text-align: center;
+  /* Both stops are the same value on purpose: this is a flat tint over the brand texture,
+     not a gradient. Two different alphas here would fade down the banner. */
   background:
-    linear-gradient(rgba(255, 246, 232, 0.82), rgba(255, 246, 232, 0.88)),
+    linear-gradient(rgba(255, 246, 232, 0.85), rgba(255, 246, 232, 0.85)),
     var(--bk-section-bg);
   background-size: cover;
   background-position: center;
