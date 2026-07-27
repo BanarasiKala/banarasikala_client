@@ -1,134 +1,93 @@
 import PolicyPage from "./PolicyPage";
 
 /**
- * The commercial sections are written against the implementation:
- *   server/src/services/AuthService.js          — signup, email verification, welcome bonus
- *   server/src/services/WalletService.js        — immediate vs held credit, cancellation
- *   server/src/controllers/ReferralController.js and OrderController.js — referral rules
- *   server/src/models/Coupon.js                 — coupon limits and validity
- *   server/src/controllers/FeedbackController.js — who may review, moderation
- * Reward and coupon amounts are environment config, so they are described rather than printed.
- * The legal sections (IP, liability, governing law) are not code-derived and should be
- * reviewed by a lawyer.
+ * Commercial sections derive from AuthService (signup, verification, welcome bonus),
+ * WalletService (immediate vs held credit), ReferralController + OrderController (referral
+ * milestone), Coupon model (limits) and FeedbackController (review eligibility, moderation).
+ * The legal sections are not code-derived and should be reviewed by a lawyer.
  */
 const sections = [
   {
-    heading: "Acceptance of Terms",
+    heading: "Acceptance",
     body: [
-      "By accessing or using banarasikala.com, you agree to be bound by these Terms & Conditions together with our Privacy Policy, Shipping Policy, Return & Exchange Policy, Cancellation Policy and Disclaimer. If you do not agree, please do not use the site.",
-      "We may update these terms at any time. Continued use of the site after a change means you accept the revised terms.",
+      "By using banarasikala.com you agree to these terms together with our Privacy, Shipping, Return & Exchange, Cancellation and Refund policies and our Disclaimer. We may update them at any time; continued use means you accept the revision.",
     ],
   },
   {
     heading: "Your Account",
     body: [
-      "You can register with an email address and password, or sign in with Google. If you register with an email address, you must verify it before you can log in — an unverified account cannot sign in. Signing in with Google verifies your email automatically, and a Google sign-in can be linked to an existing account using the same address.",
-      "You are responsible for keeping your credentials confidential and for everything done under your account. Tell us at support@banarasikala.com immediately if you suspect unauthorised use.",
+      "Register with an email address and password, or sign in with Google. An email address must be verified before you can log in; Google verifies automatically and can link to an existing account on the same address.",
+      "You are responsible for your credentials and everything done under your account. Tell us at support@banarasikala.com if you suspect unauthorised use.",
       [
-        "You must be at least 18 years old to hold an account",
-        "The information you give us must be accurate and kept up to date",
-        "One person may not operate multiple accounts to obtain rewards more than once",
-        "Accounts used fraudulently may be suspended, and rewards on them reversed",
+        "You must be at least 18 to hold an account",
+        "Your information must be accurate and kept current",
+        "One person may not run multiple accounts to claim rewards more than once",
+        "Accounts used fraudulently may be suspended and their rewards reversed",
       ],
     ],
   },
   {
-    heading: "Products, Pricing and Availability",
+    heading: "Products, Pricing and Orders",
     body: [
-      "Prices are in Indian Rupees and include applicable taxes unless stated otherwise. We may change prices at any time, but the price shown when you place your order is the price honoured for that order.",
-      "Availability is tracked per colour, so a saree can be in stock in one colour and sold out in another. Listings are subject to availability and may be withdrawn at any time.",
-      "Our sarees are handwoven, so variation in weave, motif placement and finish between individual pieces is expected. What that means in practice is set out in our Disclaimer.",
-    ],
-  },
-  {
-    heading: "Orders and Payment",
-    body: [
-      "Placing an order is an offer to buy, which we accept by confirming it. We may decline or cancel an order where a listing carried a pricing error, where stock is unavailable, where the delivery address is not serviceable, or where we suspect fraud. In every such case you are refunded in full.",
-      "Online payments are processed by Razorpay. We never receive or store your card number, CVV or UPI PIN — see Secure Payments.",
-      "Cash on Delivery is offered up to a maximum order value shown at checkout, and is withdrawn from accounts whose previous Cash on Delivery order was returned to us undelivered.",
-      "A platform fee applies to every order. Cash on Delivery adds a handling fee, gift wrapping adds a charge if you choose it, and paying online earns a prepaid discount. All of these are itemised before you pay.",
+      "Prices are in Indian Rupees and include applicable taxes unless stated. Prices may change, but the price shown when you order is the price honoured. Availability is tracked per colour, so a saree may be in stock in one colour and not another.",
+      "Placing an order is an offer to buy, which we accept by confirming it. We may decline or cancel for a pricing error, unavailable stock, an unserviceable address or suspected fraud — refunding in full in every case.",
+      "Online payments are processed by Razorpay; we never receive your card number, CVV or UPI PIN. Cash on Delivery is capped at a value shown at checkout and withdrawn from accounts whose previous Cash on Delivery order came back undelivered. A platform fee applies to every order; Cash on Delivery adds a handling fee, gift wrapping adds a charge, and paying online earns a prepaid discount.",
     ],
   },
   {
     heading: "Wallet Credit",
     body: [
-      "Your Banarasi Kala wallet holds store credit. It can be applied against orders on this site and is not redeemable for cash, transferable between accounts, or withdrawable to a bank account.",
-      "Credit reaches your wallet in one of two ways. Some is available immediately; some is held and becomes spendable on a stated release date. Your wallet shows which is which.",
-      "Held credit is not guaranteed. If the order that earned it is cancelled or returned before the release date, the credit is withdrawn, because the purchase that justified it did not stand.",
-      "Wallet credit spent on an order is returned to your wallet if that order is later cancelled or returned. Refunds of wallet credit always go back to the wallet, not to a bank account.",
-      "We may adjust or reverse credit that was issued in error or obtained by abuse of a promotion.",
+      "Your wallet holds store credit. It can be spent on this site and is not redeemable for cash, transferable, or withdrawable to a bank.",
+      "Some credit is available immediately; some is held until a stated release date. Held credit is withdrawn if the order that earned it is cancelled or returned before then. Wallet money spent on an order returns to the wallet if that order is cancelled or returned.",
+      "We may reverse credit issued in error or obtained by abusing a promotion.",
     ],
   },
   {
     heading: "Signup Bonus and Referrals",
     body: [
-      "Every first-time signup receives a welcome bonus in wallet credit. It is granted once per account.",
-      "Each account has its own referral code. A new customer may apply one referral code, once, and only before any code has been applied to that account. You cannot apply your own code, and an invalid code is rejected.",
-      "The customer who applies a valid code receives their referral bonus in wallet credit straight away.",
-      "The referrer is rewarded on a milestone rather than per signup. Once a set number of distinct customers they referred have each had at least one order delivered, a milestone bonus is created for the referrer and released after a holding period measured from that delivery. The milestone bonus is paid once per referrer.",
-      "The holding period exists so rewards settle only on completed business. If the qualifying order is returned or cancelled during it, the pending bonus is cancelled.",
-      "Referral rewards are for genuine referrals of different people. Self-referral, duplicate accounts, and coordinated signups created to trigger a milestone are not, and we may reverse rewards and close the accounts involved.",
+      "Every first-time signup receives a welcome bonus, once per account. Each account has a referral code; a new customer may apply one code, once, and cannot apply their own. The customer who applies a valid code is credited straight away.",
+      "The referrer is rewarded on a milestone, not per signup: once a set number of distinct customers they referred have each had an order delivered, a bonus is created and released after a holding period. It is paid once per referrer, and is cancelled if the qualifying order is returned or cancelled during that period.",
+      "Self-referral, duplicate accounts and coordinated signups created to trigger a milestone are not genuine referrals. We may reverse the rewards and close the accounts involved.",
     ],
   },
   {
-    heading: "Coupons and Discounts",
+    heading: "Coupons",
     body: [
-      "Coupons may be a percentage of your basket or a fixed amount. A percentage coupon can carry a maximum discount cap, and any coupon can carry a minimum purchase value below which it does not apply.",
-      "Coupons may be limited in total number of uses, limited per customer — normally one use each — and restricted to a validity period. A coupon that is inactive, outside its dates, or already used to its limit will not apply.",
-      "If you return part of an order that used a coupon, the discount is recalculated against the items you keep, and where the original coupon no longer qualifies we automatically apply the best coupon those items do qualify for. The mechanics are set out in our Return & Exchange Policy.",
-      "Coupons have no cash value and cannot be combined unless a promotion says so explicitly.",
+      "Coupons may be a percentage or a fixed amount, may carry a maximum discount cap and a minimum purchase value, may be limited in total uses and per customer (normally one each), and may be restricted to a validity period.",
+      "If you return part of an order that used a coupon, the discount is recalculated against what you keep, applying the best coupon those items qualify for. Coupons have no cash value and cannot be combined unless a promotion says so.",
     ],
   },
   {
     heading: "Delivery, Returns and Cancellation",
     body: [
-      "Delivery is free on every order across India. Delivery dates shown on product pages are estimates based on the courier's own timeline for your pin code plus that product's processing time, and are not guarantees. Full details are in our Shipping Policy.",
-      "Delivered orders may be returned or exchanged within 7 days, one return and one exchange per order. Orders may be cancelled free of charge before dispatch. See the Return & Exchange Policy and Cancellation Policy for eligibility, deductions and refund routes.",
-      "If a parcel cannot be delivered and comes back to us, you have 7 days to pay the re-dispatch charge or take a refund, as set out in the Shipping Policy.",
+      "Delivery is free across India. Dates shown are estimates, not guarantees. Delivered orders may be returned or exchanged within 7 days — one return and one exchange per order — and orders may be cancelled within 24 hours of ordering, before dispatch. Full terms are in the Shipping, Return & Exchange, Cancellation and Refund policies.",
     ],
   },
   {
-    heading: "Reviews and Content You Submit",
+    heading: "Reviews and Content",
     body: [
-      "You may review a product only after that product has been delivered to your account, and a review is tied to the order it came from. This is what keeps our ratings honest.",
-      "Reviews are moderated and are not published until approved. We may decline content that is abusive, misleading, unlawful, infringes someone else's rights, or is unrelated to the product.",
-      "The same applies to comments and other contributions anywhere on the site. By submitting content you confirm it is yours to submit, and you grant us a non-exclusive licence to display it on the site in connection with the product or page it relates to.",
-      "We do not pay for reviews and we do not remove genuine reviews because they are unfavourable.",
+      "You may review a product only after it has been delivered to your account, and the review is tied to that order. Reviews are moderated and are not published until approved.",
+      "We may decline content that is abusive, misleading, unlawful, infringing or unrelated. By submitting content you confirm it is yours to submit and grant us a non-exclusive licence to display it alongside the product it concerns. We do not pay for reviews and do not remove genuine ones for being unfavourable.",
     ],
   },
   {
-    heading: "Support and the Chat Assistant",
+    heading: "Chat Assistant and Acceptable Use",
     body: [
-      "Our chat assistant answers questions using live catalogue and order data. It can still be wrong or incomplete.",
-      "Where the assistant conflicts with a product page, an order record, or these policies, those prevail. Nothing the assistant says varies these terms or creates a commitment we have not made elsewhere.",
+      "Our assistant answers using live catalogue and order data and can still be wrong. Where it conflicts with a product page, an order record or these policies, those prevail; nothing it says varies these terms.",
+      "You may not use this site to break the law, interfere with its operation or security, scrape the catalogue in bulk, place orders you do not intend to accept, or abuse promotions, coupons, referrals or returns. We may suspend accounts, cancel orders and withdraw rewards where we reasonably believe this is happening.",
     ],
   },
   {
-    heading: "Acceptable Use",
+    heading: "Intellectual Property and Liability",
     body: [
-      "You may not use this site to break the law, interfere with its operation or security, scrape or copy the catalogue in bulk, place orders you do not intend to accept, or abuse promotions, coupons, referrals or the returns process.",
-      "We may suspend or close accounts, cancel orders and withdraw rewards where we reasonably believe any of this is happening.",
-    ],
-  },
-  {
-    heading: "Intellectual Property",
-    body: [
-      "All content on this site — photographs, text, logos, designs and the arrangement of the site itself — belongs to Banarasi Kala or is used with permission, and is protected by intellectual property law.",
-      "You may not reproduce, distribute, or use it commercially without our prior written consent. Personal, non-commercial use of the site as a shopper is of course fine.",
-    ],
-  },
-  {
-    heading: "Limitation of Liability",
-    body: [
-      "We are not liable for indirect, incidental or consequential loss arising from your use of the site or our products.",
-      "Our total liability for any claim will not exceed what you paid for the product or service the claim concerns.",
-      "Nothing here limits liability that cannot be limited under Indian law, including for death or personal injury caused by negligence, or for fraud.",
+      "All content on this site belongs to Banarasi Kala or is used with permission. You may not reproduce, distribute or use it commercially without written consent; ordinary personal use as a shopper is fine.",
+      "We are not liable for indirect, incidental or consequential loss, and our total liability for any claim will not exceed what you paid for the product or service it concerns. Nothing here limits liability that cannot be limited under Indian law, including for death or personal injury caused by negligence, or for fraud.",
     ],
   },
   {
     heading: "Governing Law",
     body: [
-      "These terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of the courts of Varanasi, Uttar Pradesh.",
+      "These terms are governed by the laws of India, and disputes are subject to the exclusive jurisdiction of the courts of Varanasi, Uttar Pradesh.",
     ],
   },
 ];
@@ -136,7 +95,7 @@ const sections = [
 const TermsConditions = () => (
   <PolicyPage
     title="Terms & Conditions"
-    subtitle="Please read these carefully before using the site or placing an order."
+    subtitle="Please read these before using the site or placing an order."
     sections={sections}
     downloadable
   />
