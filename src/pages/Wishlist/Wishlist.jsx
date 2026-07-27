@@ -218,10 +218,10 @@ const Wishlist = () => {
           <Link
             to="/login"
             state={{ from: { pathname: "/wishlist" } }}
-            className="wishlist-primary-link"
+            className="wishlist-primary-link wishlist-primary-link--auth"
           >
-            Login / Sign up
-            <Icon icon="lucide:arrow-right" />
+            <Icon icon="lucide:heart" />
+            Login to View Wishlist
           </Link>
         </section>
       ) : loading ? (

@@ -9,6 +9,7 @@ const protectedCopy = {
     title: "Your wishlist is waiting",
     message: "Login to save your favourite Banarasi picks in one place.",
     action: "Login to View Wishlist",
+    actionIcon: "lucide:heart",
     variant: "wishlist",
   },
   "/cart": {
