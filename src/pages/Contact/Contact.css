@@ -39,6 +39,8 @@
   align-content: start;
 }
 
+/* Weights here mirror the Feedback page exactly — the two are built from the same template
+   (kicker, hero h1, info list, divider, submit), so they have to read as one design. */
 .contact-kicker {
   position: relative;
   width: fit-content;
@@ -46,7 +48,7 @@
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -66,15 +68,19 @@
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: clamp(36px, 3.8vw, 53px);
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.04;
+  text-transform: uppercase;
 }
 
+/* No font-family here on purpose: index.css forces Poppins on every non-heading element with
+   !important, so the Georgia serif this used to declare never actually rendered. Matches
+   .feedback-intro, which also inherits. */
 .contact-intro {
   max-width: 300px;
   margin: 0 auto;
   color: #2e2119;
-  font-family: Georgia, "Times New Roman", serif;
   font-size: 16px;
   line-height: 1.45;
 }
@@ -122,7 +128,7 @@
   margin: 0 0 4px;
   color: #351b13;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -145,7 +151,7 @@
 
 .contact-info-list a {
   color: #5b0710;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -361,7 +367,7 @@
 .contact-help-card h2 {
   color: #5b0710;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .contact-help-card p {
@@ -381,7 +387,7 @@
   border: 1px solid rgba(18, 140, 74, 0.28);
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
@@ -390,29 +396,6 @@
   background: #0f7f43;
   box-shadow: 0 12px 22px rgba(18, 140, 74, 0.2);
   transform: translateY(-1px);
-}
-
-/* Typography aligned with the home page */
-.contact-page,
-.contact-page :where(p, span, a, button, input, textarea, small, label) {
-  font-family: "Poppins", sans-serif !important;
-}
-
-.contact-page :where(p, input, textarea) {
-  font-weight: 400 !important;
-}
-
-.contact-page :where(span, a, button, small, label) {
-  font-weight: 500 !important;
-}
-
-.contact-page :where(.contact-info-list h2, .contact-submit, .contact-login-link) {
-  font-weight: 600 !important;
-}
-
-.contact-page :where(h1, .contact-kicker) {
-  font-family: "Cinzel", Georgia, "Times New Roman", serif !important;
-  font-weight: 800 !important;
 }
 
 @media (max-width: 1100px) {

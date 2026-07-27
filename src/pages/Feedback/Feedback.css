@@ -68,10 +68,10 @@
   margin: 0 auto 14px;
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(36px, 3.8vw, 53px);
+  font-size: clamp(28px, 2.8vw, 40px);
   font-weight: 600;
   letter-spacing: 0.02em;
-  line-height: 1.04;
+  line-height: 1.08;
   text-transform: uppercase;
 }
 
