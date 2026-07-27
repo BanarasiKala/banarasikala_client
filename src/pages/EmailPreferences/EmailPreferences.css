@@ -1,0 +1,196 @@
+.bk-prefs-page {
+  display: flex;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 46px 18px 64px;
+  font-family: "Poppins", sans-serif;
+  color: #2d1b0e;
+}
+
+.bk-prefs-card {
+  width: min(560px, 100%);
+  padding: 30px 28px 26px;
+  background: rgba(255, 252, 246, 0.9);
+  border: 1px solid rgba(176, 122, 43, 0.24);
+  border-radius: 16px;
+  box-shadow: 0 18px 42px rgba(73, 33, 17, 0.08);
+}
+
+.bk-prefs-eyebrow {
+  margin: 0 0 8px;
+  color: #8a4c22;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.bk-prefs-card h1 {
+  margin: 0 0 18px;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.bk-prefs-note,
+.bk-prefs-email {
+  margin: 0 0 14px;
+  color: #4a382c;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.bk-prefs-email strong {
+  color: #5a160f;
+  overflow-wrap: anywhere;
+}
+
+.bk-prefs-list {
+  margin: 18px 0 22px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.bk-prefs-list li {
+  border: 1px solid rgba(176, 122, 43, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 250, 242, 0.8);
+  transition: border-color 0.16s ease;
+}
+
+.bk-prefs-list li:hover {
+  border-color: rgba(176, 122, 43, 0.42);
+}
+
+.bk-prefs-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  cursor: pointer;
+}
+
+.bk-prefs-list input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: #800020;
+  cursor: pointer;
+}
+
+.bk-prefs-list strong {
+  display: block;
+  color: #3a241b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bk-prefs-list small {
+  display: block;
+  margin-top: 3px;
+  color: #6a5344;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.bk-prefs-list a {
+  color: #800020;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bk-prefs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.bk-prefs-save,
+.bk-prefs-all {
+  padding: 11px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: filter 0.16s ease, background 0.16s ease;
+}
+
+.bk-prefs-save {
+  border: 0;
+  background: linear-gradient(135deg, #800020, #4b060d);
+  color: #f5cf72;
+}
+
+.bk-prefs-save:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* Deliberately quieter than Save. Unsubscribing from everything is the destructive option,
+   so it should not be the one the eye lands on first. */
+.bk-prefs-all {
+  border: 1px solid rgba(128, 0, 32, 0.28);
+  background: transparent;
+  color: #800020;
+}
+
+.bk-prefs-all:hover:not(:disabled) {
+  background: rgba(128, 0, 32, 0.06);
+}
+
+.bk-prefs-save:disabled,
+.bk-prefs-all:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bk-prefs-saved {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: rgba(8, 122, 85, 0.09);
+  color: #076046;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bk-prefs-saved svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.bk-prefs-foot {
+  margin: 24px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(176, 122, 43, 0.2);
+  color: #6a5344;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.bk-prefs-foot a,
+.bk-prefs-home {
+  color: #800020;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bk-prefs-home {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+}

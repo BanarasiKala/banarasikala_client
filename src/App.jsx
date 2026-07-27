@@ -47,6 +47,7 @@ const Disclaimer = lazy(() => import("./pages/Policy/Disclaimer"));
 const SizeGuide = lazy(() => import("./pages/Policy/SizeGuide"));
 const CareInstructions = lazy(() => import("./pages/Policy/CareInstructions"));
 const Faqs = lazy(() => import("./pages/Policy/Faqs"));
+const EmailPreferences = lazy(() => import("./pages/EmailPreferences/EmailPreferences"));
 
 
 
@@ -166,6 +167,9 @@ function App() {
                       <Route path="/size-guide" element={<SizeGuide />} />
                       <Route path="/care-instructions" element={<CareInstructions />} />
                       <Route path="/faqs" element={<Faqs />} />
+                      {/* Landing page for the unsubscribe link in marketing emails. Public —
+                          it is opened from an email client, with no session. */}
+                      <Route path="/email-preferences" element={<EmailPreferences />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPassword />} />

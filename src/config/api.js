@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
   createReturn: `${API_BASE_URL}/api/shiprocket/create-return`,
   contactSubmit: `${API_BASE_URL}/api/contact/submit`,
   newsletterSubscribe: `${API_BASE_URL}/api/newsletter/subscribe`,
+  emailPreferences: `${API_BASE_URL}/api/email-preferences`,
   chatbotMessage: `${API_BASE_URL}/api/chatbot/message`,
   razorpay: {
     createOrder: `${API_BASE_URL}/api/razorpay/create-order`,
