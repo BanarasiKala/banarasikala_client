@@ -4872,13 +4872,6 @@
   background: rgba(255, 253, 248, 0.72);
   scroll-snap-align: start;
 }
-.product-offer-card > svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
-  color: #c9880a;
-}
 .product-offer-card-body {
   display: flex;
   flex-direction: column;

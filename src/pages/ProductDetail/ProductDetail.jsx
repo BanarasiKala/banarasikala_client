@@ -2296,7 +2296,6 @@ const ProductDetail = () => {
                 <div className="product-offers-list">
                   {pageCoupons.map((coupon) => (
                     <div key={coupon.id || coupon.code} className="product-offer-card">
-                      <Icon icon={coupon.discount_type === "free_shipping" ? "lucide:truck" : coupon.discount_type === "wallet" ? "lucide:wallet" : "lucide:percent"} />
                       <div className="product-offer-card-body">
                         <strong>{coupon.description || coupon.name || coupon.title}</strong>
                         {coupon.code && <span>Code: <em>{coupon.code}</em></span>}
