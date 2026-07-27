@@ -1118,6 +1118,88 @@
   color: #800020;
 }
 
+/* ── Gift wrap row: (i) reveals the message written at checkout ──
+   Mirrors .ckw-gift-info / .ckw-gift-tip on the checkout wizard, so the gift tooltip looks
+   and behaves the same on both sides of the purchase. */
+.oc-gift-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.oc-gift-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #800020;
+  cursor: help;
+  line-height: 0;
+}
+
+.oc-gift-info svg {
+  width: 13px;
+  height: 13px;
+}
+
+.oc-gift-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 232px;
+  max-width: 72vw;
+  padding: 9px 11px;
+  background: #46130d;
+  color: #fff3e0;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(46, 19, 13, 0.3);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: left;
+  /* The customer's own words — keep their line breaks, and never let one long unbroken
+     string stretch the bubble past its max-width. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.oc-gift-tip em {
+  display: block;
+  margin-bottom: 3px;
+  color: #f0c46a;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oc-gift-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #46130d;
+}
+
+.oc-gift-info:hover .oc-gift-tip,
+.oc-gift-info:focus-visible .oc-gift-tip,
+.oc-gift-info.is-open .oc-gift-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
 .payment-tags span {
   color: #800020;
   font-size: 13px;

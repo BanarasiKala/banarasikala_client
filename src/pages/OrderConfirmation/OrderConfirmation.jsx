@@ -878,6 +878,9 @@ export default function OrderConfirmation() {
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, item: null });
   const [trackModalOpen, setTrackModalOpen] = useState(false);
+  // Gift message sits behind the (i) on the Gift wrap row — a surprise for the recipient
+  // does not belong permanently open in the price summary.
+  const [giftMessageOpen, setGiftMessageOpen] = useState(false);
   // "Track your order" on the thank-you hero opens the full order details
   // (timeline, items, cancel/return/exchange, refund, address) in a modal instead
   // of it sitting inline on the page.
@@ -983,6 +986,9 @@ export default function OrderConfirmation() {
   const rtoGatewayRefund = rtoRefund
     ? toNumber(rtoRefund.gateway_refund)
     : Math.max(0, rtoRefundableBase - rtoPlatformFee - rtoGiftCharge - rtoForwardRtoCharges);
+  // The message the customer wrote at checkout. Empty submissions are stored as null, so a
+  // gift order does not necessarily carry one.
+  const giftMessage = String(order?.gift_message || "").trim();
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
@@ -2019,7 +2025,33 @@ export default function OrderConfirmation() {
                 ) : formatPrice(0)}
               </strong>
             </div>
-            {breakdown.giftCharge > 0 && <div className="summary-row"><span>Gift wrap &amp; message</span><strong>{formatPrice(breakdown.giftCharge)}</strong></div>}
+            {breakdown.giftCharge > 0 && (
+              <div className="summary-row">
+                <span className="oc-gift-label">
+                  Gift wrap &amp; message
+                  {/* Only offered when a message was actually written — the gift charge can be
+                      paid for the wrapping alone, and an (i) that opens nothing is worse than
+                      no (i). Hover reveals it; the click toggle is what makes it work on touch,
+                      matching the gift tooltip on the checkout wizard. */}
+                  {giftMessage && (
+                    <button
+                      type="button"
+                      className={`oc-gift-info${giftMessageOpen ? " is-open" : ""}`}
+                      onClick={() => setGiftMessageOpen((open) => !open)}
+                      aria-expanded={giftMessageOpen}
+                      aria-label="View gift message"
+                    >
+                      <Icon icon="lucide:info" aria-hidden="true" />
+                      <span className="oc-gift-tip" role="tooltip">
+                        <em>Your gift message</em>
+                        {giftMessage}
+                      </span>
+                    </button>
+                  )}
+                </span>
+                <strong>{formatPrice(breakdown.giftCharge)}</strong>
+              </div>
+            )}
             {breakdown.paymentDiscount > 0 && <div className="summary-row is-saving"><span>Payment discount</span><strong>-{formatPrice(breakdown.paymentDiscount)}</strong></div>}
             {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
