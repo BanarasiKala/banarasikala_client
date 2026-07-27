@@ -28,9 +28,10 @@
 .bk-prefs-card h1 {
   margin: 0 0 18px;
   color: #5a160f;
-  font-family: "Cinzel", Georgia, serif;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: clamp(22px, 4vw, 30px);
   font-weight: 900;
+  letter-spacing: 0.02em;
   line-height: 1.15;
   text-transform: uppercase;
 }

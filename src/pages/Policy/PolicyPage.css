@@ -35,12 +35,15 @@
   text-transform: uppercase;
 }
 
+/* Cinzel uppercase at 900 over the same clamp the home sections use — the storefront's
+   section-title convention, so a policy page reads as part of the same site. */
 .bk-policy-hero h1 {
   margin: 0;
   color: #5a160f;
-  font-family: "Cinzel", Georgia, serif;
-  font-size: clamp(26px, 4vw, 42px);
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 3vw, 42px);
   font-weight: 900;
+  letter-spacing: 0.02em;
   line-height: 1.12;
   text-transform: uppercase;
 }
@@ -147,8 +150,8 @@
   gap: 11px;
   margin: 0 0 14px;
   color: #5a160f;
-  font-family: "Cinzel", Georgia, serif;
-  font-size: 17px;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1.3;
