@@ -512,7 +512,6 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
                   role="menuitem"
                   onClick={() => { setMenuOpen(false); openOrderDetail(); }}
                 >
-                  <Icon icon="lucide:receipt-text" />
                   <span>View Order Detail</span>
                 </button>
 
@@ -523,7 +522,6 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
                     role="menuitem"
                     onClick={() => { setMenuOpen(false); setTrackOpen(true); }}
                   >
-                    <Icon icon="lucide:truck" />
                     <span>Track Order</span>
                   </button>
                 )}
@@ -539,10 +537,8 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
                     onClick={async () => { await downloadInvoice(); setMenuOpen(false); }}
                     disabled={invoiceLoading}
                   >
-                    <Icon
-                      icon={invoiceLoading ? "lucide:loader" : "lucide:download"}
-                      className={invoiceLoading ? "is-spinning" : ""}
-                    />
+                    {/* No spinner icon here any more, so the label carries the whole progress
+                        signal — that is why it still swaps to "Preparing…" while the PDF builds. */}
                     <span>{invoiceLoading ? "Preparing…" : "Download Invoice"}</span>
                   </button>
                 )}
@@ -555,7 +551,6 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
                   role="menuitem"
                   onClick={() => { setMenuOpen(false); onContact(order); }}
                 >
-                  <Icon icon="lucide:messages-square" />
                   <span>Chat with support</span>
                 </button>
               </div>
