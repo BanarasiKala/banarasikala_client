@@ -15,10 +15,12 @@
   height: 84px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #7b2f19 0%, #3d150d 100%);
+  background: linear-gradient(135deg, #800020 0%, #4b070d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px 8px 10px 10px;
-  box-shadow: 0 18px 30px rgba(128, 0, 32, 0.16);
+  box-shadow: 0 12px 24px rgba(80, 0, 20, 0.18);
   transform: rotate(-4deg);
+  filter: none;
 }
 
 .bk-empty-handle {
@@ -69,9 +71,10 @@
   left: 50%;
   bottom: 12px;
   width: 72px;
-  height: 10px;
-  background: radial-gradient(ellipse, rgba(53, 23, 15, 0.13), transparent 70%);
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(53, 23, 15, 0.2), transparent 72%);
   transform: translateX(-50%);
+  opacity: 1;
 }
 
 .bk-empty-illustration-wishlist .bk-empty-bag {
@@ -79,7 +82,7 @@
 }
 
 .bk-empty-illustration-cart .bk-empty-bag {
-  background: linear-gradient(145deg, #7b2f19 0%, #3d150d 100%);
+  background: linear-gradient(135deg, #800020 0%, #4b070d 100%);
 }
 
 .bk-empty-illustration-contact .bk-empty-bag {
@@ -90,7 +93,7 @@
    Login to Continue button — a cream glyph read as a separate element sitting on the bag
    rather than part of it. */
 .bk-empty-illustration-feedback .bk-empty-bag {
-  background: linear-gradient(145deg, #a0002b 0%, #640016 100%);
+  background: linear-gradient(135deg, #800020 0%, #4b070d 100%);
   color: #f5cf72;
 }
 

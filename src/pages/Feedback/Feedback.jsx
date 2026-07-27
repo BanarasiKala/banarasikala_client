@@ -180,11 +180,12 @@ const Feedback = () => {
             </>
           ) : (
             <section className="feedback-login-prompt">
-              <EmptyStateIcon variant="feedback" />
+              <EmptyStateIcon variant="cart" />
               <h2>Login to Share Your Experience</h2>
               <p>Sign in to leave a review and help others discover the best of Banarasi Kala.</p>
               <Link to="/login?redirect=/feedback" className="feedback-login-link">
-                Login to Continue <Icon icon="lucide:arrow-right" />
+                <Icon icon="lucide:shopping-bag" />
+                Login to Continue
               </Link>
             </section>
           )}
