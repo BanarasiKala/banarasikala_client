@@ -6,6 +6,13 @@ import { scrollPositions, persistScrollPositions as persist } from "../utils/scr
 // to exactly where they were, while forward navigation (product click, nav links)
 // still starts at the top. The shared store lives in utils/scrollRestore so that
 // deferred sections (e.g. the home page) can render eagerly during a restore.
+// Routes that must always open at the top, even on back/forward. Restoring a scroll offset
+// makes sense for a product grid you were browsing; on a form it drops you into the middle of
+// it with the heading — and often the error banner — off screen. The auth page is worse still,
+// because Login and Create Account are tabs of ONE route: returning to it restores the offset
+// from whichever tab you were last on and applies it to whichever tab now renders.
+const ALWAYS_TOP_PATHS = new Set(["/login", "/reset-password", "/verify-email"]);
+
 const ScrollToTop = () => {
   const { pathname, search, hash, key, state } = useLocation();
   const navType = useNavigationType(); // "POP" (back/forward) | "PUSH" | "REPLACE"
@@ -41,7 +48,12 @@ const ScrollToTop = () => {
 
     if (hash) return undefined; // let in-page anchor scrolling work
 
-    const saved = navType === "POP" ? scrollPositions.get(key) : undefined;
+    // An always-top route takes the branch below even on POP — and, just as importantly,
+    // skips the restore branch's ResizeObserver, which re-asserts the saved offset for up to
+    // four seconds and would otherwise undo the page's own scroll-to-top as its layout settles.
+    const saved = navType === "POP" && !ALWAYS_TOP_PATHS.has(pathname)
+      ? scrollPositions.get(key)
+      : undefined;
 
     // Forward navigation (or an entry we never recorded): start at the top.
     if (saved == null) {

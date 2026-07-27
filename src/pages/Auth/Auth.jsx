@@ -222,6 +222,13 @@ const Auth = () => {
   const pageRef = useRef(null);
   const activeOtpDigitCount = EMAIL_OTP_DIGIT_COUNT;
 
+  // Login and Create Account are tabs of one route, so switching between them is a state
+  // change rather than a navigation — the global ScrollToTop never fires and the new form
+  // would open at whatever offset the previous one was left at.
+  //
+  // `signupStep` is in here too: moving from the signup form to "Check Your Inbox" swaps the
+  // whole panel without changing activeTab, and on a filled-in form that happens well below
+  // the fold, so the confirmation would appear off screen.
   useEffect(() => {
     let rafId = requestAnimationFrame(() => {
       rafId = requestAnimationFrame(() => {
@@ -232,7 +239,7 @@ const Auth = () => {
       });
     });
     return () => cancelAnimationFrame(rafId);
-  }, [activeTab]);
+  }, [activeTab, signupStep]);
 
   useEffect(() => {
     if (!apiError) return;
