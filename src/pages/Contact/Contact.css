@@ -71,7 +71,6 @@
   font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.04;
-  text-transform: uppercase;
 }
 
 /* No font-family here on purpose: index.css forces Poppins on every non-heading element with
