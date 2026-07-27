@@ -71,10 +71,17 @@
 }
 
 /* ── The story card ── */
+/* The card keeps its full width; the ASPECT RATIO is what sets the height. 9/16 made a 384px
+   card ~683px tall, which pushed the rest of the home page off the fold. 4/5 brings it to
+   ~480px at the same width.
+   A taller-than-4:5 story video no longer fills the frame edge to edge — .bk-box-front is
+   object-fit:contain, so it sits centred against the blurred .bk-box-fill behind it. That
+   backdrop exists for exactly this reason: the section mixes videos and images of whatever
+   shape was uploaded. */
 .bk-box-story {
   position: relative;
   width: min(90vw, 384px);
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 4 / 5;
   border-radius: 22px;
   overflow: hidden;
   background: #1a0d07;
