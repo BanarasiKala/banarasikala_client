@@ -46,7 +46,7 @@
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -60,14 +60,19 @@
   background: linear-gradient(180deg, transparent 5px, #b9862a 5px 6px, transparent 6px);
 }
 
+/* Cinzel uppercase with a touch of letter-spacing, matching the site's heading treatment, but
+   at 600 rather than the 900 used on the home sections — at this size a heavier weight made
+   the panel feel top-heavy against the light form beside it. */
 .feedback-info-panel h1 {
   max-width: 360px;
   margin: 0 auto 14px;
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: clamp(36px, 3.8vw, 53px);
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.04;
+  text-transform: uppercase;
 }
 
 .feedback-intro {
@@ -116,7 +121,7 @@
   margin: 0 0 4px;
   color: #351b13;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -334,78 +339,67 @@
   text-align: center;
 }
 
+/* Matches .wishlist-empty on the Wishlist page — same illustration size, same Georgia serif
+   heading, same copy width, same pill button — so the two "you need to sign in" moments read
+   as one pattern.
+   Deliberately WITHOUT Wishlist's white card, border and shadow: there the block sits
+   straight on the page background, so the card gives it a surface. Here it already sits
+   inside .feedback-form-panel within the cream .feedback-shell, so adding a card would box
+   the same content twice. Same content styling, no second surface. */
 .feedback-login-prompt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 28px 24px 42px;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 34px 18px;
   text-align: center;
-  color: #5b2e1a;
 }
 
-.feedback-login-prompt svg {
-  color: #800020;
-  opacity: 0.7;
+.feedback-login-prompt .bk-empty-illustration {
+  margin-bottom: 10px;
+  width: 104px;
+  height: 104px;
 }
 
 .feedback-login-prompt h2 {
-  font-size: 20px;
-  font-weight: 700;
   margin: 0;
+  color: #720019;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(24px, 6vw, 30px);
+  font-weight: 400;
+  line-height: 1.18;
+  text-transform: none;
 }
 
 .feedback-login-prompt p {
-  font-size: 14px;
-  color: #7a5c4a;
-  margin: 0 0 8px;
+  margin: 12px auto 26px;
+  max-width: 420px;
+  color: #6b5143;
 }
 
 .feedback-login-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 10px 22px;
-  background: #4b070d;
-  color: #d2a24a;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(199, 146, 48, 0.28);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #800020, #4b060d);
+  color: #f5cf72;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-align: center;
   text-decoration: none;
-  border-radius: 100px;
-  transition: background 0.18s ease, transform 0.18s ease;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.16s ease, transform 0.14s ease;
 }
 
 .feedback-login-link:hover {
-  background: #4b070d;
+  filter: brightness(1.12);
   transform: translateY(-1px);
-}
-
-/* Typography aligned with the home page */
-.feedback-page,
-.feedback-page :where(p, span, a, button, textarea, small, label) {
-  font-family: "Poppins", sans-serif !important;
-}
-
-.feedback-page :where(p, textarea) {
-  font-weight: 400 !important;
-}
-
-.feedback-page :where(span, a, button, small, label) {
-  font-weight: 500 !important;
-}
-
-.feedback-page :where(.feedback-info-list h2, .feedback-rating p, .feedback-submit, .feedback-login-link) {
-  font-weight: 600 !important;
-}
-
-.feedback-page :where(h1, .feedback-kicker) {
-  font-family: "Cinzel", Georgia, "Times New Roman", serif !important;
-  font-weight: 800 !important;
 }
 
 @media (max-width: 1100px) {

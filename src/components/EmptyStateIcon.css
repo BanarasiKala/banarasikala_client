@@ -86,9 +86,16 @@
   background: linear-gradient(145deg, #a0002b 0%, #640016 100%);
 }
 
+/* Gold star on the maroon bag, the same gold-on-maroon pairing this page already uses for the
+   Login to Continue button — a cream glyph read as a separate element sitting on the bag
+   rather than part of it. */
 .bk-empty-illustration-feedback .bk-empty-bag {
   background: linear-gradient(145deg, #a0002b 0%, #640016 100%);
-  color: #fff8ed;
+  color: #f5cf72;
+}
+
+.bk-empty-illustration-feedback .bk-empty-bag svg {
+  fill: currentColor;
 }
 
 .bk-empty-illustration-feedback .bk-empty-handle {

@@ -5,7 +5,9 @@ const variantIcon = {
   cart: "lucide:shopping-bag",
   wishlist: "lucide:heart",
   contact: "lucide:phone-call",
-  feedback: "lucide:message-square-heart",
+  // A star, not a heart — this is what "review" actually means on the Feedback page itself
+  // (a 5-star rating), where message-square-heart read as "love this" rather than "rate this".
+  feedback: "lucide:star",
   orders: "lucide:package-check",
   default: "lucide:sparkles",
 };
