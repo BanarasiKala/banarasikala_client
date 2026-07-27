@@ -345,8 +345,9 @@ const Cart = () => {
           <EmptyStateIcon variant="cart" className="cart-empty-icon" />
           <h3 className="cart-empty-title">Login to view your bag</h3>
           <p className="cart-empty-sub">Sign in to add items and place your order.</p>
-          <Link to="/login" state={{ from: { pathname: "/cart" } }} className="cart-empty-btn">
-            Login / Sign up
+          <Link to="/login" state={{ from: { pathname: "/cart" } }} className="cart-empty-btn cart-empty-btn--bag">
+            <Icon icon="lucide:shopping-bag" />
+            Login to View Bag
           </Link>
         </div>
       </div>

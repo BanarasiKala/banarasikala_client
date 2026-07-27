@@ -1265,6 +1265,32 @@
   box-shadow: 0 8px 20px rgba(128, 0, 32, 0.2);
 }
 
+.cart-empty-btn--bag {
+  min-height: 44px;
+  gap: 9px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #800020, #4b070d);
+  color: #ffe1a2;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  box-shadow: 0 10px 22px rgba(80, 0, 20, 0.12);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.cart-empty-btn--bag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(80, 0, 20, 0.16);
+}
+
+.cart-empty-btn--bag svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (min-width: 480px) {
   .cart-card-image,

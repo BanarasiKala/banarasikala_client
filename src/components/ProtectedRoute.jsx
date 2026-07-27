@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { Icon } from "@iconify/react";
 import { useAuth } from "../context/AuthContext";
 import EmptyStateIcon from "./EmptyStateIcon";
 import "./ProtectedRoute.css";
@@ -14,6 +15,7 @@ const protectedCopy = {
     title: "Your shopping bag is light",
     message: "Login to add selected weaves and continue checkout.",
     action: "Login to View Bag",
+    actionIcon: "lucide:shopping-bag",
     variant: "cart",
   },
   "/contact": {
@@ -79,8 +81,9 @@ const ProtectedRoute = ({ children }) => {
           <Link
             to={`/login?refresh=${encodeURIComponent(location.pathname)}`}
             state={{ from: location }}
-            className="auth-required-action"
+            className={`auth-required-action${copy.actionIcon ? " auth-required-action--bag" : ""}`}
           >
+            {copy.actionIcon && <Icon icon={copy.actionIcon} />}
             {copy.action}
           </Link>
         </section>
