@@ -435,8 +435,12 @@
   transition: filter 0.16s ease, transform 0.14s ease;
 }
 /* Notify Me carries a bell icon, so center the icon + label together as one group. Colours are
-   inverted from Add to Cart — gold fill, maroon text — so it reads as a different action. */
-.bk-notify-btn {
+   inverted from Add to Cart — gold fill, maroon text — matching .product-notify-btn on the
+   product detail page, so it reads as a different action.
+   Qualified with `button` (class + element) to outrank .bk-arrival-atc-btn, which is declared
+   a SECOND time further down this file and would otherwise win on source order and repaint
+   this button as Add to Cart. Same guard as .wishlist-card-actions button.wishlist-notify-btn. */
+button.bk-notify-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
