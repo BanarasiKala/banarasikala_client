@@ -13,6 +13,7 @@ const Faqs = () => (
     <FaqSection
       items={FAQ_ITEMS}
       showViewAll={false}
+      openAll
       headingId="faqs-page-title"
       footer={<DownloadPdfButton label="Download FAQs (PDF)" />}
     />

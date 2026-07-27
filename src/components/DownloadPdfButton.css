@@ -46,7 +46,9 @@
   .bk-signup-gift,
   .bk-back-to-top,
   .bk-route-refresh-veil,
-  .bk-pdf-action {
+  .bk-pdf-action,
+  /* The jump list is a screen affordance — on paper the sections are simply in order. */
+  .bk-policy-toc {
     display: none !important;
   }
 
@@ -76,6 +78,19 @@
     padding: 0 0 18px !important;
     border-bottom: 1px solid #999 !important;
     text-align: left !important;
+  }
+
+  .bk-policy-hero h1::after,
+  .bk-policy-section li::before {
+    background: #666 !important;
+  }
+
+  /* Decorative tints cost toner and add nothing on paper. */
+  .bk-policy-contact,
+  .bk-policy-section h2,
+  .bk-policy-num {
+    background: none !important;
+    color: #1c1108 !important;
   }
 
   .bk-policy-shell,

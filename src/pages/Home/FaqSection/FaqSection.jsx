@@ -14,11 +14,28 @@ const FaqSection = ({
   headingId = "faq-title",
   // Rendered under the grid in place of the "View All" link — /faqs puts its PDF button here.
   footer = null,
+  // /faqs opens every answer up front: someone who came to read the FAQs wants to read them,
+  // not click twenty times. The home page stays an accordion, where the section is a teaser
+  // among many and twenty open answers would swamp the page.
+  openAll = false,
 }) => {
-  const [openIndex, setOpenIndex] = useState(null);
+  const [openIndices, setOpenIndices] = useState(
+    () => new Set(openAll ? items.map((_, index) => index) : []),
+  );
 
+  // Still individually collapsible either way — only the starting state and the "one at a
+  // time" rule differ. On the home page opening one closes the others; on /faqs each is
+  // independent, so closing one you have read does not reopen anything else.
   const toggleItem = (index) => {
-    setOpenIndex((current) => (current === index ? null : index));
+    setOpenIndices((current) => {
+      if (openAll) {
+        const next = new Set(current);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        return next;
+      }
+      return current.has(index) ? new Set() : new Set([index]);
+    });
   };
 
   return (
@@ -27,7 +44,7 @@ const FaqSection = ({
         <h2 id={headingId}>Frequently Asked Questions</h2>
         <div className="bk-faq-grid">
           {items.map(({ question, answer }, index) => {
-            const isOpen = openIndex === index;
+            const isOpen = openIndices.has(index);
 
             return (
               <div className={`bk-faq-item ${isOpen ? "is-open" : ""}`} key={question}>
