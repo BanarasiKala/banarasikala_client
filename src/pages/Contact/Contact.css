@@ -46,7 +46,7 @@
   width: fit-content;
   margin: 0 auto 16px;
   color: #5b0710;
-  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-family: "Poppins", serif;
   font-size: 16px;
   font-weight: 600;
   line-height: 1;
@@ -66,9 +66,9 @@
   max-width: 330px;
   margin: 0 auto 14px;
   color: #5b0710;
-  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-family: "Poppins", serif;
   font-size: clamp(20px, 3.8vw, 53px);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.04;
   text-transform: uppercase;
