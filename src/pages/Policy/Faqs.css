@@ -1,47 +1,43 @@
-/* On the home page this section is one band among many and its own padding is enough. Standing
-   alone as a page it needs to fill the viewport, so the footer does not ride up under a short
-   list, and it needs more room above and below the grid. */
-.bk-faqs-page {
-  display: flex;
-  min-height: 70vh;
+/* Question-and-answer pairs inside a policy section. Rides entirely on PolicyPage.css for the
+   hero, shell, section headings and contact block — only the Q&A pair itself is styled here,
+   so the FAQs read as one of the policy pages rather than a different kind of page. */
+.bk-faq-qa-list {
+  display: grid;
+  gap: 18px;
 }
 
-.bk-faqs-page .bk-faq-section {
-  display: flex;
-  align-items: flex-start;
-  width: 100%;
+.bk-faq-qa {
+  padding-left: 15px;
+  border-left: 2px solid rgba(199, 146, 48, 0.42);
 }
 
-.bk-faqs-page .bk-faq-shell {
-  padding-block: 46px 56px;
+.bk-faq-qa h3 {
+  margin: 0 0 6px;
+  color: #5a160f;
+  font-family: "Poppins", sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
-.bk-faqs-page .bk-faq-shell h2 {
-  margin-bottom: 26px;
-  font-size: 24px;
+.bk-faq-qa p {
+  margin: 0;
+  color: #3f2c22;
+  font-size: 14.5px;
+  line-height: 1.85;
 }
 
-/* The shared button is styled for the cream policy pages; on this maroon band it needs the
-   section's own gold-on-maroon treatment instead. */
-.bk-faqs-page .bk-pdf-button {
-  border-color: rgba(212, 175, 55, 0.45);
-  background: rgba(255, 246, 232, 0.08);
-  color: #d4af37;
-}
-
-.bk-faqs-page .bk-pdf-button:hover {
-  background: rgba(255, 246, 232, 0.16);
-  border-color: rgba(212, 175, 55, 0.8);
-  color: #fff3d2;
-}
-
-@media (max-width: 768px) {
-  .bk-faqs-page .bk-faq-shell {
-    padding-block: 32px 40px;
+@media (max-width: 640px) {
+  .bk-faq-qa-list {
+    gap: 16px;
   }
 
-  .bk-faqs-page .bk-faq-shell h2 {
-    margin-bottom: 20px;
-    font-size: 19px;
+  .bk-faq-qa {
+    padding-left: 12px;
+  }
+
+  .bk-faq-qa h3,
+  .bk-faq-qa p {
+    font-size: 14px;
   }
 }

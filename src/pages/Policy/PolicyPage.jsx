@@ -20,33 +20,13 @@ const PolicyPage = ({ title, subtitle, sections, downloadable = false }) => (
     </header>
 
     <div className="bk-policy-shell">
-      {/* A policy is read to answer one question, not front to back. Anything past a few
-          sections gets a jump list so the reader can go straight to the part they came for. */}
-      {sections.length > 3 && (
-        <nav className="bk-policy-toc" aria-label="On this page">
-          <p className="bk-policy-toc-title">On this page</p>
-          <ol>
-            {sections.map((section) => (
-              <li key={section.heading}>
-                <a href={`#${slugify(section.heading)}`}>{section.heading}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-
-      {sections.map((section, sectionIndex) => (
+      {sections.map((section) => (
         <section
           key={section.heading}
           id={slugify(section.heading)}
           className="bk-policy-section"
         >
-          <h2>
-            <span className="bk-policy-num" aria-hidden="true">
-              {String(sectionIndex + 1).padStart(2, "0")}
-            </span>
-            {section.heading}
-          </h2>
+          <h2>{section.heading}</h2>
           {section.body.map((block, i) =>
             Array.isArray(block) ? (
               <ul key={i}>

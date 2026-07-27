@@ -64,12 +64,10 @@
     background: #fff !important;
   }
 
-  /* Ink, not screen: the decorative hero background and the FAQ section's maroon band both
-     print as heavy flat colour. Reset them to plain text on white. */
+  /* Ink, not screen: the hero's tinted texture prints as heavy flat colour. Plain text on
+     white instead. */
   .bk-policy-page,
-  .bk-policy-hero,
-  .bk-faq-section,
-  .bk-faqs-page {
+  .bk-policy-hero {
     background: #fff !important;
     color: #1c1108 !important;
   }
@@ -87,51 +85,31 @@
 
   /* Decorative tints cost toner and add nothing on paper. */
   .bk-policy-contact,
-  .bk-policy-section h2,
-  .bk-policy-num {
+  .bk-policy-section h2 {
     background: none !important;
     color: #1c1108 !important;
   }
 
-  .bk-policy-shell,
-  .bk-faq-shell {
+  .bk-policy-shell {
     max-width: none !important;
     width: auto !important;
     padding: 0 !important;
   }
 
-  /* Every answer prints, whether or not the reader had expanded it on screen. */
-  .bk-faq-answer {
-    display: block !important;
-    color: #1c1108 !important;
-    font-weight: 400 !important;
-  }
-
-  .bk-faq-question,
-  .bk-faq-shell h2 {
+  /* The FAQ page is a policy page now — its questions are plain text, already visible, and
+     need only the same ink treatment as everything else. */
+  .bk-faq-qa h3,
+  .bk-faq-qa p {
     color: #1c1108 !important;
   }
 
-  .bk-faq-question svg,
-  .bk-faq-view-all {
-    display: none !important;
-  }
-
-  .bk-faq-item {
-    background: none !important;
-    border: 0 !important;
-    border-bottom: 1px solid #ccc !important;
-    box-shadow: none !important;
-  }
-
-  .bk-faq-grid {
-    display: block !important;
+  .bk-faq-qa {
+    border-left-color: #999 !important;
   }
 
   /* Keep a question with its answer, and never split a section across a page break. */
   .bk-policy-section,
-  .bk-faq-item,
-  .bk-faqs-group {
+  .bk-faq-qa {
     break-inside: avoid;
     page-break-inside: avoid;
   }

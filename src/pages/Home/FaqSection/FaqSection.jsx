@@ -4,38 +4,22 @@ import { FAQ_ITEMS, HOME_FAQ_COUNT } from "../../../data/faqs";
 import "./FaqSection.css";
 
 /**
- * The FAQ accordion. Shared by the home page, which shows a taster and links onward, and
- * /faqs, which passes the full list with no link — so the two are the same component rather
- * than one styled to imitate the other.
+ * The home page's FAQ accordion — a taster of the first few questions on the maroon band,
+ * linking onward to /faqs for the rest.
+ *
+ * /faqs is deliberately NOT this component: there the questions are laid out as a policy
+ * page, every answer already visible. Here the section is one band among many, and a stack
+ * of open answers would swamp the page — so one opens at a time.
  */
 const FaqSection = ({
   items = FAQ_ITEMS.slice(0, HOME_FAQ_COUNT),
   showViewAll = true,
   headingId = "faq-title",
-  // Rendered under the grid in place of the "View All" link — /faqs puts its PDF button here.
-  footer = null,
-  // /faqs opens every answer up front: someone who came to read the FAQs wants to read them,
-  // not click twenty times. The home page stays an accordion, where the section is a teaser
-  // among many and twenty open answers would swamp the page.
-  openAll = false,
 }) => {
-  const [openIndices, setOpenIndices] = useState(
-    () => new Set(openAll ? items.map((_, index) => index) : []),
-  );
+  const [openIndices, setOpenIndices] = useState(() => new Set());
 
-  // Still individually collapsible either way — only the starting state and the "one at a
-  // time" rule differ. On the home page opening one closes the others; on /faqs each is
-  // independent, so closing one you have read does not reopen anything else.
   const toggleItem = (index) => {
-    setOpenIndices((current) => {
-      if (openAll) {
-        const next = new Set(current);
-        if (next.has(index)) next.delete(index);
-        else next.add(index);
-        return next;
-      }
-      return current.has(index) ? new Set() : new Set([index]);
-    });
+    setOpenIndices((current) => (current.has(index) ? new Set() : new Set([index])));
   };
 
   return (
@@ -75,8 +59,6 @@ const FaqSection = ({
             );
           })}
         </div>
-
-        {footer}
 
         {showViewAll && (
           <div className="bk-faq-footer">
