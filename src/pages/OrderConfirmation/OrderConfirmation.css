@@ -39,12 +39,19 @@
   position: relative;
 }
 
-/* …except the Track Order sheet, which is rendered here as a direct child but must stay a
-   FIXED overlay. The rule above and `.track-modal-overlay { position: fixed }` have equal
-   specificity, so whichever loads last wins — and the modal's own CSS loads first, so it lost
-   and the sheet fell into page flow, buried behind the order-details sheet ("opening in the
-   background"). A two-class selector outranks `> *` regardless of load order, so fixed sticks. */
-.order-confirmation-page > .track-modal-overlay {
+/* …except the overlays, which are rendered here as direct children but must stay FIXED.
+   The rule above is (0,1,0) and so is each overlay's own `position: fixed`, so whichever
+   stylesheet loads last wins — and both of these live in a component stylesheet that Vite
+   emits BEFORE this one, so they lost and dropped into page flow. For the invoice that
+   meant a tall dark block below the fold while the viewer's `body { overflow: hidden }`
+   held the page at the top, so clicking Download Invoice appeared to do nothing at all.
+   A two-class selector outranks `> *` whatever the load order.
+
+   Only overlays that are real children need a line here. The ones declared further down
+   THIS file (.oc-details-overlay, .cancel-modal-overlay) already win on source order, and
+   the support sheet portals to <body> so it never meets this rule at all. */
+.order-confirmation-page > .track-modal-overlay,
+.order-confirmation-page > .invoice-overlay {
   position: fixed;
 }
 
@@ -2607,7 +2614,6 @@
 
 .confirmation-item p,
 .confirmation-item span,
-.summary-row,
 .payment-tags span {
   font-size: 9px;
 }
@@ -2619,8 +2625,14 @@
   font-weight: 400;
 }
 
+/* Product total, Platform fee, Delivery charge, COD charge and the rest of the breakdown.
+   These shared the item rows' 9px, which is a caption size — too small for figures the
+   customer is actually checking their money against. 12px sits them just under the total
+   row below (13px label / 14px amount), so the summary still climbs to the total rather
+   than reading as one flat block. The MRP strike and "Free" inherit, so they scale too. */
 .summary-row {
   padding: 8px 0;
+  font-size: 12px;
 }
 
 .summary-strike {
@@ -3585,8 +3597,9 @@ span.oc-item-attr-value {
   padding: 4px;
 }
 
+/* 3px cleared 9px text; at 12px the rows would sit on their separators. */
 .summary-row {
-  padding: 3px 0;
+  padding: 5px 0;
 }
 
 .summary-row.is-final {
