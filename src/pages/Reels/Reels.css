@@ -472,12 +472,15 @@
   flex: 0 0 auto;
 }
 .bk-reel-comment-body { min-width: 0; flex: 1; }
+/* 500, not bold, and a shade smaller than the comment itself: in a thread the name is
+   the label and the comment is the content, so the name should not be the heaviest
+   thing on the row. Matches .bk-reel-title, which is the other 500 on this page. */
 .bk-reel-comment-author {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 500;
   color: #333;
 }
 .bk-reel-comment-text { font-size: 13px; color: #444; line-height: 1.4; }
@@ -485,13 +488,15 @@
 /* Age and the "You" tag ride alongside the name at a lower weight — they answer
    "when" and "is this mine", which are glance questions, not reading ones. */
 .bk-reel-comment-time { color: #9b9b9b; font-size: 11px; font-weight: 500; }
+/* Follows the name down to 600 — at 700 the badge would outweigh the name it sits
+   beside, which is backwards. Its tint already does the work of standing out. */
 .bk-reel-comment-you {
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(128, 0, 32, 0.08);
   color: var(--bk-reel-accent);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ── Threads ──────────────────────────────────────────────────────────────
@@ -535,7 +540,7 @@
   color: #7a7a7a;
   font-family: inherit;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 .bk-reel-thread-toggle i {
