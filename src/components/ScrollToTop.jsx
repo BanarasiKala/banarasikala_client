@@ -56,14 +56,54 @@ const ScrollToTop = () => {
       : undefined;
 
     // Forward navigation (or an entry we never recorded): start at the top.
+    //
+    // Asserted repeatedly over the next few frames rather than once, because a single
+    // call here is silently lost in a common case:
+    //
+    //   window.scrollTo() DOES NOTHING while the body is scroll-locked, and ~27 places
+    //   set `document.body.style.overflow = "hidden"` — the mobile menu, the filter and
+    //   bottom sheets, the lightbox, the invoice viewer. Every one of them releases the
+    //   lock in a PASSIVE effect cleanup, and React runs those AFTER this layout effect
+    //   and after the paint. Releasing a lock hands back the offset the browser was
+    //   holding, so the new page settled part-way down the screen — leaving a link
+    //   tapped from an open sheet opening halfway down the page it went to.
+    //
+    // Re-asserting lands after the lock has gone. It also catches the page growing as
+    // late content arrives. It stops the moment it has taken effect, so in the ordinary
+    // case (nothing locked) this costs one extra check on the next frame.
     if (saved == null) {
       suppressRef.current = true;
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       persist();
-      const id = requestAnimationFrame(() => {
+
+      let frames = 0;
+      let rafId = 0;
+      const toTop = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        // Give up once it has held, or after a short budget — long enough to outlast the
+        // passive cleanups and a re-layout, short enough never to fight a real scroll.
+        if ((window.scrollY === 0 && frames > 0) || frames >= 6) {
+          suppressRef.current = false;
+          return;
+        }
+        frames += 1;
+        rafId = requestAnimationFrame(toTop);
+      };
+      toTop();
+
+      // A deliberate scroll during those few frames means the reader has taken over.
+      const release = () => {
+        cancelAnimationFrame(rafId);
         suppressRef.current = false;
-      });
-      return () => cancelAnimationFrame(id);
+      };
+      window.addEventListener("wheel", release, { passive: true, once: true });
+      window.addEventListener("touchmove", release, { passive: true, once: true });
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        window.removeEventListener("wheel", release);
+        window.removeEventListener("touchmove", release);
+        suppressRef.current = false;
+      };
     }
 
     // Back/forward: restore the remembered position.
