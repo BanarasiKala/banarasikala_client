@@ -30,18 +30,28 @@
   color: #8a4c22;
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
+/* Sized and weighted to match .bk-why-heading h2 (WhyChooseUs.css) — the two sit next to
+   each other on the home page, and this one was running to 42px against that one's 18px,
+   which made a showcase strip read as the page's main heading. Kept in step below at the
+   same 640px breakpoint Why Choose Us steps at. */
 .bk-royale-heading h2 {
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 3vw, 42px);
-  font-weight: 900;
-  line-height: 0.96;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
   text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .bk-royale-heading h2 {
+    font-size: 15px;
+  }
 }
 
 /* ── Stage: the video is the backdrop, images float in over it ── */
@@ -188,19 +198,28 @@
   color: #fff6e8;
 }
 
+/* The entry title laid over the video. Brought down from clamp(20px, 2.4vw, 32px)/800,
+   which ran larger than the section's own heading above the stage — a caption on one slide
+   outweighing the heading for the whole section. The text-shadow stays and is doing more
+   work now that the weight is lighter: it is the only thing keeping this legible over a
+   moving frame. */
 .bk-royale-copy h3 {
-  margin: 0 0 6px;
+  /* 6px before. The gaps down this block were set for a 32px title; at 15–18px they left
+     the three parts reading as separate things rather than one caption. */
+  margin: 0 0 3px;
   font-family: "Cinzel", Georgia, serif;
-  font-size: clamp(20px, 2.4vw, 32px);
-  font-weight: 800;
-  line-height: 1.08;
+  font-size: clamp(15px, 1.6vw, 18px);
+  font-weight: 600;
+  line-height: 1.2;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
 }
 
 .bk-royale-copy p {
-  margin: 0 0 14px;
+  /* 14px before the button, 1.6 leading. Both eased in so the description sits with the
+     title rather than floating between it and the CTA. */
+  margin: 0 0 8px;
   font-size: clamp(12px, 1.15vw, 14px);
-  line-height: 1.6;
+  line-height: 1.45;
   color: rgba(255, 244, 226, 0.88);
   display: -webkit-box;
   -webkit-line-clamp: 3;
