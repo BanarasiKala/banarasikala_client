@@ -37,10 +37,10 @@
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 2.5vw, 38px);
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: 800;
   letter-spacing: 0.02em;
-  line-height: 1.08;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -230,7 +230,7 @@
   }
 
   .bk-browse-header h2 {
-    font-size: 20px;
+    font-size: 15px;
     letter-spacing: 0.04em;
   }
 

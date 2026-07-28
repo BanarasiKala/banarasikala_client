@@ -52,9 +52,11 @@
   max-width: 260px;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(28px, 3.5vw, 52px);
-  font-weight: 900;
-  line-height: 0.96;
+  /* Matches .bk-why-heading h2 (WhyChooseUs.css) — one type treatment for every home
+     section title. Colour and max-width stay local to this section. */
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -685,7 +687,7 @@ button.bk-notify-btn {
   }
 
   .bk-arrivals-copy h2 {
-    font-size: 26px;
+    font-size: 15px;
   }
 }
 

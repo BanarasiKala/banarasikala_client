@@ -81,9 +81,11 @@
   text-transform: uppercase;
 }
 
+/* Both headings in this file take the shared home-section size — see .bk-why-heading h2
+   (WhyChooseUs.css). The family, weight and leading are already set in the rule above. */
 .bk-story-copy h2 {
   margin-bottom: 18px;
-  font-size: clamp(27px, 2.1vw, 36px);
+  font-size: 18px;
 }
 
 .bk-story-copy p {
@@ -122,7 +124,7 @@
 }
 
 .bk-review-heading h2 {
-  font-size: 21px;
+  font-size: 18px;
 }
 
 .bk-review-row {
@@ -291,7 +293,7 @@
   }
 
   .bk-story-copy h2 {
-    font-size: 20px;
+    font-size: 15px;
   }
 
   .bk-story-copy p {

@@ -37,10 +37,12 @@
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 3vw, 42px);
+  /* Matches .bk-why-heading h2 (WhyChooseUs.css) — one type treatment for every home
+     section title. Colour stays local to this section. */
+  font-size: 18px;
   font-style: normal;
-  font-weight: 900;
-  line-height: 0.96;
+  font-weight: 800;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -259,7 +261,7 @@
   }
 
   .bk-occasion-heading h2 {
-    font-size: 22px;
+    font-size: 15px;
     line-height: 1.08;
   }
 

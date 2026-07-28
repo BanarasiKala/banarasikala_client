@@ -40,13 +40,16 @@
   text-transform: uppercase;
 }
 
+/* Type matches .bk-why-heading h2 (WhyChooseUs.css) — every section title on the home
+   page uses the same family, size, weight and leading so they read as one set. Colour and
+   the shadow stay local: this section sits on a dark maroon band. */
 .bk-motion-heading h2 {
   margin: 0;
   color: #fff3dd;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 3vw, 42px);
-  font-weight: 900;
-  line-height: 0.96;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
   text-transform: uppercase;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
@@ -413,7 +416,7 @@
   }
 
   .bk-motion-heading h2 {
-    font-size: 22px;
+    font-size: 15px;
   }
 
   .bk-motion-all {

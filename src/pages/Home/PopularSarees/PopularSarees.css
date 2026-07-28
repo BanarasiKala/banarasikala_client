@@ -47,9 +47,11 @@
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 2.8vw, 42px);
-  font-weight: 900;
-  line-height: 0.98;
+  /* Matches .bk-why-heading h2 (WhyChooseUs.css) — one type treatment for every home
+     section title. Colour stays local to this section. */
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -677,7 +679,7 @@ button.bk-notify-btn {
   }
 
   .bk-popular-header h2 {
-    font-size: clamp(18px, 5.1vw, 22px);
+    font-size: 15px;
     line-height: 1.05;
   }
 

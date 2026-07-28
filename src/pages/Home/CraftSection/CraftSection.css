@@ -32,21 +32,29 @@
   text-transform: uppercase;
 }
 
+/* Matches .bk-why-heading h2 (WhyChooseUs.css). This one was the outlier twice over —
+   Georgia at 500 rather than Cinzel at 800, and running to 52px — so once every other
+   section title came down to 18px it would have been the only display heading left. */
 .bk-craft-copy h2 {
   margin: 0 0 22px;
   color: #3b1713;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(38px, 3.2vw, 52px);
-  font-weight: 500;
-  line-height: 0.98;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
+/* The second line of the lockup. Kept a step down and italic so the two lines still read
+   as title and sub-title rather than one wrapped sentence. */
 .bk-craft-copy h2 em {
   display: block;
-  margin-top: 9px;
+  margin-top: 6px;
   color: #b47a23;
-  font-size: clamp(31px, 2.5vw, 42px);
+  font-size: 14px;
   font-style: italic;
+  font-weight: 600;
+  text-transform: none;
 }
 
 .bk-craft-copy p {
@@ -191,11 +199,11 @@
   }
 
   .bk-craft-copy h2 {
-    font-size: 29px;
+    font-size: 15px;
   }
 
   .bk-craft-copy h2 em {
-    font-size: 25px;
+    font-size: 12px;
   }
 
   .bk-craft-copy p {
