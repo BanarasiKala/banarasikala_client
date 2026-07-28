@@ -301,6 +301,9 @@ export default function Reels() {
   // Thread roots whose replies are expanded. Collapsed by default so a long argument
   // under one comment cannot bury every other comment on the reel.
   const [openThreads, setOpenThreads] = useState(() => new Set());
+  // The comment awaiting a delete confirmation: { comment, replyCount }. Null = no sheet.
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const commentInputRef = useRef(null);
 
   const baseReels = useRef([]);
@@ -424,6 +427,9 @@ export default function Reels() {
     setOpenReel(null);
     setReplyTo(null);
     setCommentText("");
+    // The dialog renders outside the sheet, so it would outlive it — and confirming
+    // then needs a reel that is no longer open.
+    setPendingDelete(null);
   };
 
   const toggleThread = (rootId) => {
@@ -460,17 +466,20 @@ export default function Reels() {
   /**
    * Remove one of your own comments.
    *
-   * Deleting a thread root takes its replies with it, so the confirmation says how many
-   * are going — the reader cannot see collapsed replies while deciding, and finding out
-   * afterwards is too late. The server reports how many rows actually went, which is what
-   * the reel's counter is corrected by.
+   * Asking happens in `pendingDelete` / the sheet below rather than window.confirm: the
+   * browser dialog is chrome-coloured, drops in at the top of the screen away from the
+   * thumb, and cannot say which comment it means. This one sits over the thread it is
+   * about and quotes it.
+   *
+   * Deleting a thread root takes its replies with it, so the question says how many are
+   * going — the reader cannot see collapsed replies while deciding, and finding out
+   * afterwards is too late.
    */
-  const deleteOwnComment = async (comment, replyCount = 0) => {
+  const confirmDeleteComment = async () => {
+    if (!pendingDelete || deleting) return;
+    const { comment } = pendingDelete;
     const isRoot = !comment.parent_id;
-    const warning = isRoot && replyCount > 0
-      ? `Delete your comment and its ${replyCount} ${replyCount === 1 ? "reply" : "replies"}?`
-      : "Delete this comment?";
-    if (!window.confirm(warning)) return;
+    setDeleting(true);
 
     try {
       const res = await fetch(`${API_ENDPOINTS.reels}/comments/${comment.id}`, {
@@ -507,6 +516,12 @@ export default function Reels() {
       });
     } catch (err) {
       showNotification(err?.message || "Could not delete your comment.", "error");
+    } finally {
+      // Closed either way: on success there is nothing left to ask about, and on failure
+      // the error notification carries the news — leaving the sheet up would read as
+      // though the question were still open.
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
@@ -752,7 +767,7 @@ export default function Reels() {
                         comment={root}
                         isMine={user && String(user.id) === String(root.author_id)}
                         onReply={() => startReply(root, root.author)}
-                        onDelete={() => deleteOwnComment(root, replies.length)}
+                        onDelete={() => setPendingDelete({ comment: root, replyCount: replies.length })}
                       />
 
                       {replies.length > 0 && (
@@ -781,7 +796,7 @@ export default function Reels() {
                               // seeded as "@author" so the answer still reads correctly
                               // once it sits flat beside its siblings.
                               onReply={() => startReply(root, reply.author, { mention: true })}
-                              onDelete={() => deleteOwnComment(reply)}
+                              onDelete={() => setPendingDelete({ comment: reply, replyCount: 0 })}
                             />
                           ))}
                         </div>
@@ -822,6 +837,47 @@ export default function Reels() {
                   <Send size={18} />
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation. Sits above the comment sheet rather than replacing it, so
+          the thread stays visible behind the question being asked about it. */}
+      {pendingDelete && (
+        <div
+          className="bk-reel-confirm-backdrop"
+          onClick={() => !deleting && setPendingDelete(null)}
+          role="presentation"
+        >
+          <div
+            className="bk-reel-confirm"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="bk-reel-confirm-title"
+          >
+            <h4 id="bk-reel-confirm-title">
+              {pendingDelete.comment.parent_id ? "Delete reply?" : "Delete comment?"}
+            </h4>
+
+            {/* Quoting it is what makes this a question about a specific comment rather
+                than a generic "are you sure" the reader has to take on trust. */}
+            <p className="bk-reel-confirm-quote">“{pendingDelete.comment.comment}”</p>
+
+            <p className="bk-reel-confirm-note">
+              {pendingDelete.replyCount > 0
+                ? `This also deletes ${pendingDelete.replyCount} ${pendingDelete.replyCount === 1 ? "reply" : "replies"} to it. This cannot be undone.`
+                : "This cannot be undone."}
+            </p>
+
+            <div className="bk-reel-confirm-actions">
+              <button type="button" className="bk-reel-confirm-cancel" onClick={() => setPendingDelete(null)} disabled={deleting}>
+                Cancel
+              </button>
+              <button type="button" className="bk-reel-confirm-delete" onClick={confirmDeleteComment} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
           </div>
         </div>

@@ -605,6 +605,113 @@
 }
 .bk-reel-comments-input button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── Delete confirmation ──────────────────────────────────────────────────
+   z-index 70 puts it over the comment sheet (60) rather than beside it, so the
+   thread it is asking about is still on screen behind the dialog. Centred, not a
+   bottom sheet — a question that stops the flow should not look like more of the
+   same surface the reader was just scrolling. */
+.bk-reel-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+  animation: bk-reel-confirm-in 0.16s ease-out;
+}
+
+@keyframes bk-reel-confirm-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bk-reel-confirm {
+  width: min(340px, 100%);
+  padding: 22px 20px 16px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.bk-reel-confirm h4 {
+  margin: 0 0 12px;
+  color: #2a1711;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* The comment itself, so the reader can see which one they picked. Clamped: a long
+   comment must not push the buttons off a short screen. */
+.bk-reel-confirm-quote {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0 0 10px;
+  color: #55483f;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.bk-reel-confirm-note {
+  margin: 0 0 18px;
+  color: #8a7d74;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.bk-reel-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bk-reel-confirm-actions button {
+  flex: 1 1 0;
+  min-height: 42px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.bk-reel-confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Cancel is the quiet one but keeps equal width — the reader reaching to back out
+   should not have to aim at a smaller target than the destructive button. */
+.bk-reel-confirm-cancel {
+  border: 1px solid rgba(42, 23, 17, 0.18);
+  background: #fff;
+  color: #55483f;
+}
+
+.bk-reel-confirm-cancel:hover:not(:disabled) {
+  background: #f6f1ec;
+}
+
+.bk-reel-confirm-delete {
+  border: 0;
+  background: #c0392b;
+  color: #fff;
+}
+
+.bk-reel-confirm-delete:hover:not(:disabled) {
+  background: #a93226;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-reel-confirm-backdrop { animation: none; }
+}
+
 /* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .bk-reel-stage { max-width: none; }
