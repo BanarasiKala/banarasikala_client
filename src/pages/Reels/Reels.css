@@ -242,6 +242,14 @@
 }
 /* Text sits higher up where the right-side action rail is, so it needs a gutter;
    the product bar sits at the very bottom (below the rail) and can be full width. */
+/* Hidden: the caption and card are gone and only the Shop pill is left, so the scrim
+   drops to a short fade. At full height it stayed as a dark band across the bottom third
+   of the video — which is exactly the view the reader pressed hide to get. */
+.bk-reel-bottom.is-collapsed {
+  padding: 18px 14px 18px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.45));
+}
+
 .bk-reel-title { font-size: 15px; font-weight: 500; margin-bottom: 10px; padding-right: 62px; }
 .bk-reel-desc {
   font-size: 13px;
@@ -463,14 +471,122 @@
   font-size: 14px;
   flex: 0 0 auto;
 }
-.bk-reel-comment-author { font-size: 12px; font-weight: 700; color: #333; }
+.bk-reel-comment-body { min-width: 0; flex: 1; }
+.bk-reel-comment-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
 .bk-reel-comment-text { font-size: 13px; color: #444; line-height: 1.4; }
+
+/* Age and the "You" tag ride alongside the name at a lower weight — they answer
+   "when" and "is this mine", which are glance questions, not reading ones. */
+.bk-reel-comment-time { color: #9b9b9b; font-size: 11px; font-weight: 500; }
+.bk-reel-comment-you {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(128, 0, 32, 0.08);
+  color: var(--bk-reel-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Threads ──────────────────────────────────────────────────────────────
+   One level deep, like Instagram. Replies are indented under their root and sit a
+   notch smaller; anything deeper is flattened into the same thread by the server,
+   so this is the only nesting the sheet ever has to draw. */
+.bk-reel-thread { padding: 2px 0; }
+
+.bk-reel-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 3px;
+}
+
+.bk-reel-comment-reply {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8a8a8a;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bk-reel-comment-reply:hover { color: var(--bk-reel-accent); }
+/* Same weight as Reply, not a red button: removing your own comment is an ordinary
+   thing to do, and the confirm dialog is where the caution belongs. */
+.bk-reel-comment-reply.is-delete:hover { color: #c0392b; }
+
+/* Collapsed by default: a long argument under one comment must not bury the rest of
+   the reel's conversation. The short rule is the visual thread line. */
+.bk-reel-thread-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 2px 44px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #7a7a7a;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bk-reel-thread-toggle i {
+  width: 24px;
+  height: 1px;
+  background: #d8d8d8;
+}
+.bk-reel-thread-toggle:hover { color: var(--bk-reel-accent); }
+
+.bk-reel-replies { padding-left: 44px; }
+.bk-reel-comment.is-reply { padding: 6px 0; }
+.bk-reel-comment.is-reply .bk-reel-comment-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+.bk-reel-comment.is-reply .bk-reel-comment-text { font-size: 12.5px; }
+
+/* ── Composer ─────────────────────────────────────────────────────────────
+   The reply target is named above the box rather than only in the placeholder, so
+   it survives typing — otherwise the one cue that this is a reply disappears the
+   moment the first character is entered. */
+.bk-reel-comments-compose { border-top: 1px solid #eee; }
+
+.bk-reel-replying {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 16px;
+  background: #faf6f2;
+  color: #6d6d6d;
+  font-size: 11.5px;
+}
+.bk-reel-replying strong { color: var(--bk-reel-accent); font-weight: 700; }
+.bk-reel-replying button {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #8a8a8a;
+  cursor: pointer;
+}
+.bk-reel-replying button:hover { color: var(--bk-reel-accent); }
 
 .bk-reel-comments-input {
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid #eee;
 }
 .bk-reel-comments-input input {
   flex: 1;

@@ -27,6 +27,52 @@ const shuffle = (arr) => {
   return a;
 };
 
+// Comment age, in the compact form every feed uses — "3h", "2d". Exact times don't
+// matter in a conversation; "is this recent" does, and that reads at a glance.
+const timeAgo = (value) => {
+  const then = new Date(value).getTime();
+  if (!Number.isFinite(then)) return "";
+  const seconds = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (seconds < 60) return "now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w`;
+  return `${Math.floor(days / 365) >= 1 ? `${Math.floor(days / 365)}y` : `${Math.floor(days / 30)}mo`}`;
+};
+
+// ─── One comment, in a thread or at its root ─────────────────────────────────
+// Replies are the same row a notch smaller and indented; nothing else changes, because a
+// reply is not a different kind of thing from the comment it answers. Delete only shows
+// on your own — moderation beyond that is the admin's, from the admin panel.
+const CommentRow = ({ comment, isReply = false, isMine = false, onReply, onDelete }) => (
+  <div className={`bk-reel-comment${isReply ? " is-reply" : ""}`}>
+    <div className="bk-reel-comment-avatar">{(comment.author || "?").charAt(0).toUpperCase()}</div>
+    <div className="bk-reel-comment-body">
+      <p className="bk-reel-comment-author">
+        {comment.author}
+        {isMine && <span className="bk-reel-comment-you">You</span>}
+        <span className="bk-reel-comment-time">{timeAgo(comment.created_at)}</span>
+      </p>
+      <p className="bk-reel-comment-text">{comment.comment}</p>
+      <div className="bk-reel-comment-actions">
+        <button type="button" className="bk-reel-comment-reply" onClick={onReply}>
+          Reply
+        </button>
+        {isMine && (
+          <button type="button" className="bk-reel-comment-reply is-delete" onClick={onDelete}>
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 // ─── One product chip (View Product + Add to Cart) ───────────────────────────
 // `full` renders a single-product bar spanning the full width of the reel.
 const ProductChip = ({ product, onView, onAdd, full = false }) => {
@@ -67,6 +113,16 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
+
+  // "Hidden" means the whole bottom overlay is stood down, not just the product card.
+  // Only reachable on a reel that has products, because the Shop pill is the way back.
+  const collapsed = !showProducts && (reel.products || []).length > 0;
+
+  // An expanded description that is hidden and later brought back should return closed —
+  // otherwise the Shop pill restores a wall of text the reader had already dealt with.
+  useEffect(() => {
+    if (collapsed) setDescOpen(false);
+  }, [collapsed]);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -149,9 +205,18 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
             </div>
           </div>
 
-          {/* Caption + products */}
-          <div className="bk-reel-bottom" onClick={(e) => e.stopPropagation()}>
-            {(reel.title || reel.description) && (
+          {/* Caption + products.
+              The hide handle clears the whole overlay, caption included — the point of
+              pressing it is to see the saree, and a title and description left sitting
+              over the video defeat that as much as the card did. Everything comes back
+              with the Shop pill, which is all that stays behind.
+              Guarded on `products.length`: with no products there is no pill to bring
+              them back with, so on those reels the caption always shows. */}
+          <div
+            className={`bk-reel-bottom${collapsed ? " is-collapsed" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {!collapsed && (reel.title || reel.description) && (
               <h3 className="bk-reel-title">
                 {reel.title}
                 {reel.description && (
@@ -161,7 +226,7 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
                 )}
               </h3>
             )}
-            {descOpen && reel.description && <p className="bk-reel-desc">{reel.description}</p>}
+            {!collapsed && descOpen && reel.description && <p className="bk-reel-desc">{reel.description}</p>}
             {products.length > 0 && (showProducts ? (
               <div className="bk-reel-shop">
                 {/* Hide handle, pinned to the card's top-right corner. */}
@@ -224,6 +289,13 @@ export default function Reels() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
+  // The thread the composer is aimed at: { id (thread root), author } — null writes a new
+  // top-level comment. Cleared after posting and whenever the sheet closes.
+  const [replyTo, setReplyTo] = useState(null);
+  // Thread roots whose replies are expanded. Collapsed by default so a long argument
+  // under one comment cannot bury every other comment on the reel.
+  const [openThreads, setOpenThreads] = useState(() => new Set());
+  const commentInputRef = useRef(null);
 
   const baseReels = useRef([]);
   const viewed = useRef(new Set());
@@ -328,6 +400,8 @@ export default function Reels() {
   const openComments = async (reel) => {
     setOpenReel(reel);
     setComments([]);
+    setReplyTo(null);
+    setOpenThreads(new Set());
     setCommentsLoading(true);
     try {
       const res = await fetch(`${API_ENDPOINTS.reels}/${reel.id}/comments`);
@@ -340,23 +414,137 @@ export default function Reels() {
     }
   };
 
+  const closeComments = () => {
+    setOpenReel(null);
+    setReplyTo(null);
+    setCommentText("");
+  };
+
+  const toggleThread = (rootId) => {
+    setOpenThreads((current) => {
+      const next = new Set(current);
+      if (next.has(rootId)) next.delete(rootId);
+      else next.add(rootId);
+      return next;
+    });
+  };
+
+  /**
+   * Aim the composer at a thread.
+   *
+   * `root` is the thread this reply joins; `author` is who is actually being answered —
+   * the two differ when replying to a reply, since threads are one level deep. In that
+   * case the name is seeded into the box as "@name ", which is how the answer stays
+   * legible once it sits flat among its siblings. (Instagram does exactly this.)
+   */
+  const startReply = (root, author, { mention = false } = {}) => {
+    if (!requireLogin("reply")) return;
+    setReplyTo({ id: root.id, author });
+    setOpenThreads((current) => new Set(current).add(root.id));
+    setCommentText(mention ? `@${author} ` : "");
+    // Let the chip render before focusing, so the sheet does not scroll to a moving target.
+    requestAnimationFrame(() => commentInputRef.current?.focus());
+  };
+
+  const cancelReply = () => {
+    setReplyTo(null);
+    setCommentText("");
+  };
+
+  /**
+   * Remove one of your own comments.
+   *
+   * Deleting a thread root takes its replies with it, so the confirmation says how many
+   * are going — the reader cannot see collapsed replies while deciding, and finding out
+   * afterwards is too late. The server reports how many rows actually went, which is what
+   * the reel's counter is corrected by.
+   */
+  const deleteOwnComment = async (comment, replyCount = 0) => {
+    const isRoot = !comment.parent_id;
+    const warning = isRoot && replyCount > 0
+      ? `Delete your comment and its ${replyCount} ${replyCount === 1 ? "reply" : "replies"}?`
+      : "Delete this comment?";
+    if (!window.confirm(warning)) return;
+
+    try {
+      const res = await fetch(`${API_ENDPOINTS.reels}/comments/${comment.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authToken()}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "");
+
+      setComments((current) =>
+        isRoot
+          ? current.filter((root) => root.id !== comment.id)
+          : current.map((root) =>
+              root.id === comment.parent_id
+                ? { ...root, replies: (root.replies || []).filter((r) => r.id !== comment.id) }
+                : root
+            )
+      );
+
+      // Deleting the thread the composer was aimed at would leave it pointing at a row
+      // that no longer exists, and the next post would be rejected by the server.
+      if (isRoot) setReplyTo((target) => (target?.id === comment.id ? null : target));
+
+      const removed = Number(data.removed) || 1;
+      setInteractions((s) => {
+        const current = s[openReel.id] || interOf(openReel);
+        return {
+          ...s,
+          [openReel.id]: {
+            ...current,
+            comment_count: Math.max(0, (current.comment_count || 0) - removed),
+          },
+        };
+      });
+    } catch (err) {
+      showNotification(err?.message || "Could not delete your comment.", "error");
+    }
+  };
+
   const submitComment = async () => {
     if (!openReel) return;
     if (!requireLogin("comment")) return;
     const text = commentText.trim();
-    if (!text) return;
+    if (!text || posting) return;
     setPosting(true);
     try {
       const res = await fetch(`${API_ENDPOINTS.reels}/${openReel.id}/comments`, {
         method: "POST",
         headers: { Authorization: `Bearer ${authToken()}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: text }),
+        body: JSON.stringify({ comment: text, parent_id: replyTo?.id ?? null }),
       });
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "");
+
+      // The comment comes back finished and already live, so it goes straight into the
+      // open thread — no re-fetch, and nothing to wait for.
+      const posted = data.comment;
+      if (posted?.parent_id) {
+        setComments((current) =>
+          current.map((root) =>
+            root.id === posted.parent_id
+              ? { ...root, replies: [...(root.replies || []), posted] }
+              : root
+          )
+        );
+        setOpenThreads((current) => new Set(current).add(posted.parent_id));
+      } else if (posted) {
+        setComments((current) => [{ ...posted, replies: [] }, ...current]);
+      }
+
+      // The rail's count includes replies, so every post bumps it.
+      setInteractions((s) => {
+        const current = s[openReel.id] || interOf(openReel);
+        return { ...s, [openReel.id]: { ...current, comment_count: (current.comment_count || 0) + 1 } };
+      });
+
       setCommentText("");
-      showNotification("Thanks for sharing! Your comment is on its way.", "success");
-    } catch {
-      showNotification("Could not submit comment.", "error");
+      setReplyTo(null);
+    } catch (err) {
+      showNotification(err?.message || "Could not post your comment.", "error");
     } finally {
       setPosting(false);
     }
@@ -537,11 +725,11 @@ export default function Reels() {
       </div>
 
       {openReel && (
-        <div className="bk-reel-comments-backdrop" onClick={() => setOpenReel(null)}>
+        <div className="bk-reel-comments-backdrop" onClick={closeComments}>
           <div className="bk-reel-comments" onClick={(e) => e.stopPropagation()}>
             <div className="bk-reel-comments-head">
               <h4>Comments</h4>
-              <button type="button" onClick={() => setOpenReel(null)}><X size={20} /></button>
+              <button type="button" onClick={closeComments}><X size={20} /></button>
             </div>
             <div className="bk-reel-comments-list">
               {commentsLoading ? (
@@ -549,29 +737,85 @@ export default function Reels() {
               ) : comments.length === 0 ? (
                 <p className="bk-reel-comments-empty">No comments yet. Be the first!</p>
               ) : (
-                comments.map((c) => (
-                  <div key={c.id} className="bk-reel-comment">
-                    <div className="bk-reel-comment-avatar">{(c.author || "?").charAt(0).toUpperCase()}</div>
-                    <div>
-                      <p className="bk-reel-comment-author">{c.author}</p>
-                      <p className="bk-reel-comment-text">{c.comment}</p>
+                comments.map((root) => {
+                  const replies = root.replies || [];
+                  const expanded = openThreads.has(root.id);
+                  return (
+                    <div key={root.id} className="bk-reel-thread">
+                      <CommentRow
+                        comment={root}
+                        isMine={user && String(user.id) === String(root.author_id)}
+                        onReply={() => startReply(root, root.author)}
+                        onDelete={() => deleteOwnComment(root, replies.length)}
+                      />
+
+                      {replies.length > 0 && (
+                        <button
+                          type="button"
+                          className="bk-reel-thread-toggle"
+                          onClick={() => toggleThread(root.id)}
+                          aria-expanded={expanded}
+                        >
+                          <i aria-hidden="true" />
+                          {expanded
+                            ? "Hide replies"
+                            : `View ${replies.length} ${replies.length === 1 ? "reply" : "replies"}`}
+                        </button>
+                      )}
+
+                      {expanded && (
+                        <div className="bk-reel-replies">
+                          {replies.map((reply) => (
+                            <CommentRow
+                              key={reply.id}
+                              comment={reply}
+                              isReply
+                              isMine={user && String(user.id) === String(reply.author_id)}
+                              // Replying to a reply joins the same thread; the name is
+                              // seeded as "@author" so the answer still reads correctly
+                              // once it sits flat beside its siblings.
+                              onReply={() => startReply(root, reply.author, { mention: true })}
+                              onDelete={() => deleteOwnComment(reply)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
-            <div className="bk-reel-comments-input">
-              <input
-                type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitComment()}
-                placeholder={user ? "Add a comment…" : "Log in to comment"}
-                maxLength={1000}
-              />
-              <button type="button" onClick={submitComment} disabled={posting || !commentText.trim()}>
-                <Send size={18} />
-              </button>
+
+            <div className="bk-reel-comments-compose">
+              {replyTo && (
+                <div className="bk-reel-replying">
+                  <span>Replying to <strong>{replyTo.author}</strong></span>
+                  <button type="button" onClick={cancelReply} aria-label="Cancel reply">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              <div className="bk-reel-comments-input">
+                <input
+                  ref={commentInputRef}
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitComment();
+                    // Backing out of an empty reply box drops the thread, so the next
+                    // thing typed is a new comment rather than a silent reply.
+                    if (e.key === "Escape" && replyTo) cancelReply();
+                  }}
+                  placeholder={
+                    !user ? "Log in to comment" : replyTo ? `Reply to ${replyTo.author}…` : "Add a comment…"
+                  }
+                  maxLength={1000}
+                />
+                <button type="button" onClick={submitComment} disabled={posting || !commentText.trim()}>
+                  <Send size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
