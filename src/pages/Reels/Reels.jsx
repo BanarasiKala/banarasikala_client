@@ -281,6 +281,9 @@ export default function Reels() {
 
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Separate from "feed is empty": one means the request failed and is worth retrying,
+  // the other means the store genuinely has no reels. They must not look the same.
+  const [feedError, setFeedError] = useState(false);
   const [muted, setMuted] = useState(false); // audio on by default
   // One shoppable-card preference for the whole feed: hiding on any reel hides it on all of
   // them. It lives here (not per reel and not persisted), so it resets to "shown" whenever the
@@ -293,6 +296,7 @@ export default function Reels() {
   const [shareReel, setShareReel] = useState(null); // reel currently in the share sheet
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
   // The thread the composer is aimed at: { id (thread root), author } — null writes a new
@@ -309,37 +313,56 @@ export default function Reels() {
   const baseReels = useRef([]);
   const viewed = useRef(new Set());
 
-  // Initial load
-  useEffect(() => {
-    let ignore = false;
-    const run = async () => {
-      try {
-        const headers = authToken() ? { Authorization: `Bearer ${authToken()}` } : {};
-        const res = await fetch(`${API_ENDPOINTS.reels}?limit=30`, { headers });
-        const data = await res.json();
-        const reels = Array.isArray(data.reels) ? data.reels : [];
-        if (ignore) return;
-        baseReels.current = reels;
-        const inter = {};
-        reels.forEach((r) => {
-          inter[r.id] = { liked: !!r.is_liked, like_count: r.like_count || 0, comment_count: r.comment_count || 0 };
-        });
-        // Optional deep link (?reel=<id>) surfaces that reel first.
-        const focusId = Number(searchParams.get("reel"));
-        const ordered = focusId
-          ? [...reels].sort((a, b) => (a.id === focusId ? -1 : b.id === focusId ? 1 : 0))
-          : reels;
-        setInteractions(inter);
-        setFeed(ordered.map(asInstance));
-      } catch {
-        if (!ignore) setFeed([]);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    run();
-    return () => { ignore = true; };
+  /**
+   * Load the feed.
+   *
+   * Kept callable so the error state below can retry it without a full page reload —
+   * a reel feed that failed on a dropped connection should come back on a tap, not
+   * make the reader work out that they need to refresh.
+   *
+   * `res.ok` is checked, which it was not before: an API returning 500 with a JSON body
+   * yielded `data.reels === undefined`, that became an empty array, and the page told
+   * the customer "No reels yet. Check back soon" — a server fault reported as an empty
+   * catalogue. A failure now says it failed.
+   */
+  const loadFeed = useCallback(async (signal) => {
+    setLoading(true);
+    setFeedError(false);
+    try {
+      const headers = authToken() ? { Authorization: `Bearer ${authToken()}` } : {};
+      const res = await fetch(`${API_ENDPOINTS.reels}?limit=30`, { headers, signal });
+      if (!res.ok) throw new Error(`Reels request failed (${res.status})`);
+      const data = await res.json();
+      const reels = Array.isArray(data.reels) ? data.reels : [];
+      baseReels.current = reels;
+      const inter = {};
+      reels.forEach((r) => {
+        inter[r.id] = { liked: !!r.is_liked, like_count: r.like_count || 0, comment_count: r.comment_count || 0 };
+      });
+      // Optional deep link (?reel=<id>) surfaces that reel first.
+      const focusId = Number(searchParams.get("reel"));
+      const ordered = focusId
+        ? [...reels].sort((a, b) => (a.id === focusId ? -1 : b.id === focusId ? 1 : 0))
+        : reels;
+      setInteractions(inter);
+      setFeed(ordered.map(asInstance));
+    } catch (err) {
+      // An abort is this component unmounting or re-running, not a failure to report.
+      if (err?.name === "AbortError") return;
+      setFeed([]);
+      setFeedError(true);
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
   }, [searchParams]);
+
+  // Initial load. AbortController rather than an `ignore` flag so a feed left behind by
+  // a fast re-navigation is actually cancelled instead of merely discarded on arrival.
+  useEffect(() => {
+    const controller = new AbortController();
+    loadFeed(controller.signal);
+    return () => controller.abort();
+  }, [loadFeed]);
 
   const interOf = (reel) =>
     interactions[reel.id] || {
@@ -406,21 +429,31 @@ export default function Reels() {
     }
   };
 
-  const openComments = async (reel) => {
-    setOpenReel(reel);
-    setComments([]);
-    setReplyTo(null);
-    setOpenThreads(new Set());
+  // Same distinction as the feed: a failed fetch used to leave the sheet saying
+  // "No comments yet. Be the first!", which invites the reader to re-write a thread
+  // that is already there and merely did not load.
+  const loadComments = useCallback(async (reelId) => {
     setCommentsLoading(true);
+    setCommentsError(false);
     try {
-      const res = await fetch(`${API_ENDPOINTS.reels}/${reel.id}/comments`);
+      const res = await fetch(`${API_ENDPOINTS.reels}/${reelId}/comments`);
+      if (!res.ok) throw new Error(`Comments request failed (${res.status})`);
       const data = await res.json();
       setComments(Array.isArray(data.comments) ? data.comments : []);
     } catch {
       setComments([]);
+      setCommentsError(true);
     } finally {
       setCommentsLoading(false);
     }
+  }, []);
+
+  const openComments = (reel) => {
+    setOpenReel(reel);
+    setComments([]);
+    setReplyTo(null);
+    setOpenThreads(new Set());
+    loadComments(reel.id);
   };
 
   const closeComments = () => {
@@ -707,6 +740,26 @@ export default function Reels() {
     );
   }
 
+  // Checked BEFORE the empty state: a request that failed left `feed` empty too, and
+  // falling through to "No reels yet" would blame the catalogue for a network fault and
+  // leave the reader with nothing to press.
+  if (feedError) {
+    return (
+      <div className="bk-reels-page bk-reels-empty">
+        <button type="button" className="bk-reels-back" onClick={() => navigate("/")} aria-label="Back to home">
+          <ChevronLeft size={26} />
+        </button>
+        <Icon icon="lucide:wifi-off" className="bk-reels-error-icon" />
+        <h2>Could not load reels</h2>
+        <p>Check your connection and try again.</p>
+        <button type="button" className="bk-reels-retry" onClick={() => loadFeed()}>
+          <Icon icon="lucide:rotate-cw" />
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   if (feed.length === 0) {
     return (
       <div className="bk-reels-page bk-reels-empty">
@@ -755,6 +808,15 @@ export default function Reels() {
             <div className="bk-reel-comments-list">
               {commentsLoading ? (
                 <p className="bk-reel-comments-empty">Loading…</p>
+              ) : commentsError ? (
+                <div className="bk-reel-comments-error">
+                  <Icon icon="lucide:wifi-off" />
+                  <p>Could not load comments.</p>
+                  <button type="button" onClick={() => loadComments(openReel.id)}>
+                    <Icon icon="lucide:rotate-cw" />
+                    Try again
+                  </button>
+                </div>
               ) : comments.length === 0 ? (
                 <p className="bk-reel-comments-empty">No comments yet. Be the first!</p>
               ) : (

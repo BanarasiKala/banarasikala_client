@@ -44,6 +44,67 @@
 .bk-reels-empty h2 { font-size: 20px; font-weight: 700; }
 .bk-reels-empty p { color: rgba(255, 255, 255, 0.6); font-size: 14px; }
 
+/* ── Failed to load ───────────────────────────────────────────────────────
+   Shares the empty state's frame but says something different, and gives the reader
+   something to press: a feed that dropped on a flaky connection should come back on
+   a tap rather than leaving them to work out that they need to refresh. */
+.bk-reels-error-icon {
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 34px;
+}
+
+.bk-reels-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.bk-reels-retry:hover { background: rgba(255, 255, 255, 0.18); }
+
+/* Same idea inside the comment sheet, which is a light surface. */
+.bk-reel-comments-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 34px 0;
+  color: #8a8a8a;
+  text-align: center;
+}
+
+.bk-reel-comments-error svg { font-size: 24px; color: #b3b3b3; }
+.bk-reel-comments-error p { margin: 0; font-size: 13px; }
+
+.bk-reel-comments-error button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  padding: 8px 18px;
+  border: 1px solid rgba(128, 0, 32, 0.25);
+  border-radius: 999px;
+  background: none;
+  color: var(--bk-reel-accent);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bk-reel-comments-error button:hover { background: rgba(128, 0, 32, 0.06); }
+
 /* ── Loading state ──────────────────────────────────────────────────────
    The real .bk-reel / .bk-reel-stage / .bk-reel-video-wrap frame with placeholders
    over it, so the stage keeps its 460px desktop column and full-bleed mobile width and
