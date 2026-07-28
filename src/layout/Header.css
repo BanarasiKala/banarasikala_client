@@ -931,6 +931,28 @@ body.menu-open {
   color: #800020;
 }
 
+/* A marketplace we have not opened on yet. Listed because the announcement is worth
+   making, tagged because without it the row reads as a shop you can buy from today.
+   Pushed right so the names stay in one column and the eye can skip the tags. */
+.bk-market-link em {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(184, 134, 11, 0.14);
+  color: #8a5a10;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The mobile rows are flex too, so the tag lands the same way. */
+.bk-mobile-variety-link.bk-market-link {
+  display: flex;
+  align-items: center;
+}
+
 .bk-logo-link {
   display: inline-flex;
   justify-self: center;

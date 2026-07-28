@@ -48,6 +48,7 @@ const SizeGuide = lazy(() => import("./pages/Policy/SizeGuide"));
 const CareInstructions = lazy(() => import("./pages/Policy/CareInstructions"));
 const Faqs = lazy(() => import("./pages/Policy/Faqs"));
 const EmailPreferences = lazy(() => import("./pages/EmailPreferences/EmailPreferences"));
+const Marketplace = lazy(() => import("./pages/Marketplace/Marketplace"));
 
 
 
@@ -170,6 +171,9 @@ function App() {
                       {/* Landing page for the unsubscribe link in marketing emails. Public —
                           it is opened from an email client, with no session. */}
                       <Route path="/email-preferences" element={<EmailPreferences />} />
+                      {/* One route for every marketplace: /store/amazon, /store/flipkart,
+                          /store/myntra. A new channel is a row in the admin, not a route. */}
+                      <Route path="/store/:slug" element={<Marketplace />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPassword />} />

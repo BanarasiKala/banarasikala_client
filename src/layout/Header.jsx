@@ -39,6 +39,10 @@ const Header = () => {
   const { unread: supportUnread } = useSupport();
 
   const [sareeOpen, setSareeOpen] = useState(false);
+  const [marketOpen, setMarketOpen] = useState(false);
+  // Channels we also sell on. Empty until loaded, which hides the menu rather than
+  // flashing an empty one.
+  const [marketplaces, setMarketplaces] = useState([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
@@ -51,6 +55,7 @@ const Header = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const sareeMenuRef = useRef(null);
+  const marketMenuRef = useRef(null);
   const profileMenuRef = useRef(null);
   const mobilePanelRef = useRef(null);
   const mobileMenuButtonRef = useRef(null);
@@ -172,6 +177,23 @@ const Header = () => {
     return () => varietiesAbortRef.current?.abort();
   }, [fetchSareeVarieties]);
 
+  // A failure leaves the list empty, which hides the menu — the header must not show a
+  // dead dropdown because one request did not come back.
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.marketplaces, { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.marketplaces)) setMarketplaces(data.marketplaces);
+      } catch {
+        /* menu stays hidden */
+      }
+    })();
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     if (!mobileMenuOpen) return undefined;
 
@@ -207,6 +229,13 @@ const Header = () => {
         !sareeMenuRef.current.contains(event.target)
       ) {
         setSareeOpen(false);
+      }
+
+      if (
+        marketMenuRef.current &&
+        !marketMenuRef.current.contains(event.target)
+      ) {
+        setMarketOpen(false);
       }
 
       if (
@@ -567,6 +596,58 @@ const Header = () => {
           <Link to="/#new-arrivals" onClick={refreshNavClick("/#new-arrivals")}>New Arrivals</Link>
           <Link to="/collection" onClick={refreshNavClick("/collection")}>Collections</Link>
           <Link to="/reels" onClick={refreshNavClick("/reels")}>Reels</Link>
+
+          {/* Where else we sell. Built like Patterns above so the header's menus behave
+              alike, and hidden entirely when there are no channels — an empty dropdown is
+              worse than no dropdown. Each row goes to our own /store page, not out to the
+              marketplace: that page carries the storefront link and the products. */}
+          {marketplaces.length > 0 && (
+            <div
+              ref={marketMenuRef}
+              className="bk-saree-menu"
+              onMouseEnter={() => setMarketOpen(true)}
+              onMouseLeave={() => setMarketOpen(false)}
+              onFocus={() => setMarketOpen(true)}
+              onBlur={(event) => closeMenuWhenFocusLeaves(event, setMarketOpen)}
+            >
+              <button type="button" aria-expanded={marketOpen}>
+                Marketplaces
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {marketOpen && (
+                <div className="bk-dropdown" role="menu">
+                  <div className="bk-dropdown-head">
+                    <span className="bk-dropdown-badge" aria-hidden="true">
+                      <Icon icon="lucide:store" />
+                    </span>
+                    <span className="bk-dropdown-head-copy">
+                      <p>Marketplaces</p>
+                      <span>Also find us here</span>
+                    </span>
+                  </div>
+
+                  <div className="bk-dropdown-links">
+                    {marketplaces.map((market) => (
+                      <Link
+                        key={market.slug}
+                        role="menuitem"
+                        to={`/store/${market.slug}`}
+                        onClick={() => setMarketOpen(false)}
+                        className="bk-market-link"
+                      >
+                        {market.name}
+                        {/* A channel we are not on yet is still worth listing — it is an
+                            announcement — but it must not look like a live shop. */}
+                        {market.status === "coming_soon" && <em>Soon</em>}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
           <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
           {/* The support chat belongs to an account — there is nothing to show a guest.
@@ -957,6 +1038,27 @@ const Header = () => {
                 </button>
               </span>
             )}
+
+            {/* Same rows as the desktop dropdown. A heading rather than a nested menu:
+                the panel already scrolls, and a second level inside it would hide these
+                behind another tap for no gain. */}
+            {marketplaces.length > 0 && (
+              <>
+                <span className="bk-mobile-nav-heading">Marketplaces</span>
+                {marketplaces.map((market) => (
+                  <Link
+                    key={market.slug}
+                    className="bk-mobile-variety-link bk-market-link"
+                    to={`/store/${market.slug}`}
+                    onClick={refreshNavClick(`/store/${market.slug}`)}
+                  >
+                    {market.name}
+                    {market.status === "coming_soon" && <em>Soon</em>}
+                  </Link>
+                ))}
+              </>
+            )}
+
             <button type="button" onClick={() => goProtected("/wishlist")}>
               Wishlist
             </button>

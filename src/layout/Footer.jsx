@@ -59,11 +59,22 @@ const payments = [
   { icon: "simple-icons:paytm",   label: "Paytm",     color: "#002970" },
 ];
 
-const marketplaces = [
-  { icon: "simple-icons:amazon",  label: "Amazon",   color: "#FF9900", href: "https://www.amazon.in" },
-  { icon: "simple-icons:flipkart",label: "Flipkart", color: "#2874F0", href: "https://www.flipkart.com" },
-  { icon: "myntra",               label: "Myntra",   color: "#FF3F6C", href: "https://www.myntra.com" },
+/**
+ * Shown until the real list arrives, and kept as the fallback if that request fails —
+ * the footer should never lose a whole section because one fetch did not come back.
+ * The live list comes from /api/marketplaces, so adding a channel in the admin puts it
+ * here without a deploy, and this array cannot drift out of step with the pages.
+ */
+const FALLBACK_MARKETPLACES = [
+  { slug: "amazon",   name: "Amazon",   icon: "simple-icons:amazon",   accent_color: "#FF9900" },
+  { slug: "flipkart", name: "Flipkart", icon: "simple-icons:flipkart", accent_color: "#2874F0" },
+  { slug: "myntra",   name: "Myntra",   icon: "/image.png",            accent_color: "#FF3F6C" },
 ];
+
+// The mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png"):
+// Amazon and Flipkart have Iconify marks and Myntra does not. A slash or dot without a
+// colon means it is a file.
+const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -72,6 +83,26 @@ const Footer = () => {
   const navigate = useNavigate();
   const footerRef = useRef(null);
   const [showTop, setShowTop] = useState(false);
+  const [marketplaces, setMarketplaces] = useState(FALLBACK_MARKETPLACES);
+
+  // Live channel list. A failure leaves the fallback in place rather than emptying the
+  // section — the footer is on every page and must not depend on this request.
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.marketplaces, { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.marketplaces) && data.marketplaces.length > 0) {
+          setMarketplaces(data.marketplaces);
+        }
+      } catch {
+        /* keep the fallback */
+      }
+    })();
+    return () => controller.abort();
+  }, []);
 
   const [subEmail, setSubEmail] = useState("");
   const [subError, setSubError] = useState("");
@@ -410,22 +441,24 @@ const Footer = () => {
           <h3>Also Available On</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
           <div className="bk-footer-market-row">
-            {marketplaces.map(({ icon, label, color, href }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noreferrer"
+            {/* Points at our own /store/<slug> page, not straight out to the marketplace.
+                That page is what carries the storefront link, the product list and the
+                case for buying direct — sending people off-site from here would skip
+                all of it. */}
+            {marketplaces.map((market) => (
+              <Link
+                key={market.slug}
+                to={`/store/${market.slug}`}
                 className="bk-footer-market-badge"
-                aria-label={label}
-                title={label}
+                aria-label={`Banarasi Kala on ${market.name}`}
+                title={`Banarasi Kala on ${market.name}`}
               >
-                {icon === "myntra"
-                  ? <img src="/image.png" alt="Myntra" className="bk-footer-myntra-img" />
-                  : <Icon icon={icon} style={{ color }} />
+                {isImageMark(market.icon)
+                  ? <img src={market.icon} alt="" className="bk-footer-myntra-img" />
+                  : <Icon icon={market.icon || "lucide:store"} style={{ color: market.accent_color }} />
                 }
-                <span>{label}</span>
-              </a>
+                <span>{market.name}</span>
+              </Link>
             ))}
           </div>
         </div>
