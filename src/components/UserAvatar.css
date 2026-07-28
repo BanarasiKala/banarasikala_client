@@ -1,0 +1,30 @@
+/* ── Customer avatar ──────────────────────────────────────────────────────────
+   One disc, used wherever a person is named — reel comments, product reviews, the
+   home page review rail. The maroon fill and the initial sit underneath the photo
+   rather than being swapped out for it, so an image that is slow, transparent or
+   part-loaded still lands on something instead of a hole.
+
+   Size comes from the `size` prop as an inline width/height/font-size, because these
+   discs differ per surface (34px in a comment, 26px on a reply, 40px on a review card)
+   and one class cannot carry all of them. */
+.bk-avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #800020;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.bk-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}

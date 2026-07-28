@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "../../../config/api";
+import UserAvatar from "../../../components/UserAvatar";
 import "./ReviewsStory.css";
 
 const storySectionImages = import.meta.glob(
@@ -131,7 +132,12 @@ const ReviewsStory = () => {
                       </div>
                     )}
                     <p>{item.comment || item.text}</p>
-                    {reviewerName && <strong>- {reviewerName}</strong>}
+                    {reviewerName && (
+                      <span className="bk-review-by">
+                        <UserAvatar name={reviewerName} src={item.Customer?.avatar_url} size={24} />
+                        <strong>{reviewerName}</strong>
+                      </span>
+                    )}
                   </article>
                 );
               })}

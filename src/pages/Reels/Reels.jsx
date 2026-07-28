@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useNotification } from "../../context/NotificationContext";
 import { API_ENDPOINTS } from "../../config/api";
-import { imgUrl } from "../../utils/cloudinary";
+import UserAvatar from "../../components/UserAvatar";
 import { getProductCoverImage, getDefaultColorId, getProductImages } from "../../utils/productMedia";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import "./Reels.css";
@@ -50,26 +50,14 @@ const timeAgo = (value) => {
 // Replies are the same row a notch smaller and indented; nothing else changes, because a
 // reply is not a different kind of thing from the comment it answers. Delete only shows
 // on your own — moderation beyond that is the admin's, from the admin panel.
-const CommentRow = ({ comment, isReply = false, isMine = false, onReply, onDelete }) => {
-  // The photo can 404 — a deleted upload, an expired Google avatar — and a broken image
-  // icon is worse than no photo, so a failed load falls back to the initial too.
-  const [avatarFailed, setAvatarFailed] = useState(false);
-  const avatar = !avatarFailed && comment.author_avatar ? comment.author_avatar : null;
-
-  return (
+const CommentRow = ({ comment, isReply = false, isMine = false, onReply, onDelete }) => (
   <div className={`bk-reel-comment${isReply ? " is-reply" : ""}`}>
-    <div className="bk-reel-comment-avatar">
-      {avatar ? (
-        <img
-          src={imgUrl(avatar, 96)}
-          alt=""
-          loading="lazy"
-          onError={() => setAvatarFailed(true)}
-        />
-      ) : (
-        (comment.author || "?").charAt(0).toUpperCase()
-      )}
-    </div>
+    <UserAvatar
+      name={comment.author}
+      src={comment.author_avatar}
+      size={isReply ? 26 : 34}
+      className="bk-reel-comment-avatar"
+    />
     <div className="bk-reel-comment-body">
       <p className="bk-reel-comment-author">
         {comment.author}
@@ -89,8 +77,7 @@ const CommentRow = ({ comment, isReply = false, isMine = false, onReply, onDelet
       </div>
     </div>
   </div>
-  );
-};
+);
 
 // ─── One product chip (View Product + Add to Cart) ───────────────────────────
 // `full` renders a single-product bar spanning the full width of the reel.

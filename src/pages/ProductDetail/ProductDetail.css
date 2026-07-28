@@ -1542,7 +1542,18 @@
   text-align: right;
 }
 
-.product-review-buyer span {
+/* The reviewer's photo sits left of their name. */
+.product-review-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Targets the name by class, not `.product-review-buyer span`, because the avatar is a
+   span too and that rule's `color` would repaint the white initial dark on its maroon
+   disc. Naming the element it means keeps the two from fighting. */
+.product-review-name {
   max-width: 220px;
   overflow: hidden;
   color: #2a1711;
@@ -5271,7 +5282,7 @@
     height: 16px;
   }
 
-  .product-review-buyer span {
+  .product-review-name {
     max-width: 150px;
     font-size: 12px;
   }

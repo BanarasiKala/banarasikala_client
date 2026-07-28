@@ -17,6 +17,7 @@ import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
 import CheckoutFlow from "../../components/CheckoutFlow";
 import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
+import UserAvatar from "../../components/UserAvatar";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
@@ -2416,7 +2417,10 @@ const ProductDetail = () => {
                         ))}
                       </div>
                       <div className="product-review-buyer">
-                        <span>{review.Customer?.name || "verified customer"}</span>
+                        <span className="product-review-who">
+                          <UserAvatar name={review.Customer?.name} src={review.Customer?.avatar_url} size={28} />
+                          <span className="product-review-name">{review.Customer?.name || "verified customer"}</span>
+                        </span>
                         <small><Icon icon="lucide:badge-check" /> verified buyer</small>
                       </div>
                     </div>
@@ -2633,7 +2637,10 @@ const ProductDetail = () => {
                         ))}
                       </div>
                       <div className="product-review-buyer">
-                        <span>{review.Customer?.name || "verified customer"}</span>
+                        <span className="product-review-who">
+                          <UserAvatar name={review.Customer?.name} src={review.Customer?.avatar_url} size={28} />
+                          <span className="product-review-name">{review.Customer?.name || "verified customer"}</span>
+                        </span>
                         <small><Icon icon="lucide:badge-check" /> verified buyer</small>
                       </div>
                     </div>

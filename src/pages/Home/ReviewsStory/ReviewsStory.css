@@ -204,10 +204,22 @@
   line-height: 1.55;
 }
 
+/* The signature line: photo, then name. The leading "- " went when the avatar arrived —
+   a dash reads as a stand-in for the person, and there is now an actual one. */
+.bk-review-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .bk-review-card strong {
+  overflow: hidden;
   color: #5b514b;
   font-size: 12px;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bk-review-skeleton-card {
