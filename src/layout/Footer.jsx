@@ -448,7 +448,7 @@ const Footer = () => {
             {marketplaces.map((market) => (
               <Link
                 key={market.slug}
-                to={`/store/${market.slug}`}
+                to={`/marketplace#${market.slug}`}
                 className="bk-footer-market-badge"
                 aria-label={`Banarasi Kala on ${market.name}`}
                 title={`Banarasi Kala on ${market.name}`}

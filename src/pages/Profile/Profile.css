@@ -2298,7 +2298,7 @@
 
 /* closer coming-soon banner match */
 .profile-coming-panel {
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   grid-template-rows: auto auto;
   grid-template-areas:
     "art copy"
@@ -2315,9 +2315,13 @@
   place-items: center;
 }
 
+/* Artwork is portrait (438x570), so cap the height rather than the width —
+   sizing it by width would make this panel ~50% taller than the rest. */
 .profile-coming-art > img {
-  width: min(230px, 100%);
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 210px;
   display: block;
 }
 
@@ -2369,7 +2373,7 @@
 
 @media (max-width: 720px) {
   .profile-coming-panel {
-    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-columns: 150px minmax(0, 1fr);
     gap: 8px 14px;
     padding: 14px 12px;
   }
@@ -2379,7 +2383,7 @@
   }
 
   .profile-coming-art > img {
-    width: 184px;
+    max-height: 170px;
   }
 
   .profile-coming-copy h2 {
@@ -2405,7 +2409,7 @@
 
 @media (max-width: 520px) {
   .profile-coming-panel {
-    grid-template-columns: 120px minmax(0, 1fr);
+    grid-template-columns: 100px minmax(0, 1fr);
     grid-template-areas:
       "art copy"
       "features features";
@@ -2419,7 +2423,7 @@
   }
 
   .profile-coming-art > img {
-    width: 120px;
+    max-height: 118px;
     transform: none;
   }
 

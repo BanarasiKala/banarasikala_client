@@ -174,9 +174,10 @@ function App() {
                       {/* Landing page for the unsubscribe link in marketing emails. Public —
                           it is opened from an email client, with no session. */}
                       <Route path="/email-preferences" element={<EmailPreferences />} />
-                      {/* One route for every marketplace: /store/amazon, /store/flipkart,
-                          /store/myntra. A new channel is a row in the admin, not a route. */}
-                      <Route path="/store/:slug" element={<Marketplace />} />
+                      {/* One page for every channel. /store/:slug redirects here — it was a page per
+                          marketplace before, and those links are already out in the wild. */}
+                      <Route path="/marketplace" element={<Marketplace />} />
+                      <Route path="/store/:slug" element={<Navigate to="/marketplace" replace />} />
                     </Route>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPassword />} />

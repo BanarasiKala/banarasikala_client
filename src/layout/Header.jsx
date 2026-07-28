@@ -633,7 +633,7 @@ const Header = () => {
                       <Link
                         key={market.slug}
                         role="menuitem"
-                        to={`/store/${market.slug}`}
+                        to={`/marketplace#${market.slug}`}
                         onClick={() => setMarketOpen(false)}
                         className="bk-market-link"
                       >
@@ -1049,8 +1049,8 @@ const Header = () => {
                   <Link
                     key={market.slug}
                     className="bk-mobile-variety-link bk-market-link"
-                    to={`/store/${market.slug}`}
-                    onClick={refreshNavClick(`/store/${market.slug}`)}
+                    to={`/marketplace#${market.slug}`}
+                    onClick={refreshNavClick(`/marketplace#${market.slug}`)}
                   >
                     {market.name}
                     {market.status === "coming_soon" && <em>Soon</em>}

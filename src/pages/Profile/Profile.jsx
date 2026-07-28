@@ -6,11 +6,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
-// coming_soon.png, not the .jpeg beside it. JPEG has no alpha channel, so that export had
-// the editor's transparency checkerboard flattened into its pixels and rendered as a dark
-// checked block on this panel's cream. The PNG is that artwork with the checkerboard keyed
-// back out to real transparency.
-import comingSoonGift from "../../assets/coming_soon.png";
+// The -removebg- export, not coming_soon.png/.jpeg beside it. The JPEG has no alpha channel
+// so it rendered as a dark checkerboard block on this panel's cream, and the PNG keyed that
+// checkerboard back out only imperfectly (grey fringe left under the box). This one is a
+// clean cutout. Note it is portrait (438x570) where the others were landscape — the art
+// sizing in Profile.css caps height, not width, because of that.
+import comingSoonGift from "../../assets/comesoon-removebg-preview.png";
 import "./Profile.css";
 
 const SUPPORT_ERROR_MESSAGE = "Something went wrong. Please contact support or try again later.";
