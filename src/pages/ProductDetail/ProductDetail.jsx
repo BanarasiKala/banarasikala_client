@@ -2428,7 +2428,8 @@ const ProductDetail = () => {
                         <small><Icon icon="lucide:badge-check" /> verified buyer</small>
                       </div>
                     </div>
-                    {review.title && <h3>{review.title}</h3>}
+                    {/* Titles are no longer collected, and the ones on older reviews are
+                        not shown — they mostly repeated the first line of the review. */}
                     <p>{review.comment}</p>
                     {Array.isArray(review.images) && review.images.length > 0 && (
                       <div className="product-review-images">
@@ -2648,7 +2649,8 @@ const ProductDetail = () => {
                         <small><Icon icon="lucide:badge-check" /> verified buyer</small>
                       </div>
                     </div>
-                    {review.title && <h3>{review.title}</h3>}
+                    {/* Titles are no longer collected, and the ones on older reviews are
+                        not shown — they mostly repeated the first line of the review. */}
                     <p>{review.comment}</p>
                     {Array.isArray(review.images) && review.images.length > 0 && (
                       <div className="product-review-images">

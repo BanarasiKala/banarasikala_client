@@ -847,7 +847,6 @@ export default function MyOrders() {
     setFeedbackModal({ isOpen: true, order, item, productName });
     setFeedbackForm({
       rating: Number(item.feedback?.rating || 5),
-      title: item.feedback?.title || "",
       comment: item.feedback?.comment || "",
       images: [],
     });
@@ -856,7 +855,7 @@ export default function MyOrders() {
   const closeFeedbackModal = () => {
     if (feedbackSubmitting) return;
     setFeedbackModal({ isOpen: false, order: null, item: null, productName: "" });
-    setFeedbackForm({ rating: 5, title: "", comment: "", images: [] });
+    setFeedbackForm({ rating: 5, comment: "", images: [] });
     setFeedbackSubmitLabel("");
   };
 
@@ -885,7 +884,6 @@ export default function MyOrders() {
         orderItemId: item.id,
         productId: item.product_id,
         rating: feedbackForm.rating,
-        title: feedbackForm.title.trim(),
         comment: feedbackForm.comment.trim(),
         images: uploadedImages,
       });
@@ -1205,18 +1203,9 @@ export default function MyOrders() {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="feedback-title">Short title (optional)</label>
-                <input
-                  id="feedback-title"
-                  type="text"
-                  value={feedbackForm.title}
-                  maxLength={120}
-                  onChange={(event) => setFeedbackForm((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="Beautiful saree, loved the fabric"
-                />
-              </div>
-
+              {/* No "short title" field: a review is the rating and what the customer
+                  wrote. The title was optional, usually skipped, and when it was filled in
+                  it just repeated the first line of the review. */}
               <div className="form-group">
                 <label htmlFor="feedback-comment">Product Review</label>
                 <textarea

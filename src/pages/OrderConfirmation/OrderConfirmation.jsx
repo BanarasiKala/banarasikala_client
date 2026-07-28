@@ -886,7 +886,7 @@ export default function OrderConfirmation() {
   // of it sitting inline on the page.
   const [orderDetailsModalOpen, setOrderDetailsModalOpen] = useState(false);
   const closeOrderDetails = useCallback(() => setOrderDetailsModalOpen(false), []);
-  const [feedbackForm, setFeedbackForm] = useState({ rating: 5, title: "", comment: "", images: [] });
+  const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
   const [bankForm, setBankForm] = useState({
@@ -1195,7 +1195,6 @@ export default function OrderConfirmation() {
     setFeedbackModal({ isOpen: true, item, productId, productName });
     setFeedbackForm({
       rating: Number(existing?.rating || 5),
-      title: existing?.title || "",
       comment: existing?.comment || "",
       images: [],
     });
@@ -1204,7 +1203,7 @@ export default function OrderConfirmation() {
   const closeFeedbackModal = () => {
     if (feedbackSubmitting) return;
     setFeedbackModal({ isOpen: false, item: null, productId: null, productName: "" });
-    setFeedbackForm({ rating: 5, title: "", comment: "", images: [] });
+    setFeedbackForm({ rating: 5, comment: "", images: [] });
     setFeedbackSubmitLabel("");
   };
 
@@ -1234,7 +1233,6 @@ export default function OrderConfirmation() {
         // The replacement product after an exchange, or the one originally ordered.
         productId: feedbackModal.productId || item.product_id,
         rating: feedbackForm.rating,
-        title: feedbackForm.title.trim(),
         comment: feedbackForm.comment.trim(),
         images: uploadedImages,
       });
@@ -2538,18 +2536,8 @@ export default function OrderConfirmation() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="feedback-title">Short title (optional)</label>
-                <input
-                  id="feedback-title"
-                  type="text"
-                  maxLength={120}
-                  value={feedbackForm.title}
-                  onChange={(event) => setFeedbackForm((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="Loved the fabric"
-                />
-              </div>
-
+              {/* No "short title" field — see the same modal in MyOrders. The review is
+                  the rating and the customer's own words. */}
               <div className="form-group">
                 <label htmlFor="feedback-comment">Product review</label>
                 <textarea
