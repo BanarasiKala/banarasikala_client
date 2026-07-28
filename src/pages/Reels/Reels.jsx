@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, ChevronLeft, ChevronDown, Eye } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, ShoppingBag, ExternalLink, X, Send, Play, Pause, ChevronLeft, ChevronDown, Eye } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
@@ -119,6 +119,13 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
+  // True while the browser has stalled for data. Driven by the video's own waiting/playing
+  // events rather than a timer, so the spinner tracks the real buffer instead of guessing.
+  const [buffering, setBuffering] = useState(false);
+  // The icon that flashes on a tap — "play" or "pause" — then clears itself. Separate from
+  // `paused` because it says what just HAPPENED, while `paused` says what the state IS.
+  const [flash, setFlash] = useState(null);
+  const flashTimer = useRef(0);
 
   // "Hidden" means the whole bottom overlay is stood down, not just the product card.
   // Only reachable on a reel that has products, because the Shop pill is the way back.
@@ -160,11 +167,55 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
+  /**
+   * Buffering, from the element itself.
+   *
+   * `waiting` fires when playback stalls for data and `playing` when it resumes, which is
+   * the only honest signal — a reel that is merely slow looks identical to one that has
+   * frozen, and without this the viewer is left tapping a still frame wondering which.
+   * `canplay`/`error` also clear it so the spinner can never outlive the problem.
+   */
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return undefined;
+    const start = () => setBuffering(true);
+    const stop = () => setBuffering(false);
+    v.addEventListener("waiting", start);
+    v.addEventListener("stalled", start);
+    v.addEventListener("playing", stop);
+    v.addEventListener("canplay", stop);
+    v.addEventListener("error", stop);
+    return () => {
+      v.removeEventListener("waiting", start);
+      v.removeEventListener("stalled", start);
+      v.removeEventListener("playing", stop);
+      v.removeEventListener("canplay", stop);
+      v.removeEventListener("error", stop);
+    };
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
+
+  // Shows the action just taken, then fades. The persistent play badge below covers the
+  // resting paused state; this covers the moment of the tap, which is what tells the
+  // viewer their tap landed at all.
+  const flashIcon = (kind) => {
+    setFlash(kind);
+    window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlash(null), 500);
+  };
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play().then(() => setPaused(false)).catch(() => {}); }
-    else { v.pause(); setPaused(true); }
+    if (v.paused) {
+      v.play().then(() => setPaused(false)).catch(() => {});
+      flashIcon("play");
+    } else {
+      v.pause();
+      setPaused(true);
+      flashIcon("pause");
+    }
   };
 
   const products = reel.products || [];
@@ -183,8 +234,26 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
             playsInline
             preload="metadata"
           />
-          {paused && (
+          {/* Buffering wins the middle of the screen: while it is spinning the video is
+              not paused, it is loading, and offering a play badge would invite a tap that
+              does nothing. */}
+          {buffering && (
+            <div className="bk-reel-loading" aria-label="Loading video">
+              <span className="bk-reel-loading-ring" />
+            </div>
+          )}
+
+          {/* The resting state: paused and waiting for a tap. Hidden during the flash so
+              the two never stack on top of each other. */}
+          {paused && !buffering && flash !== "pause" && (
             <div className="bk-reel-play-overlay"><Play size={54} fill="#fff" /></div>
+          )}
+
+          {/* The tap itself — what just happened, then gone. */}
+          {flash && !buffering && (
+            <div className="bk-reel-play-overlay bk-reel-flash" key={flash}>
+              {flash === "pause" ? <Pause size={54} fill="#fff" /> : <Play size={54} fill="#fff" />}
+            </div>
           )}
 
           <button type="button" className="bk-reel-mute" onClick={(e) => { e.stopPropagation(); onToggleMute(); }}>
