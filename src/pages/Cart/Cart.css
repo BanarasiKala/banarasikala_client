@@ -1280,15 +1280,13 @@
   width: 100px;
   height: 100px;
   margin-bottom: 16px;
-  opacity: 0.55;
 }
 
 .cart-empty-title {
-  font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: 22px;
-  font-weight: 900;
+  font-family: "Poppins", Serif;
+  font-size: 20px;
+  font-weight: 600;
   color: #5a160f;
-  text-transform: uppercase;
   margin: 0 0 8px;
 }
 
@@ -1304,7 +1302,7 @@
   gap: 8px;
   padding: 12px 28px;
   background: linear-gradient(135deg, #6e0016, #9b001f);
-  color: #ffe1a2;
+  color: #fdfdfd;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 900;
   font-size: 11px;
