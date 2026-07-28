@@ -98,7 +98,7 @@ export const FAQ_GROUPS = [
       {
         question: "Are your sarees genuine Banarasi?",
         answer:
-          "Yes. Every piece is handwoven in Varanasi by weavers we buy from directly. Small irregularities in the weave and motif placement are inherent to handloom work and are marks of authenticity, not defects.",
+          "Yes. Every piece is woven in Varanasi on powerlooms, by weavers we buy from directly — the design, the silk and the zari are the real thing. Small differences in motif alignment and in how the zari catches the light are normal between pieces and are not defects.",
       },
       {
         question: "What size is a saree, and is a blouse piece included?",

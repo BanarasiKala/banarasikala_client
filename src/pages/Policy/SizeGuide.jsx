@@ -24,14 +24,14 @@ const sections = [
     heading: "Length and Weight",
     body: [
       "Length is published in metres. Most of our sarees are listed at 6.5 metres, the standard length for a saree supplied with its blouse piece — roughly 5.5 metres of saree plus the piece at the end, as one run of fabric before your tailor separates it.",
-      "Weight is published in grams and is worth reading: a heavier piece usually means denser zari and a more structured drape, a lighter one is easier to wear all day. Both vary by a few inches or grams between individual pieces, because these are handwoven.",
+      "Weight is published in grams and is worth reading: a heavier piece usually means denser zari and a more structured drape, a lighter one is easier to wear all day. Both vary by a few inches or grams between individual pieces, because each one is cut and finished separately.",
     ],
   },
   {
     heading: "Blouse Piece",
     body: [
       "Each listing states plainly whether a blouse piece is Included or Not Included. Where included, it is unstitched fabric attached to the end of the saree, cut from the same weave — not a ready-made blouse, and we do not offer stitching.",
-      "We do not publish a separate blouse-piece length; the figure shown as Saree Length covers the whole run of fabric including it. Tell your tailor it is handloom silk so it is cut with the grain, and ask them to check the piece is sufficient before cutting if you want long sleeves or a lining.",
+      "We do not publish a separate blouse-piece length; the figure shown as Saree Length covers the whole run of fabric including it. Tell your tailor it is Banarasi silk so it is cut with the grain, and ask them to check the piece is sufficient before cutting if you want long sleeves or a lining.",
     ],
   },
   {

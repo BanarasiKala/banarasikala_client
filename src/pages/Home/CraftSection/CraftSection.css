@@ -73,10 +73,13 @@
   text-transform: uppercase;
 }
 
+/* auto-fit, not a fixed 2, so the section follows however many panels CraftSection.jsx
+   declares: one powerloom panel fills the row, and uncommenting the handloom one puts
+   them back side by side with no change here. */
 .bk-craft-panels {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 34px;
 }
 

@@ -175,7 +175,7 @@ const Marketplace = () => {
           <span className="bk-market-soon-badge">Coming soon</span>
           <h2>We are opening on {marketplace.name}</h2>
           <p>
-            Our handwoven Banarasi sarees are on their way to {marketplace.name}. Until then,
+            Our Banarasi sarees are on their way to {marketplace.name}. Until then,
             you can buy the full collection on our own store — or find us on the marketplaces
             we are already on.
           </p>

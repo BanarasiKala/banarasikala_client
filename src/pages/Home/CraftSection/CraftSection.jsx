@@ -13,33 +13,62 @@ const getSectionImage = (images, name) => {
   return entry?.[1] || "";
 };
 
+/**
+ * Every saree we sell is woven on a powerloom, so this section speaks to that alone.
+ *
+ * The handloom panel below is KEPT, commented out, rather than deleted — the shop may
+ * stock handloom pieces later and this is the section that would carry them. Restoring it
+ * is uncommenting the object: the grid is `auto-fit` (CraftSection.css) so it goes back to
+ * two columns on its own, and the "Perfect Balance" medallion in the markup below comes
+ * back with it.
+ */
 const CRAFT_PANELS = [
-  {
-    title: "Handloom",
-    text: "Woven by skilled artisans with love and heritage.",
-    image: getSectionImage(craftSectionImages, "handloom"),
-  },
+  // {
+  //   title: "Handloom",
+  //   text: "Woven by skilled artisans with love and heritage.",
+  //   image: getSectionImage(craftSectionImages, "handloom"),
+  // },
   {
     title: "Powerloom",
-    text: "Crafted with precision for elegance and value.",
+    text: "Woven with precision for an even weave, a consistent finish and honest value.",
     image: getSectionImage(craftSectionImages, "powerloom"),
   },
 ];
+
+// True only while the handloom panel above is commented out. Drives the heading and the
+// medallion, so the section reads correctly in either state without a second edit.
+const IS_SINGLE_CRAFT = CRAFT_PANELS.length === 1;
 
 const CraftSection = () => (
   <section className="bk-craft-section" aria-labelledby="craft-title">
     <div className="bk-craft-shell">
       <div className="bk-craft-copy">
         <span>Preserving Tradition. Crafting Beauty.</span>
-        <h2 id="craft-title">
-          Handloom &amp; Powerloom
-          <em>Perfectly Balanced</em>
-        </h2>
-        <p>
-          We bring you the finest of both worlds - the heritage of handloom and
-          the perfection of powerloom. Blending tradition with innovation to
-          deliver sarees that are beautiful, durable and affordable.
-        </p>
+        {IS_SINGLE_CRAFT ? (
+          <>
+            <h2 id="craft-title">
+              Powerloom Banarasi
+              <em>Precision &amp; Value</em>
+            </h2>
+            <p>
+              Every saree we sell is woven on a powerloom in Varanasi — the same
+              designs and the same zari, made to an even weave and a consistent
+              finish. It is what lets us keep the craft honest and the price fair.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 id="craft-title">
+              Handloom &amp; Powerloom
+              <em>Perfectly Balanced</em>
+            </h2>
+            <p>
+              We bring you the finest of both worlds - the heritage of handloom and
+              the perfection of powerloom. Blending tradition with innovation to
+              deliver sarees that are beautiful, durable and affordable.
+            </p>
+          </>
+        )}
         <Link to="/collection" className="bk-craft-cta">
           Explore Collection
         </Link>
@@ -65,10 +94,14 @@ const CraftSection = () => (
             </div>
           </article>
         ))}
-        <div className="bk-craft-balance" aria-hidden="true">
-          <span>Perfect</span>
-          <strong>Balance</strong>
-        </div>
+        {/* The medallion sits between the two panels and is about the balance BETWEEN
+            them, so it only appears when both are there. */}
+        {!IS_SINGLE_CRAFT && (
+          <div className="bk-craft-balance" aria-hidden="true">
+            <span>Perfect</span>
+            <strong>Balance</strong>
+          </div>
+        )}
       </div>
     </div>
   </section>

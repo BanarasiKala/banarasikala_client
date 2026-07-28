@@ -4,21 +4,21 @@ import PolicyPage from "./PolicyPage";
  * The authoritative care text is per-product and free-form (Product.care_instructions, shown
  * as the "Care" row in ProductDetail's specification panel, and returned by the chat
  * assistant's get_product_details). The row is filtered out when empty, so absence is covered
- * too. Everything after the first section is general handloom guidance, not stored anywhere.
+ * too. Everything after the first section is general Banarasi silk guidance, not stored anywhere.
  */
 const sections = [
   {
     heading: "Every Saree Carries Its Own Instructions",
     body: [
       "Care is recorded against each individual saree — a heavy zari tissue and a lighter silk do not want the same handling. Open any product, scroll to the Material & Specifications panel, and the Care row there is written for that piece. Where it differs from the general guidance below, the product page wins.",
-      "If a listing shows no Care row we have not recorded instructions for it. Treat it as handloom silk and follow the guidance below, or ask us. You can also ask the assistant on any page — it reads the same care text.",
+      "If a listing shows no Care row we have not recorded instructions for it. Treat it as Banarasi silk and follow the guidance below, or ask us. You can also ask the assistant on any page — it reads the same care text.",
       "Unless a listing says otherwise, our standard is simple: dry clean only, stored folded in a muslin cloth, kept out of direct sunlight.",
     ],
   },
   {
     heading: "Cleaning",
     body: [
-      "Dry clean only. Handloom silk and real zari do not tolerate water, detergent or machine agitation — one home wash can dull the zari permanently and shrink the weave unevenly. Use a cleaner who handles Banarasi silk regularly and point out the zari so it is not pressed flat or treated with harsh solvents.",
+      "Dry clean only. Banarasi silk and real zari do not tolerate water, detergent or machine agitation — one home wash can dull the zari permanently and shrink the weave unevenly. Use a cleaner who handles Banarasi silk regularly and point out the zari so it is not pressed flat or treated with harsh solvents.",
       "For a small fresh stain, blot gently with a dry cloth and take it in soon. Do not rub, and do not apply water or stain remover yourself. Some colour may lift during the first dry clean — that is normal for naturally dyed silk, so tell your cleaner it is a first clean.",
     ],
   },
@@ -44,7 +44,7 @@ const sections = [
   {
     heading: "What Is Normal, and What Is Not",
     body: [
-      "Slight irregularity in the weave, small variation in motif spacing and loose threads on the reverse are characteristic of handloom work, not faults — our Disclaimer explains why.",
+      "Small variation in motif alignment, in how the zari catches the light, and in finished length or weight between pieces is normal and not a fault — our Disclaimer explains why.",
       "Damage caused after delivery by washing, dry cleaning, ironing, storage or alteration is not something we can cover. A genuine fault is different: if a saree arrives damaged or defective, that is a listed return reason and you have 7 days from delivery to raise it.",
     ],
   },
