@@ -117,13 +117,16 @@
   text-transform: uppercase;
 }
 
+/* The customer's own name. It was running to 38px at 700 — larger than any heading on
+   the page it sits on, so the account page read as being about the name rather than the
+   account. */
 .profile-meta h1 {
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, serif;
-  font-size: clamp(24px, 3vw, 38px);
-  font-weight: 700;
-  line-height: 1.08;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .profile-meta p {
@@ -254,19 +257,22 @@
   flex-wrap: wrap;
 }
 
+/* Edit Profile, Save, Cancel. Sized down to sit beside the name rather than compete with
+   it — these are secondary actions on a page whose job is to show the account. */
 .profile-btn {
-  min-height: 38px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 9px 14px;
+  gap: 6px;
+  padding: 6px 11px;
   color: #3d2817;
   background: #fffaf2;
   border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 11.5px;
+  font-weight: 550;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
@@ -490,6 +496,10 @@
   line-height: 1.5;
 }
 
+/* Three colours on one line, each doing a different job: a blue pin that reads as a map
+   marker at a glance, a muted "Map:" that reads as a label rather than part of the
+   address, and the address itself left in the page's maroon like every other line in the
+   card. */
 .profile-map-address-line {
   display: inline-flex;
   align-items: flex-start;
@@ -503,6 +513,15 @@
   width: 14px;
   height: 14px;
   margin-top: 2px;
+  /* Map-marker blue. !important because the line above sets colour that way too, and
+     `currentColor` on the icon would otherwise inherit the maroon. */
+  color: #1a73e8 !important;
+}
+
+.profile-map-label {
+  flex: 0 0 auto;
+  color: rgba(45, 27, 14, 0.62);
+  font-weight: 600;
 }
 
 .profile-address-form {
@@ -582,8 +601,8 @@
 }
 
 .profile-add-address-trigger svg {
-  width: 20px;
-  height: 20px;
+  width: 13px;
+  height: 13px;
 }
 
 .profile-add-address-trigger:hover {
@@ -1220,7 +1239,7 @@
   }
 
   .profile-meta h1 {
-    font-size: 21px;
+    font-size: 15px;
   }
 
   .profile-meta p {
@@ -1510,10 +1529,10 @@
 
 .profile-meta h1 {
   color: #780018;
-  font-size: clamp(24px, 4vw, 31px);
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: 0;
-  line-height: 1.12;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -1557,14 +1576,14 @@
 }
 
 .profile-edit-profile-btn {
-  min-height: 46px;
-  padding: 10px 18px;
+  min-height: 30px;
+  padding: 6px 12px;
   color: #780018;
   background: #fffdf8;
   border-color: rgba(128, 0, 32, 0.56);
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 11.5px;
+  font-weight: 550;
 }
 
 .profile-edit-profile-btn:hover {
@@ -1620,7 +1639,7 @@
 .profile-wallet-label {
   color: #f1cf8e;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1657,8 +1676,8 @@
   background: #fae3bf;
   border: 0;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 550;
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.16s ease, transform 0.12s ease;
@@ -1680,12 +1699,13 @@
   gap: 8px;
 }
 
+/* "My Addresses", "My Account" and the other panel headings. */
 .profile-block-title {
   margin: 0;
   color: #6f0017;
   font-family: "Cinzel", Georgia, serif;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 550;
   letter-spacing: 0;
   line-height: 1.2;
   text-transform: uppercase;
@@ -1873,28 +1893,42 @@
   box-shadow: none;
 }
 
+/* nowrap so the title and the button stay on one line. Without it the button was tall
+   enough that a narrow panel wrapped it onto its own row, leaving a gap under the title. */
 .profile-address-heading-row {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
   margin-bottom: 9px;
 }
 
+/* "My Addresses" on one line. A flex item's default min-width is auto, so the heading was
+   being squeezed by the button beside it and breaking after "My" — nowrap plus flex-shrink
+   0 keeps the two words together and lets the button give way instead. */
+.profile-address-heading-row .profile-block-title {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Sized against .profile-block-title (14px) so the pair reads as one row rather than a
+   heading with a slab beside it. */
 .profile-add-address-trigger {
-  min-height: 38px;
+  min-height: 24px;
+  padding: 3px 9px;
   justify-self: auto;
-  padding: 8px 15px;
   color: #780018;
   background: #fffdf8;
   border: 1px solid rgba(128, 0, 32, 0.58);
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .profile-add-address-trigger svg {
-  width: 17px;
+  width: 13px;
   height: 17px;
   stroke-width: 2.1;
 }
@@ -2094,7 +2128,7 @@
   }
 
   .profile-meta h1 {
-    font-size: 25px;
+    font-size: 15px;
   }
 
   .profile-contact-line span {
@@ -2112,7 +2146,7 @@
   }
 
   .profile-edit-profile-btn {
-    min-height: 42px;
+    min-height: 30px;
   }
 
   .profile-coming-panel {
@@ -2176,7 +2210,7 @@
   }
 
   .profile-meta h1 {
-    font-size: 23px;
+    font-size: 14px;
   }
 
   .profile-wallet {
@@ -2228,9 +2262,9 @@
   }
 
   .profile-add-address-trigger {
-    min-height: 36px;
-    padding: 7px 12px;
-    font-size: 12px;
+    min-height: 22px;
+    padding: 3px 7px;
+    font-size: 9.5px;
   }
 
   .profile-address-content {

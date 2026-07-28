@@ -6,7 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
-import comingSoonGift from "../../assets/profile-coming-gift.svg";
+// coming_soon.png, not the .jpeg beside it. JPEG has no alpha channel, so that export had
+// the editor's transparency checkerboard flattened into its pixels and rendered as a dark
+// checked block on this panel's cream. The PNG is that artwork with the checkerboard keyed
+// back out to real transparency.
+import comingSoonGift from "../../assets/coming_soon.png";
 import "./Profile.css";
 
 const SUPPORT_ERROR_MESSAGE = "Something went wrong. Please contact support or try again later.";
@@ -1042,7 +1046,9 @@ export default function Profile() {
                           {address.map_address ? (
                             <p className="profile-map-address-line">
                               <Icon icon="lucide:map-pin" />
-                              Map: {address.map_address}
+                              {/* The label is its own span so the pin, the word "Map" and
+                                  the address can each be coloured separately. */}
+                              <span className="profile-map-label">Map:</span> {address.map_address}
                             </p>
                           ) : null}
                         </div>
