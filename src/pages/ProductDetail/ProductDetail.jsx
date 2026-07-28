@@ -2048,8 +2048,12 @@ const ProductDetail = () => {
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                   </button>
+                  {/* Same glyph as the reels rail, which uses lucide's Send from
+                      lucide-react — "lucide:send" is Iconify's mirror of it, so the two
+                      share buttons are the same mark without pulling a second icon
+                      library into this file. */}
                   <button type="button" onClick={(e) => { e.stopPropagation(); handleShare(); }} className="product-media-action-btn" aria-label="Share">
-                    <Icon icon="lucide:share-2" />
+                    <Icon icon="lucide:send" />
                   </button>
                 </div>
               </div>
