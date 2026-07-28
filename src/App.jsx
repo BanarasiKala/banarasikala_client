@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 
 import Layout from "./layout/Layout";
 import ScrollToTop from "./components/ScrollToTop";
+import MediaAutoPause from "./components/MediaAutoPause";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -67,6 +68,8 @@ function App() {
             <SupportRealtimeProvider>
             <Router>
               <ScrollToTop />
+              {/* Silences any playing audio when the phone leaves the site. */}
+              <MediaAutoPause />
               <div
                 className="App"
                 style={{

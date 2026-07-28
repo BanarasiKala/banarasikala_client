@@ -180,17 +180,27 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
     if (!v) return undefined;
     const start = () => setBuffering(true);
     const stop = () => setBuffering(false);
+    // Playback can also be stopped from outside this component — MediaAutoPause silences
+    // audible media when the phone leaves the site, and the browser pauses on an incoming
+    // call. Mirroring the element's own events means the play badge shows in those cases
+    // too, instead of the reel sitting frozen with no sign it can be resumed.
+    const onPause = () => setPaused(true);
+    const onPlay = () => setPaused(false);
     v.addEventListener("waiting", start);
     v.addEventListener("stalled", start);
     v.addEventListener("playing", stop);
     v.addEventListener("canplay", stop);
     v.addEventListener("error", stop);
+    v.addEventListener("pause", onPause);
+    v.addEventListener("play", onPlay);
     return () => {
       v.removeEventListener("waiting", start);
       v.removeEventListener("stalled", start);
       v.removeEventListener("playing", stop);
       v.removeEventListener("canplay", stop);
       v.removeEventListener("error", stop);
+      v.removeEventListener("pause", onPause);
+      v.removeEventListener("play", onPlay);
     };
   }, []);
 
