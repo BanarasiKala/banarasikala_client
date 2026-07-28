@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import headerBackground from "../../assets/header_backgroung.png";
 import mobileBackground from "../../assets/img.jpg";
@@ -10,6 +10,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import { getApiErrorMessage } from "../../utils/error";
+import { scrollWindowToTop } from "../../utils/scrollRestore";
 import { numberEnv } from "../../utils/env";
 import "./Auth.css";
 
@@ -229,16 +230,18 @@ const Auth = () => {
   // `signupStep` is in here too: moving from the signup form to "Check Your Inbox" swaps the
   // whole panel without changing activeTab, and on a filled-in form that happens well below
   // the fold, so the confirmation would appear off screen.
-  useEffect(() => {
-    let rafId = requestAnimationFrame(() => {
-      rafId = requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-        if (pageRef.current) pageRef.current.scrollTop = 0;
-      });
-    });
-    return () => cancelAnimationFrame(rafId);
+  //
+  // A LAYOUT effect, not a passive one. This used to be a passive effect behind a double
+  // requestAnimationFrame, so the scroll landed two frames AFTER the paint: the reader saw
+  // the new form at the old offset first and then watched it jump to the top. Running
+  // before the paint means the new tab is simply already at the top — and the helper keeps
+  // re-asserting while the panel settles, so a taller form or a late font cannot undo it.
+  useLayoutEffect(() => {
+    const cancel = scrollWindowToTop();
+    // .auth-page sets overflow-x: hidden, which computes overflow-y to auto and makes it a
+    // scroll container in its own right, so it needs clearing alongside the window.
+    if (pageRef.current) pageRef.current.scrollTop = 0;
+    return cancel;
   }, [activeTab, signupStep]);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
-import { scrollPositions, persistScrollPositions as persist } from "../utils/scrollRestore";
+import { scrollPositions, persistScrollPositions as persist, scrollWindowToTop } from "../utils/scrollRestore";
 
 // Restores scroll position on back/forward (POP) navigation so the user returns
 // to exactly where they were, while forward navigation (product click, nav links)
@@ -74,36 +74,9 @@ const ScrollToTop = () => {
     if (saved == null) {
       suppressRef.current = true;
       persist();
-
-      let frames = 0;
-      let rafId = 0;
-      const toTop = () => {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-        // Give up once it has held, or after a short budget — long enough to outlast the
-        // passive cleanups and a re-layout, short enough never to fight a real scroll.
-        if ((window.scrollY === 0 && frames > 0) || frames >= 6) {
-          suppressRef.current = false;
-          return;
-        }
-        frames += 1;
-        rafId = requestAnimationFrame(toTop);
-      };
-      toTop();
-
-      // A deliberate scroll during those few frames means the reader has taken over.
-      const release = () => {
-        cancelAnimationFrame(rafId);
-        suppressRef.current = false;
-      };
-      window.addEventListener("wheel", release, { passive: true, once: true });
-      window.addEventListener("touchmove", release, { passive: true, once: true });
-
-      return () => {
-        cancelAnimationFrame(rafId);
-        window.removeEventListener("wheel", release);
-        window.removeEventListener("touchmove", release);
-        suppressRef.current = false;
-      };
+      // Same helper the Auth page's tab switch uses, so "open this at the top" behaves
+      // identically whether it was a navigation or a panel swap.
+      return scrollWindowToTop({ onDone: () => { suppressRef.current = false; } });
     }
 
     // Back/forward: restore the remembered position.
