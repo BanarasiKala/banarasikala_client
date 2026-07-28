@@ -106,6 +106,71 @@
   text-underline-offset: 2px;
 }
 
+/* ── Loading state ────────────────────────────────────────────────────
+   Reuses .bk-prefs-list and .bk-prefs-actions so the tick rows and the button row keep
+   their real borders, padding and gaps; only the copy is stood in for. Each rule names
+   the element it replaces and takes its size from that element's type. */
+.bk-prefs-sk-line {
+  height: 14px;
+  margin: 0 0 14px;
+  border-radius: 999px;
+}
+
+/* .bk-prefs-email */
+.bk-prefs-sk-email { width: 74%; }
+
+/* .bk-prefs-note runs to two lines at this card width */
+.bk-prefs-sk-note { width: 100%; margin-bottom: 8px; }
+.bk-prefs-sk-note.short { width: 56%; margin-bottom: 14px; }
+
+/* .bk-prefs-list label */
+.bk-prefs-sk-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+}
+
+/* .bk-prefs-list input */
+.bk-prefs-sk-box {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  border-radius: 4px;
+}
+
+.bk-prefs-sk-copy {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* .bk-prefs-list strong (14px) over small (12.5px, 3px below it) */
+.bk-prefs-sk-strong {
+  width: 176px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.bk-prefs-sk-small {
+  width: 88%;
+  height: 12px;
+  margin-top: 6px;
+  border-radius: 999px;
+}
+
+/* .bk-prefs-save / .bk-prefs-all — 12px caps with 11px/20px padding */
+.bk-prefs-sk-btn {
+  width: 158px;
+  height: 39px;
+  border-radius: 999px;
+}
+
+.bk-prefs-sk-btn.wide {
+  width: 216px;
+}
+
 .bk-prefs-actions {
   display: flex;
   flex-wrap: wrap;

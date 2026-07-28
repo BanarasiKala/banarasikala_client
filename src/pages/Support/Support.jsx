@@ -99,10 +99,25 @@ const Support = () => {
 
   const renderList = () => {
     if (loading) {
+      // A centred spinner in an empty panel told the reader nothing about what was
+      // coming and then collapsed into a list of rows. These are the rows: same
+      // thumbnail, same two lines of copy, same status pill, same chevron gutter.
       return (
-        <div className="support-empty">
-          <Icon icon="lucide:loader-2" className="support-spin" />
-          <p>Loading your chats…</p>
+        <div className="support-list" aria-label="Loading your chats" aria-busy="true">
+          {[1, 2, 3].map((row) => (
+            <div className="support-row support-row-skeleton" key={row} aria-hidden="true">
+              <span className="bk-sk support-sk-thumb" />
+              <span className="support-row-body">
+                <span className="support-row-top">
+                  <span className="bk-sk support-sk-title" />
+                  <span className="bk-sk support-sk-day" />
+                </span>
+                <span className="bk-sk support-sk-sub" />
+                <span className="bk-sk support-sk-status" />
+              </span>
+              <span className="bk-sk support-sk-chevron" />
+            </div>
+          ))}
         </div>
       );
     }

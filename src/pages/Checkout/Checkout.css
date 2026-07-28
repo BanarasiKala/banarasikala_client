@@ -813,8 +813,8 @@
 }
 
 @keyframes bnas-shimmer {
-    0% { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
 }
 
 .buy-now-address-skeleton {
@@ -862,17 +862,25 @@
     border-radius: 6px;
 }
 
+/* Loader tokens from index.css: this sat on its own grey palette, which read as a
+   different product from the sand-toned skeletons on the rest of checkout. */
 .buy-now-address-skeleton .bnas-radio,
 .buy-now-address-skeleton .bnas-line,
 .buy-now-address-skeleton .bnas-btn {
-    background: linear-gradient(
-        90deg,
-        #ede8e0 25%,
-        #f5f1ea 50%,
-        #ede8e0 75%
-    );
-    background-size: 800px 100%;
-    animation: bnas-shimmer 1.4s infinite linear;
+    position: relative;
+    overflow: hidden;
+    background: var(--bk-loader-base);
+}
+
+.buy-now-address-skeleton .bnas-radio::after,
+.buy-now-address-skeleton .bnas-line::after,
+.buy-now-address-skeleton .bnas-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--bk-loader-sheen);
+    transform: translateX(-100%);
+    animation: bnas-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
 .checkout-no-address {

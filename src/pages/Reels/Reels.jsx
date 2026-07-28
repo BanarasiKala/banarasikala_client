@@ -464,9 +464,36 @@ export default function Reels() {
   };
 
   if (loading) {
+    // The reel frame itself, not a spinner in the void: the stage, the right-hand action
+    // rail and the caption block all land where they will be once the feed arrives, so
+    // the first reel appears into a shape the reader is already looking at. The back
+    // button is real — it works during the wait, which a spinner screen did not allow.
     return (
-      <div className="bk-reels-page bk-reels-loading">
-        <div className="bk-reels-spinner" />
+      <div className="bk-reels-page bk-reels-loading" aria-busy="true" aria-label="Loading reels">
+        <button type="button" className="bk-reels-back" onClick={() => navigate("/")} aria-label="Back to home">
+          <ChevronLeft size={26} />
+        </button>
+        <div className="bk-reel" aria-hidden="true">
+          <div className="bk-reel-stage">
+            <div className="bk-reel-video-wrap bk-sk bk-sk--dark bk-reel-sk-video">
+              <span className="bk-reel-sk-mute" />
+
+              <div className="bk-reel-rail">
+                {[1, 2, 3, 4].map((action) => (
+                  <span className="bk-reel-sk-action" key={action}>
+                    <span className="bk-reel-sk-glyph" />
+                    <span className="bk-reel-sk-count" />
+                  </span>
+                ))}
+              </div>
+
+              <div className="bk-reel-bottom bk-reel-sk-bottom">
+                <span className="bk-reel-sk-title" />
+                <span className="bk-reel-sk-shop" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

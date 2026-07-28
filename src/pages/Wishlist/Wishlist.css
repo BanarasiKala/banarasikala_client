@@ -610,56 +610,70 @@
   border: 1px solid rgba(128, 0, 32, 0.18);
 }
 
+/* ── Loading card ───────────────────────────────────────────────────────
+   A real .wishlist-card with placeholders inside it, so the frame, the 3/4 media box
+   and .wishlist-card-body's own 5px rhythm are shared with the loaded card rather than
+   re-declared. Each line below is sized from the type it stands in for; the button sits
+   on margin-top:auto exactly as the real one does. */
 .wishlist-card-skeleton {
   pointer-events: none;
 }
 
-.wishlist-skeleton-image,
-.wishlist-skeleton-line,
-.wishlist-skeleton-button {
-  display: block;
-  border-radius: 8px;
-  background: var(--bk-loader-gradient);
-  background-size: 220% 100%;
-  animation: wishlistShimmer var(--bk-loader-duration) ease-in-out infinite;
-}
-
 .wishlist-skeleton-image {
   aspect-ratio: 3 / 4;
+  border-radius: 0;
 }
 
 .wishlist-skeleton-line {
-  height: 11px;
-  margin-top: 10px;
+  border-radius: 999px;
 }
 
+/* .wishlist-card-title — clamps to two 11px/1.4 lines */
 .wishlist-skeleton-line.title {
-  width: 82%;
+  width: 100%;
+  height: 11px;
+}
+
+.wishlist-skeleton-line.title.short {
+  width: 66%;
+}
+
+/* .wishlist-card-desc, one 10px line */
+.wishlist-skeleton-line.desc {
+  width: 88%;
+  height: 10px;
+}
+
+/* .product-rating-chip — 14px stars beside a short count */
+.wishlist-skeleton-line.rating {
+  width: 92px;
   height: 14px;
-  margin-top: 0;
 }
 
+/* .wishlist-card-price: 13px price over the 11px struck-through MRP */
 .wishlist-skeleton-line.price {
-  width: 52%;
+  width: 74px;
+  height: 15px;
+  margin-top: 2px;
 }
 
-.wishlist-skeleton-line.text {
-  width: 94%;
+.wishlist-skeleton-line.mrp {
+  width: 96px;
+  height: 11px;
 }
 
+/* .card-delivery-badge */
+.wishlist-skeleton-line.delivery {
+  width: 132px;
+  height: 12px;
+  margin-bottom: 8px;
+}
+
+/* .wishlist-card-actions button */
 .wishlist-skeleton-button {
   height: 36px;
-  margin-top: 12px;
-}
-
-@keyframes wishlistShimmer {
-  0% {
-    background-position: 120% 0;
-  }
-
-  100% {
-    background-position: -120% 0;
-  }
+  margin-top: auto;
+  border-radius: 999px;
 }
 
 .wishlist-empty,

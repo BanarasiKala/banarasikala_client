@@ -1154,36 +1154,66 @@
   background: rgba(128, 0, 32, 0.2);
 }
 
-/* ── Skeleton ────────────────────────────────────────────────────────── */
-@keyframes cart-shimmer {
-  0% { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+/* ── Skeleton ─────────────────────────────────────────────────────────
+   Built on the real .cart-summary / .cart-selectall / .cart-card boxes rather than on
+   look-alikes, so the card surfaces, radii and padding come from one place and cannot
+   drift apart. Only the contents are stand-ins, and each is sized to the line it
+   replaces — see the measurements against each rule. */
+.cart-sk-summary,
+.cart-sk-card {
+  pointer-events: none;
 }
 
-.cart-sk-btn,
-.cart-sk-image,
 .cart-sk-line {
-  background: linear-gradient(90deg, #eddec9 25%, #f6ebdb 50%, #eddec9 75%);
-  background-size: 800px 100%;
-  animation: cart-shimmer 1.4s infinite linear;
-  border-radius: 6px;
+  height: 13px;
 }
 
+/* .cart-summary-bag icon box */
+.cart-sk-bag {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+
+/* .cart-summary-info strong (13px) then .cart-summary-freedelivery (11.5px). The bars
+   are lighter than those two line boxes so they read as placeholder rather than text,
+   and the column carries the difference as a min-height — it is the tallest cell in
+   .cart-summary-top, so it is what sets the card's height. */
+.cart-sk-summary .cart-summary-info {
+  min-height: 38px;
+  justify-content: center;
+}
+
+.cart-sk-line--count { width: 132px; height: 14px; }
+.cart-sk-line--delivery { width: 178px; height: 12px; }
+
+.cart-sk-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.cart-sk-line--amount-label { width: 52px; height: 9px; }
+.cart-sk-line--amount { width: 74px; height: 16px; }
+
+/* .cart-proceed-btn — 12px type + 11px padding each side */
 .cart-sk-btn {
   width: 100%;
-  height: 56px;
+  height: 38px;
   border-radius: 10px;
 }
 
-.cart-sk-card {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: #fff4ea;
-  border-radius: 14px;
-  border: 1px solid rgba(128, 0, 32, 0.08);
+/* .cart-selectall — 13px label left, 13px underlined "Deselect" right */
+.cart-sk-selectall {
+  pointer-events: none;
 }
 
+.cart-sk-line--selectall { width: 116px; height: 14px; }
+.cart-sk-line--deselect { width: 62px; height: 14px; }
+
+/* .cart-card-image */
 .cart-sk-image {
   flex-shrink: 0;
   width: 92px;
@@ -1191,28 +1221,48 @@
   border-radius: 10px;
 }
 
+/* .cart-check on the real card */
+.cart-sk-check {
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  border-radius: 4px;
+}
+
+/* .cart-card-body already sets the flex column and its 4px gap */
 .cart-sk-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: 4px;
 }
 
-.cart-sk-line {
-  height: 13px;
-}
+/* .cart-card-name clamps to two 11px/1.4 lines; the second runs short like real copy */
+.cart-sk-line--name { width: 100%; height: 12px; }
+.cart-sk-line--name.short { width: 62%; }
 
-.cart-sk-line--name { width: 75%; height: 15px; }
-.cart-sk-line--meta { width: 45%; }
-.cart-sk-line--price { width: 30%; }
-.cart-sk-line--qty { width: 80px; height: 28px; border-radius: 20px; }
+/* .cart-card-color (11px) and .cart-card-price-row (13px, 2px above it) */
+.cart-sk-line--color { width: 84px; height: 12px; margin-top: 2px; }
+.cart-sk-line--price { width: 108px; height: 15px; margin-top: 2px; }
 
-.cart-sk-footer {
-  margin-top: auto;
+/* .cart-card-controls — qty stepper and delete, both 30px, pushed right */
+.cart-sk-controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cart-sk-qty {
+  width: 92px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.cart-sk-delete {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────── */

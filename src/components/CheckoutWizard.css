@@ -291,12 +291,15 @@
   pointer-events: none;
 }
 
+/* Same fill, sheen and tempo as every other skeleton in the store — see the loader
+   tokens in index.css. Held its own colour and a faster 1.1s beat before, which read
+   as a different kind of wait from the one on the page it is embedded in. */
 .ckw-skeleton-line,
 .ckw-skeleton-button {
   display: block;
   overflow: hidden;
   position: relative;
-  background: #eadbc8;
+  background: var(--bk-loader-base);
 }
 
 .ckw-skeleton-line::after,
@@ -304,8 +307,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-  animation: ckw-skeleton-shimmer 1.1s ease-in-out infinite;
+  background: var(--bk-loader-sheen);
+  transform: translateX(-100%);
+  animation: ckw-skeleton-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
 .ckw-skeleton-line {

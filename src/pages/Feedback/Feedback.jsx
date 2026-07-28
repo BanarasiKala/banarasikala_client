@@ -112,7 +112,28 @@ const Feedback = () => {
           <div className="feedback-kicker">Send Us a Review</div>
 
           {authLoading ? (
-            <div className="feedback-loading">Loading...</div>
+            /* The panel resolves to either the review form or the sign-in prompt, and
+               which one depends on a session check the reader cannot see. The form is
+               what a returning reviewer gets and it is the taller of the two, so it is
+               the shape worth holding: rating card, review box, submit, footnote. */
+            <div className="feedback-form feedback-form-skeleton" aria-label="Loading review form" aria-busy="true">
+              <div className="feedback-rating" aria-hidden="true">
+                <span className="bk-sk feedback-sk-label" />
+                <div className="feedback-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span className="bk-sk feedback-sk-star" key={star} />
+                  ))}
+                </div>
+                <span className="bk-sk feedback-sk-verdict" />
+              </div>
+
+              <div className="feedback-review-field" aria-hidden="true">
+                <span className="bk-sk feedback-sk-label feedback-sk-label--left" />
+                <span className="bk-sk feedback-sk-textarea" />
+              </div>
+
+              <span className="bk-sk feedback-sk-submit" aria-hidden="true" />
+            </div>
           ) : user ? (
             <>
               <form onSubmit={handleSubmit} className="feedback-form">

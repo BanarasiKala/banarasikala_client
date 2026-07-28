@@ -1000,13 +1000,67 @@ export default function MyOrders() {
         )}
 
         {loading && (
-          <div className="orders-loading">
+          /* Reuses the real .order-card scaffolding — header, stats strip, items box,
+             support footer — so a loading card occupies the same height and the same
+             internal rhythm as the card that replaces it. One item per card: that is the
+             common case, and guessing more would leave a gap when the orders land. */
+          <div className="orders-loading" aria-label="Loading your orders" aria-busy="true">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="order-skeleton">
-                <div className="skel skel-header" />
-                <div className="skel skel-product" />
-                <div className="skel skel-footer" />
-              </div>
+              <article key={item} className="order-card order-skeleton" aria-hidden="true">
+                <div className="order-card-header">
+                  <div className="order-head-main">
+                    <div className="order-meta">
+                      <span className="bk-sk skel-id-label" />
+                      <span className="bk-sk skel-id" />
+                      <span className="bk-sk skel-date" />
+                    </div>
+                    <span className="bk-sk skel-status" />
+                    <span className="bk-sk skel-menu" />
+                  </div>
+
+                  <div className="order-head-stats">
+                    {[1, 2, 3].map((stat) => (
+                      <div key={stat} className="order-stat">
+                        <span className="bk-sk skel-stat-icon" />
+                        <span className="skel-stat-copy">
+                          <span className="bk-sk skel-stat-value" />
+                          <span className="bk-sk skel-stat-label" />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="order-products">
+                  <span className="bk-sk skel-products-title" />
+                  <div className="order-items-box">
+                    <div className="order-product-item">
+                      <span className="bk-sk skel-product-media" />
+                      <div className="skel-product-details">
+                        <span className="bk-sk skel-product-name" />
+                        <span className="bk-sk skel-product-name short" />
+                        <span className="bk-sk skel-product-status" />
+                        <span className="bk-sk skel-product-attr" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="order-card-footer">
+                  <div className="order-help-box">
+                    <span className="bk-sk skel-help-icon" />
+                    <span className="skel-help-copy">
+                      <span className="bk-sk skel-help-title" />
+                      <span className="bk-sk skel-help-sub" />
+                    </span>
+                    <span className="bk-sk skel-help-btn" />
+                  </div>
+                  <div className="order-card-actions">
+                    <span className="bk-sk skel-action-btn" />
+                    <span className="bk-sk skel-action-btn" />
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         )}

@@ -99,7 +99,36 @@ const EmailPreferences = () => {
         <p className="bk-prefs-eyebrow">Banarasi Kala</p>
         <h1>Email Preferences</h1>
 
-        {status === "loading" && <p className="bk-prefs-note">Loading your preferences…</p>}
+        {status === "loading" && (
+          /* The ready state is an address line, a short instruction, the ticked list and
+             the two buttons. A single line of "Loading…" left the card a third of its
+             height and then the whole thing unfolded. Two list rows is the floor —
+             newsletter plus at least one alert is what brings most people here. */
+          <div aria-label="Loading your preferences" aria-busy="true">
+            <span className="bk-sk bk-prefs-sk-line bk-prefs-sk-email" aria-hidden="true" />
+            <span className="bk-sk bk-prefs-sk-line bk-prefs-sk-note" aria-hidden="true" />
+            <span className="bk-sk bk-prefs-sk-line bk-prefs-sk-note short" aria-hidden="true" />
+
+            <ul className="bk-prefs-list" aria-hidden="true">
+              {[1, 2].map((row) => (
+                <li key={row}>
+                  <span className="bk-prefs-sk-label">
+                    <span className="bk-sk bk-prefs-sk-box" />
+                    <span className="bk-prefs-sk-copy">
+                      <span className="bk-sk bk-prefs-sk-strong" />
+                      <span className="bk-sk bk-prefs-sk-small" />
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="bk-prefs-actions" aria-hidden="true">
+              <span className="bk-sk bk-prefs-sk-btn" />
+              <span className="bk-sk bk-prefs-sk-btn wide" />
+            </div>
+          </div>
+        )}
 
         {status === "invalid" && (
           <>

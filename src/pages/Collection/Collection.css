@@ -10,7 +10,6 @@
 }
 
 .collection-container {
-    --collection-loader-duration: 1.4s;
     background:
         linear-gradient(rgba(255, 246, 232, 0.76), rgba(255, 246, 232, 0.94)),
         var(--bk-section-bg),
@@ -147,19 +146,23 @@
     background:
         var(--bk-loader-gradient);
     background-size: 220% 100%;
-    animation: collection-skeleton-shimmer var(--collection-loader-duration) ease-in-out infinite;
+    animation: collection-skeleton-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
+/* .filter-title is 13px with 18px under it — a ~37px slot. The bar is lighter than the
+   line box so it reads as placeholder, and the remainder is carried as margin so the
+   sections below start where the real ones will. */
 .filter-skeleton-title {
     width: 52%;
     height: 14px;
-    margin-bottom: 18px;
+    margin-bottom: 23px;
 }
 
+/* .filter-item is 14px with 10px under it — a ~31px slot per row. */
 .filter-skeleton-row {
     width: 88%;
-    height: 17px;
-    margin-bottom: 12px;
+    height: 15px;
+    margin-bottom: 16px;
 }
 
 .filter-skeleton-row:nth-child(3) {
@@ -178,7 +181,7 @@
     border-radius: 999px;
     background: var(--bk-loader-gradient);
     background-size: 220% 100%;
-    animation: collection-skeleton-shimmer var(--collection-loader-duration) ease-in-out infinite;
+    animation: collection-skeleton-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
 .filter-skeleton-price-values {
@@ -583,7 +586,7 @@
         var(--bk-loader-sheen),
         linear-gradient(135deg, #f3dec2 0%, #fff7eb 48%, #ebcfab 100%);
     background-size: 220% 100%, 100% 100%;
-    animation: collection-image-shimmer var(--collection-loader-duration) ease-in-out infinite;
+    animation: collection-image-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
 .card-img-track {
@@ -1179,28 +1182,73 @@
     }
 }
 
-/* Skeleton Loading */
-.skeleton {
-    background: var(--bk-loader-gradient);
-    background-size: 220% 100%;
-    animation: collection-skeleton-shimmer var(--collection-loader-duration) ease-in-out infinite;
+/* ── Loading card ──────────────────────────────────────────────────────
+   A real .product-card with placeholders in place of the copy, so the media box, the
+   .card-details padding and its 5px gap are inherited rather than guessed. Every line
+   is sized from the type it replaces, and the button sits on margin-top:auto like the
+   real one, which is what keeps the grid rows steady when the products land. */
+.product-card-skeleton {
+    pointer-events: none;
 }
 
+/* .card-img-container brings its own gold wash, which is declared later in this file
+   than the shared loader fill and would otherwise win — so the fill is restated here. */
+.skeleton-img {
+    background: var(--bk-loader-base);
+    border-radius: 0;
+}
+
+.skeleton-line {
+    border-radius: 999px;
+}
+
+/* .card-details h3 — clamps to two 11px/1.4 lines */
 .skeleton-title {
-    width: 60%;
-    height: 20px;
-    margin-bottom: 8px;
+    width: 100%;
+    height: 11px;
 }
 
+.skeleton-title.short {
+    width: 64%;
+}
+
+/* .collection-desc, one 10px line */
 .skeleton-description {
-    width: 80%;
+    width: 86%;
+    height: 10px;
+}
+
+/* .product-rating-chip — 14px stars beside the count */
+.skeleton-rating {
+    width: 92px;
     height: 14px;
+}
+
+/* .price-container: 13px selling price over the 11px "M.R.P.:" line */
+.skeleton-price {
+    width: 76px;
+    height: 15px;
+    margin-top: 2px;
+}
+
+.skeleton-mrp {
+    width: 98px;
+    height: 11px;
+}
+
+/* .card-delivery-badge */
+.skeleton-delivery {
+    width: 134px;
+    height: 12px;
     margin-bottom: 8px;
 }
 
-.skeleton-price {
-    width: 40%;
-    height: 16px;
+/* .collection-atc-btn — 12px type, 9px padding each side */
+.skeleton-atc {
+    width: 100%;
+    height: 35px;
+    margin-top: auto;
+    border-radius: 999px;
 }
 
 @keyframes collection-skeleton-shimmer {

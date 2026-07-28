@@ -264,6 +264,66 @@
   .support-spin { animation: none; }
 }
 
+/* ---------- loading rows ----------
+   Real .support-row boxes with placeholders inside, so the border, radius, padding and
+   44px thumbnail gutter come from the row itself and the list does not change height
+   when the strands arrive. Sizes below are taken from the type each one replaces. */
+
+.support-row-skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.support-row-skeleton:hover {
+  border-color: rgba(116, 40, 19, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+/* .support-row-img / .support-row-icon */
+.support-sk-thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+/* .support-row-top — 13px title on the left, 10.5px day stamp on the right */
+.support-sk-title {
+  width: 58%;
+  max-width: 190px;
+  height: 13px;
+}
+
+.support-sk-day {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 10px;
+}
+
+/* .support-row-sub, 11.5px */
+.support-sk-sub {
+  width: 74%;
+  max-width: 210px;
+  height: 11px;
+}
+
+/* .support-row-status pill */
+.support-sk-status {
+  align-self: flex-start;
+  width: 72px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 999px;
+}
+
+/* .support-row-chevron */
+.support-sk-chevron {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 16px;
+  border-radius: 3px;
+}
+
 /* ---------- mobile: one pane at a time ---------- */
 
 @media (max-width: 860px) {

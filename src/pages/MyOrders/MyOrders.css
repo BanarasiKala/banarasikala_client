@@ -170,36 +170,126 @@
   box-shadow: 0 16px 42px rgba(65, 29, 11, 0.08);
 }
 
+/* ── Loading card ───────────────────────────────────────────────────
+   The skeleton is a real .order-card with placeholders where the copy goes, so the
+   header, stats strip, items box and footer keep their own padding and borders and
+   the loading card lands at the height of the card that follows it. Each rule below
+   names the element it stands in for and is sized from that element's type. */
 .order-skeleton {
-  padding: 16px;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.skel {
-  border-radius: 10px;
-  background: var(--bk-loader-gradient);
-  background-size: 220% 100%;
-  animation: orders-shimmer var(--bk-loader-duration) ease-in-out infinite;
+.order-skeleton:hover {
+  transform: none;
+  box-shadow: 0 16px 42px rgba(65, 29, 11, 0.08);
 }
 
-.skel-header {
-  width: 48%;
-  height: 24px;
-  margin-bottom: 16px;
+/* .order-meta column: label 11px, number 13px, date 12px */
+.skel-id-label { width: 54px; height: 10px; }
+.skel-id { width: 118px; height: 13px; }
+.skel-date { width: 156px; height: 12px; }
+
+/* .order-status-badge — capped at 130px, 7px/12px padding around 11px caps */
+.skel-status {
+  width: 104px;
+  height: 28px;
+  border-radius: 12px;
 }
 
-.skel-product {
-  height: 92px;
-  margin-bottom: 12px;
+/* .order-detail-menu */
+.skel-menu {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
 }
 
-.skel-footer {
-  width: 62%;
+/* .order-stat-icon */
+.skel-stat-icon {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+/* .order-stat-copy — two stacked 11px lines */
+.skel-stat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.skel-stat-value { width: 70%; height: 10px; }
+.skel-stat-label { width: 48%; height: 10px; }
+
+/* .order-products-title — 11px uppercase, 10px clear beneath it */
+.skel-products-title {
+  width: 128px;
+  height: 10px;
+  margin-bottom: 10px;
+}
+
+/* .order-product-media */
+.skel-product-media {
+  width: 84px;
+  height: 108px;
+  border-radius: 12px;
+}
+
+/* .order-product-details — 8px gap, name clamps over two 11px lines */
+.skel-product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.skel-product-name { width: 100%; height: 11px; }
+.skel-product-name.short { width: 58%; margin-top: -3px; }
+
+/* .order-item-status pill */
+.skel-product-status {
+  width: 88px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.skel-product-attr { width: 104px; height: 11px; }
+
+/* .order-help-icon */
+.skel-help-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+/* .order-help-copy — 11px title over 12px sub */
+.skel-help-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.skel-help-title { width: 132px; height: 10px; }
+.skel-help-sub { width: 184px; height: 11px; }
+
+/* .order-help-btn */
+.skel-help-btn {
+  width: 76px;
   height: 32px;
+  border-radius: 10px;
 }
 
-@keyframes orders-shimmer {
-  0% { background-position: 120% 0; }
-  100% { background-position: -120% 0; }
+/* .order-action-btn — both share the row */
+.skel-action-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  border-radius: 10px;
 }
 
 .order-card {

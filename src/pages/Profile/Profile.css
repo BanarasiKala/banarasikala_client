@@ -192,19 +192,47 @@
   margin: 8px 0 16px;
 }
 
-.profile-skeleton-row {
-  width: 100%;
-  height: 58px;
-}
-
 .profile-skeleton-code {
   width: 110px;
   height: 18px;
 }
 
+/* Same gap as .profile-address-list, so the loading cards sit on the same rhythm as
+   the saved ones that replace them. */
 .profile-address-skeletons {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+}
+
+.profile-address-skeleton {
+  pointer-events: none;
+}
+
+/* .profile-address-icon */
+.profile-skeleton-addr-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.profile-skeleton-addr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* strong (13px), .profile-address-person (12px), then the 12px/1.35 address lines */
+.profile-skeleton-addr-label { width: 84px; height: 13px; }
+.profile-skeleton-addr-name { width: 140px; height: 12px; }
+.profile-skeleton-addr-line { width: 100%; height: 11px; }
+.profile-skeleton-addr-line.short { width: 62%; }
+
+/* .profile-address-action — three equal cells, 40px tall */
+.profile-skeleton-addr-action {
+  width: 62px;
+  height: 14px;
+  margin: 13px auto;
 }
 
 @keyframes profile-skeleton-shimmer {
@@ -1338,10 +1366,6 @@
     width: 130px;
     height: 30px;
     margin: 6px 0 10px;
-  }
-
-  .profile-skeleton-row {
-    height: 44px;
   }
 
   .profile-address {

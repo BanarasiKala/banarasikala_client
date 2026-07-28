@@ -65,8 +65,13 @@ const BanarasInMotion = () => {
 
         <div className="bk-motion-rail" ref={railRef}>
           {reels === null
-            ? [1, 2, 3, 4, 5].map((placeholder) => (
-                <div key={placeholder} className="bk-motion-card bk-motion-skeleton" aria-hidden="true" />
+            ? /* Keeps the card's gold zari frame and puts the shimmer on the inner
+                 panel, where the reel itself will be — the placeholder used to paint
+                 over the frame, so the rail lost its edging until the reels landed. */
+              [1, 2, 3, 4, 5].map((placeholder) => (
+                <div key={placeholder} className="bk-motion-card bk-motion-skeleton" aria-hidden="true">
+                  <span className="bk-motion-card-inner" />
+                </div>
               ))
             : reels.map((reel) => {
                 const product = Array.isArray(reel.products) ? reel.products[0] : null;

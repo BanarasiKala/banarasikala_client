@@ -995,9 +995,30 @@ export default function Profile() {
 
             <div className="profile-address-list">
               {addrLoading ? (
-                <div className="profile-address-skeletons">
-                  <span className="profile-skeleton profile-skeleton-row" />
-                  <span className="profile-skeleton profile-skeleton-row" />
+                /* A saved address is a tall card — label, recipient, three address lines,
+                   phone — over a row of three actions. Two flat bars stood where those
+                   cards were about to appear and everything below them jumped once the
+                   addresses arrived, so the placeholder is now the card's own shape. */
+                <div className="profile-address-skeletons" aria-label="Loading saved addresses" aria-busy="true">
+                  {[1, 2].map((row) => (
+                    <article className="profile-address profile-address-skeleton" key={row} aria-hidden="true">
+                      <div className="profile-address-content">
+                        <span className="profile-skeleton profile-skeleton-addr-icon" />
+                        <div className="profile-skeleton-addr-main">
+                          <span className="profile-skeleton profile-skeleton-addr-label" />
+                          <span className="profile-skeleton profile-skeleton-addr-name" />
+                          <span className="profile-skeleton profile-skeleton-addr-line" />
+                          <span className="profile-skeleton profile-skeleton-addr-line short" />
+                          <span className="profile-skeleton profile-skeleton-addr-line" />
+                        </div>
+                      </div>
+                      <div className="profile-address-actions">
+                        <span className="profile-skeleton profile-skeleton-addr-action" />
+                        <span className="profile-skeleton profile-skeleton-addr-action" />
+                        <span className="profile-skeleton profile-skeleton-addr-action" />
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <>

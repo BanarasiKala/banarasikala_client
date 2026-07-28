@@ -537,6 +537,26 @@ const Collection = () => {
     else showNotification(result?.message || "Could not add to bag.", "error");
   };
 
+  // Stands in for renderProductCard below, line for line: the 3/4 media box, a two-line
+  // name, description, rating, price over MRP, delivery estimate and the add-to-bag
+  // button. Built on the real .product-card / .card-details so the grid tracks are
+  // already the right height and nothing jumps when the products arrive.
+  const renderProductCardSkeleton = (key) => (
+    <div key={key} className="product-card product-card-skeleton" aria-hidden="true">
+      <div className="card-img-container bk-sk skeleton-img" />
+      <div className="card-details">
+        <span className="bk-sk skeleton-line skeleton-title" />
+        <span className="bk-sk skeleton-line skeleton-title short" />
+        <span className="bk-sk skeleton-line skeleton-description" />
+        <span className="bk-sk skeleton-line skeleton-rating" />
+        <span className="bk-sk skeleton-line skeleton-price" />
+        <span className="bk-sk skeleton-line skeleton-mrp" />
+        <span className="bk-sk skeleton-line skeleton-delivery" />
+        <span className="bk-sk skeleton-atc" />
+      </div>
+    </div>
+  );
+
   const renderProductCard = (product) => {
     const cover = getProductCoverImage(product, "https://via.placeholder.com/400x600?text=VNS+Saree");
     const productImages = getProductImages(product);
@@ -967,18 +987,9 @@ const Collection = () => {
             </div>
           )}
 
-          <div className="product-grid">
+          <div className="product-grid" aria-busy={loading || undefined}>
             {loading ? (
-              Array(8).fill(0).map((_, i) => (
-                <div key={i} className="product-card">
-                  <div className="card-img-container skeleton"></div>
-                  <div className="card-details">
-                    <div className="skeleton skeleton-title"></div>
-                    <div className="skeleton skeleton-description"></div>
-                    <div className="skeleton skeleton-price"></div>
-                  </div>
-                </div>
-              ))
+              Array(8).fill(0).map((_, i) => renderProductCardSkeleton(i))
             ) : products.length === 0 ? (
               <div className="col-span-full text-center py-20 text-gray-500">
                 No products found matching your filters.
@@ -993,18 +1004,9 @@ const Collection = () => {
               <div className="collection-more-head">
                 <h2>More Products</h2>
               </div>
-              <div className="product-grid collection-more-grid">
+              <div className="product-grid collection-more-grid" aria-busy={fallbackLoading || undefined}>
                 {fallbackLoading ? (
-                  Array(8).fill(0).map((_, i) => (
-                    <div key={i} className="product-card">
-                      <div className="card-img-container skeleton"></div>
-                      <div className="card-details">
-                        <div className="skeleton skeleton-title"></div>
-                        <div className="skeleton skeleton-description"></div>
-                        <div className="skeleton skeleton-price"></div>
-                      </div>
-                    </div>
-                  ))
+                  Array(8).fill(0).map((_, i) => renderProductCardSkeleton(i))
                 ) : (
                   fallbackProducts.map(renderProductCard)
                 )}

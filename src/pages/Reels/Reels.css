@@ -31,8 +31,7 @@
 }
 .bk-reels-back:hover { background: rgba(0, 0, 0, 0.65); }
 
-/* ── Loading / empty states ─────────────────────────────────────────────── */
-.bk-reels-loading,
+/* ── Empty state ────────────────────────────────────────────────────────── */
 .bk-reels-empty {
   display: flex;
   flex-direction: column;
@@ -44,15 +43,80 @@
 }
 .bk-reels-empty h2 { font-size: 20px; font-weight: 700; }
 .bk-reels-empty p { color: rgba(255, 255, 255, 0.6); font-size: 14px; }
-.bk-reels-spinner {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #fff;
-  animation: bk-reel-spin 0.7s linear infinite;
+
+/* ── Loading state ──────────────────────────────────────────────────────
+   The real .bk-reel / .bk-reel-stage / .bk-reel-video-wrap frame with placeholders
+   over it, so the stage keeps its 460px desktop column and full-bleed mobile width and
+   the first reel arrives into the shape already on screen. Placeholders are in the dark
+   key — a sand-coloured shimmer would glare against a black stage. */
+.bk-reels-loading .bk-reel {
+  height: 100%;
 }
-@keyframes bk-reel-spin { to { transform: rotate(360deg); } }
+
+.bk-reel-sk-video {
+  background: #0a0a0a;
+  cursor: default;
+}
+
+/* .bk-reel-mute */
+.bk-reel-sk-mute {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* .bk-reel-rail keeps its own position and 20px gap; these are the four actions */
+.bk-reel-sk-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 26px glyph over an 11px count */
+.bk-reel-sk-glyph {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bk-reel-sk-count {
+  width: 22px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* .bk-reel-bottom keeps its gradient scrim and padding */
+.bk-reel-sk-bottom {
+  display: flex;
+  flex-direction: column;
+}
+
+/* .bk-reel-title — 15px, and the 62px gutter the action rail needs */
+.bk-reel-sk-title {
+  width: min(74%, 260px);
+  height: 15px;
+  margin-bottom: 10px;
+  margin-right: 62px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+/* .bk-reel-shop-show */
+.bk-reel-sk-shop {
+  width: 92px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
 
 /* ── Feed (vertical scroll-snap) ────────────────────────────────────────── */
 .bk-reels-feed {

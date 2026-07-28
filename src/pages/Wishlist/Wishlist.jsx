@@ -225,15 +225,22 @@ const Wishlist = () => {
           </Link>
         </section>
       ) : loading ? (
-        <section className="wishlist-grid" aria-label="Loading wishlist products">
+        /* Same running order as the loaded card — title, description, rating, price,
+           delivery, action — so the grid rows are already the right height and the
+           cards do not re-flow underneath the reader when the wishlist arrives. */
+        <section className="wishlist-grid" aria-label="Loading wishlist products" aria-busy="true">
           {Array.from({ length: 6 }).map((_, index) => (
-            <article key={index} className="wishlist-card wishlist-card-skeleton">
-              <div className="wishlist-skeleton-image" />
+            <article key={index} className="wishlist-card wishlist-card-skeleton" aria-hidden="true">
+              <div className="bk-sk wishlist-skeleton-image" />
               <div className="wishlist-card-body">
-                <span className="wishlist-skeleton-line title" />
-                <span className="wishlist-skeleton-line price" />
-                <span className="wishlist-skeleton-line text" />
-                <span className="wishlist-skeleton-button" />
+                <span className="bk-sk wishlist-skeleton-line title" />
+                <span className="bk-sk wishlist-skeleton-line title short" />
+                <span className="bk-sk wishlist-skeleton-line desc" />
+                <span className="bk-sk wishlist-skeleton-line rating" />
+                <span className="bk-sk wishlist-skeleton-line price" />
+                <span className="bk-sk wishlist-skeleton-line mrp" />
+                <span className="bk-sk wishlist-skeleton-line delivery" />
+                <span className="bk-sk wishlist-skeleton-button" />
               </div>
             </article>
           ))}

@@ -357,19 +357,44 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="cart-page min-h-screen">
-        <div className="cart-body">
-          <div className="cart-sk-btn" />
-          <div className="cart-items">
+        {/* Mirrors the loaded page block for block — summary card, select-all row, then the
+            item cards — so nothing below shifts when the bag arrives. The pincode block is
+            left out on purpose: it only renders when no pincode is saved, and reserving a
+            row that usually is not there would move the list down as often as it helped. */}
+        <div className="cart-body" aria-label="Loading your bag" aria-busy="true">
+          <div className="cart-summary cart-sk-summary" aria-hidden="true">
+            <div className="cart-summary-top">
+              <span className="bk-sk cart-sk-bag" />
+              <div className="cart-summary-info">
+                <span className="bk-sk cart-sk-line cart-sk-line--count" />
+                <span className="bk-sk cart-sk-line cart-sk-line--delivery" />
+              </div>
+              <div className="cart-summary-amount cart-sk-amount">
+                <span className="bk-sk cart-sk-line cart-sk-line--amount-label" />
+                <span className="bk-sk cart-sk-line cart-sk-line--amount" />
+              </div>
+            </div>
+            <span className="bk-sk cart-sk-btn" />
+          </div>
+
+          <div className="cart-selectall cart-sk-selectall" aria-hidden="true">
+            <span className="bk-sk cart-sk-line cart-sk-line--selectall" />
+            <span className="bk-sk cart-sk-line cart-sk-line--deselect" />
+          </div>
+
+          <div className="cart-items" aria-hidden="true">
             {[1, 2].map((i) => (
-              <div key={i} className="cart-sk-card">
-                <div className="cart-sk-image" />
-                <div className="cart-sk-body">
-                  <div className="cart-sk-line cart-sk-line--name" />
-                  <div className="cart-sk-line cart-sk-line--meta" />
-                  <div className="cart-sk-line cart-sk-line--meta" />
-                  <div className="cart-sk-footer">
-                    <div className="cart-sk-line cart-sk-line--price" />
-                    <div className="cart-sk-line cart-sk-line--qty" />
+              <div key={i} className="cart-card cart-sk-card">
+                <span className="bk-sk cart-sk-check" />
+                <div className="bk-sk cart-sk-image" />
+                <div className="cart-card-body cart-sk-body">
+                  <span className="bk-sk cart-sk-line cart-sk-line--name" />
+                  <span className="bk-sk cart-sk-line cart-sk-line--name short" />
+                  <span className="bk-sk cart-sk-line cart-sk-line--color" />
+                  <span className="bk-sk cart-sk-line cart-sk-line--price" />
+                  <div className="cart-sk-controls">
+                    <span className="bk-sk cart-sk-qty" />
+                    <span className="bk-sk cart-sk-delete" />
                   </div>
                 </div>
               </div>

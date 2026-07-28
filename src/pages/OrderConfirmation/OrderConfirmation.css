@@ -2711,21 +2711,28 @@
   animation: order-spin 0.8s linear infinite;
 }
 
-/* ── Shimmer skeleton ─────────────────────────────────────────────────── */
+/* ── Shimmer skeleton ─────────────────────────────────────────────────
+   Loader tokens from index.css. This page ran its own colours and a slower 1.6s beat,
+   so an order opened from My Orders shimmered at a different speed from the card it
+   was opened from. */
 @keyframes oc-shimmer {
-  0%   { background-position: -600px 0; }
-  100% { background-position:  600px 0; }
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
 }
 
 .oc-sk {
-  background: linear-gradient(
-    90deg,
-    #efe3d0 0px,
-    #fdf6eb 200px,
-    #efe3d0 400px
-  );
-  background-size: 600px 100%;
-  animation: oc-shimmer 1.6s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  background: var(--bk-loader-base);
+}
+
+.oc-sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bk-loader-sheen);
+  transform: translateX(-100%);
+  animation: oc-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
 

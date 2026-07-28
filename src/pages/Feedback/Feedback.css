@@ -318,6 +318,56 @@
   opacity: 0.68;
 }
 
+/* ── Loading form ─────────────────────────────────────────────────────
+   Built on the real .feedback-form / .feedback-rating / .feedback-review-field boxes,
+   so the 18px form gap, the rating card's own surface and the star row's spacing are
+   shared with the live form rather than approximated. Sizes below come from the
+   element each placeholder stands in for. */
+.feedback-form-skeleton {
+  pointer-events: none;
+}
+
+/* .feedback-rating label / .feedback-review-field > span — 11px uppercase, centred */
+.feedback-sk-label {
+  width: 168px;
+  height: 11px;
+  margin: 0 auto;
+  border-radius: 999px;
+}
+
+.feedback-sk-label--left {
+  margin: 0;
+}
+
+/* .feedback-stars button */
+.feedback-sk-star {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+/* .feedback-rating p — the 14px verdict under the stars */
+.feedback-sk-verdict {
+  width: 132px;
+  height: 14px;
+  margin: 0 auto;
+  border-radius: 999px;
+}
+
+/* .feedback-review-field textarea */
+.feedback-sk-textarea {
+  width: 100%;
+  min-height: 178px;
+  border-radius: 4px;
+}
+
+/* .feedback-submit */
+.feedback-sk-submit {
+  width: min(100%, 420px);
+  height: 44px;
+  border-radius: 10px;
+}
+
 .feedback-loading {
   padding: 32px 0;
   text-align: center;

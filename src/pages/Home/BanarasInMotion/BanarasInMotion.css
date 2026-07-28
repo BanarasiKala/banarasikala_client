@@ -368,17 +368,21 @@
   to { transform: translateX(260%); }
 }
 
-/* ── Loading skeleton ── */
+/* ── Loading skeleton ──
+   The frame stays; only the inner panel shimmers, on the shared dark loader tokens
+   (index.css) rather than a one-off gradient at its own tempo. */
 .bk-motion-skeleton {
-  background:
-    linear-gradient(110deg, rgba(255, 235, 200, 0.05) 8%, rgba(255, 235, 200, 0.14) 18%, rgba(255, 235, 200, 0.05) 33%),
-    #2a0a10;
-  background-size: 200% 100%;
-  animation: bk-motion-shimmer 1.5s linear infinite;
+  pointer-events: none;
 }
 
-@keyframes bk-motion-shimmer {
-  to { background-position: -200% 0; }
+/* The inner panel carries a hover sheen of its own. On a placeholder there is nothing
+   to hover, and it would fight the loader sheen, so it is dropped here. */
+.bk-motion-skeleton .bk-motion-card-inner::after {
+  background: var(--bk-loader-sheen-dark);
+  opacity: 1;
+  transform: translateX(-100%);
+  transition: none;
+  animation: bk-skeleton-sheen var(--bk-loader-duration) ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

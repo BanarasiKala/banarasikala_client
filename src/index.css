@@ -15,6 +15,64 @@
   --bk-loader-gradient: linear-gradient(90deg, #ead3b1 0%, #fffaf2 48%, #dfbd8d 100%);
   --bk-loader-sheen: linear-gradient(100deg, transparent 0%, rgba(255, 250, 242, 0.86) 48%, transparent 100%);
   --bk-loader-duration: 1.35s;
+  /* Reels and the Banaras in Motion rail sit on black. The sand fill above would glow
+     off those surfaces, so they get the same shimmer in a dark key. */
+  --bk-loader-base-dark: #1b1416;
+  --bk-loader-sheen-dark: linear-gradient(100deg, transparent 0%, rgba(255, 236, 205, 0.1) 48%, transparent 100%);
+}
+
+/* ── Skeletons ─────────────────────────────────────────────────────────
+   Every loading placeholder in the store is built from the four tokens above, so a
+   skeleton reads the same whichever page you land on. `.bk-sk` is the block itself
+   (a flat sand fill) and the ::after is the sheen that travels across it.
+
+   The rule that matters for these: a skeleton stands in for something real, so it is
+   shaped like the thing it is waiting for — same box, same rhythm of lines, same
+   height. When the data lands nothing below it should move. */
+.bk-sk {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  background: var(--bk-loader-base);
+  border-radius: 6px;
+}
+
+.bk-sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bk-loader-sheen);
+  transform: translateX(-100%);
+  animation: bk-skeleton-sheen var(--bk-loader-duration) ease-in-out infinite;
+}
+
+.bk-sk--dark {
+  background: var(--bk-loader-base-dark);
+}
+
+.bk-sk--dark::after {
+  background: var(--bk-loader-sheen-dark);
+}
+
+@keyframes bk-skeleton-sheen {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Nothing is allowed to travel when the reader has asked for stillness. Rather than
+   chase down every skeleton's own animation across the pages, the two moving tokens
+   are flattened here: the sheen stops being drawn and the gradient collapses to the
+   base fill, so every skeleton — whichever technique it uses — goes quiet at once. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --bk-loader-sheen: none;
+    --bk-loader-sheen-dark: none;
+    --bk-loader-gradient: var(--bk-loader-base);
+  }
+
+  .bk-sk::after {
+    animation: none;
+  }
 }
 
 body {
