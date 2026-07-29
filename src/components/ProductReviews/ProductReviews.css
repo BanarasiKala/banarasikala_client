@@ -1,0 +1,416 @@
+/* ── Product reviews ──────────────────────────────────────────────────────────────────
+   The section on the product page plus the "All Reviews" sheet it opens. Both draw the same
+   card, so the card rules live once, above the two contexts that use them. */
+
+.pr-section {
+  width: 100%;
+  margin-top: 26px;
+  padding: 20px clamp(16px, 4vw, 26px) 22px;
+  background: #fff8f1;
+  border: 1px solid rgba(128, 0, 32, 0.09);
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────────────── */
+.pr-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(128, 0, 32, 0.12);
+}
+
+.pr-head-titles span {
+  display: block;
+  margin-bottom: 5px;
+  color: #a9772a;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pr-head-titles h2 {
+  margin: 0;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(20px, 4.4vw, 26px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pr-head-score {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.pr-head-score-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pr-head-score-top strong {
+  color: #5a160f;
+  font-size: clamp(20px, 4.4vw, 26px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-head-score small {
+  color: rgba(93, 45, 23, 0.6);
+  font-size: 11.5px;
+}
+
+/* ── Stars ──────────────────────────────────────────────────────────────────────────── */
+.pr-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #d99b1c;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── View all ───────────────────────────────────────────────────────────────────────── */
+.pr-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5a160f;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pr-view-all svg { font-size: 15px; }
+.pr-view-all:hover { color: #800020; }
+
+/* ── The card ───────────────────────────────────────────────────────────────────────── */
+/* Two columns: the words on the left, the photos on the right, and the footer running the
+   full width underneath both. A grid rather than flex because the footer has to clear the
+   photos even when the review text is a single short line. */
+.pr-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px 14px;
+  padding: 18px 0;
+}
+
+.pr-list .pr-card + .pr-card {
+  border-top: 1px solid rgba(128, 0, 32, 0.09);
+}
+
+.pr-card-main { min-width: 0; }
+
+.pr-card-main p {
+  margin: 9px 0 0;
+  color: #4a2a18;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.pr-card-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+}
+
+.pr-verified,
+.pr-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.pr-verified {
+  color: #4a2a18;
+  font-weight: 600;
+}
+
+/* The badge is the one part of a review a shopper can actually check, so it gets the only
+   saturated colour in the card. */
+.pr-verified svg {
+  font-size: 15px;
+  color: #b3122f;
+}
+
+.pr-when {
+  color: rgba(74, 42, 24, 0.62);
+}
+
+.pr-when svg { font-size: 13px; }
+
+.pr-foot-rule {
+  width: 1px;
+  height: 13px;
+  background: rgba(128, 0, 32, 0.22);
+}
+
+/* ── Review photos ──────────────────────────────────────────────────────────────────── */
+.pr-card-shots {
+  display: flex;
+  gap: 8px;
+}
+
+.pr-shot {
+  position: relative;
+  width: clamp(62px, 17vw, 84px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(128, 0, 32, 0.06);
+  cursor: pointer;
+}
+
+.pr-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* "+3" over the last thumbnail. The photo stays visible behind it — the badge says there is
+   more, it does not need to hide what is already there. */
+.pr-shot-more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(37, 15, 8, 0.62);
+  color: #fff6e8;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ── "All Reviews" sheet ────────────────────────────────────────────────────────────── */
+.pr-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(50, 22, 14, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: pr-fade 200ms ease-out;
+}
+
+.pr-sheet {
+  position: relative;
+  width: min(560px, 100%);
+  /* dvh, not vh: mobile Safari's collapsing toolbar makes vh taller than what is actually
+     visible, which would push the bottom of the list under the browser chrome. */
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  background: #fffaf3;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  box-shadow: 0 -18px 50px rgba(65, 29, 11, 0.24);
+  animation: pr-sheet-up 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@keyframes pr-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pr-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-sheet-overlay,
+  .pr-sheet { animation: none; }
+  .pr-sheet { transition: none; }
+}
+
+.pr-sheet-head {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #5a160f;
+  /* The header doubles as the drag handle, so the gesture must reach the handler rather than
+     being claimed by the list scrolling underneath. */
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pr-sheet-head:active { cursor: grabbing; }
+
+.pr-sheet-head button {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #fff6e8;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.pr-sheet-head button:hover { background: rgba(255, 246, 232, 0.14); }
+
+/* Centred across the whole bar, not just the space left over beside the back button — with
+   `flex: 1` the title sat visibly right of centre. */
+.pr-sheet-head h2 {
+  position: absolute;
+  left: 52px;
+  right: 52px;
+  margin: 0;
+  color: #fff6e8;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pr-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 clamp(14px, 4vw, 20px) calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.pr-sheet-body::-webkit-scrollbar { width: 5px; }
+.pr-sheet-body::-webkit-scrollbar-thumb {
+  background: rgba(123, 0, 27, 0.18);
+  border-radius: 999px;
+}
+
+/* ── Sheet summary: average on the left, the spread on the right ────────────────────── */
+.pr-sheet-summary {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 5vw, 30px);
+  padding: 18px 2px 20px;
+  border-bottom: 1px solid rgba(128, 0, 32, 0.1);
+}
+
+.pr-sheet-score {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.pr-sheet-score strong {
+  color: #5a160f;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-sheet-score small {
+  max-width: 108px;
+  color: rgba(74, 42, 24, 0.62);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pr-bars {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.pr-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pr-bar-star {
+  width: 8px;
+  flex-shrink: 0;
+  color: rgba(74, 42, 24, 0.72);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pr-bar-track {
+  flex: 1;
+  min-width: 0;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(128, 0, 32, 0.09);
+  overflow: hidden;
+}
+
+.pr-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #5a160f;
+}
+
+.pr-bar-count {
+  width: 18px;
+  flex-shrink: 0;
+  color: rgba(74, 42, 24, 0.62);
+  font-size: 11.5px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Sheet list ─────────────────────────────────────────────────────────────────────── */
+.pr-sheet-list {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0 4px;
+}
+
+/* In the sheet each review is its own bordered card, rather than rows divided by a rule as on
+   the product page: the sheet is a list of many, and the boundaries have to survive a long
+   scroll past reviews of very different lengths. */
+.pr-sheet-list .pr-card {
+  padding: 14px;
+  background: #fff8f1;
+  border: 1px solid rgba(128, 0, 32, 0.11);
+  border-radius: 12px;
+}
+
+/* ── Narrow phones ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 420px) {
+  .pr-section {
+    padding: 16px 14px 18px;
+  }
+
+  .pr-head {
+    gap: 10px;
+  }
+
+  .pr-stars { font-size: 14px; }
+
+  .pr-card-main p { font-size: 13.5px; }
+}

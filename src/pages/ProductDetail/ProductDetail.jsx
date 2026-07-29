@@ -17,9 +17,9 @@ import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
 import CheckoutFlow from "../../components/CheckoutFlow";
 import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
-import UserAvatar from "../../components/UserAvatar";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
+import ProductReviews from "../../components/ProductReviews/ProductReviews";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
@@ -243,8 +243,7 @@ const ProductDetail = () => {
   const [products, setProducts] = useState([]);
   const [productReviews, setProductReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
-  const [reviewGalleryIndex, setReviewGalleryIndex] = useState(null);
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  // The photo viewer and the "All Reviews" sheet are ProductReviews' own state now.
   const [loading, setLoading] = useState(true);
   const [productError, setProductError] = useState(null);
   const [mainImage, setMainImage] = useState("");
@@ -781,7 +780,6 @@ const ProductDetail = () => {
     return coupon.description || "Tap to apply this offer at checkout.";
   };
   const productName = product?.name || "";
-  const approvedReviewImages = productReviews.flatMap((review) => Array.isArray(review.images) ? review.images : []).filter((image) => image?.url);
   const hasApprovedReviews = Number(reviewSummary.count || 0) > 0;
   const scrollToReviews = () => {
     const section = document.getElementById("product-reviews");
@@ -1002,15 +1000,6 @@ const ProductDetail = () => {
     const timer = window.setTimeout(() => setCouponCelebration(null), 2400);
     return () => window.clearTimeout(timer);
   }, [couponCelebration]);
-
-  useEffect(() => {
-    if (!reviewModalOpen) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") setReviewModalOpen(false); };
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [reviewModalOpen]);
 
   useEffect(() => {
     if (!buyNowOpen) return undefined;
@@ -2386,91 +2375,10 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {productReviews.length > 0 && (
-          <section className="product-reviews-section" id="product-reviews">
-            <div className="product-reviews-head">
-              <div>
-                <span>customer feedback</span>
-                <h2>reviews</h2>
-              </div>
-              {Number(reviewSummary.count || 0) > 0 && (
-                <div className="product-review-score">
-                  <strong>{Number(reviewSummary.average || 0).toFixed(1)}</strong>
-                  <span className="product-review-score-stars" aria-hidden="true">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const average = Number(reviewSummary.average || 0);
-                      return (
-                        <Icon key={star} icon={average >= star ? "mdi:star" : average >= star - 0.5 ? "mdi:star-half-full" : "mdi:star-outline"} />
-                      );
-                    })}
-                  </span>
-                  <small>{reviewSummary.count} {Number(reviewSummary.count) === 1 ? "review" : "reviews"}</small>
-                </div>
-              )}
-            </div>
-
-            <div className="product-review-list">
-              {productReviews.slice(0, 3).map((review) => {
-                const rating = Number(review.rating || 0);
-                return (
-                  <article className="product-review-card" key={review.id}>
-                    <div className="product-review-card-head">
-                      <div className="product-review-stars">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Icon key={star} icon={rating >= star ? "mdi:star" : "mdi:star-outline"} />
-                        ))}
-                      </div>
-                      <div className="product-review-buyer">
-                        <span className="product-review-who">
-                          <UserAvatar name={review.Customer?.name} src={review.Customer?.avatar_url} size={28} />
-                          <span className="product-review-name">{review.Customer?.name || "verified customer"}</span>
-                        </span>
-                        <small><Icon icon="lucide:badge-check" /> verified buyer</small>
-                      </div>
-                    </div>
-                    {/* Titles are no longer collected, and the ones on older reviews are
-                        not shown — they mostly repeated the first line of the review. */}
-                    <p>{review.comment}</p>
-                    {Array.isArray(review.images) && review.images.length > 0 && (
-                      <div className="product-review-images">
-                        {review.images.slice(0, 4).map((image, index) => {
-                          const remaining = review.images.length - 4;
-                          const showMore = index === 3 && remaining > 0;
-                          return (
-                            <button
-                              type="button"
-                              key={`${image.url}-${index}`}
-                              aria-label={showMore ? `view ${remaining} more review images` : "view review image"}
-                              onClick={() => {
-                                const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
-                                setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
-                              }}
-                            >
-                              <img src={imgUrl(image.url, 160)} alt="" loading="lazy" />
-                              {showMore && <span className="product-review-image-more">+{remaining}</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-
-            {productReviews.length > 3 && (
-              <div className="product-reviews-more-wrap">
-                <button
-                  type="button"
-                  className="product-reviews-more-btn"
-                  onClick={() => setReviewModalOpen(true)}
-                >
-                  more reviews
-                </button>
-              </div>
-            )}
-          </section>
-        )}
+        {/* Header, the first four reviews, the "All Reviews" sheet and the photo viewer all
+            live in the component — the card markup used to be written out twice here (page and
+            modal) and the two copies had started to drift apart. */}
+        <ProductReviews reviews={productReviews} summary={reviewSummary} />
 
         {products.length > 0 && (
           <section className="product-related">
@@ -2580,108 +2488,6 @@ const ProductDetail = () => {
           </section>
         )}
       </main>
-
-      {reviewGalleryIndex !== null && approvedReviewImages[reviewGalleryIndex] && (
-        <div className="product-review-lightbox" role="dialog" aria-modal="true" onClick={() => setReviewGalleryIndex(null)}>
-          <button type="button" className="review-lightbox-close" onClick={() => setReviewGalleryIndex(null)} aria-label="Close review image">
-            <Icon icon="lucide:x" />
-          </button>
-          <img
-            src={imgUrl(approvedReviewImages[reviewGalleryIndex].url, 1200)}
-            alt="Uploaded product photo"
-            onClick={(event) => event.stopPropagation()}
-          />
-          {approvedReviewImages.length > 1 && (
-            <button
-              type="button"
-              className="review-lightbox-nav prev"
-              onClick={(event) => {
-                event.stopPropagation();
-                setReviewGalleryIndex((current) => (current <= 0 ? approvedReviewImages.length - 1 : current - 1));
-              }}
-              aria-label="Previous review image"
-            >
-              <Icon icon="lucide:chevron-left" />
-            </button>
-          )}
-          {approvedReviewImages.length > 1 && (
-            <button
-              type="button"
-              className="review-lightbox-nav next"
-              onClick={(event) => {
-                event.stopPropagation();
-                setReviewGalleryIndex((current) => (current >= approvedReviewImages.length - 1 ? 0 : current + 1));
-              }}
-              aria-label="Next review image"
-            >
-              <Icon icon="lucide:chevron-right" />
-            </button>
-          )}
-          <span className="review-lightbox-count">{reviewGalleryIndex + 1} / {approvedReviewImages.length}</span>
-        </div>
-      )}
-
-      {reviewModalOpen && (
-        <div className="product-reviews-modal-overlay" role="dialog" aria-modal="true" onClick={() => setReviewModalOpen(false)}>
-          <div className="product-reviews-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="product-reviews-modal-head">
-              <h2>all reviews <small>({productReviews.length})</small></h2>
-              <button type="button" className="product-reviews-modal-close" onClick={() => setReviewModalOpen(false)} aria-label="Close reviews">
-                <Icon icon="lucide:x" />
-              </button>
-            </div>
-            <div className="product-reviews-modal-body">
-              {productReviews.map((review) => {
-                const rating = Number(review.rating || 0);
-                return (
-                  <article className="product-review-card" key={review.id}>
-                    <div className="product-review-card-head">
-                      <div className="product-review-stars">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Icon key={star} icon={rating >= star ? "mdi:star" : "mdi:star-outline"} />
-                        ))}
-                      </div>
-                      <div className="product-review-buyer">
-                        <span className="product-review-who">
-                          <UserAvatar name={review.Customer?.name} src={review.Customer?.avatar_url} size={28} />
-                          <span className="product-review-name">{review.Customer?.name || "verified customer"}</span>
-                        </span>
-                        <small><Icon icon="lucide:badge-check" /> verified buyer</small>
-                      </div>
-                    </div>
-                    {/* Titles are no longer collected, and the ones on older reviews are
-                        not shown — they mostly repeated the first line of the review. */}
-                    <p>{review.comment}</p>
-                    {Array.isArray(review.images) && review.images.length > 0 && (
-                      <div className="product-review-images">
-                        {review.images.slice(0, 4).map((image, index) => {
-                          const remaining = review.images.length - 4;
-                          const showMore = index === 3 && remaining > 0;
-                          return (
-                            <button
-                              type="button"
-                              key={`${image.url}-${index}`}
-                              aria-label={showMore ? `view ${remaining} more review images` : "view review image"}
-                              onClick={() => {
-                                const galleryIndex = approvedReviewImages.findIndex((g) => g.url === image.url);
-                                setReviewModalOpen(false);
-                                setReviewGalleryIndex(galleryIndex >= 0 ? galleryIndex : 0);
-                              }}
-                            >
-                              <img src={imgUrl(image.url, 160)} alt="" loading="lazy" />
-                              {showMore && <span className="product-review-image-more">+{remaining}</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {buyNowOpen && (
         <>
