@@ -513,9 +513,11 @@
   width: 14px;
   height: 14px;
   margin-top: 2px;
-  /* Map-marker blue. !important because the line above sets colour that way too, and
-     `currentColor` on the icon would otherwise inherit the maroon. */
-  color: #1a73e8 !important;
+  /* Map-marker blue. Was #1a73e8, which is a slightly cyan blue and went muddy against this
+     panel's warm cream — pulled toward a purer, more saturated blue so it still reads as a
+     map pin on that background. !important because the line above sets colour that way too,
+     and `currentColor` on the icon would otherwise inherit the maroon. */
+  color: #0b4dff !important;
 }
 
 .profile-map-label {
@@ -1895,13 +1897,15 @@
 
 /* nowrap so the title and the button stay on one line. Without it the button was tall
    enough that a narrow panel wrapped it onto its own row, leaving a gap under the title. */
+/* 9px below was tight enough that the heading row read as part of the first address card
+   rather than as the heading for the list. */
 .profile-address-heading-row {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 9px;
+  gap: 75px;
+  margin-bottom: 18px;
 }
 
 /* "My Addresses" on one line. A flex item's default min-width is auto, so the heading was
@@ -1914,22 +1918,28 @@
 
 /* Sized against .profile-block-title (14px) so the pair reads as one row rather than a
    heading with a slab beside it. */
+/* Readable label, minimal chrome. The padding is deliberately tight against the text —
+   this sits beside "My Addresses" on one line, so every extra pixel either side pushes
+   the pair toward wrapping for no gain. */
 .profile-add-address-trigger {
-  min-height: 24px;
-  padding: 3px 9px;
+  min-height: 26px;
+  padding: 3px 8px;
+  gap: 5px;
   justify-self: auto;
   color: #780018;
   background: #fffdf8;
   border: 1px solid rgba(128, 0, 32, 0.58);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
 
+/* Square, and matched to the 12px label — it was 13x17, which stretched the plus and
+   made the button taller than its text needed. */
 .profile-add-address-trigger svg {
   width: 13px;
-  height: 17px;
+  height: 13px;
   stroke-width: 2.1;
 }
 
@@ -2262,9 +2272,9 @@
   }
 
   .profile-add-address-trigger {
-    min-height: 22px;
-    padding: 3px 7px;
-    font-size: 9.5px;
+    min-height: 24px;
+    padding: 3px 6px;
+    font-size: 11px;
   }
 
   .profile-address-content {
@@ -2311,17 +2321,19 @@
 
 .profile-coming-art {
   grid-area: art;
-  min-height: 156px;
+  min-height: 186px;
   place-items: center;
 }
 
 /* Artwork is portrait (438x570), so cap the height rather than the width —
-   sizing it by width would make this panel ~50% taller than the rest. */
+   sizing it by width would make this panel ~50% taller than the rest.
+   The panel's min-height moves with this cap, so the art has room to grow into
+   rather than being clipped by the row it sits in. */
 .profile-coming-art > img {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 210px;
+  max-height: 250px;
   display: block;
 }
 
@@ -2379,11 +2391,11 @@
   }
 
   .profile-coming-art {
-    min-height: 136px;
+    min-height: 164px;
   }
 
   .profile-coming-art > img {
-    max-height: 170px;
+    max-height: 204px;
   }
 
   .profile-coming-copy h2 {
@@ -2418,12 +2430,12 @@
   }
 
   .profile-coming-art {
-    min-height: 104px;
+    min-height: 128px;
     justify-content: start;
   }
 
   .profile-coming-art > img {
-    max-height: 118px;
+    max-height: 146px;
     transform: none;
   }
 

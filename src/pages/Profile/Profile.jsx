@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../utils/api";
+import SupportChatSheet from "../../components/SupportChat/SupportChatSheet";
 // The -removebg- export, not coming_soon.png/.jpeg beside it. The JPEG has no alpha channel
 // so it rendered as a dark checkerboard block on this panel's cream, and the PNG keyed that
 // checkerboard back out only imperfectly (grey fringe left under the box). This one is a
@@ -432,6 +433,11 @@ export default function Profile() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [miniModal, setMiniModal] = useState(null);
+  // "Need help?" opens the general support strand — the one not tied to any order. Anything
+  // about a specific order is raised from that order's own card in My Orders, which names the
+  // strand for support; from the account page there is no order to name, so this is the
+  // catch-all conversation.
+  const [supportOpen, setSupportOpen] = useState(false);
   const [deleteAddressId, setDeleteAddressId] = useState(null);
   const [deletingAddressId, setDeletingAddressId] = useState(null);
   const profileErrorRef = useRef(null);
@@ -1237,11 +1243,11 @@ export default function Profile() {
             ) : null}
           </section>
 
-          <button type="button" className="profile-help-card" onClick={() => navigate("/contact")}>
+          <button type="button" className="profile-help-card" onClick={() => setSupportOpen(true)}>
             <span className="profile-help-icon"><Icon icon="lucide:headphones" /></span>
             <span className="profile-help-copy">
               <strong>Need help?</strong>
-              <span>Our customer support team is here to help you.</span>
+              <span>Chat with our customer support team.</span>
             </span>
             <Icon className="profile-help-arrow" icon="lucide:chevron-right" />
           </button>
@@ -1262,6 +1268,14 @@ export default function Profile() {
         onConfirm={confirmDeleteAddress}
       />
 
+      {/* No `order` prop — that is what makes this the general strand rather than one about a
+          purchase. The sheet portals into <body>, so it is unaffected by this page's layout. */}
+      {supportOpen && (
+        <SupportChatSheet
+          onNotify={showNotification}
+          onClose={() => setSupportOpen(false)}
+        />
+      )}
     </main>
   );
 }
