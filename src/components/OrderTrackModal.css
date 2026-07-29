@@ -120,6 +120,147 @@
 .track-modal-close:hover { background: rgba(93, 23, 13, 0.14); }
 .track-modal-close svg { font-size: 18px; }
 
+/* ── Shipment summary band ───────────────────────────────────────────────────────────
+   Status / courier / AWB, pinned above the scan feed. Negative side margins pull it out to
+   the sheet's edges so it reads as a band rather than a card floating in the padding.
+
+   Cool grey-blue rather than the sheet's maroon: everything from here down is the courier's
+   record, not ours, and the colour break is what tells the customer where our page stops and
+   the tracking begins. */
+.track-sr-summary {
+  flex-shrink: 0;
+  margin: 0 -22px 4px;
+  padding: 14px 22px 16px;
+  display: grid;
+  gap: 11px;
+  background: #eef2fd;
+}
+
+.track-sr-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.track-sr-summary dt {
+  flex-shrink: 0;
+  color: #55617a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.track-sr-summary dd {
+  margin: 0;
+  min-width: 0;
+  color: #16202e;
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Tracking numbers only. Tabular figures stop the digits jittering, but applying them to the
+   courier's NAME would space its letters oddly. */
+.track-sr-summary dd.is-code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.track-sr-summary dd a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+/* ── Courier scan feed ───────────────────────────────────────────────────────────────
+   Every scan the courier recorded, newest first. Green throughout because each row is a
+   thing that already happened — there are no future scans to be pending about. */
+.track-sr-feed {
+  list-style: none;
+  margin: 0;
+  padding: 14px 0 0;
+}
+
+.track-sr-scan {
+  position: relative;
+  padding: 0 0 20px 32px;
+}
+
+.track-sr-scan:last-child { padding-bottom: 4px; }
+
+.track-sr-dot {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.track-sr-dot svg {
+  font-size: 13px;
+  stroke-width: 3.2;
+}
+
+/* Connector, from under one dot to just past the next. */
+.track-sr-line {
+  position: absolute;
+  left: 9px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: #16a34a;
+}
+
+.track-sr-body { min-width: 0; }
+
+/* Scan name left, timestamp hard right on the same line. */
+.track-sr-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.track-sr-row strong {
+  min-width: 0;
+  color: #15803d;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.track-sr-time {
+  flex-shrink: 0;
+  color: #1f2937;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.track-sr-loc {
+  display: block;
+  margin-top: 3px;
+  color: #2563eb;
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Under ~380px the scan name and its timestamp stop fitting on one line, and letting them
+   share it just squeezes the name into a two-word column. */
+@media (max-width: 380px) {
+  .track-sr-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
 /* ── Timeline ────────────────────────────────────────────────────────────────────── */
 .track-modal-timeline {
   flex: 1;
@@ -204,56 +345,8 @@
   word-break: break-word;
 }
 
-/* ── Detail cards (AWB, courier) ─────────────────────────────────────────────────── */
-.track-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(123, 0, 27, 0.05);
-}
-
-.track-card-col {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
-}
-
-.track-card-col span {
-  color: rgba(93, 23, 13, 0.55);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.track-card-col strong {
-  color: #7b001b;
-  font-size: 14.5px;
-  font-weight: 700;
-  /* AWB numbers and phone numbers read better with even digit widths, and it stops the
-     two columns jittering as values change. */
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.track-card-call {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: #7b001b;
-  text-decoration: none;
-  transition: background 150ms ease;
-}
-
-.track-card-call:hover { background: rgba(123, 0, 27, 0.1); }
-.track-card-call svg { font-size: 19px; }
+/* The AWB / courier detail cards that used to hang off individual steps are gone — those
+   facts belong to the shipment, not to a step, and now live in .track-sr-summary above. */
 
 /* ── Footer states ───────────────────────────────────────────────────────────────── */
 .track-modal-thanks {
