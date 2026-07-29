@@ -3806,10 +3806,6 @@ strong.oc-item-price {
   border-color: #b3223a;
 }
 
-.oc-cancel-btn svg {
-  font-size: 15px;
-}
-
 /* ── Cancellation window closed: plain, quiet notice — no icon, no button. ── */
 .oc-cancel-closed {
   display: flex;
