@@ -74,12 +74,35 @@ const getToastOptions = (type, options = {}) => {
   };
 };
 
+/**
+ * Identity for a toast, so the same message cannot stack.
+ *
+ * react-hot-toast treats `id` as identity: firing one whose id is already on screen
+ * updates that toast instead of adding a second. Tapping "Add to bag" five times, or a
+ * component re-rendering into the same error, therefore shows one toast rather than a
+ * column of identical ones.
+ *
+ * Keyed on type as well as text so a success and an error that happen to read the same
+ * are still two different things, and never collapse into each other.
+ *
+ * Deliberately NOT a timed suppression window. That would keep swallowing the message
+ * after the toast had faded, so a deliberate second action — add to bag, look away, add
+ * again — would give no feedback at all and read as a broken button. This only collapses
+ * duplicates while one is actually visible, which is the case worth fixing.
+ */
+const toastIdFor = (type, text) => `bk:${type}:${text}`;
+
 export const NotificationProvider = ({ children }) => {
   const showNotification = useCallback((message, type = "success") => {
     const { text, type: resolvedType, options } = getToastPayload(message, type);
     if (!text) return;
 
-    const toastOptions = getToastOptions(resolvedType, options);
+    // A caller that passes its own id keeps it — that is how a long-running action
+    // updates one toast in place ("Uploading…" → "Uploaded"), which this must not break.
+    const toastOptions = {
+      id: toastIdFor(resolvedType, text),
+      ...getToastOptions(resolvedType, options),
+    };
     if (resolvedType === "success") {
       toast.success(text, toastOptions);
     } else if (resolvedType === "error") {
