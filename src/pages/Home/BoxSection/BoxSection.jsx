@@ -10,9 +10,14 @@ const VIDEO_MAX = 12000; // ms cap so a long video never stalls the story
 // Hardcoded, on-brand copy (the admin title/description are intentionally
 // ignored here — this section always tells the same premium packaging story).
 const SECTION_LABEL = "Unboxing Luxury";
-const STORY_TITLE = "Wrapped in Tradition";
+// Names the media for screen readers only. The caption below no longer prints a title of its
+// own — the pill already says what this is, and a serif headline above it said it twice.
+const STORY_TITLE = "Premium gift packaging";
+// One flowing paragraph — the two sentences wrap wherever the width happens to put them
+// rather than being forced onto a line each.
 const STORY_TEXT =
-  "Every weave leaves Banaras in a handcrafted keepsake box — tissue-folded, wax-sealed, and tied with a note, so the moment it arrives feels like a celebration.";
+  "Orders above ₹5,000 come in our premium luxury box. A keepsake box made to hold more than just your saree.";
+const STORY_CLOSER = "Feel the premium. Feel the luxury.";
 
 // One admin entry → a full WhatsApp-style story: media auto-advances with a
 // segmented progress bar, and the shopper can tap/click the left or right side
@@ -230,9 +235,9 @@ const BoxStory = ({ entry }) => {
 
       {/* Copy sits below the story card, out of the media view. */}
       <div className="bk-box-caption">
-        <span className="bk-box-eyebrow"><Icon icon="lucide:gift" /> Premium Packaging</span>
-        <h3>{STORY_TITLE}</h3>
+        <span className="bk-box-eyebrow"><Icon icon="lucide:gift" /> Premium Gift Packaging</span>
         <p>{STORY_TEXT}</p>
+        <strong className="bk-box-closer">{STORY_CLOSER}</strong>
       </div>
     </div>
   );
