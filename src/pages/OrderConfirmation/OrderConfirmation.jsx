@@ -992,10 +992,6 @@ export default function OrderConfirmation() {
   const canSelectReturnItems = useMemo(() => getEligibleActionItems(order, "return").length > 0, [order]);
   const canSelectExchangeItems = useMemo(() => getEligibleActionItems(order, "exchange").length > 0, [order]);
   const orderNumber = getOrderDisplayNumber(order);
-  const customerFullName = String(order?.customer_name || "").trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
   const statusLabel = getCustomerOrderStatusLabel(order?.status);
   const statusTone = (() => {
     const s = String(order?.status || "").toLowerCase();
@@ -1612,7 +1608,6 @@ export default function OrderConfirmation() {
     <main className="order-confirmation-page">
       <section className="oc-thanks">
         <h1 className="oc-thanks-script">Thank you</h1>
-        {customerFullName && <p className="oc-thanks-name">{customerFullName}</p>}
         <p className="oc-thanks-sub">for your purchase!</p>
         <p className="oc-thanks-note">
           We&rsquo;re getting your order ready to be shipped.
@@ -2294,7 +2289,7 @@ export default function OrderConfirmation() {
                 })()}
               </div>
               <button className="oc-cancel-btn" type="button" onClick={() => openActionModal("cancel")}>
-                <Icon icon="lucide:x" /> Cancel Order
+                Cancel Order
               </button>
             </div>
           ) : cancelWindowClosed(order) ? (
