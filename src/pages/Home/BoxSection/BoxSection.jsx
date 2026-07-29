@@ -24,8 +24,20 @@ const BoxStory = ({ entry }) => {
   ], [entry]);
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
+  // Has the current slide loaded enough to be worth showing? False on every change and
+  // until the media says otherwise, which is what holds the story in place.
+  const [ready, setReady] = useState(false);
+  // A video that stalled mid-playback. Separate from `ready` because the first is "has it
+  // started" and this is "has it stopped again" — both freeze the story, for different
+  // reasons, and only the second can happen repeatedly on one slide.
+  const [buffering, setBuffering] = useState(false);
   const single = media.length <= 1;
   const videoElRef = useRef(null);
+
+  // Nothing advances while the slide is still loading or has stalled. Without this the
+  // timers below ran on wall-clock time, so a slow video was replaced by the next slide
+  // before a single frame of it had been seen.
+  const holding = !ready || buffering;
 
   const step = useCallback((dir) => {
     setProgress(0);
@@ -43,9 +55,61 @@ const BoxStory = ({ entry }) => {
   useEffect(() => {
     const item = media[active];
     if (!item || item.type !== "image") return undefined;
+    // Waits for the image too: its hold is meant to be four and a half seconds of the
+    // photo, not of a blank frame while it downloads.
+    if (holding) return undefined;
     const timer = setTimeout(next, IMAGE_DURATION);
     return () => clearTimeout(timer);
-  }, [active, media, next]);
+  }, [active, media, next, holding]);
+
+  /**
+   * The current slide's readiness, and keeping video playing.
+   *
+   * Every slide starts unready — `active` is in the deps, so switching resets it — and a
+   * video reports its own state from here on: `canplay`/`playing` mean it is running,
+   * `waiting`/`stalled` mean it has run out of data. `error` clears the hold too, because
+   * a dead URL would otherwise freeze the story on a spinner forever.
+   *
+   * play() is called explicitly rather than relying on the autoPlay attribute alone. The
+   * attribute only acts on the initial mount, and these elements are keyed by slide, so
+   * this is what makes a video start when the shopper taps across to it — and what
+   * recovers if a browser refused the autoplay the first time.
+   */
+  useEffect(() => {
+    const item = media[active];
+    setBuffering(false);
+
+    if (!item) return undefined;
+    if (item.type !== "video") {
+      // Images report through onLoad on the element itself.
+      setReady(false);
+      return undefined;
+    }
+
+    const el = videoElRef.current;
+    if (!el) return undefined;
+
+    // HAVE_FUTURE_DATA or better means it can already play — a cached video never fires
+    // `canplay` again, so reading readyState is what stops it hanging on a spinner.
+    setReady(el.readyState >= 3);
+
+    const stalled = () => setBuffering(true);
+    const rolling = () => { setReady(true); setBuffering(false); };
+    el.addEventListener("waiting", stalled);
+    el.addEventListener("stalled", stalled);
+    el.addEventListener("canplay", rolling);
+    el.addEventListener("playing", rolling);
+    el.addEventListener("error", rolling);
+    el.play().catch(() => {});
+
+    return () => {
+      el.removeEventListener("waiting", stalled);
+      el.removeEventListener("stalled", stalled);
+      el.removeEventListener("canplay", rolling);
+      el.removeEventListener("playing", rolling);
+      el.removeEventListener("error", rolling);
+    };
+  }, [active, media]);
 
   // Safety-net cap for the current video only: advances the story if playback
   // stalls and `onEnded` never fires. Rescheduled on every timeupdate so a
@@ -56,6 +120,10 @@ const BoxStory = ({ entry }) => {
   useEffect(() => {
     const item = media[active];
     if (!item || item.type !== "video" || single) return undefined;
+    // The cap now measures PLAYING time, not wall time: it is not armed while the slide
+    // is loading or stalled, so a twelve-second buffer can no longer count as a
+    // twelve-second video and skip it unseen.
+    if (holding) return undefined;
     const el = videoElRef.current;
     let capTimer = setTimeout(next, VIDEO_MAX);
     const resetCap = () => {
@@ -67,7 +135,7 @@ const BoxStory = ({ entry }) => {
       clearTimeout(capTimer);
       el?.removeEventListener("timeupdate", resetCap);
     };
-  }, [active, media, single, next]);
+  }, [active, media, single, next, holding]);
 
   if (!media.length) return null;
   const current = media[active];
@@ -121,11 +189,29 @@ const BoxStory = ({ entry }) => {
       ) : (
         <>
           <img className="bk-box-fill" src={imgUrl(current.url, 900)} alt="" aria-hidden="true" />
-          <img key={`${entry.id}-${active}`} className="bk-box-front bk-box-kenburns" src={imgUrl(current.url, 1200)} alt={STORY_TITLE} />
+          <img
+            key={`${entry.id}-${active}`}
+            className="bk-box-front bk-box-kenburns"
+            src={imgUrl(current.url, 1200)}
+            alt={STORY_TITLE}
+            // The image's own hold does not start until it is on screen — and onError
+            // releases it too, so a broken URL cannot park the story on a spinner.
+            onLoad={() => setReady(true)}
+            onError={() => setReady(true)}
+          />
         </>
       )}
 
       <span className="bk-box-scrim" aria-hidden="true" />
+
+      {/* Centred over the story while the slide is loading or has stalled. Above the
+          scrim so it stays legible, below the tap zones so a shopper can still skip a
+          slide that is taking too long. */}
+      {holding && (
+        <span className="bk-box-loader" aria-label="Loading">
+          <i />
+        </span>
+      )}
 
       {/* Brand chip */}
       <span className="bk-box-brand" aria-hidden="true">

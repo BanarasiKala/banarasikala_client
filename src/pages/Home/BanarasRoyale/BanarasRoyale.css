@@ -247,12 +247,6 @@
   transform: translateY(-1px);
 }
 
-.bk-royale-cta span {
-  padding-left: 10px;
-  border-left: 1px solid rgba(123, 0, 27, 0.25);
-  font-weight: 800;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .bk-royale-float {
     animation: none;

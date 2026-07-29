@@ -200,9 +200,6 @@ const RoyaleStage = ({ entry }) => {
         {product?.slug && (
           <Link className="bk-royale-cta" to={`/product/${product.slug}`}>
             Shop this look
-            {Number(product.selling_price) > 0 && (
-              <span>₹{Number(product.selling_price).toLocaleString("en-IN")}</span>
-            )}
           </Link>
         )}
       </div>
