@@ -700,7 +700,10 @@ const Header = () => {
             </div>
           )}
           <Link to="/about" onClick={refreshNavClick("/about")}>About Us</Link>
-          <Link to="/contact" onClick={refreshNavClick("/contact")}>Contact Us</Link>
+          {/* Contact Us is not in the desktop bar: it made this column wide enough to push the
+              logo off centre. Still reachable from the footer and the mobile menu, and "Need
+              help?" on the account page opens support chat directly, which is what most people
+              were using it for. */}
           {/* The support chat belongs to an account — there is nothing to show a guest.
               Points at My Orders rather than a support page of its own: the chat is opened
               from an order now, so that is where a reply is read. The badge stays because it
