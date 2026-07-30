@@ -20,8 +20,10 @@ const RoyaleStage = ({ entry }) => {
   const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
   const [imageIndex, setImageIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
-  const [fsPaused, setFsPaused] = useState(false);
   const [fsMuted, setFsMuted] = useState(false);
+  // The full-screen video's own readiness. Same rule as the backdrop: a loader while it has no
+  // data, and nothing else — no play button, because it is never paused.
+  const [fsReady, setFsReady] = useState(false);
   const fsVideoRef = useRef(null);
   // null → the CSS default spot (with the bob animation); {x,y} once dragged.
   const [floatPos, setFloatPos] = useState(null);
@@ -99,8 +101,16 @@ const RoyaleStage = ({ entry }) => {
     };
   }, [entry.video]);
 
-  // While the full-screen viewer is open: lock the page behind it, let Escape close it, and kick
-  // off playback (reflecting a blocked autoplay so the centre Play button shows instead).
+  /**
+   * The full-screen viewer: lock the page behind it, Escape closes it, and keep the video
+   * playing.
+   *
+   * There is no pause here, by design — no play button, and tapping the video does nothing.
+   * The only states it can be in are "playing" and "still loading", and the loader covers the
+   * second. So a `pause` from any source (a browser backgrounding the tab, low-power mode, an
+   * autoplay refusal that resolves later) is answered by playing again rather than by showing a
+   * button and waiting to be asked.
+   */
   useEffect(() => {
     if (!fullscreen) return undefined;
     const prevOverflow = document.body.style.overflow;
@@ -109,23 +119,41 @@ const RoyaleStage = ({ entry }) => {
     document.addEventListener("keydown", onKey);
 
     const video = fsVideoRef.current;
-    if (video) {
-      setFsMuted(video.muted);
-      const played = video.play();
-      if (played && typeof played.catch === "function") played.catch(() => setFsPaused(true));
+    if (!video) {
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        document.removeEventListener("keydown", onKey);
+      };
     }
+
+    setFsMuted(video.muted);
+    setFsReady(video.readyState >= 3);
+    const play = () => { const p = video.play(); if (p && typeof p.catch === "function") p.catch(() => {}); };
+    play();
+
+    const rolling = () => { setFsReady(true); };
+    const stalled = () => setFsReady(false);
+    const onPause = () => play();
+
+    video.addEventListener("canplay", rolling);
+    video.addEventListener("playing", rolling);
+    video.addEventListener("waiting", stalled);
+    video.addEventListener("stalled", stalled);
+    // A dead URL must not leave the loader spinning over nothing forever.
+    video.addEventListener("error", rolling);
+    video.addEventListener("pause", onPause);
+
     return () => {
       document.body.style.overflow = prevOverflow;
       document.removeEventListener("keydown", onKey);
+      video.removeEventListener("canplay", rolling);
+      video.removeEventListener("playing", rolling);
+      video.removeEventListener("waiting", stalled);
+      video.removeEventListener("stalled", stalled);
+      video.removeEventListener("error", rolling);
+      video.removeEventListener("pause", onPause);
     };
   }, [fullscreen]);
-
-  const toggleFsPlay = () => {
-    const video = fsVideoRef.current;
-    if (!video) return;
-    if (video.paused) { const p = video.play(); if (p && typeof p.catch === "function") p.catch(() => {}); }
-    else video.pause();
-  };
 
   const toggleFsMute = () => {
     const video = fsVideoRef.current;
@@ -337,8 +365,9 @@ const RoyaleStage = ({ entry }) => {
           </button>
 
           {/* No native `controls` on purpose — that bar is the only thing that shows a fullscreen
-              icon / three-dots / download, and `controlsList` isn't honoured on every browser. A
-              small custom set (tap to play-pause, mute, close) keeps the viewer clean everywhere. */}
+              icon / three-dots / download, and `controlsList` isn't honoured on every browser.
+              No tap-to-pause either: the video is always playing, so the only thing that can
+              ever appear over it is the loader below. Mute and close are the whole control set. */}
           <video
             ref={fsVideoRef}
             className="bk-royale-fs-video"
@@ -346,15 +375,12 @@ const RoyaleStage = ({ entry }) => {
             autoPlay
             loop
             playsInline
-            onClick={toggleFsPlay}
-            onPlay={() => setFsPaused(false)}
-            onPause={() => setFsPaused(true)}
           />
 
-          {fsPaused && (
-            <button type="button" className="bk-royale-fs-play" onClick={toggleFsPlay} aria-label="Play">
-              <Icon icon="lucide:play" />
-            </button>
+          {!fsReady && (
+            <span className="bk-royale-loader bk-royale-loader--fs" aria-label="Loading">
+              <i />
+            </span>
           )}
 
           <button
