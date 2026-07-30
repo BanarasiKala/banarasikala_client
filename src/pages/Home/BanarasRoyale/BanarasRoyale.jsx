@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
 import "./BanarasRoyale.css";
+
+// Press-and-hold on the polaroid to blow it up full screen; let go and it drops back.
+// The same pointer can also DRAG the polaroid, so the two gestures have to be told apart:
+// a press that moves more than a few pixels before the timer fires is a drag and cancels
+// the hold. Any further movement once zoomed is ignored rather than dragging underneath.
+const LONG_PRESS_MS = 400;
+const DRAG_TOLERANCE_PX = 8;
 
 // One showcase stage: the entry's video plays as the cinematic backdrop while
 // its images float in over it one by one (polaroid-style, cycling). The
@@ -19,12 +27,21 @@ const RoyaleStage = ({ entry }) => {
   const [floatPos, setFloatPos] = useState(null);
   // While dragging: lift effect + tilt that leans into the movement direction.
   const [dragFx, setDragFx] = useState(null); // { tilt } | null
+  // Held full-screen preview of the polaroid, while the finger stays down.
+  const [zoomed, setZoomed] = useState(false);
+  // Has the backdrop got enough data to show a frame? False until the media says otherwise, and
+  // again whenever it runs dry mid-playback. Until then the stage is just its own near-black
+  // background, which reads as broken rather than loading.
+  const [mediaReady, setMediaReady] = useState(false);
   const stageRef = useRef(null);
   const floatRef = useRef(null);
   const dragRef = useRef(null); // pointer offset inside the polaroid while dragging
   const lastXRef = useRef(0);
   const tiltSettleRef = useRef(null);
   const videoRef = useRef(null);
+  const holdTimerRef = useRef(null);
+  // Where the press started, and whether it has since travelled far enough to be a drag.
+  const pressRef = useRef(null); // { x, y, moved }
 
   useEffect(() => {
     if (images.length <= 1) return undefined;
@@ -53,13 +70,32 @@ const RoyaleStage = ({ entry }) => {
     // the loop.
     const onPause = () => { if (!document.hidden) play(); };
 
+    // HAVE_FUTURE_DATA or better means it can already paint — a cached video never fires
+    // `canplay` again, so reading readyState is what stops the loader hanging over a video that
+    // is in fact ready to go.
+    setMediaReady(video.readyState >= 3);
+    const rolling = () => setMediaReady(true);
+    const stalled = () => setMediaReady(false);
+
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("pageshow", onPageShow);
     video.addEventListener("pause", onPause);
+    video.addEventListener("canplay", rolling);
+    video.addEventListener("playing", rolling);
+    video.addEventListener("waiting", stalled);
+    video.addEventListener("stalled", stalled);
+    // A dead URL clears the loader too. Leaving it spinning forever over a video that is never
+    // going to arrive is the one outcome worse than showing the bare stage.
+    video.addEventListener("error", rolling);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pageshow", onPageShow);
       video.removeEventListener("pause", onPause);
+      video.removeEventListener("canplay", rolling);
+      video.removeEventListener("playing", rolling);
+      video.removeEventListener("waiting", stalled);
+      video.removeEventListener("stalled", stalled);
+      video.removeEventListener("error", rolling);
     };
   }, [entry.video]);
 
@@ -112,10 +148,28 @@ const RoyaleStage = ({ entry }) => {
     const startY = floatBox.top - stageBox.top;
     setDragFx({ tilt: 0, cx: startX + floatBox.width / 2, cy: startY + floatBox.height / 2 });
     setFloatPos({ x: startX, y: startY });
+
+    // Arm the hold. Cancelled below the moment the pointer travels like a drag.
+    pressRef.current = { x: event.clientX, y: event.clientY, moved: false };
+    clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = setTimeout(() => setZoomed(true), LONG_PRESS_MS);
   };
 
   const moveDrag = (event) => {
     if (!dragRef.current) return;
+    // Zoomed: the gesture has become "hold to look", so movement no longer drags. Without
+    // this the polaroid would be slid around behind the overlay and reappear somewhere else.
+    if (zoomed) return;
+
+    const press = pressRef.current;
+    if (press && !press.moved) {
+      const travelled = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (travelled > DRAG_TOLERANCE_PX) {
+        press.moved = true;
+        clearTimeout(holdTimerRef.current);
+      }
+    }
+
     const stage = stageRef.current;
     const float = floatRef.current;
     if (!stage || !float) return;
@@ -139,11 +193,32 @@ const RoyaleStage = ({ entry }) => {
   const endDrag = (event) => {
     dragRef.current = null;
     clearTimeout(tiltSettleRef.current);
+    clearTimeout(holdTimerRef.current);
     setDragFx(null);
+    // Letting go drops the polaroid back out of full screen — the zoom is held, not toggled.
+    setZoomed(false);
+    // A press that never travelled was not a drag, so hand the polaroid back to its CSS home
+    // and let the bob resume. startDrag pins left/top on pointerdown (it has to, to convert
+    // from the default anchoring), which would otherwise leave a tapped polaroid frozen in
+    // place for good.
+    if (pressRef.current && !pressRef.current.moved) setFloatPos(null);
+    pressRef.current = null;
     floatRef.current?.releasePointerCapture?.(event.pointerId);
   };
 
-  useEffect(() => () => clearTimeout(tiltSettleRef.current), []);
+  useEffect(() => () => {
+    clearTimeout(tiltSettleRef.current);
+    clearTimeout(holdTimerRef.current);
+  }, []);
+
+  // The page must not scroll behind the held preview — on a phone the hold and a scroll start
+  // the same way, and one that slips through leaves the overlay pinned over a moved page.
+  useEffect(() => {
+    if (!zoomed) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [zoomed]);
 
   const product = entry.Product || null;
   const currentImage = images.length ? images[imageIndex % images.length] : null;
@@ -163,9 +238,26 @@ const RoyaleStage = ({ entry }) => {
           aria-label={entry.title || "Banaras Royale"}
         />
       ) : currentImage ? (
-        <img className="bk-royale-media" src={imgUrl(currentImage, 1400)} alt={entry.title || "Banaras Royale"} />
+        <img
+          className="bk-royale-media"
+          src={imgUrl(currentImage, 1400)}
+          alt={entry.title || "Banaras Royale"}
+          // An entry with no video uses a photo as the backdrop; it reports its own readiness.
+          // onError releases the loader for the same reason the video's does.
+          onLoad={() => setMediaReady(true)}
+          onError={() => setMediaReady(true)}
+        />
       ) : null}
       <span className="bk-royale-scrim" aria-hidden="true" />
+
+      {/* Centred over the stage while the backdrop is still downloading or has stalled. Above
+          the scrim so it stays legible on any frame, below the polaroid and the copy so neither
+          is blocked by it. */}
+      {!mediaReady && (
+        <span className="bk-royale-loader" aria-label="Loading">
+          <i />
+        </span>
+      )}
       {/* Warm spotlight that follows the polaroid while it is being dragged. */}
       <span
         className="bk-royale-spot"
@@ -188,10 +280,26 @@ const RoyaleStage = ({ entry }) => {
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          title="Drag to move"
+          // A long press on an image is iOS/Android's own "save image" gesture; without this the
+          // OS menu opens over the preview and swallows the pointerup that closes it.
+          onContextMenu={(event) => event.preventDefault()}
+          title="Drag to move · press and hold to enlarge"
         >
           <img key={imageIndex % images.length} src={imgUrl(currentImage, 560)} alt="" draggable={false} />
         </div>
+      )}
+
+      {/* Held full-screen preview. Portaled to <body> because the stage clips its children
+          (overflow: hidden for the rounded corners), so an overlay rendered inside it would be
+          cropped to the stage rather than filling the viewport.
+          pointer-events: none in CSS — the polaroid has pointer capture for this gesture, and
+          the overlay must not intercept the pointerup that ends it. */}
+      {zoomed && currentImage && createPortal(
+        <div className="bk-royale-zoom" aria-hidden="true">
+          <img src={imgUrl(currentImage, 1400)} alt="" draggable={false} />
+          <span className="bk-royale-zoom-hint">Release to close</span>
+        </div>,
+        document.body,
       )}
 
       <div className="bk-royale-copy">

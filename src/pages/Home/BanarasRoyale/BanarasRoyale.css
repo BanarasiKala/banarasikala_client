@@ -143,12 +143,13 @@
   transition: rotate 0.16s ease-out, scale 0.22s ease, box-shadow 0.25s ease;
 }
 
-/* While in the hand: lifted off the video — bigger, deeper shadow, brighter. */
+/* While in the hand: lifted off the video — bigger, deeper shadow. No `filter` here any more:
+   brightness() tinted the photograph itself, and the lift is already carried by the scale and
+   the shadow. The saree's own colour is the thing being sold, so nothing recolours it. */
 .bk-royale-float.is-dragging {
   cursor: grabbing;
   scale: 1.08;
   box-shadow: 0 36px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 244, 216, 0.35);
-  filter: brightness(1.04);
   z-index: 3;
 }
 
@@ -159,6 +160,11 @@
   object-fit: cover;
   border-radius: 6px;
   animation: bk-royale-img-in 0.6s ease both;
+  /* Stops the iOS press-and-hold "save image" sheet, which would otherwise open on top of the
+     held preview and eat the pointerup that closes it. */
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -385,3 +391,95 @@
 }
 .bk-royale-fs-mute:hover { background: rgba(255, 255, 255, 0.3); }
 .bk-royale-fs-mute:active { transform: scale(0.92); }
+
+/* ── Held full-screen preview (press and hold the polaroid) ────────────────────────────
+   Shown only while the finger/mouse is down; releasing dismisses it. Portaled to <body>, so
+   the stage's `overflow: hidden` cannot clip it.
+
+   pointer-events: none is load-bearing: the polaroid holds pointer capture for this gesture,
+   and an overlay that accepted events would swallow the pointerup that ends it — leaving the
+   preview stuck open with nothing to close it. */
+.bk-royale-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  padding: 4vmin;
+  background: rgba(12, 5, 3, 0.93);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  animation: bk-royale-zoom-in 170ms ease-out;
+}
+
+/* contain, not cover — this is the "look at it properly" view, so nothing is cropped. No
+   filter of any kind on it either. */
+.bk-royale-zoom img {
+  max-width: 94vw;
+  max-height: 84dvh;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: bk-royale-zoom-img 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bk-royale-zoom-hint {
+  color: rgba(255, 244, 226, 0.72);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes bk-royale-zoom-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bk-royale-zoom-img {
+  from { transform: scale(0.9); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-royale-zoom,
+  .bk-royale-zoom img {
+    animation: none;
+  }
+}
+
+/* ── Backdrop loader ──────────────────────────────────────────────────────────────────
+   Shown while the stage's video (or photo) is still downloading or has stalled mid-play.
+   z-index 2 puts it over the scrim but under the polaroid (3 while dragged) and the copy, so
+   it never blocks the card or the "Shop this look" link. */
+.bk-royale-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.bk-royale-loader i {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  /* Dark ring under a gold arc — the same treatment as the Unboxing Luxury loader. A plain
+     light spinner disappears against a bright frame of the footage; the ring keeps a readable
+     edge whatever is behind it. */
+  border: 3px solid rgba(0, 0, 0, 0.32);
+  border-top-color: #e7b64f;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  animation: bk-royale-spin 0.75s linear infinite;
+}
+
+@keyframes bk-royale-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-royale-loader i { animation-duration: 2s; }
+}
