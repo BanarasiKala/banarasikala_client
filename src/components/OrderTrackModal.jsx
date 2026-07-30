@@ -1,8 +1,8 @@
 import { Icon } from "@iconify/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useBottomSheet from "../hooks/useBottomSheet";
 import api from "../utils/api";
-import { buildOrderTimeline, cleanScanLocation, describeStep, formatTrackDate } from "../utils/tracking";
+import { cleanScanLocation, describeStep, formatTrackDate } from "../utils/tracking";
 import "./OrderTrackModal.css";
 
 /**
@@ -14,8 +14,10 @@ import "./OrderTrackModal.css";
  * It used to show our seven-step order-status hierarchy instead, which answers a different
  * question: a parcel that has moved through four hubs still reads as one unchanging "Shipped".
  *
- * That hierarchy is still the fallback, and is the right thing to show before dispatch: an
- * order placed an hour ago has no scans at all, and an empty feed would say nothing.
+ * When there are no scans it says so in a sentence, rather than falling back to that hierarchy.
+ * Drawing it as a stand-in meant the sheet opened on one timeline and swapped it for a different
+ * one a second later — and the hierarchy was never tracking to begin with, only a restatement of
+ * the status already visible on the page behind this sheet.
  *
  * ── Where the data comes from ───────────────────────────────────────────────────────────
  * The order detail page already holds a tracking payload, so it passes one in. My Orders does
@@ -28,27 +30,38 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
   const { sheetRef, grabHandlers, sheetStyle } = useBottomSheet(onClose);
 
   const [fetched, setFetched] = useState(null);
-  const [fetching, setFetching] = useState(false);
+  // Starts true when this sheet has to fetch, so the very first render is already the loader.
+  // Setting it in the effect instead left one frame in which nothing was loading and no scans
+  // existed — which is the state that renders "no updates", so the sheet opened on that.
+  const [fetching, setFetching] = useState(!suppliedTracking && Boolean(order?.id));
+  const [failed, setFailed] = useState(false);
 
   const orderId = order?.id;
   // No shipment booked yet means there is nothing for ShipRocket to know — asking would spend
   // a round trip to be told so.
   const hasShipment = Boolean(order?.shiprocket_awb || order?.shiprocket_order_id);
 
-  useEffect(() => {
-    if (suppliedTracking || !orderId || !hasShipment) return undefined;
+  const fetchTracking = useCallback(() => {
+    if (suppliedTracking || !orderId) return undefined;
+    // No shipment booked yet means there is nothing for ShipRocket to know — asking would spend
+    // a round trip to be told so. Resolve straight to "nothing yet".
+    if (!hasShipment) {
+      setFetching(false);
+      return undefined;
+    }
     // `live` rather than an AbortController: an aborted axios request rejects, and the catch
     // here would read that as "tracking failed" for a sheet that is already gone.
     let live = true;
     setFetching(true);
+    setFailed(false);
     api.get(`/api/orders/track/${orderId}`)
       .then(({ data }) => { if (live) setFetched(data); })
-      // Silent: the status timeline below is a complete answer on its own, so a failed
-      // courier lookup degrades to it rather than showing an error over it.
-      .catch(() => {})
+      .catch(() => { if (live) setFailed(true); })
       .finally(() => { if (live) setFetching(false); });
     return () => { live = false; };
   }, [suppliedTracking, orderId, hasShipment]);
+
+  useEffect(() => fetchTracking(), [fetchTracking]);
 
   const payload = suppliedTracking || fetched;
   const shipmentTrack = payload?.tracking?.tracking_data?.shipment_track?.[0];
@@ -84,21 +97,42 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
     })
     .filter((scan) => scan.title), [activities]);
 
-  // The pre-dispatch fallback: the order's own status hierarchy.
-  const steps = useMemo(
-    () => buildOrderTimeline(order).map((step) => ({
-      key: step.title,
-      title: step.title,
-      note: step.detail,
-      state: step.state,
-    })),
-    [order],
+  const isDelivered = useMemo(
+    () => scans.some((s) => /delivered/i.test(s.title))
+      || /delivered/i.test(String(order?.status || "")),
+    [scans, order?.status],
   );
 
-  const isDelivered = useMemo(
-    () => scans.some((s) => /delivered/i.test(s.title)) || steps.some((s) => /delivered/i.test(s.title)),
-    [scans, steps],
-  );
+  /**
+   * What the body should say when there are no courier scans.
+   *
+   * The order's own status hierarchy used to be drawn here as a stand-in, which is why the sheet
+   * opened on a timeline and then replaced it with a different one a moment later: that
+   * hierarchy is not tracking, it is a restatement of the status already shown on the page
+   * behind. Saying plainly that the courier has nothing yet is both true and less work to read
+   * than a timeline that is about to be thrown away.
+   */
+  const emptyState = useMemo(() => {
+    if (failed) {
+      return {
+        icon: "lucide:wifi-off",
+        text: "We couldn't reach the courier just now. Your order is safe — please try again in a moment.",
+        retry: true,
+      };
+    }
+    if (!hasShipment) {
+      return {
+        icon: "lucide:package",
+        text: statusLabel
+          ? `Your order is ${String(statusLabel).toLowerCase()}. Tracking begins once it is handed to the courier.`
+          : "Tracking begins once your order is handed to the courier.",
+      };
+    }
+    return {
+      icon: "lucide:map-pin-off",
+      text: "The courier has your parcel but hasn't scanned it yet. Updates appear here as soon as they do.",
+    };
+  }, [failed, hasShipment, statusLabel]);
 
   const busy = Boolean(loading) || fetching;
 
@@ -163,7 +197,15 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
         )}
 
         <div className="track-modal-timeline">
-          {scans.length > 0 ? (
+          {/* Loading comes FIRST. Drawing anything else while the lookup is in flight is what
+              made the sheet show one timeline and then swap it for another — whatever is chosen
+              here is guaranteed to be replaced the moment the answer lands. */}
+          {busy && scans.length === 0 ? (
+            <div className="track-modal-empty">
+              <Icon icon="lucide:loader-2" className="is-spinning" />
+              <span>Fetching the latest courier scans…</span>
+            </div>
+          ) : scans.length > 0 ? (
             <ol className="track-sr-feed">
               {scans.map((scan, index) => (
                 <li className="track-sr-scan" key={scan.key}>
@@ -174,51 +216,27 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
                       <strong>{scan.title}</strong>
                       {scan.stamp && <time className="track-sr-time">{scan.stamp}</time>}
                     </div>
+                    {/* No leading ">" — that was Shiprocket's own widget quoting itself, and in
+                        our own type it just read as a stray character. */}
                     {scan.location && (
-                      <span className="track-sr-loc">&gt;Location: {scan.location}</span>
+                      <span className="track-sr-loc">Location: {scan.location}</span>
                     )}
                   </div>
                 </li>
               ))}
             </ol>
-          ) : steps.length ? (
-            steps.map((step, index) => (
-              <div className="track-step" key={step.key}>
-                <span className={`track-step-dot is-${step.state || "pending"}`}>
-                  <Icon icon={step.state === "pending" ? "lucide:circle" : "lucide:check"} />
-                </span>
-                {index < steps.length - 1 && <span className="track-step-line" />}
-
-                <div className="track-step-body">
-                  <strong>{step.title}</strong>
-                  {step.note && <p>{step.note}</p>}
-                </div>
-              </div>
-            ))
           ) : (
             <div className="track-modal-empty">
-              <Icon icon={busy ? "lucide:loader-2" : "lucide:map-pin-off"} className={busy ? "is-spinning" : ""} />
-              <span>
-                {busy
-                  ? "Fetching the latest courier scans…"
-                  : statusLabel
-                    ? `Your order is ${String(statusLabel).toLowerCase()}. Tracking updates appear here once the courier scans the parcel.`
-                    : "Tracking updates will appear here once the courier scans the parcel."}
-              </span>
+              <Icon icon={emptyState.icon} />
+              <span>{emptyState.text}</span>
+              {emptyState.retry && (
+                <button type="button" className="track-modal-retry" onClick={fetchTracking}>
+                  <Icon icon="lucide:rotate-cw" /> Try again
+                </button>
+              )}
             </div>
           )}
         </div>
-
-        {isDelivered && (
-          <div className="track-modal-thanks">
-            <span className="track-modal-thanks-icon"><Icon icon="lucide:sparkles" /></span>
-            <p>
-              Thank you for shopping with Banarasi Kala!
-              <br />
-              We hope you love your purchase.
-            </p>
-          </div>
-        )}
 
         {trackUrl && !isDelivered && (
           <a className="track-modal-external" href={trackUrl} target="_blank" rel="noopener noreferrer">

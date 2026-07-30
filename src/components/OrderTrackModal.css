@@ -155,7 +155,7 @@
   min-width: 0;
   color: #16202e;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 450;
   overflow-wrap: anywhere;
 }
 
@@ -229,7 +229,7 @@
   min-width: 0;
   color: #15803d;
   font-size: 14.5px;
-  font-weight: 700;
+  font-weight: 450;
   line-height: 1.35;
 }
 
@@ -237,7 +237,7 @@
   flex-shrink: 0;
   color: #1f2937;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -251,15 +251,10 @@
   overflow-wrap: anywhere;
 }
 
-/* Under ~380px the scan name and its timestamp stop fitting on one line, and letting them
-   share it just squeezes the name into a two-word column. */
-@media (max-width: 380px) {
-  .track-sr-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-}
+/* No narrow-screen stacking. The scan name and its timestamp stay on one line at every width —
+   a long name wraps under itself while the timestamp holds the right edge, which is what the
+   min-width: 0 above allows. Dropping the row to a column put the time on its own line and made
+   each scan read as two entries. */
 
 /* ── Timeline ────────────────────────────────────────────────────────────────────── */
 .track-modal-timeline {
@@ -277,109 +272,10 @@
 }
 .track-modal-timeline::-webkit-scrollbar-track { background: transparent; }
 
-.track-step {
-  position: relative;
-  padding: 0 0 22px 44px;
-}
-
-.track-step:last-child { padding-bottom: 6px; }
-
-.track-step-dot {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: #7b001b;
-  color: #fff;
-  display: grid;
-  place-items: center;
-}
-
-.track-step-dot svg { font-size: 15px; }
-
-/* Step state: done/current keep the filled maroon dot; a pending (future) step is hollow and
-   muted so the timeline reads as progress rather than everything being complete. */
-.track-step-dot.is-current { box-shadow: 0 0 0 4px rgba(123, 0, 27, 0.15); }
-.track-step-dot.is-pending {
-  background: #fff;
-  color: rgba(123, 0, 27, 0.4);
-  box-shadow: inset 0 0 0 2px rgba(123, 0, 27, 0.25);
-}
-
-/* Connector. Starts under the dot and runs to the next one — `bottom: -6px` overlaps the
-   next dot's top edge so no hairline gap shows at fractional device pixel ratios. */
-.track-step-line {
-  position: absolute;
-  left: 13px;
-  top: 28px;
-  bottom: -6px;
-  width: 2px;
-  background: rgba(123, 0, 27, 0.35);
-}
-
-.track-step-body { min-width: 0; }
-
-.track-step-body strong {
-  display: block;
-  color: #7b001b;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.track-step-body time {
-  display: block;
-  margin-top: 2px;
-  color: rgba(93, 23, 13, 0.85);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.track-step-body p {
-  margin: 4px 0 0;
-  color: rgba(93, 23, 13, 0.62);
-  font-size: 13.5px;
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-/* The AWB / courier detail cards that used to hang off individual steps are gone — those
-   facts belong to the shipment, not to a step, and now live in .track-sr-summary above. */
+/* The order-status step timeline that used to stand in for missing tracking is gone — the
+   sheet now says plainly that the courier has nothing yet. */
 
 /* ── Footer states ───────────────────────────────────────────────────────────────── */
-.track-modal-thanks {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: rgba(123, 0, 27, 0.05);
-  flex-shrink: 0;
-}
-
-.track-modal-thanks-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: rgba(212, 175, 55, 0.22);
-  color: #a67c00;
-}
-
-.track-modal-thanks-icon svg { font-size: 17px; }
-
-.track-modal-thanks p {
-  margin: 0;
-  color: rgba(93, 23, 13, 0.78);
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-
 .track-modal-empty {
   display: flex;
   flex-direction: column;
@@ -399,20 +295,45 @@
 
 .track-modal-empty svg.is-spinning { animation: track-modal-spin 0.8s linear infinite; }
 
+/* "View on courier site". Shorter and lighter: it is a way out of this sheet to somebody else's
+   page, not the thing the sheet is for, and a full-height 13.5px/700 bar was the heaviest
+   element on a screen whose point is the scan feed above it. The 1.5px border came down with it
+   — at this height a heavy rule reads as a second border. */
 .track-modal-external {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(123, 0, 27, 0.35);
+  gap: 7px;
+  margin-top: 12px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(123, 0, 27, 0.3);
   color: #7b001b;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   text-decoration: none;
   flex-shrink: 0;
 }
 
-.track-modal-external svg { font-size: 14px; }
+.track-modal-external svg { font-size: 12.5px; }
+
+/* Retry, shown only when the courier lookup actually failed — a network fault is the one empty
+   state the customer can do something about. */
+.track-modal-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  padding: 8px 16px;
+  border: 1px solid rgba(123, 0, 27, 0.32);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #7b001b;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.track-modal-retry:hover { background: #fff3e4; }
+.track-modal-retry svg { font-size: 14px; }
