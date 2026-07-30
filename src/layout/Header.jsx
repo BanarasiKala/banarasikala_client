@@ -450,21 +450,55 @@ const Header = () => {
     navigate(`/product/${slug}`);
   };
 
-  // Seamless topline ticker — rAF avoids the CSS keyframe reset flash
+  /**
+   * Seamless topline ticker — rAF rather than a CSS keyframe, which flashes on reset.
+   *
+   * Three things used to make it stall or jitter:
+   *
+   *   1. requestAnimationFrame does not run while the tab is hidden, so the first frame back
+   *      reported the entire absence as one delta. Thirty seconds away moved it 1200px in a
+   *      single step, and the old wrap added back exactly ONE loop width — which cannot
+   *      recover from an overshoot of several, leaving the strip parked off-screen looking
+   *      stopped. The delta is now capped and the wrap is a modulo.
+   *   2. loopWidth was measured once, on the frame after mount. Web fonts land after that and
+   *      change the text width, so the wrap point was computed from fallback metrics and the
+   *      seam showed as a jump. It is re-measured whenever the track's width actually changes.
+   *   3. A long task (a route change, an image decode) produced the same oversized delta as a
+   *      backgrounded tab, on a smaller scale — visible as a lurch.
+   */
   useEffect(() => {
     const track = toplineTrackRef.current;
-    if (!track) return;
+    if (!track) return undefined;
+
     const COPIES = 4;
     const SPEED = 40; // px per second
+    // A gap longer than this is not elapsed animation — it is a backgrounded tab, a long task,
+    // or a device waking. Advancing by the true delta teleports the strip; capping it keeps the
+    // motion continuous and simply skips the missing time.
+    const MAX_FRAME_MS = 50;
+
     let x = 0;
     let lastTime = null;
     let loopWidth = 0;
-    let raf;
+    let raf = 0;
+
+    // Keeps an offset inside (-loop, 0] however far it has overshot.
+    const wrap = (value, loop) => -((((-value) % loop) + loop) % loop);
+
+    const measure = () => {
+      // One copy's width: scrollWidth spans all four, and the strip wraps after exactly one.
+      const next = track.scrollWidth / COPIES;
+      if (!next || Math.abs(next - loopWidth) < 0.5) return;
+      // Re-anchor into the NEW loop, or a re-measure leaves x outside it and the strip jumps.
+      if (loopWidth > 0) x = wrap(x, next);
+      loopWidth = next;
+    };
 
     const step = (time) => {
-      if (lastTime !== null) {
-        x -= (SPEED * (time - lastTime)) / 1000;
-        if (x <= -loopWidth) x += loopWidth;
+      // loopWidth 0 would make the wrap a no-op and let the strip scroll away for good.
+      if (lastTime !== null && loopWidth > 0) {
+        x -= (SPEED * Math.min(time - lastTime, MAX_FRAME_MS)) / 1000;
+        if (x <= -loopWidth) x = wrap(x, loopWidth);
         track.style.transform = `translateX(${x}px)`;
       }
       lastTime = time;
@@ -472,11 +506,25 @@ const Header = () => {
     };
 
     raf = requestAnimationFrame(() => {
-      loopWidth = track.scrollWidth / COPIES;
+      measure();
       raf = requestAnimationFrame(step);
     });
 
-    return () => cancelAnimationFrame(raf);
+    // Fonts swap in after first paint and change the width the wrap depends on.
+    document.fonts?.ready?.then(measure).catch(() => {});
+    const observer = new ResizeObserver(measure);
+    observer.observe(track);
+
+    // Dropping lastTime makes the first frame back a no-op instead of a teleport. The cap above
+    // would already contain it; this keeps the strip exactly where it was left.
+    const onVisible = () => { if (!document.hidden) lastTime = null; };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const handleSearchChange = (e) => {
