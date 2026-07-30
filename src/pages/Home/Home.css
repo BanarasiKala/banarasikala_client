@@ -127,7 +127,7 @@
     .bk-fabric-strip,
     .home-deferred-section
   )
-  :where(*):not(:where(h1, h2, h1 *, h2 *, .bk-occasion-heading, .bk-occasion-heading *)) {
+  :where(*):not(:where(h1, h2, h1 *, h2 *)) {
   font-family: "Poppins", sans-serif !important;
 }
 
@@ -136,7 +136,7 @@
     .bk-fabric-strip,
     .home-deferred-section
   )
-  :where(p, span, a, button, small, em):not(:where(h1 *, h2 *, .bk-occasion-heading, .bk-occasion-heading *)) {
+  :where(p, span, a, button, small, em):not(:where(h1 *, h2 *)) {
   font-weight: 500 !important;
 }
 
@@ -179,7 +179,6 @@
     .bk-popular-header h2,
     .bk-browse-header h2,
     .bk-arrivals-copy h2,
-    .bk-occasion-heading h2,
     .bk-story-copy h2,
     .bk-review-heading h2,
     .bk-faq-shell h2
@@ -219,8 +218,7 @@
       .bk-popular-header h2,
       .bk-browse-header h2,
       .bk-arrivals-copy h2,
-      .bk-occasion-heading h2,
-      .bk-story-copy h2,
+        .bk-story-copy h2,
       .bk-review-heading h2,
       .bk-faq-shell h2
     ) {

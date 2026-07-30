@@ -24,34 +24,30 @@
   text-align: center;
 }
 
+/* "Banarasi Kala Presents". No tracking at all — normal, not 0.08em. Kept in step with
+   .bk-occasion-heading span, the matching eyebrow on the section below. */
 .bk-royale-heading span {
   display: block;
   margin-bottom: 6px;
   color: #8a4c22;
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: normal;
   text-transform: uppercase;
 }
 
-/* Sized and weighted to match .bk-why-heading h2 (WhyChooseUs.css) — the two sit next to
-   each other on the home page, and this one was running to 42px against that one's 18px,
-   which made a showcase strip read as the page's main heading. Kept in step below at the
-   same 640px breakpoint Why Choose Us steps at. */
+/* 16px, paired with .bk-occasion-heading h2 — the two sections sit next to each other on the
+   home page and are sized together. Down from 18px (and originally 42px, which made a showcase
+   strip read as the page's main heading). Held at 16px on mobile too rather than stepping to
+   15px, so the pairing holds at every width. */
 .bk-royale-heading h2 {
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
-}
-
-@media (max-width: 640px) {
-  .bk-royale-heading h2 {
-    font-size: 15px;
-  }
 }
 
 /* ── Stage: the video is the backdrop, images float in over it ── */

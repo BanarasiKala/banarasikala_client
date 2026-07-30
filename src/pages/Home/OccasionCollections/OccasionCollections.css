@@ -23,23 +23,28 @@
   text-align: center;
 }
 
+/* "Crafted for Your Special Occasions" — matched to "Banarasi Kala Presents" above the Banaras
+   Royale stage. Both are the eyebrow over a home section title and had no business reading
+   differently: this one was at 900 with 0.18em tracking, which made a kicker heavier and wider
+   than the eyebrows on every other section. Weight now comes from the shared home rule in
+   Home.css (500), whose carve-out for this element has been removed. */
 .bk-occasion-heading span {
   display: block;
   margin-bottom: 6px;
   color: #8a4c22;
   font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.18em;
+  letter-spacing: normal;
   text-transform: uppercase;
 }
 
+/* 16px, paired with .bk-royale-heading h2 — the two sections sit next to each other and are
+   sized together. This heading has been taken out of the shared 18px/15px group in Home.css
+   (which carried !important and would have won) so its size lives here, with the section. */
 .bk-occasion-heading h2 {
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  /* Matches .bk-why-heading h2 (WhyChooseUs.css) — one type treatment for every home
-     section title. Colour stays local to this section. */
-  font-size: 18px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 800;
   line-height: 1;
@@ -261,7 +266,8 @@
   }
 
   .bk-occasion-heading h2 {
-    font-size: 15px;
+    /* Held at 16px on mobile too, so it stays paired with Banaras Royale at every width. */
+    font-size: 16px;
     line-height: 1.08;
   }
 
