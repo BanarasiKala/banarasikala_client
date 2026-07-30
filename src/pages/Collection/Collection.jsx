@@ -70,7 +70,14 @@ const Collection = () => {
   const [loading, setLoading] = useState(true);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Seeded from the URL so back/forward returns to the page you were actually on. Held in the
+  // URL rather than in state alone because state does not survive the unmount that navigating
+  // to a product causes — coming back always rebuilt at page 1, showing a different twenty
+  // sarees than the one you had clicked.
+  const [currentPage, setCurrentPage] = useState(() => {
+    const raw = Number(searchParams.get("page"));
+    return Number.isInteger(raw) && raw > 0 ? raw : 1;
+  });
   const [expandedFilters, setExpandedFilters] = useState({});
   const [loadedImages, setLoadedImages] = useState({});
   const [hoveredProductId, setHoveredProductId] = useState(null);
@@ -260,10 +267,35 @@ const Collection = () => {
   }, [products, fallbackProducts, loading, fallbackLoading]);
 
 
+  // Not on mount. Every effect runs once when the component mounts, so this was scrolling the
+  // grid to the top on arrival — including arrival via BACK from a product page. ScrollToTop
+  // restores the saved offset in a LAYOUT effect, which React runs before any passive effect
+  // in the tree, so this one ran a moment later and threw the restore away every single time.
+  // That is why returning from a product opened here at the top while the home page did not:
+  // the home page has no such call.
+  //
+  // Changing a filter or turning a page still belongs at the top — that is a new set of
+  // results, and staying halfway down someone else's scroll position would be meaningless.
+  const gridScrollArmed = useRef(false);
   useEffect(() => {
     fetchProducts(currentPage);
+    if (!gridScrollArmed.current) {
+      gridScrollArmed.current = true;
+      return;
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [filters, currentPage]);
+
+  // Mirror the page number into the URL. `replace`, so turning pages does not stack a history
+  // entry per page — the entry for this grid simply carries the page it is showing, which is
+  // what makes BACK from a product land on it. `page` is not one of the keys readUrlFilters
+  // looks at, so writing it here cannot feed back into the filter-sync effect above.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (currentPage > 1) next.set("page", String(currentPage));
+    else next.delete("page");
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [currentPage, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!mobileFiltersOpen) return undefined;
@@ -987,9 +1019,13 @@ const Collection = () => {
             </div>
           )}
 
+          {/* PAGE_SIZE skeletons, not 8. A full page holds twenty cards, so eight left the
+              document less than half its real height while loading — and a scroll restore
+              clamps to the height that exists at the time, so returning to a card low in the
+              grid landed part-way up it even once the offset was applied correctly. */}
           <div className="product-grid" aria-busy={loading || undefined}>
             {loading ? (
-              Array(8).fill(0).map((_, i) => renderProductCardSkeleton(i))
+              Array(PAGE_SIZE).fill(0).map((_, i) => renderProductCardSkeleton(i))
             ) : products.length === 0 ? (
               <div className="col-span-full text-center py-20 text-gray-500">
                 No products found matching your filters.

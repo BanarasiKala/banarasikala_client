@@ -122,14 +122,31 @@ const ScrollToTop = () => {
 
     // Settle 350ms after the last layout change, with a 4s hard cap so a page
     // that keeps mutating (e.g. an animation) can never pin the scroll forever.
+    //
+    // Until the FIRST layout change, though, we wait the full cap instead. A page whose grid
+    // arrives over the network changes nothing at all for the first few hundred milliseconds,
+    // so the 350ms timer expired and disconnected the observer while the skeletons were still
+    // up — and the re-assert that was supposed to fire when the real cards landed never came.
+    // Giving up before the page has been seen to change even once was always premature.
+    // Measured against the height at mount rather than a "has the observer fired" flag:
+    // ResizeObserver invokes its callback once as soon as observation starts, reporting the
+    // CURRENT size, so a flag would be set before anything had actually moved.
+    let lastHeight = document.documentElement.scrollHeight;
+    let sawLayoutChange = false;
     const scheduleSettle = () => {
       window.clearTimeout(settleTimer);
       const remaining = 4000 - (performance.now() - startTime);
-      settleTimer = window.setTimeout(finish, Math.max(0, Math.min(350, remaining)));
+      const quiet = sawLayoutChange ? 350 : remaining;
+      settleTimer = window.setTimeout(finish, Math.max(0, Math.min(quiet, remaining)));
     };
 
     const resizeObserver = new ResizeObserver(() => {
       if (cancelled) return;
+      const height = document.documentElement.scrollHeight;
+      if (height !== lastHeight) {
+        lastHeight = height;
+        sawLayoutChange = true;
+      }
       applyScroll();
       scheduleSettle();
     });
