@@ -59,25 +59,33 @@
   font-weight: 500;
 }
 
+/* Resolved / Open / In Progress, in the header. Thinner: less padding, a hairline border and no
+   fill. The tinted background plus a 28%-opacity border made a small chip look soft-edged and
+   heavier than the conversation it labels — the colour alone carries the state, so the box just
+   needs to hold it, not shade it. */
 .sc-status {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 10px;
-  font-weight: 500;
+  background: transparent;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
-.sc-status svg { font-size: 12px; }
+.sc-status svg { font-size: 11px; }
 
-.sc-status.is-open     { color: #9a6200; border-color: rgba(154, 98, 0, 0.28); background: rgba(154, 98, 0, 0.08); }
-.sc-status.is-progress { color: #2454a6; border-color: rgba(36, 84, 166, 0.28); background: rgba(36, 84, 166, 0.08); }
-.sc-status.is-resolved { color: #087a55; border-color: rgba(8, 122, 85, 0.28); background: rgba(8, 122, 85, 0.08); }
-.sc-status.is-closed   { color: rgba(50, 21, 15, 0.6); border-color: rgba(50, 21, 15, 0.2); background: rgba(50, 21, 15, 0.05); }
+/* Full-strength text on a hairline of the same hue. No fill — that is what made them read as
+   buttons rather than labels. */
+.sc-status.is-open     { color: #8a5800; border-color: rgba(154, 98, 0, 0.5); }
+.sc-status.is-progress { color: #1f4b96; border-color: rgba(36, 84, 166, 0.5); }
+.sc-status.is-resolved { color: #06694a; border-color: rgba(8, 122, 85, 0.5); }
+.sc-status.is-closed   { color: rgba(50, 21, 15, 0.8); border-color: rgba(50, 21, 15, 0.34); }
 
 /* ---------- thread ---------- */
 
@@ -99,14 +107,18 @@
   margin: 6px 0 2px;
 }
 
+/* Tighter pill, sharper text. The 60%-opacity brown went muddy against the thread's warm
+   background — at 10px a washed-out label just looks blurred rather than quiet. The colour is
+   now near-solid and the box shrunk to compensate, so it stays a marker rather than becoming
+   another thing to read. */
 .sc-day span {
-  padding: 3px 11px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(116, 40, 19, 0.08);
-  color: rgba(50, 21, 15, 0.6);
-  font-size: 10.5px;
+  background: rgba(116, 40, 19, 0.06);
+  color: rgba(50, 21, 15, 0.88);
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 /* A status line belongs to neither side, so it spans the full width of the thread instead of
@@ -118,18 +130,23 @@
   margin: 6px 0;
 }
 
+/* "Marked resolved by support", "Conversation reopened". Shorter and sharper: 11px of padding
+   top and bottom gave a one-line notice the height of a message bubble, so a thing that merely
+   happened to the thread sat as tall as the things people actually said. The gold fill is
+   lighter and the text much darker — #7a5a12 on a 16% gold wash was low enough contrast to look
+   soft-focus rather than understated. */
 .sc-system span {
   display: block;
   width: 100%;
-  padding: 11px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(154, 98, 0, 0.22);
-  background: rgba(212, 175, 55, 0.16);
-  color: #7a5a12;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(154, 98, 0, 0.24);
+  background: rgba(212, 175, 55, 0.1);
+  color: #5c420b;
   text-align: center;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.45;
+  font-size: 11.5px;
+  font-weight: 550;
+  line-height: 1.35;
 }
 
 .sc-row { display: flex; }
