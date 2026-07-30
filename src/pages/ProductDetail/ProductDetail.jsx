@@ -20,6 +20,7 @@ import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import ProductReviews from "../../components/ProductReviews/ProductReviews";
+import { shareOrCopy } from "../../utils/share";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import { useDeliveryLocation } from "../../context/LocationContext";
@@ -1001,6 +1002,33 @@ const ProductDetail = () => {
     return () => window.clearTimeout(timer);
   }, [couponCelebration]);
 
+  /**
+   * Is the serverless /product/:slug route already serving rendered OG meta?
+   *
+   * Checked HERE, once the product has loaded, rather than inside the share handler. The check
+   * itself is worth keeping — it stops a link scraper being handed a half-ready page — but it
+   * costs a network round trip, and doing that between the tap and navigator.share() burns the
+   * transient user activation the share API requires.
+   *
+   * null = not checked yet. The handler treats that as "go ahead": a share that works is worth
+   * more than a preview that is certainly ready, and by the time a shopper has read far enough
+   * to want to share, this has long since resolved.
+   */
+  const ogReadyRef = useRef(null);
+  useEffect(() => {
+    if (!product?.slug) return undefined;
+    ogReadyRef.current = null;
+    let live = true;
+    const controller = new AbortController();
+    fetch(window.location.href, { cache: "no-store", signal: controller.signal })
+      .then((response) => (response.ok ? response.text() : ""))
+      .then((html) => { if (live) ogReadyRef.current = html.includes('property="og:image"'); })
+      // A failed warm-up must not block sharing — leaving it null means "go ahead", which is
+      // the right call when the only thing we failed to learn is whether the preview is pretty.
+      .catch(() => { if (live) ogReadyRef.current = null; });
+    return () => { live = false; controller.abort(); };
+  }, [product?.slug, selectedColorId]);
+
   useEffect(() => {
     if (!buyNowOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
@@ -1498,31 +1526,28 @@ const ProductDetail = () => {
 
   const handleShare = async () => {
     const url = window.location.href;
-    // Confirm the serverless /product/:slug route is serving fully rendered
-    // OG meta before opening the share sheet, so link scrapers never see a
-    // half-ready page.
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      const html = response.ok ? await response.text() : "";
-      if (!html.includes('property="og:image"')) {
-        showNotification("Share preview is still preparing — try again in a moment.", "info");
-        return;
-      }
-    } catch {
-      showNotification("Could not prepare the share link. Check your connection.", "error");
+
+    // The OG check is read from the warm-up effect rather than performed here. Awaiting a full
+    // HTML fetch of this page between the tap and navigator.share() routinely spent the
+    // transient user activation the share API needs; the browser then rejected the share with
+    // NotAllowedError, which the old catch-all reported as "Share cancelled" even though the
+    // shopper had done nothing but tap the button. That is the "sometimes" — it tracked how
+    // long the fetch took, so it struck on a slow connection and never on a fast one.
+    if (ogReadyRef.current === false) {
+      showNotification("Share preview is still preparing — try again in a moment.", "info");
       return;
     }
+
     try {
-      if (navigator.share) {
-        // No `text` field: iOS only renders a rich link preview when the
-        // share payload is a bare URL (text + url is delivered as plain text).
-        await navigator.share({ title: productName, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        showNotification("Product link copied with selected color!");
+      const outcome = await shareOrCopy({ title: productName, url });
+      // "shared" and "dismissed" both say nothing: one is self-evident, and the other is the
+      // shopper's own decision handed back to them as a notification.
+      if (outcome === "copied") showNotification("Product link copied with selected color!");
+      if (outcome === "unsupported") {
+        showNotification("Copy the link from your browser's address bar to share this saree.", "info");
       }
     } catch {
-      showNotification("Share cancelled", "info");
+      showNotification("Could not share this link. Please try again.", "error");
     }
   };
 

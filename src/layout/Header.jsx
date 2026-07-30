@@ -341,8 +341,11 @@ const Header = () => {
         });
         return;
       }
-    } catch {
-      // Copy fallback keeps sharing available on browsers without native share.
+    } catch (error) {
+      // Closing the share sheet meant "not now". Falling through to the copy path put the link
+      // on their clipboard and flashed "copied" at them anyway, for an action they cancelled.
+      if (error?.name === "AbortError") return;
+      // Anything else — no activation left, no share support — still has a useful fallback.
     }
     await copyReferralLink();
   };

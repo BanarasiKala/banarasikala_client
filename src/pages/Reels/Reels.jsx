@@ -9,6 +9,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import UserAvatar from "../../components/UserAvatar";
 import { getProductCoverImage, getDefaultColorId, getProductImages } from "../../utils/productMedia";
 import { getProductStockInfo } from "../../utils/stockStatus";
+import { shareOrCopy } from "../../utils/share";
 import "./Reels.css";
 
 const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
@@ -686,16 +687,21 @@ export default function Reels() {
   // Confirms the share URL already serves fully rendered OG meta tags (the
   // serverless /reels?reel= route) before opening the share sheet, so link
   // scrapers never see a half-ready page. Returns false if meta isn't ready.
-  const ensureShareMetaReady = async (url) => {
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      const html = response.ok ? await response.text() : "";
-      if (html.includes('property="og:image"')) return true;
+  // Read from the warm-up that openShare already started, NOT re-fetched here.
+  //
+  // This used to do its own `cache: "no-store"` fetch immediately before navigator.share(),
+  // which is a full round trip — and awaiting it spent the transient user activation the share
+  // API requires, so the sheet sometimes never opened at all. The warm-up below was already
+  // fetching the same URL the moment the destination sheet opened; this now just reads what it
+  // found. null means the warm-up has not answered yet, which is treated as "go ahead": a
+  // share that works beats a preview that is certainly rendered.
+  const shareMetaReadyRef = useRef(null);
+  const ensureShareMetaReady = (url) => {
+    if (shareMetaReadyRef.current === false) {
       showNotification("Share preview is still preparing — try again in a moment.", "info");
-    } catch {
-      showNotification("Could not prepare the share link. Check your connection.", "error");
+      return false;
     }
-    return false;
+    return true;
   };
 
   const shareUrlOf = (reel) => `${window.location.origin}/reels?reel=${reel.id}`;
@@ -705,7 +711,13 @@ export default function Reels() {
   // previews are rendered by the time the user picks a destination.
   const openShare = (reel) => {
     setShareReel(reel);
-    fetch(shareUrlOf(reel), { cache: "no-store" }).catch(() => {});
+    shareMetaReadyRef.current = null;
+    fetch(shareUrlOf(reel), { cache: "no-store" })
+      .then((response) => (response.ok ? response.text() : ""))
+      .then((html) => { shareMetaReadyRef.current = html.includes('property="og:image"'); })
+      // Left null on failure — not knowing whether the preview is pretty is no reason to
+      // refuse to share.
+      .catch(() => { shareMetaReadyRef.current = null; });
   };
 
   const shareToApp = (app) => {
@@ -740,17 +752,17 @@ export default function Reels() {
     const reel = shareReel;
     setShareReel(null);
     const url = shareUrlOf(reel);
-    if (!(await ensureShareMetaReady(url))) return;
+    if (!ensureShareMetaReady(url)) return;
     try {
-      // No `text` field: iOS only renders a rich link preview when the share
-      // payload is a bare URL (text + url is delivered as plain text).
-      if (navigator.share) await navigator.share({ title: reel.title || "Banarasi Kala Reel", url });
-      else {
-        await navigator.clipboard.writeText(url);
-        showNotification("Link copied to clipboard.", "success");
+      const outcome = await shareOrCopy({ title: reel.title || "Banarasi Kala Reel", url });
+      // Dismissing the sheet says nothing — it is the viewer's own decision.
+      if (outcome === "copied") showNotification("Link copied to clipboard.", "success");
+      if (outcome === "unsupported") {
+        showNotification("Copy the link from your browser's address bar to share this reel.", "info");
       }
     } catch {
-      /* user dismissed share sheet */
+      // A genuine failure, which the old bare catch swallowed along with the dismissals.
+      showNotification("Could not share this reel. Please try again.", "error");
     }
   };
 
