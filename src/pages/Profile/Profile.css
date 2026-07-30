@@ -517,7 +517,7 @@
      panel's warm cream — pulled toward a purer, more saturated blue so it still reads as a
      map pin on that background. !important because the line above sets colour that way too,
      and `currentColor` on the icon would otherwise inherit the maroon. */
-  color: #0b4dff !important;
+  color: var(--bk-map-blue) !important;
 }
 
 .profile-map-label {
@@ -685,6 +685,12 @@
 .profile-location-link svg {
   width: 15px;
   height: 15px;
+}
+
+/* The pin on "Add / Change map location", matched to the saved Map: line above it. Excludes
+   .is-danger, whose icon is an ✕ for removing the location — that one stays red. */
+.profile-location-link:not(.is-danger) svg {
+  color: var(--bk-map-blue);
 }
 
 .profile-location-link.is-danger {

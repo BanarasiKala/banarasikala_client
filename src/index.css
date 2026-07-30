@@ -11,6 +11,15 @@
      rating. This is the midpoint of the two golds already in use. */
   --bk-star: #d2a12f;
   --bk-star-empty: rgba(50, 21, 15, 0.24);
+  /* Map pins — the saved "Map:" line on the account page, and every button that opens the
+     location picker. The one colour on the site that is deliberately NOT brand maroon: a map
+     marker is a convention borrowed from maps themselves, and reads as one only in blue. A
+     token because it is now wanted in four places across three stylesheets, and the account
+     page's pin had already been nudged twice to get it right. */
+  --bk-map-blue: #0b4dff;
+  /* The same blue lifted for use on a dark fill, where #0b4dff is dark-on-dark and vanishes.
+     Two map pins sit on filled buttons/chips (see .bk-map-icon--on-dark). */
+  --bk-map-blue-on-dark: #7fa8ff;
   --bk-loader-base: #e2ccaa;
   --bk-loader-gradient: linear-gradient(90deg, #ead3b1 0%, #fffaf2 48%, #dfbd8d 100%);
   --bk-loader-sheen: linear-gradient(100deg, transparent 0%, rgba(255, 250, 242, 0.86) 48%, transparent 100%);
@@ -128,4 +137,25 @@ body :where(*):not(:where(h1, h2, h3, h4, h5, h6, h1 *, h2 *, h3 *, h4 *, h5 *, 
 .card-delivery-badge strong {
   color: #0d4f0d;
   font-weight: 700;
+}
+
+/* ── Map pins ─────────────────────────────────────────────────────────────────────────
+   One class on every map-marker icon in the app, so the pin is the same blue whether it is
+   on the account page, in checkout, on a product page or in the footer. Previously each site
+   inherited its container's colour and they were all brand maroon except the account page.
+
+   `!important` because these icons live inside a dozen different stylesheets, several of which
+   colour them with rules like `.oc-address-card .order-panel-head-row h2 svg { color: … }` —
+   three classes and two elements deep, which any single utility class would lose to. The
+   alternative was editing that rule in every file and re-checking it on every future change.
+
+   Crossed-out pins (lucide:map-pin-off) deliberately do NOT get this: those mean "no location"
+   or "delivery unavailable", and colouring them like a map link would say the opposite. */
+.bk-map-icon {
+  color: var(--bk-map-blue) !important;
+}
+
+/* Same pin, on a filled dark button or chip where the blue above would be invisible. */
+.bk-map-icon--on-dark {
+  color: var(--bk-map-blue-on-dark) !important;
 }

@@ -1199,7 +1199,7 @@
 
 .payment-tags span {
   color: #800020;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
 }
 
@@ -2603,9 +2603,15 @@
 }
 
 .confirmation-item p,
-.confirmation-item span,
-.payment-tags span {
+.confirmation-item span {
   font-size: 9px;
+}
+
+/* Pulled out of the group above. 9px is a caption size that belongs to the item metadata it was
+   written for; "Prepaid" / "Paid" are the payment status of the whole order and were being read
+   at the same size as a line-item footnote. */
+.payment-tags span {
+  font-size: 12.5px;
 }
 
 .confirmation-item strong {

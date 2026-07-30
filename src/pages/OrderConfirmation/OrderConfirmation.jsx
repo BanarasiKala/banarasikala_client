@@ -2182,7 +2182,7 @@ export default function OrderConfirmation() {
               </div>
             </div>
             <div className="order-panel-head-row">
-              <h2><Icon icon="lucide:map-pin" /> Delivery Address</h2>
+              <h2><Icon icon="lucide:map-pin" className="bk-map-icon" /> Delivery Address</h2>
             </div>
             <p className="address-copy"><strong>{order.customer_name}</strong><br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
           </section>

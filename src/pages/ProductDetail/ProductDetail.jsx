@@ -2134,7 +2134,7 @@ const ProductDetail = () => {
             {!isSelectedOutOfStock && (
               <div className="product-delivery-check product-delivery-check-top">
                 <p className="product-delivery-helper">
-                  <Icon icon="lucide:map-pin" />
+                  <Icon icon="lucide:map-pin" className="bk-map-icon" />
                   {locationDetecting ? "Detecting your location…" : "Delivery Availability"}
                 </p>
 
@@ -2145,7 +2145,7 @@ const ProductDetail = () => {
                   </div>
                 ) : !showPincodeInput && locationSource === "gps" && locationPincode ? (
                   <div className="product-delivery-detected">
-                    <Icon icon="lucide:map-pin" />
+                    <Icon icon="lucide:map-pin" className="bk-map-icon" />
                     <span>Delivering to <strong>{locationPincode}</strong></span>
                     <button
                       type="button"
@@ -2876,7 +2876,7 @@ const ProductDetail = () => {
                   </div>
                   <div className="buy-now-location-actions">
                     <button type="button" onClick={() => setBuyNowMapOpen(true)}>
-                      <Icon icon="lucide:map-pinned" />
+                      <Icon icon="lucide:map-pinned" className="bk-map-icon" />
                       {buyNowAddressForm.map_address ? "Change map location" : "Add map location"}
                     </button>
                     {buyNowAddressForm.map_address ? (

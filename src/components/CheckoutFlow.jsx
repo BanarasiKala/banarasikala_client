@@ -1048,7 +1048,12 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
             {i > 0 && <span className={`ckw-step-line ${i <= stepIndex ? "is-done" : ""}`} />}
             <div className={`ckw-step ${wizardStep === s.key ? "is-active" : ""} ${i < stepIndex ? "is-done" : ""}`}>
               <span className="ckw-step-dot">
-                {i < stepIndex ? <Icon icon="lucide:check" /> : <Icon icon={s.icon} />}
+                {/* The Address step's glyph is a map pin, so it takes the shared blue like every
+                    other pin. --on-dark because an active/completed step dot is a filled
+                    maroon circle. Only that step: the other two are a card and a tick. */}
+                {i < stepIndex
+                  ? <Icon icon="lucide:check" />
+                  : <Icon icon={s.icon} className={s.key === "address" ? "bk-map-icon bk-map-icon--on-dark" : undefined} />}
               </span>
               <span className="ckw-step-label">{s.label}</span>
             </div>
@@ -1119,7 +1124,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                           onClick={() => isSel && !shippingUnavailable && deliverToAddress(address)}
                           disabled={!isSel || (isSel && shippingUnavailable)}
                         >
-                          <Icon icon="lucide:map-pin" />
+                          <Icon icon="lucide:map-pin" className="bk-map-icon bk-map-icon--on-dark" />
                           {isSel && shippingLoading ? "CHECKING DELIVERY…" : "DELIVER TO THIS ADDRESS"}
                         </button>
                         {isSel && shippingUnavailable && (
@@ -1171,7 +1176,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
               </>
             ) : (
               <div className="ckw-empty">
-                <span className="ckw-empty-icon"><Icon icon="lucide:map-pin" /></span>
+                <span className="ckw-empty-icon"><Icon icon="lucide:map-pin" className="bk-map-icon" /></span>
                 <strong className="ckw-empty-title">No delivery address</strong>
                 <span className="ckw-empty-sub">Add your delivery address to continue with your order.</span>
                 <button
@@ -1198,7 +1203,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         ) : wizardStep === "payment" ? (
           <>
             <button type="button" className="ckw-deliver-summary" onClick={goToAddressStep}>
-              <span className="ckw-deliver-summary-pin"><Icon icon="lucide:map-pin" /></span>
+              <span className="ckw-deliver-summary-pin"><Icon icon="lucide:map-pin" className="bk-map-icon" /></span>
               <span className="ckw-deliver-summary-text">
                 <strong>
                   Delivering to {formData.fullName || user?.name}
@@ -1578,7 +1583,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
 
             <div className="ckw-confirm-card">
               <button type="button" className="ckw-confirm-row" onClick={goToAddressStep}>
-                <span className="ckw-confirm-ico ckw-confirm-pin"><Icon icon="lucide:map-pin" /></span>
+                <span className="ckw-confirm-ico ckw-confirm-pin"><Icon icon="lucide:map-pin" className="bk-map-icon bk-map-icon--on-dark" /></span>
                 <span className="ckw-confirm-text">
                   <small>DELIVERING TO</small>
                   <strong>{formData.fullName || user?.name}</strong>
@@ -1701,7 +1706,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
               </div>
               <div className="buy-now-location-actions">
                 <button type="button" onClick={() => setMapOpen(true)}>
-                  <Icon icon="lucide:map-pin" />
+                  <Icon icon="lucide:map-pin" className="bk-map-icon" />
                   {addressForm.map_address ? "Change location" : "Add new location"}
                 </button>
                 {addressForm.map_address ? (

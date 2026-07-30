@@ -413,7 +413,7 @@ const Footer = () => {
             support@banarasikala.com
           </p>
           <p>
-            <MapPin size={15} />
+            <MapPin size={15} className="bk-map-icon" />
            Varanasi, Uttar Pradesh, India
           </p>
         </div>

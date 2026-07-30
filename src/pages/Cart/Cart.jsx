@@ -467,7 +467,7 @@ const Cart = () => {
           {(!pincode || editingPin) && (
             <div className="cart-pin-block">
               <form className="cart-pin-row" onSubmit={handlePinSubmit}>
-                <Icon icon="lucide:map-pin" className="cart-pin-icon" />
+                <Icon icon="lucide:map-pin" className="cart-pin-icon bk-map-icon" />
                 <input
                   type="text"
                   inputMode="numeric"

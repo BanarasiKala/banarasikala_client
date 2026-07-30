@@ -1052,7 +1052,7 @@ export default function Profile() {
                           {address.landmark ? <p>Landmark: {address.landmark}</p> : null}
                           {address.map_address ? (
                             <p className="profile-map-address-line">
-                              <Icon icon="lucide:map-pin" />
+                              <Icon icon="lucide:map-pin" className="bk-map-icon" />
                               {/* The label is its own span so the pin, the word "Map" and
                                   the address can each be coloured separately. */}
                               <span className="profile-map-label">Map:</span> {address.map_address}
@@ -1111,7 +1111,7 @@ export default function Profile() {
                   </div>
                   <div className="profile-location-actions">
                     <button type="button" className="profile-location-link" onClick={() => setMapOpen(true)}>
-                      <Icon icon="lucide:map-pinned" />
+                      <Icon icon="lucide:map-pinned" className="bk-map-icon" />
                       <span>{addrForm.map_address ? "Change map location" : "Add map location"}</span>
                     </button>
                     {addrForm.map_address ? (
