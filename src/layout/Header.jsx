@@ -879,6 +879,13 @@ const Header = () => {
                     <button type="button" role="menuitem" onClick={() => goProtected("/feedback")}>
                       <span>Feedback</span>
                     </button>
+                    {/* Moved here from the desktop nav bar, where it was making that column wide
+                        enough to push the logo off centre. This is the right home for it anyway:
+                        /contact is a protected route, and this panel only ever renders for a
+                        signed-in customer. Sits beside Feedback — both are ways of writing to us. */}
+                    <button type="button" role="menuitem" onClick={() => goProtected("/contact")}>
+                      <span>Contact Us</span>
+                    </button>
                     {/* The one that earns the customer something sits apart and highlighted,
                         so it does not read as just another navigation row. */}
                     <button type="button" role="menuitem" className="bk-profile-refer" onClick={openReferModal}>
