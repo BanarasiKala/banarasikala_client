@@ -1698,11 +1698,14 @@
 }
 
 /* "My Addresses", "My Account" and the other panel headings. */
+/* "My Account", "My Addresses" and the other block headings. Up from 10px — uppercase Cinzel at
+   that size read as a label on the panel rather than the heading for everything under it. This
+   is the only rule that sets the size, at any width. */
 .profile-block-title {
   margin: 0;
   color: #6f0017;
   font-family: "Cinzel", Georgia, serif;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 550;
   letter-spacing: 0;
   line-height: 1.2;
@@ -1918,15 +1921,17 @@
    this sits beside "My Addresses" on one line, so every extra pixel either side pushes
    the pair toward wrapping for no gain. */
 .profile-add-address-trigger {
-  min-height: 26px;
-  padding: 3px 8px;
-  gap: 5px;
+  min-height: 30px;
+  padding: 4px 11px;
+  gap: 6px;
   justify-self: auto;
   color: #780018;
   background: #fffdf8;
   border: 1px solid rgba(128, 0, 32, 0.58);
   border-radius: 999px;
-  font-size: 12px;
+  /* Up from 12px, with the height and padding raised to match — sized against the 13px
+     "My Addresses" it shares a line with, so the two still read as one row. */
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1934,8 +1939,8 @@
 /* Square, and matched to the 12px label — it was 13x17, which stretched the plus and
    made the button taller than its text needed. */
 .profile-add-address-trigger svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   stroke-width: 2.1;
 }
 
@@ -2268,9 +2273,9 @@
   }
 
   .profile-add-address-trigger {
-    min-height: 24px;
-    padding: 3px 6px;
-    font-size: 11px;
+    min-height: 28px;
+    padding: 4px 9px;
+    font-size: 12px;
   }
 
   .profile-address-content {
@@ -2317,19 +2322,16 @@
 
 .profile-coming-art {
   grid-area: art;
-  min-height: 186px;
   place-items: center;
 }
 
-/* Artwork is portrait (438x570), so cap the height rather than the width —
-   sizing it by width would make this panel ~50% taller than the rest.
-   The panel's min-height moves with this cap, so the art has room to grow into
-   rather than being clipped by the row it sits in. */
+/* No height cap: the artwork (portrait, 438x570) renders at its natural size, bounded only by
+   the width of the column it sits in. It used to be capped so this panel could not outgrow the
+   ones beside it — that height is now the art's to decide. */
 .profile-coming-art > img {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 250px;
   display: block;
 }
 
@@ -2386,14 +2388,6 @@
     padding: 14px 12px;
   }
 
-  .profile-coming-art {
-    min-height: 164px;
-  }
-
-  .profile-coming-art > img {
-    max-height: 204px;
-  }
-
   .profile-coming-copy h2 {
     font-size: 16px;
   }
@@ -2426,12 +2420,10 @@
   }
 
   .profile-coming-art {
-    min-height: 128px;
     justify-content: start;
   }
 
   .profile-coming-art > img {
-    max-height: 146px;
     transform: none;
   }
 
