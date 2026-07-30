@@ -192,7 +192,11 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const [shippingServiceable, setShippingServiceable] = useState(null);
   // Upfront COD-charge estimate for the pincode (fetched with is_cod=1) so the Cash on
   // Delivery option can preview the real courier COD charge before it is selected.
+  // The upfront is_cod=1 quote, tagged with the pincode it was fetched for. Tagged because it is
+  // deliberately NOT cleared when COD is selected (see the effect below), and an untagged value
+  // would then be shown against a newly typed address it says nothing about.
   const [codCourierCharge, setCodCourierCharge] = useState(0);
+  const [codChargePincode, setCodChargePincode] = useState("");
   const [isFirstOrder, setIsFirstOrder] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(true);
@@ -249,9 +253,16 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   // (keeps the client total in step with the server, which recomputes from
   // selected_courier_data). Otherwise fall back to the upfront estimate so the option
   // previews the real charge before it's picked.
+  //
+  // While a COD rate lookup is in flight, `selectedShippingCourier` is still the courier fetched
+  // for the PREVIOUS payment method — a prepaid quote, whose cod_charges are 0. Computing from
+  // it yielded 0, the floor below turned that into the bare COD_FEE_AMOUNT, and the row read
+  // "+₹50" for the half-second before the real figure replaced it. The is_cod=1 preview is the
+  // right stand-in for that gap: it is the same question, already answered.
+  const codPreviewCharge = codChargePincode === formData.pincode.trim() ? codCourierCharge : 0;
   const codCourierChargeNow = activePayment === "cod"
-    ? computeCourierCodCharge(selectedShippingCourier, subtotal)
-    : codCourierCharge;
+    ? (shippingLoading ? codPreviewCharge : computeCourierCodCharge(selectedShippingCourier, subtotal))
+    : codPreviewCharge;
   const codChargeAmount = Math.max(COD_FEE_AMOUNT, codCourierChargeNow);
   const paymentFee = payableCart.length > 0 && activePayment === "cod" ? codChargeAmount : 0;
   // Delivery is displayed net of the COD charge (billed separately on its own line);
@@ -732,8 +743,15 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   // courier picked for prepaid. Skipped once COD is active (the main fetch covers it).
   useEffect(() => {
     const cleanPincode = formData.pincode.trim();
-    if (!/^\d{6}$/.test(cleanPincode) || payableCart.length === 0 || !isCodAllowed || activePayment === "cod") {
+    // Selecting COD stops this lookup — the main fetch above covers that case with the exact
+    // courier the order will use. But it must NOT clear what this already found: that value was
+    // itself an is_cod=1 quote, so it is the best figure available during the moment between
+    // tapping COD and the main fetch answering. Zeroing it here was what left codChargeAmount
+    // with nothing to work from but the floor.
+    if (activePayment === "cod") return undefined;
+    if (!/^\d{6}$/.test(cleanPincode) || payableCart.length === 0 || !isCodAllowed) {
       setCodCourierCharge(0);
+      setCodChargePincode("");
       return undefined;
     }
 
@@ -750,9 +768,15 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
           weightKg: effectiveWeight,
           requireCod: true,
         });
-        if (!cancelled) setCodCourierCharge(computeCourierCodCharge(codCourier, subtotal));
+        if (!cancelled) {
+          setCodCourierCharge(computeCourierCodCharge(codCourier, subtotal));
+          setCodChargePincode(cleanPincode);
+        }
       } catch {
-        if (!cancelled) setCodCourierCharge(0);
+        if (!cancelled) {
+          setCodCourierCharge(0);
+          setCodChargePincode("");
+        }
       }
     }, 450);
 
