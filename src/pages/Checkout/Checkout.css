@@ -1058,12 +1058,6 @@
     border-color: rgba(180, 35, 24, 0.22);
 }
 
-/* Map pin, same blue as the account page's saved Map: line. Not on .is-danger — that button's
-   icon is an ✕ for clearing the location. */
-.buy-now-location-actions button:not(.is-danger) svg {
-    color: var(--bk-map-blue);
-}
-
 .buy-now-address-form {
     display: grid;
     gap: 10px;
