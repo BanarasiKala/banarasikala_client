@@ -820,8 +820,9 @@ export default function Reels() {
                 ))}
               </div>
 
+              {/* No title placeholder. The caption is hideable and often absent, so a bar
+                  standing in for it promised a line that frequently never arrived. */}
               <div className="bk-reel-bottom bk-reel-sk-bottom">
-                <span className="bk-reel-sk-title" />
                 <span className="bk-reel-sk-shop" />
               </div>
             </div>
