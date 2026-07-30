@@ -181,7 +181,10 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
             )}
             {awb && (
               <div>
-                <dt>AWB/Tracking ID:</dt>
+                {/* "Tracking ID" leads, because that is what the number means to the person
+                    reading it; "AWB" follows in brackets for anyone who has seen the courier
+                    call it that. The old "AWB/Tracking ID" put the jargon first. */}
+                <dt>Tracking ID (AWB):</dt>
                 <dd className="is-code">{awb}</dd>
               </div>
             )}

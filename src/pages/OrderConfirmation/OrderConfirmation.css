@@ -3161,19 +3161,22 @@
 }
 
 /* ── Track on Courier button + AWB line ── */
+/* Shorter, matching "View on courier site" in the tracking sheet this opens — the two are the
+   same action and had visibly different heights. The 1.5px border came down with the padding:
+   on a short button a heavy rule reads as a second border. */
 .oc-track-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
-  margin-top: 14px;
-  padding: 12px;
-  border: 1.5px solid rgba(128, 0, 32, 0.4);
-  border-radius: 12px;
+  margin-top: 12px;
+  padding: 7px 12px;
+  border: 1px solid rgba(128, 0, 32, 0.36);
+  border-radius: 9px;
   background: #fff6f2;
   color: #800020;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -3185,7 +3188,7 @@
 }
 
 .oc-track-btn svg {
-  font-size: 15px;
+  font-size: 12.5px;
 }
 
 .oc-awb-line {

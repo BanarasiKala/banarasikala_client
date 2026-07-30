@@ -2379,7 +2379,7 @@ export default function OrderConfirmation() {
                     </button>
                   )}
                   <div className="oc-awb-line">
-                    <span>AWB{courierName ? ` · ${courierName}` : ""}</span>
+                    <span>Tracking ID (AWB){courierName ? ` · ${courierName}` : ""}</span>
                     <strong>{order.shiprocket_awb}</strong>
                   </div>
                 </>
@@ -2407,7 +2407,7 @@ export default function OrderConfirmation() {
                       <div key={`${shipment.awb || shipment.type}-${shipmentIndex}`} className="reverse-shipment">
                         <div className="reverse-shipment-head">
                           <strong>{label}</strong>
-                          {shipment.awb && <small>AWB · {shipment.awb}</small>}
+                          {shipment.awb && <small>Tracking ID (AWB) · {shipment.awb}</small>}
                         </div>
                         {steps.length > 0 ? (
                           <ReverseStepsTimeline steps={steps} />
