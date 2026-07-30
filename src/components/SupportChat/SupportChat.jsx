@@ -332,7 +332,6 @@ export default function SupportChat({
 
   const meta = statusMeta(strand?.status);
   const canSend = !sending && !uploading && (reply.trim() || pendingImages.length);
-  const hasHistory = messages.length > 0;
   // Only Closed. Resolved still takes a reply directly — "we think this is sorted" is an
   // invitation to say it isn't, and a gate there would be on the wrong door.
   const isClosed = strand?.status === "Closed";
@@ -409,18 +408,19 @@ export default function SupportChat({
           </div>
         ) : (
           <>
-            {/* The greeting is only for an empty strand. Re-greeting someone mid-conversation
-                reads as a machine. */}
-            {!hasHistory && (
-              <div className="sc-row is-admin">
-                <div className="sc-bubble">
-                  <span className="sc-sender">Banarasi Kala Support</span>
-                  <p>
-                    Hi, I&rsquo;m Banarasi Kala Support — how can I assist you?
-                  </p>
-                </div>
+            {/* Always the first thing in the strand, empty or not. It used to disappear the
+                moment the customer sent anything, which made the top of a returning
+                conversation start mid-thought with no sign of who they were talking to.
+                It is not a message — nothing is stored, and it carries no timestamp or ticks
+                — it is the opening line of the thread, so it stays put above the history. */}
+            <div className="sc-row is-admin">
+              <div className="sc-bubble">
+                <span className="sc-sender">Banarasi Kala Support</span>
+                <p>
+                  Hi, I&rsquo;m Banarasi Kala Support — how can I assist you?
+                </p>
               </div>
-            )}
+            </div>
 
             {timeline.map(({ message, separator }) => {
               const isOwn = message.sender === "customer";
