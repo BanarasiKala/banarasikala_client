@@ -177,6 +177,19 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const [shippingDeliveryDate, setShippingDeliveryDate] = useState(null);
   const [selectedShippingCourier, setSelectedShippingCourier] = useState(null);
   const [shippingLoading, setShippingLoading] = useState(false);
+  /**
+   * Tri-state serviceability for the pincode currently in the form.
+   *
+   *   null  — not checked yet (or the check failed, so we do not know)
+   *   true  — a courier will carry it
+   *   false — confirmed: nothing serves this pincode
+   *
+   * Three states, because "we have not looked" and "we looked and found nothing" are different
+   * facts and only one of them should stop a shopper. Deriving the answer from
+   * `!selectedShippingCourier` collapsed them, which is what made the red banner flash on
+   * arrival — see shippingUnavailable below. Mirrors the same decision in LocationContext.
+   */
+  const [shippingServiceable, setShippingServiceable] = useState(null);
   // Upfront COD-charge estimate for the pincode (fetched with is_cod=1) so the Cash on
   // Delivery option can preview the real courier COD charge before it is selected.
   const [codCourierCharge, setCodCourierCharge] = useState(0);
@@ -275,11 +288,16 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     return sum + ((productWeightKg + PACKAGING_WEIGHT_KG) * qty);
   }, 0);
   const hasValidPincode = /^\d{6}$/.test(formData.pincode.trim());
-  // True once the serviceability check for this pincode has come back with no
-  // courier at all (e.g. Shiprocket's 404 "no courier service available") —
-  // distinct from shippingLoading (still checking) or no pincode entered yet.
+  // True only once the check has come back and CONFIRMED no courier serves this pincode.
   // Blocks checkout so an order can never be placed to an address nothing can ship to.
-  const shippingUnavailable = hasValidPincode && payableCart.length > 0 && !shippingLoading && !selectedShippingCourier;
+  //
+  // This used to read `!shippingLoading && !selectedShippingCourier`, which was true on arrival
+  // — before anything had been checked. Both parts start out that way: the courier is null and
+  // loading is false, and loading only flipped inside a 450ms debounce timer. So every visit to
+  // the address step opened with "Delivery isn't available to this pincode", Continue disabled
+  // and the sticky bar reading DELIVERY UNAVAILABLE, for half a second before the truth
+  // arrived. A tri-state answers it directly: only an explicit `false` blocks anything.
+  const shippingUnavailable = hasValidPincode && payableCart.length > 0 && shippingServiceable === false;
 
   useEffect(() => {
     let cancelled = false;
@@ -629,19 +647,39 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       setShippingCharge(0);
       setShippingDeliveryDate(null);
       setSelectedShippingCourier(null);
+      setShippingServiceable(null);
       setShippingLoading(false);
       return;
     }
 
+    // Set synchronously, NOT inside the debounce below. The 450ms wait is there to avoid a
+    // request per keystroke, but during it a check genuinely is pending — leaving `false` there
+    // meant the Continue button sat enabled and clickable before any courier was known, so an
+    // order could be started with a shipping charge of zero.
+    setShippingLoading(true);
+    // Whatever we knew about the previous pincode does not apply to this one.
+    setShippingServiceable(null);
+
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        setShippingLoading(true);
         const effectiveWeight = Math.max(0.1, Number(totalWeightKg.toFixed(3)));
         const response = await fetch(
           `${API_ENDPOINTS.shiprocket}/serviceability?pincode=${encodeURIComponent(cleanPincode)}&weight=${effectiveWeight}&is_cod=${activePayment === "cod" ? 1 : 0}`
         );
 
+        // 404 is Shiprocket's "no courier service available" — a real answer about this
+        // pincode. Any other failure is a fault on our side of the wire and says nothing about
+        // whether the address can be delivered to.
+        if (response.status === 404) {
+          if (!cancelled) {
+            setShippingCharge(0);
+            setShippingDeliveryDate(null);
+            setSelectedShippingCourier(null);
+            setShippingServiceable(false);
+          }
+          return;
+        }
         if (!response.ok) {
           throw new Error("Failed to fetch shipping rates");
         }
@@ -660,12 +698,20 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
           }));
           setShippingDeliveryDate(selectedCourier?.etd ? formatEstimatedDeliveryDate(getEstimatedDeliveryDate(selectedCourier.etd, maxProcessingDays >= 0 ? maxProcessingDays : undefined)) : null);
           setSelectedShippingCourier(selectedCourier || null);
+          // 200 OK with an empty courier list is also a real answer: serviceable, but nothing
+          // will carry this parcel at this weight.
+          setShippingServiceable(Boolean(selectedCourier));
         }
       } catch {
         if (!cancelled) {
           setShippingCharge(0);
           setShippingDeliveryDate(null);
           setSelectedShippingCourier(null);
+          // Left null, not false. A dropped request is not evidence that the address is
+          // undeliverable, and treating it as such locked a shopper out of checkout with a
+          // message blaming their pincode for our network. LocationContext already made this
+          // call for the storefront; this is the same rule.
+          setShippingServiceable(null);
         }
       } finally {
         if (!cancelled) {
