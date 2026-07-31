@@ -14,6 +14,30 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
   animation: bk-preel-in 0.45s ease;
   transition: bottom 0.3s ease;
+  /* Without this the browser claims a touch-drag for scrolling and the pointermove events
+     never reach the handler, so the card cannot be moved on a phone at all. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Dragged: inline left/top own the position, so the corner anchoring and the bottom
+   transition must both stand down or they fight the coordinates on every move. */
+.bk-preel-float.is-free {
+  transition: none;
+}
+
+/* Lifted while in the hand. */
+.bk-preel-float.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+}
+
+/* The footer lift only applies while the card still sits in its default corner — once it has
+   been placed by hand, moving it out from under the thumb is exactly what it must not do. */
+body.btt-visible .bk-preel-float.is-free {
+  bottom: auto;
 }
 
 /* At the footer the back-to-top button appears (bottom 28) and the chat bubble
