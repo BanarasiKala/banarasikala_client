@@ -2014,8 +2014,8 @@ export default function OrderConfirmation() {
               <span>Delivery charge</span>
               <strong>
                 {breakdown.deliveryChargeShown > 0 ? (
-                  <><span className="summary-strike">{formatPrice(breakdown.deliveryChargeShown)}</span> Free</>
-                ) : formatPrice(0)}
+                  <><span className="summary-strike">{formatPrice(breakdown.deliveryChargeShown)}</span> <span className="summary-free">Free</span></>
+                ) : <span className="summary-free">{formatPrice(0)}</span>}
               </strong>
             </div>
             {breakdown.giftCharge > 0 && (
@@ -2046,7 +2046,7 @@ export default function OrderConfirmation() {
               </div>
             )}
             {breakdown.paymentDiscount > 0 && <div className="summary-row is-saving"><span>Payment discount</span><strong>-{formatPrice(breakdown.paymentDiscount)}</strong></div>}
-            {breakdown.codFee > 0 && <div className="summary-row"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
+            {breakdown.codFee > 0 && <div className="summary-row is-cod"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
             {breakdown.couponDiscount > 0 && <div className="summary-row is-saving"><span>Coupon{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><strong>-{formatPrice(breakdown.couponDiscount)}</strong></div>}
             {breakdown.walletAmount > 0 && <div className="summary-row is-saving"><span>Wallet used</span><strong>-{formatPrice(breakdown.walletAmount)}</strong></div>}
             {redispatchChargesPaid > 0 ? (

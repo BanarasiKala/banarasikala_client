@@ -1100,8 +1100,18 @@
   color: #34170f;
 }
 
+/* The one amount on this page that ADDS money rather than saving it — a re-dispatch charge
+   after an RTO, rendered with a leading "+". Checkout's alert red (#9f1239), so the pair reads
+   the way the rest of the site does: green takes money off, red puts it back on. */
+.summary-row-redispatch strong {
+  color: #c0392b;
+}
+
+/* The checkout bill's exact palette (.ckw-bill-* in CheckoutWizard.css), so the breakdown a
+   customer approved at checkout is the same breakdown, in the same colours, on the receipt:
+     savings + Free  #107a46      COD charge  #c0392b      struck original  #9a8678 */
 .summary-row.is-saving strong {
-  color: #087a55;
+  color: #107a46;
 }
 
 .summary-row.is-final {
@@ -1155,7 +1165,9 @@
   box-shadow: 0 8px 18px rgba(46, 19, 13, 0.3);
   font-size: 11.5px;
   font-weight: 500;
-  font-style: italic;
+  /* Upright, not italic. A gift message is often a name or a couple of Hindi/Devanagari words,
+     and a slant makes short strings in either script harder to read for no gain. */
+  font-style: normal;
   line-height: 1.45;
   text-align: left;
   /* The customer's own words — keep their line breaks, and never let one long unbroken
@@ -2631,9 +2643,10 @@
   font-size: 12px;
 }
 
+/* The crossed-out original beside "Free". Matches .ckw-bill-free s. */
 .summary-strike {
   margin-right: 6px;
-  color: rgba(50, 21, 15, 0.42);
+  color: #9a8678;
   text-decoration: line-through;
   font-weight: 500;
 }
@@ -3239,8 +3252,10 @@
   gap: 2px;
 }
 
+/* Green, not the amber it was: this is a saving, and it sat directly under a breakdown whose
+   other savings were all green. */
 .oc-final-amount-col small {
-  color: #9a6200;
+  color: #107a46;
   font-size: 11px;
   font-weight: 400;
 }
@@ -3909,7 +3924,8 @@ strong.oc-item-price {
 /* "MRP:" label stays plain text; only the value inside gets struck through. */
 .oc-item-mrp-label {
   margin-right: 4px;
-  color: rgba(50, 21, 15, 0.42);
+  /* Same muted brown as .summary-strike, so both crossed-out originals in the breakdown match. */
+  color: #9a8678;
   font-weight: 400;
 }
 
@@ -4889,4 +4905,15 @@ strong.oc-item-price {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 6px;
+}
+
+/* ── Breakdown amounts, matched to the checkout bill (.ckw-bill-* in CheckoutWizard.css) ──
+   The receipt shows the same rows the customer approved before paying, so it shows them in the
+   same colours: waived delivery in green, the COD handling fee in red. */
+.summary-free {
+  color: #107a46;
+}
+
+.summary-row.is-cod strong {
+  color: #c0392b;
 }
