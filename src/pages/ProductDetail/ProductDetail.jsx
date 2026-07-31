@@ -20,6 +20,11 @@ import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import ProductReviews from "../../components/ProductReviews/ProductReviews";
+// The same marks the checkout payment step uses, so the promise made on this button is kept by
+// the screen it leads to.
+import logoGpay from "../../assets/logos/Gpay.png";
+import logoUpi from "../../assets/logos/upi.png";
+import logoCards from "../../assets/logos/cards.png";
 import { shareOrCopy } from "../../utils/share";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
@@ -2300,8 +2305,24 @@ const ProductDetail = () => {
                       <><Icon icon="lucide:shopping-bag" /> ADD TO BAG</>
                     )}
                   </button>
+                  {/* Copy left, accepted payment methods right — the methods are the reason to
+                      press it, so they belong on the button rather than being discovered two
+                      screens later. The saving is the real configured amount (a flat
+                      VITE_PREPAID_DISCOUNT_AMOUNT), not a percentage: quoting "up to 10%" would
+                      be a number nothing in the codebase actually applies. */}
                   <button type="button" onClick={openBuyNowModal} className="product-buy-btn" disabled={!canAddToBag}>
-                    <Icon icon="lucide:zap" /> BUY NOW
+                    <span className="product-buy-copy">
+                      <strong><Icon icon="lucide:zap" /> BUY NOW</strong>
+                      {PREPAID_DISCOUNT_AMOUNT > 0 && (
+                        <small>{formatMoney(PREPAID_DISCOUNT_AMOUNT)} off on prepaid</small>
+                      )}
+                    </span>
+                    <span className="product-buy-pays" aria-hidden="true">
+                      <img src={logoGpay} alt="" />
+                      <img src={logoUpi} alt="" />
+                      <img src={logoCards} alt="" />
+                      <Icon className="product-buy-chevron" icon="lucide:chevron-right" />
+                    </span>
                   </button>
                 </>
               )}

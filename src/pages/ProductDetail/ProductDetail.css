@@ -1721,12 +1721,73 @@
   box-shadow: 0 14px 26px rgba(80, 0, 20, 0.16);
 }
 
+/* Copy hard left, payment marks hard right — space-between, not the centred layout the base
+   rule sets, because this button now carries two separate things rather than one label.
+   Colours stay exactly as they were; only the arrangement changed. */
 .product-buy-btn {
   grid-column: 1 / -1;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
   color: #800020;
   background: transparent;
   border: 1px solid rgba(128, 0, 32, 0.24);
   box-shadow: none;
+}
+
+.product-buy-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+
+.product-buy-copy strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: inherit;
+  font-weight: 700;
+  letter-spacing: inherit;
+}
+
+/* The saving. Lower-case and unspaced against the tracked, uppercase label above it, so the two
+   lines read as heading and note rather than as one run-on shout. */
+.product-buy-copy small {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.78;
+  white-space: nowrap;
+}
+
+.product-buy-pays {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Height-capped, width auto: these marks have different aspect ratios, and sizing by width
+   would make the wide ones tower over the square ones. */
+.product-buy-pays img {
+  height: 17px;
+  width: auto;
+  max-width: 40px;
+  object-fit: contain;
+  display: block;
+}
+
+.product-buy-chevron {
+  font-size: 16px;
+  opacity: 0.65;
+}
+
+.product-buy-btn:disabled .product-buy-pays {
+  opacity: 0.45;
 }
 
 /* Out-of-stock "Notify me" replaces both buttons, so it spans the full row. Colours are inverted
