@@ -1724,7 +1724,10 @@
 /* Copy and payment marks together in the middle, not pushed to opposite ends — with the strip
    pinned to the right edge it read as a separate badge stuck on the button rather than part of
    the same offer. Taller too, so the artwork has room to be legible.
-   Colours stay exactly as they were; only the arrangement and sizes changed. */
+
+   Gold fill with maroon text, matching .product-notify-btn. This is also how the button gets to
+   be yellow legibly: gold TEXT on the old transparent background measured 2.07:1, whereas gold
+   behind maroon text is 8:1 — the same colours, the right way round. */
 .product-buy-btn {
   grid-column: 1 / -1;
   justify-content: center;
@@ -1733,9 +1736,13 @@
   padding: 0 14px;
   font-size: 13px;
   color: #800020;
-  background: transparent;
-  border: 1px solid rgba(128, 0, 32, 0.24);
+  background: #f5cf72;
+  border: 0;
   box-shadow: none;
+}
+
+.product-buy-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
 }
 
 .product-buy-copy {
@@ -1747,6 +1754,7 @@
   text-align: center;
 }
 
+/* No colour of its own — it inherits the button's maroon, exactly as Notify me's label does. */
 .product-buy-copy strong {
   display: inline-flex;
   align-items: center;
@@ -1778,9 +1786,9 @@
    width. At 20px tall it rendered just 37px wide and the logos were unreadable; 32px gives it
    ~60px. max-width still guards a narrow phone so it can never push "BUY NOW" into a wrap. */
 .product-buy-pays img {
-  height: 42px;
+  height: 40px;
   width: auto;
-  max-width: min(90px, 30vw);
+  max-width: min(115px, 34vw);
   object-fit: contain;
   display: block;
 }
