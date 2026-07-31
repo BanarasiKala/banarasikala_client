@@ -20,11 +20,10 @@ import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import ProductReviews from "../../components/ProductReviews/ProductReviews";
-// The same marks the checkout payment step uses, so the promise made on this button is kept by
-// the screen it leads to.
-import logoGpay from "../../assets/logos/Gpay.png";
-import logoUpi from "../../assets/logos/upi.png";
-import logoCards from "../../assets/logos/cards.png";
+// One artwork holding every accepted method, rather than three separate marks stitched together
+// on the button — the spacing between them is then the designer's, not a CSS gap's. The
+// -removebg- export, so it sits on the button's own background instead of a white plate.
+import logosPayment from "../../assets/logosPayment-removebg-preview.png";
 import { shareOrCopy } from "../../utils/share";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";
@@ -2318,9 +2317,7 @@ const ProductDetail = () => {
                       )}
                     </span>
                     <span className="product-buy-pays" aria-hidden="true">
-                      <img src={logoGpay} alt="" />
-                      <img src={logoUpi} alt="" />
-                      <img src={logoCards} alt="" />
+                      <img src={logosPayment} alt="" />
                       <Icon className="product-buy-chevron" icon="lucide:chevron-right" />
                     </span>
                   </button>
