@@ -12,7 +12,7 @@ import { WishlistProvider } from "./context/WishlistContext";
 import { NOTIFICATION_TOASTER_OPTIONS, NotificationProvider } from "./context/NotificationContext";
 import { LocationProvider } from "./context/LocationContext";
 import { SupportRealtimeProvider } from "./context/SupportRealtimeContext";
-import PreLoader from "./components/PreLoader/PreLoader";
+import RouteFallback from "./components/RouteFallback/RouteFallback";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import headerBackground from "./assets/header_backgroung.png";
 import "./App.css";
@@ -78,7 +78,7 @@ function App() {
                 }}
               >
                 <ErrorBoundary>
-                <Suspense fallback={<PreLoader />}>
+                <Suspense fallback={<RouteFallback />}>
                   <Routes>
                     <Route element={<Layout />}>
                       <Route path="/" element={<Home />} />

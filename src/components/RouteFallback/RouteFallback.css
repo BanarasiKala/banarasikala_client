@@ -1,0 +1,27 @@
+/* ── In-app route fallback ────────────────────────────────────────────────────────────
+   Deliberately almost nothing: a page change should not repaint the whole window. No
+   background of its own, so the app's own cream shows through and the header above stays
+   exactly where it was — the reader sees the body swap, not the site reload. */
+.bk-route-fallback {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+}
+
+.bk-route-fallback-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(128, 0, 32, 0.16);
+  border-top-color: #800020;
+  animation: bk-route-fallback-spin 0.75s linear infinite;
+}
+
+@keyframes bk-route-fallback-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-route-fallback-spinner { animation-duration: 2s; }
+}

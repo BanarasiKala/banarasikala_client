@@ -405,6 +405,19 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
     };
   }, [order]);
 
+  /**
+   * Start downloading the order page before it is asked for.
+   *
+   * It is a ~100KB lazy chunk, so the first tap from this list suspends and shows the route
+   * fallback while it arrives. Warming it on hover (desktop) or the first touch (mobile) means
+   * the fetch overlaps the reader's own reaction time and the page is usually ready by the time
+   * the click lands. Cheap and idempotent: the browser serves the module from cache on every
+   * call after the first, so binding it to a hover on twenty cards costs one request in total.
+   */
+  const prefetchOrderDetail = () => {
+    import("../OrderConfirmation/OrderConfirmation").catch(() => {});
+  };
+
   const openOrderDetail = () => {
     navigate(`/order-confirmation?orderId=${order.id}`);
   };
@@ -468,7 +481,14 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
   const canTrackOrder = isTrackable(order);
 
   return (
-    <article className={`order-card ${isCancelled(order) ? "is-cancelled" : ""}`}>
+    // Warmed from the card itself rather than each button inside it: every route out of here
+    // leads to the same page, and a pointer arriving anywhere on the card is the earliest
+    // honest signal that it is about to be opened.
+    <article
+      className={`order-card ${isCancelled(order) ? "is-cancelled" : ""}`}
+      onMouseEnter={prefetchOrderDetail}
+      onTouchStart={prefetchOrderDetail}
+    >
       <div className="order-card-header">
         <div className="order-head-main">
           <div className="order-meta">
