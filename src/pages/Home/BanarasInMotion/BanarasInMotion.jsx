@@ -38,15 +38,91 @@ const BanarasInMotion = () => {
     return () => controller.abort();
   }, []);
 
-  // When the tab becomes visible again, resume any video the browser paused.
+  /**
+   * Keep the rail running.
+   *
+   * `autoplay muted loop` starts these once and then stops being a guarantee. Browsers stop
+   * autoplaying video that is not on screen — Chrome on Android pauses an off-screen muted
+   * loop and never brings it back — and a rail of eight decoders also runs past the limit
+   * mobile Safari and Chrome put on simultaneous video, which leaves the later cards frozen
+   * on their poster. The `loadeddata` nudge on each element only ever fired once, so
+   * anything stopped afterwards stayed stopped.
+   *
+   * So playback follows visibility: what is on screen runs, what is not is paused. That
+   * keeps the rail alive and spends the decode budget on the cards someone is looking at.
+   * IntersectionObserver against the viewport covers both axes at once — a card scrolled
+   * out sideways is clipped by the rail's own overflow, which counts as not intersecting.
+   */
   useEffect(() => {
-    const resumeAll = () => {
-      if (document.visibilityState !== "visible") return;
-      railRef.current?.querySelectorAll("video").forEach(forcePlay);
+    const rail = railRef.current;
+    if (!rail || !reels?.length) return undefined;
+
+    const onScreen = new Set();
+    // A video that cannot play at all (codec, 404, decoder exhausted) fires `pause` right
+    // back at us, and restarting it on that would spin. Three strikes, cleared by a real
+    // `playing`, keeps a genuinely broken card quiet without giving up on a recoverable one.
+    const strikes = new Map();
+    const retryTimers = new Set();
+
+    const revive = (video) => {
+      if (document.visibilityState !== "visible" || !onScreen.has(video)) return;
+      if ((strikes.get(video) || 0) >= 3) return;
+      strikes.set(video, (strikes.get(video) || 0) + 1);
+      forcePlay(video);
     };
-    document.addEventListener("visibilitychange", resumeAll);
-    return () => document.removeEventListener("visibilitychange", resumeAll);
-  }, []);
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const video = entry.target;
+          if (entry.isIntersecting) {
+            onScreen.add(video);
+            strikes.delete(video);
+            forcePlay(video);
+          } else {
+            onScreen.delete(video);
+            if (!video.paused) video.pause();
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const videos = rail.querySelectorAll("video");
+    videos.forEach((video) => io.observe(video));
+
+    // `pause` and `playing` do not bubble, so they are caught on the way down instead.
+    const onPause = (event) => {
+      // Delayed a beat: a pause during a seek or a source switch is transient, and jumping
+      // on it immediately fights the element instead of letting it settle.
+      const timer = window.setTimeout(() => {
+        retryTimers.delete(timer);
+        revive(event.target);
+      }, 400);
+      retryTimers.add(timer);
+    };
+    const onPlaying = (event) => strikes.delete(event.target);
+    rail.addEventListener("pause", onPause, true);
+    rail.addEventListener("playing", onPlaying, true);
+
+    // Coming back from another app: MediaAutoPause stopped these on the way out and resumes
+    // muted autoplay loops on return, but a card the browser had already dropped on its own
+    // is not in its set. Sweeping what is on screen here picks up the rest.
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      strikes.clear();
+      onScreen.forEach(forcePlay);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      io.disconnect();
+      rail.removeEventListener("pause", onPause, true);
+      rail.removeEventListener("playing", onPlaying, true);
+      document.removeEventListener("visibilitychange", onVisibility);
+      retryTimers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [reels]);
 
   if (reels && reels.length === 0) return null;
 

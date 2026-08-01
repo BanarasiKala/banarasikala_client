@@ -151,83 +151,114 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
     return () => io.disconnect();
   }, [reel._key, reel.id, onActivate]);
 
+  /**
+   * The element's own state, read rather than inferred.
+   *
+   * `buffering` used to be a latch flipped by `waiting` and cleared by `canplay`, and that
+   * is what produced the frozen reel: `canplay` only means enough data has arrived, NOT
+   * that anything is playing. When a play attempt had been refused in between, the reel
+   * ended up showing no spinner (canplay cleared it) and no play badge (the refusal leaves
+   * the element paused without reliably firing `pause`, so nothing set that flag) — a still
+   * frame with no way to tell it was stuck. Deriving both flags from the element closes it:
+   * readyState < 3 is exactly the threshold the element itself uses for `canplay`.
+   */
+  const syncFromElement = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    setPaused(v.paused);
+    setBuffering(!v.paused && v.readyState < 3);
+  }, []);
+
+  const wantsPlay = isActive && playing;
+
+  /**
+   * A reel that should be playing always ends up PLAYING, never sitting on a play badge.
+   *
+   * The feed defaults to sound on (muted = false), and a browser refuses unmuted playback
+   * until it decides the visitor has engaged enough with the site. That rejection used to
+   * land straight on setPaused(true), so scrolling produced frozen frames with a play
+   * button — the reader had to tap every single reel.
+   *
+   * A MUTED play is always permitted, so that is the fallback. The feed keeps moving and
+   * the mute control is right there. onSilenced tells the parent, so the speaker icon shows
+   * muted rather than claiming sound that is not playing.
+   */
+  const tryPlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || !wantsPlay || !v.paused) return;
+    const attempt = v.play();
+    if (!attempt || typeof attempt.catch !== "function") return;
+    attempt.then(syncFromElement).catch(() => {
+      const el = videoRef.current;
+      if (!el) return;
+      el.muted = true;
+      onSilenced?.();
+      el.play().catch(() => {}).finally(syncFromElement);
+    });
+    // Rebuilt only when the intent actually flips, which is the same moment the effects
+    // below want to re-run anyway. `onSilenced` is memoised by the parent, so it does not
+    // drag this along on every render of the page the way it used to.
+  }, [wantsPlay, onSilenced, syncFromElement]);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (isActive) {
-      // The viewer paused the feed. A reel scrolled into view under that intent stays
-      // paused — carrying the decision forward is the whole point of holding it here
-      // rather than per reel.
-      if (!playing) { v.pause(); setPaused(true); return; }
-      /**
-       * A reel scrolled into view always ends up PLAYING, never sitting on a play badge.
-       *
-       * The feed defaults to sound on (muted = false), and a browser refuses unmuted autoplay
-       * until it decides the visitor has engaged enough with the site. That rejection used to
-       * land straight on setPaused(true), so scrolling through the feed produced frozen frames
-       * with a play button — the reader had to tap every single reel.
-       *
-       * A MUTED play is always permitted, so that is the fallback. The feed keeps moving and
-       * the mute control is right there. onSilenced tells the parent, so the speaker icon shows
-       * muted rather than claiming sound that is not playing.
-       */
-      const attempt = v.play();
-      if (attempt && typeof attempt.catch === "function") {
-        attempt.then(() => setPaused(false)).catch(() => {
-          v.muted = true;
-          onSilenced?.();
-          v.play().then(() => setPaused(false)).catch(() => setPaused(true));
-        });
-      }
-    } else {
+    if (!isActive) {
       v.pause();
       v.currentTime = 0;
       // Mirrors the feed-wide intent rather than whatever this element last did, so an
       // off-screen reel is already in the right state when it scrolls back into view.
       setPaused(!playing);
+      return;
     }
-  }, [isActive, playing, onSilenced]);
+    // The viewer paused the feed. A reel scrolled into view under that intent stays paused —
+    // carrying the decision forward is the whole point of holding it in the parent.
+    if (!playing) { v.pause(); setPaused(true); return; }
+    tryPlay();
+    syncFromElement();
+    // Every dependency here is stable. It used to include `onSilenced`, which the parent
+    // rebuilt on each render, so this ran on every state change anywhere on the page —
+    // re-issuing play() on the active reel and, worse, re-running `currentTime = 0` on every
+    // off-screen one, throwing away buffered data over and over.
+  }, [isActive, playing, tryPlay, syncFromElement]);
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
-  /**
-   * Buffering, from the element itself.
-   *
-   * `waiting` fires when playback stalls for data and `playing` when it resumes, which is
-   * the only honest signal — a reel that is merely slow looks identical to one that has
-   * frozen, and without this the viewer is left tapping a still frame wondering which.
-   * `canplay`/`error` also clear it so the spinner can never outlive the problem.
-   */
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return undefined;
-    const start = () => setBuffering(true);
-    const stop = () => setBuffering(false);
-    // Playback can also be stopped from outside this component — MediaAutoPause silences
-    // audible media when the phone leaves the site, and the browser pauses on an incoming
-    // call. Mirroring the element's own events means the play badge shows in those cases
-    // too, instead of the reel sitting frozen with no sign it can be resumed.
-    const onPause = () => setPaused(true);
-    const onPlay = () => setPaused(false);
-    v.addEventListener("waiting", start);
-    v.addEventListener("stalled", start);
-    v.addEventListener("playing", stop);
-    v.addEventListener("canplay", stop);
-    v.addEventListener("error", stop);
-    v.addEventListener("pause", onPause);
-    v.addEventListener("play", onPlay);
+
+    /**
+     * Readiness is also the retry point. If the element has data but is not playing while it
+     * should be, the earlier attempt was refused or was made before there was anything to
+     * play — issuing it again here is what makes a reel start on its own instead of waiting
+     * for a tap it should never have needed.
+     *
+     * Deliberately NOT wired to `pause`: that fires when the viewer taps pause too, and this
+     * listener set is still the one built under the old intent at that instant, so retrying
+     * there would restart the reel they just stopped.
+     */
+    const onReady = () => { syncFromElement(); tryPlay(); };
+
+    // MediaAutoPause silences audible media when the phone leaves the site, and the browser
+    // pauses for an incoming call. Reading state on those events too means the play badge
+    // appears, instead of the reel sitting frozen with no sign it can be resumed.
+    const readyEvents = ["loadeddata", "canplay", "canplaythrough"];
+    const stateEvents = ["playing", "waiting", "stalled", "pause", "play", "seeked", "error", "emptied"];
+    readyEvents.forEach((name) => v.addEventListener(name, onReady));
+    stateEvents.forEach((name) => v.addEventListener(name, syncFromElement));
+
+    // The element may already be past `canplay` by the time this runs — a remount while
+    // scrolling back up, or a cached reel — and those events do not fire again.
+    onReady();
+
     return () => {
-      v.removeEventListener("waiting", start);
-      v.removeEventListener("stalled", start);
-      v.removeEventListener("playing", stop);
-      v.removeEventListener("canplay", stop);
-      v.removeEventListener("error", stop);
-      v.removeEventListener("pause", onPause);
-      v.removeEventListener("play", onPlay);
+      readyEvents.forEach((name) => v.removeEventListener(name, onReady));
+      stateEvents.forEach((name) => v.removeEventListener(name, syncFromElement));
     };
-  }, []);
+  }, [syncFromElement, tryPlay]);
 
   useEffect(() => () => window.clearTimeout(flashTimer.current), []);
 
@@ -243,10 +274,14 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    // Only the intent is set here. The activation effect owns the element, so calling
-    // play() here as well would issue it twice for a single tap.
     const next = v.paused;
     onPlayingChange?.(next);
+    // Pausing is left to the activation effect, which owns the element — calling pause()
+    // here too would issue it twice for one tap. Starting is not, because the parent may
+    // already hold `playing: true` while this element sits paused (a refused autoplay), and
+    // setting an unchanged value re-runs nothing: the tap would land on a frozen reel and do
+    // absolutely nothing. tryPlay is a no-op when the element is already running.
+    if (next) tryPlay();
     flashIcon(next ? "play" : "pause");
   };
 
@@ -475,6 +510,12 @@ export default function Reels() {
       like_count: reel.like_count || 0,
       comment_count: reel.comment_count || 0,
     };
+
+  // The browser refused unmuted playback and the reel fell back to silent. Set rather than
+  // toggle: several reels can report this while scrolling fast, and a toggle would flip the
+  // sound back on for the next one. Memoised because ReelItem's playback effect depends on
+  // it — an inline arrow here re-ran that effect on every render of this page.
+  const handleSilenced = useCallback(() => setMuted(true), []);
 
   const handleActivate = useCallback((key, id) => {
     setActiveKey(key);
@@ -908,10 +949,7 @@ export default function Reels() {
             playing={playing}
             onPlayingChange={setPlaying}
             onToggleMute={() => setMuted((m) => !m)}
-            // The browser refused unmuted autoplay and the reel fell back to silent. Set
-            // rather than toggle: several reels can report this while scrolling fast, and a
-            // toggle would flip the sound back on for the next one.
-            onSilenced={() => setMuted(true)}
+            onSilenced={handleSilenced}
             onLike={handleLike}
             onComments={openComments}
             onShare={openShare}
