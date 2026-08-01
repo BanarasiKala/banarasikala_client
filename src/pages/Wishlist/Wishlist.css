@@ -1,11 +1,13 @@
+/* The cart page's background, exactly — a warm two-gradient cream. The texture overlay this
+   used before washed out to near-white, which is why the empty state read as a blank page
+   beside the cart's. */
 .wishlist-page {
   min-height: 100vh;
   padding: 0 0 52px;
   background:
-    linear-gradient(rgba(255, 247, 236, 0.82), rgba(255, 247, 236, 0.96)),
-    var(--bk-section-bg),
-    #fff7ec;
-  background-size: 100% 100%, cover, 100% 100%;
+    linear-gradient(180deg, rgba(255, 246, 232, 0.92), rgba(255, 239, 215, 0.96)),
+    linear-gradient(115deg, #fff4e4 0%, #f6e0c2 55%, #fff7ea 100%);
+  background-size: 100% 100%, 100% 100%;
   color: #2a1511;
 }
 
@@ -676,7 +678,6 @@
   border-radius: 999px;
 }
 
-.wishlist-empty,
 .wishlist-bottom-cta {
   width: min(980px, 100%);
   margin: 0 auto;
@@ -686,8 +687,16 @@
   box-shadow: 0 18px 42px rgba(73, 33, 17, 0.08);
 }
 
+/* Matched to the empty-cart state (.cart-empty-* in Cart.css). The three empty states —
+   cart, orders, wishlist — are the same moment in the same journey and had grown three
+   different sets of type and three different buttons. */
 .wishlist-empty {
-  padding: 34px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 24px;
   text-align: center;
 }
 
@@ -697,12 +706,13 @@
   height: 104px;
 }
 
+/* Mirrors .cart-empty-title. */
 .wishlist-empty h2 {
-  margin: 0;
-  color: #720019;
+  margin: 0 0 8px;
+  color: #5a160f;
   font-family: "Poppins", sans-serif;
-  font-size: clamp(20px, 3vw, 26px);
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1.18;
 }
 
@@ -733,10 +743,12 @@
   height: 16px;
 }
 
+/* Mirrors .cart-empty-sub. */
 .wishlist-empty p {
-  margin: 12px auto 26px;
+  margin: 0 0 24px;
   max-width: 420px;
-  color: #6b5143;
+  color: rgba(78, 45, 27, 0.6);
+  font-size: 13px;
 }
 
 .wishlist-bottom-cta {
@@ -806,14 +818,9 @@
     gap: 16px;
   }
 
-  .wishlist-empty,
   .wishlist-bottom-cta,
   .wishlist-grid {
     width: calc(100% - 24px);
-  }
-
-  .wishlist-empty {
-    padding: 28px 14px;
   }
 
   .wishlist-hero-count {
@@ -874,4 +881,32 @@
     overflow-y: auto;
     border-radius: 16px;
   }
+}
+
+/* ── Empty-state button, matched to .cart-empty-btn ───────────────────────────────────
+   Scoped to .wishlist-empty because .wishlist-primary-link is also the bottom CTA on the
+   populated page, and the login variant (--auth) restyles it again — restyling it unscoped
+   would drag both along.
+
+   Two classes deep, so it beats .wishlist-primary-link (0,1,0) AND the
+   .wishlist-primary-link--auth variant (0,1,0), whichever of the two empty states renders. */
+.wishlist-empty .wishlist-primary-link {
+  gap: 8px;
+  min-height: auto;
+  padding: 12px 28px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6e0016, #9b001f);
+  color: #fdfdfd;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 20px rgba(128, 0, 32, 0.2);
+}
+
+.wishlist-empty .wishlist-primary-link svg {
+  width: 15px;
+  height: 15px;
 }

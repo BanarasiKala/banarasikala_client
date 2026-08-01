@@ -203,12 +203,17 @@ const Wishlist = () => {
 
   return (
     <main className="wishlist-page">
-      <section className="wishlist-hero">
-        <div>
-          <h1>Your Wishlist</h1>
-          <p>{wishlist.length ? `${wishlist.length} saved ${wishlist.length === 1 ? "saree" : "sarees"}` : "Save sarees you love"}</p>
-        </div>
-      </section>
+      {/* Hidden while the page is empty, matching the cart — which shows nothing but the empty
+          block. A "Your Wishlist / Save sarees you love" header above an illustration that
+          already says the same thing is the heading for a list that is not there. */}
+      {user && hasItems && (
+        <section className="wishlist-hero">
+          <div>
+            <h1>Your Wishlist</h1>
+            <p>{wishlist.length} saved {wishlist.length === 1 ? "saree" : "sarees"}</p>
+          </div>
+        </section>
+      )}
 
       {!user ? (
         <section className="wishlist-empty">
