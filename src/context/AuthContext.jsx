@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       persistAuth({ customer, accessToken: data.accessToken, refreshToken: data.refreshToken, keepLoggedIn: true });
       return { requiresPhoneVerification: false, customer };
     } catch (error) {
-      const err = new Error(getApiErrorMessage(error, "Google Sign-In failed. Please try again."));
+      const err = new Error(getApiErrorMessage(error, "Could not sign in with Google. Please try again."));
       throw err;
     }
   };

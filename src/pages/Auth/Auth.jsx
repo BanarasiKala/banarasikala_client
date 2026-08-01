@@ -575,10 +575,10 @@ const Auth = () => {
         setPendingGoogleToken(result.pendingToken);
         switchMode("phoneVerification");
       } else {
-        showNotification("Signed in with Google successfully!", "success");
+        showNotification("Signed in successfully", "success");
       }
     } catch (err) {
-      setApiError(err.message || "Google Sign-In failed. Please try again.");
+      setApiError(err.message || "Could not sign in with Google. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -735,7 +735,7 @@ const Auth = () => {
       if (!res.ok) throw new Error(data.message || "OTP verification failed.");
       clearInterval(otpLoginTimerRef.current);
       loginWithOtpResponse({ customer: data.customer || data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, keepLoggedIn: otpLoginKeepLoggedIn });
-      showNotification("Logged in successfully!", "success");
+      showNotification("Signed in successfully", "success");
     } catch (err) {
       setOtpLoginError(err.message || "Invalid OTP. Please try again.");
     } finally {
@@ -817,7 +817,7 @@ const Auth = () => {
     setApiError(""); setLoading(true);
     try {
       await login(loginData.identifier, loginData.password, loginData.keepLoggedIn);
-      showNotification("Login successfully", "success");
+      showNotification("Signed in successfully", "success");
     } catch (err) {
       console.error("[Auth:onLogin]", err); 
       setApiError(getFriendlyError(err, err.message || "Unable to login right now. Please contact support or try again later."));
@@ -1051,7 +1051,7 @@ const Auth = () => {
                 <div className="auth-divider auth-divider-or"><span /><em>OR</em><span /></div>
                 <GoogleBtn
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setApiError("Google Sign-In failed. Please try again.")}
+                  onError={() => setApiError("Could not sign in with Google. Please try again.")}
                   text="continue_with"
                 />
                 <button type="button" className="auth-no-account-card" onClick={() => switchMode("signup")}>
@@ -1171,7 +1171,7 @@ const Auth = () => {
             <div className="auth-divider"><span /><em>or sign up with</em><span /></div>
             <GoogleBtn
               onSuccess={handleGoogleSuccess}
-              onError={() => setApiError("Google Sign-In failed. Please try again.")}
+              onError={() => setApiError("Could not sign in with Google. Please try again.")}
               text="signup_with"
             />
             <button type="button" className="auth-no-account-card" onClick={() => switchMode("login")}>
@@ -1417,7 +1417,7 @@ const Auth = () => {
               type="button"
               className="auth-pv-btn"
               onClick={() => {
-                showNotification("Welcome to Banarasi Kala! Account created successfully.", "success");
+                showNotification("Account created successfully", "success");
                 navigate("/");
               }}
             >
