@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
   royale: `${API_BASE_URL}/api/royale`,
   boxSections: `${API_BASE_URL}/api/box-sections`,
   marketplaces: `${API_BASE_URL}/api/marketplaces`,
+  storeInfo: `${API_BASE_URL}/api/store-info`,
   varieties: `${API_BASE_URL}/api/varieties`,
   orders: `${API_BASE_URL}/api/orders`,
   coupons: `${API_BASE_URL}/api/coupons`,

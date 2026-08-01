@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import logo from "../assets/vertical_logo.png";
 import footerBackground from "../assets/header_backgroung.png";
+import { useStoreContact, formatStoreAddress } from "../hooks/useStoreContact";
 import "./Footer.css";
 
 // A null path marks the expandable Patterns group rather than a plain link, so the column's
@@ -84,6 +85,8 @@ const Footer = () => {
   const footerRef = useRef(null);
   const [showTop, setShowTop] = useState(false);
   const [marketplaces, setMarketplaces] = useState(FALLBACK_MARKETPLACES);
+  const store = useStoreContact();
+  const storeAddress = formatStoreAddress(store);
 
   // Live channel list. A failure leaves the fallback in place rather than emptying the
   // section — the footer is on every page and must not depend on this request.
@@ -408,14 +411,18 @@ const Footer = () => {
             <Phone size={15} />
             +91 98765 43210
           </p> */}
+          {/* Name, desk and address come from the server's invoice-seller config, so this
+              block and the tax invoice can never disagree about where the shop is. */}
           <p>
             <Mail size={15} />
-            support@banarasikala.com
+            <a href={`mailto:${store.email}`}>{store.email}</a>
           </p>
-          <p>
-            <MapPin size={15} className="bk-map-icon" />
-           Varanasi, Uttar Pradesh, India
-          </p>
+          {storeAddress && (
+            <p>
+              <MapPin size={15} className="bk-map-icon" />
+              {storeAddress}
+            </p>
+          )}
         </div>
 
         <div className="bk-footer-payments">
