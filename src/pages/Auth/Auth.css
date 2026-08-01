@@ -1540,7 +1540,7 @@
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: clamp(24px, 4vw, 30px);
-  font-weight: 700;
+  font-weight: 550;
   line-height: 1.2;
   text-align: center;
 }
@@ -1598,7 +1598,7 @@
 .auth-pv-benefit-text strong {
   color: #3b2118;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.3;
 }
 

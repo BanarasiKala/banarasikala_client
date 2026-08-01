@@ -9,6 +9,10 @@ import headerBackground from "../../assets/header_backgroung.png";
 import mobileBackground from "../../assets/img.jpg";
 import "./VerifyEmail.css";
 
+// One source for the welcome credit. It was written as a literal in the JSX below, which is
+// how the screen came to promise a different number than every other surface shows.
+const SIGNUP_BONUS_AMOUNT = Number(import.meta.env.VITE_SIGNUP_BONUS_AMOUNT) || 50;
+
 const STEPS = {
   VERIFYING: "verifying",
   EMAIL_VERIFIED: "email_verified",
@@ -384,7 +388,7 @@ export default function VerifyEmail() {
               <div className="ve-benefit">
                 <div className="ve-benefit-icon"><Icon icon="lucide:gift" /></div>
                 <div className="ve-benefit-text">
-                  <strong>₹100 Welcome Wallet Credit</strong>
+                  <strong>₹{SIGNUP_BONUS_AMOUNT} Welcome Wallet Credit</strong>
                   <span>Use it on your first purchase</span>
                 </div>
               </div>

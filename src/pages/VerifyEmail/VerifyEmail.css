@@ -151,7 +151,7 @@
   color: #5b0710;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
   font-size: clamp(18px, 3.2vw, 26px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-align: center;
   text-transform: uppercase;
@@ -750,6 +750,7 @@
   }
 
   .ve-benefit-text strong {
+  font-weight: 500;
     font-size: 13px;
   }
 
@@ -998,6 +999,7 @@
 .ve-ss-br { bottom: -6px; right: -20px; }
 
 .ve-success-title {
+  font-weight: 550;
   line-height: 1.2;
 }
 

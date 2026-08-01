@@ -14,6 +14,10 @@ import { scrollWindowToTop } from "../../utils/scrollRestore";
 import { numberEnv } from "../../utils/env";
 import "./Auth.css";
 
+// One source for the welcome credit. It was written as a literal in the JSX below, which is
+// how the screen came to promise a different number than every other surface shows.
+const SIGNUP_BONUS_AMOUNT = Number(import.meta.env.VITE_SIGNUP_BONUS_AMOUNT) || 50;
+
 const SUPPORT_MESSAGE = "Something went wrong. Please contact support or try again later.";
 const OTP_SEND_LIMIT = 3;
 const EMAIL_OTP_DIGIT_COUNT = numberEnv("VITE_EMAIL_OTP_LENGTH");
@@ -1386,7 +1390,7 @@ const Auth = () => {
                   <Icon icon="lucide:gift" />
                 </div>
                 <div className="auth-pv-benefit-text">
-                  <strong>₹100 Welcome Wallet Credit</strong>
+                  <strong>₹{SIGNUP_BONUS_AMOUNT} Welcome Wallet Credit</strong>
                   <span>Use it on your first purchase</span>
                 </div>
               </div>
