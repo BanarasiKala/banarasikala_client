@@ -25,14 +25,14 @@ const STATUS_CONFIG = {
   "Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Picked up" },
   Shipped: { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:truck", label: "Shipped" },
   Delivered: { color: "#087a55", bg: "#edfdf5", icon: "lucide:check-circle", label: "Delivered" },
-  Cancelled: { color: "#b42318", bg: "#fff0ee", icon: "lucide:x-circle", label: "Cancelled" },
+  Cancelled: { color: "#b42318", bg: "#fff0ee", label: "Cancelled" },
   "Partially Cancelled": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:file-edit", label: "Modified" },
   "Out For Delivery": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:navigation", label: "Out for delivery" },
   Undelivered: { color: "#9a6200", bg: "#fff6dc", icon: "lucide:triangle-alert", label: "Delivery attempt failed" },
   "RTO Initiated": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:undo-2", label: "Returning to seller" },
   "RTO In Transit": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:truck", label: "Returning to seller" },
   "RTO Delivered": { color: "#7a3d00", bg: "#fff4e8", icon: "lucide:warehouse", label: "Order returned to seller" },
-  "Seller Cancelled": { color: "#b42318", bg: "#fff0ee", icon: "lucide:x-circle", label: "Cancelled by seller" },
+  "Seller Cancelled": { color: "#b42318", bg: "#fff0ee", label: "Cancelled by seller" },
   "Re-dispatch Requested": { color: "#2454a6", bg: "#eff5ff", icon: "lucide:repeat-2", label: "Re-dispatch requested" },
   "Re-dispatch Payment Pending": { color: "#8a5a00", bg: "#fff6dc", icon: "lucide:credit-card", label: "Re-dispatch payment pending" },
   "Re-dispatch Paid": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Re-dispatch paid" },
@@ -635,7 +635,7 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
                       className="order-item-status"
                       style={{ backgroundColor: itemStatusMeta.bg, color: itemStatusMeta.color }}
                     >
-                      <Icon icon={itemStatusMeta.icon} />
+                      {itemStatusMeta.icon && <Icon icon={itemStatusMeta.icon} />}
                       {itemStatusMeta.label}
                     </span>
                   </div>
