@@ -368,3 +368,17 @@
 .track-otp-note strong {
   font-weight: 650;
 }
+
+/* ── Delivery date row ────────────────────────────────────────────────────────────────
+   The one line most people open this sheet for, so it is the only row in the band that
+   carries colour. Green once it has arrived, blue while it is still a promise — a date
+   that has happened and a date that might move should not look alike. */
+.track-sr-delivery.is-done dd {
+  color: #107a46;
+  font-weight: 600;
+}
+
+.track-sr-delivery.is-eta dd {
+  color: #1d4ed8;
+  font-weight: 600;
+}

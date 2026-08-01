@@ -919,7 +919,22 @@ export default function OrderConfirmation() {
   // The shipment timeline follows the order's STATUS — a fixed Order placed → Processing →
   // Pickup scheduled → Picked up → Shipped → Out for delivery → Delivered hierarchy — rather
   // than the courier's raw scan feed, whose wording ("ReadyForReceive / NA") reads like a log.
-  const timeline = useMemo(() => buildOrderTimeline(order), [order]);
+  /**
+   * The courier's estimated delivery date, from the best source available.
+   *
+   * Live tracking only carries one once an AWB exists — before that ShipRocket is being asked
+   * about an order id it has barely registered and answers with nothing, which is why a freshly
+   * placed order showed no estimate at all.
+   *
+   * `selected_courier_data.etd` is the quote captured at checkout ("Aug 04, 2026"), stored on
+   * the shipment row at placement. It is the same promise the shopper saw before paying, so it
+   * is the right thing to keep showing until the courier has a live one of its own.
+   */
+  const courierEdd = tracking?.tracking?.tracking_data?.shipment_track?.[0]?.edd
+    || tracking?.tracking?.tracking_data?.etd
+    || order?.selected_courier_data?.etd
+    || null;
+  const timeline = useMemo(() => buildOrderTimeline(order, { edd: courierEdd }), [order, courierEdd]);
   const courierName = order?.courier_name
     || tracking?.tracking?.tracking_data?.shipment_track?.[0]?.courier_name
     || "";

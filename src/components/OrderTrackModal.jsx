@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useBottomSheet from "../hooks/useBottomSheet";
 import api from "../utils/api";
-import { cleanScanLocation, describeStep, formatTrackDate } from "../utils/tracking";
+import { cleanScanLocation, describeStep, formatDate, formatTrackDate, parseScanDate } from "../utils/tracking";
 import "./OrderTrackModal.css";
 
 /**
@@ -120,6 +120,29 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
   );
 
   /**
+   * The delivery date line — the one fact a customer opens this sheet for.
+   *
+   * Two different facts wearing one row: before delivery it is a promise ("expected"), after it
+   * is a record ("delivered on"). Both come from the courier rather than from us — `edd` is
+   * ShipRocket's own estimate and `delivered_date` its delivery scan — with the order's stored
+   * delivered_at as a fallback for when the tracking lookup is unavailable but we know from the
+   * webhook that it landed.
+   *
+   * Time is dropped deliberately. "1 Aug 2026" is the answer to the question being asked;
+   * "1 Aug 2026, 12:11 pm" invites a reading of precision the estimate does not have, and the
+   * exact minute of the delivery scan is already in the feed below.
+   */
+  const deliveryLine = useMemo(() => {
+    if (isDelivered) {
+      const when = shipmentTrack?.delivered_date || order?.delivered_at;
+      const label = formatDate(parseScanDate(when) || when);
+      return label ? { term: "Delivered on:", value: label, tone: "is-done" } : null;
+    }
+    const eddLabel = formatDate(parseScanDate(shipmentTrack?.edd) || shipmentTrack?.edd);
+    return eddLabel ? { term: "Expected delivery:", value: eddLabel, tone: "is-eta" } : null;
+  }, [isDelivered, shipmentTrack?.delivered_date, shipmentTrack?.edd, order?.delivered_at]);
+
+  /**
    * What the body should say when there are no courier scans.
    *
    * The order's own status hierarchy used to be drawn here as a stand-in, which is why the sheet
@@ -187,6 +210,14 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
               <div>
                 <dt>Status:</dt>
                 <dd>{currentStatus}</dd>
+              </div>
+            )}
+            {/* Directly under Status, because it answers the same question one step further:
+                "where is it" then "when do I get it". */}
+            {deliveryLine && (
+              <div className={`track-sr-delivery ${deliveryLine.tone}`}>
+                <dt>{deliveryLine.term}</dt>
+                <dd>{deliveryLine.value}</dd>
               </div>
             )}
             {courierName && (

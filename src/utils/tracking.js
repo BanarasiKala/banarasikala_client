@@ -109,8 +109,32 @@ export const buildSteps = (status, steps) => steps.map((step, index) => ({
   state: stepState(status, index, steps),
 }));
 
-export const buildOrderTimeline = (order) => {
+/**
+ * @param {object} order
+ * @param {object} [options]
+ * @param {string} [options.edd]  The courier's estimated delivery date, straight from the
+ *   tracking payload (shipment_track[0].edd). Nothing on the order records one — it only
+ *   exists once a shipment is booked — so the caller passes it in when it has it.
+ */
+export const buildOrderTimeline = (order, { edd } = {}) => {
   const status = String(order?.status || "Pending").toLowerCase();
+  /**
+   * The Delivered step's detail line.
+   *
+   *   delivered      -> the date it actually arrived
+   *   still coming   -> the date it is expected
+   *   neither known  -> a plain sentence, never a courier's internal wording
+   *
+   * It used to read "Final delivery scan pending", which describes OUR view of the courier's
+   * feed rather than anything the customer wanted to know. They opened this to find out when
+   * the saree arrives; the estimate is that answer, and it is available the whole time the
+   * parcel is in transit.
+   */
+  const deliveredDetail = (() => {
+    if (order?.delivered_at) return formatDate(order.delivered_at);
+    const estimate = formatDate(parseScanDate(edd) || edd);
+    return estimate ? `Expected by ${estimate}` : "Arriving soon";
+  })();
 
   const forwardSteps = [
     { title: "Order placed", detail: formatDate(order?.createdAt), icon: "lucide:check-circle-2", matches: ["pending", "order placed"] },
@@ -119,7 +143,7 @@ export const buildOrderTimeline = (order) => {
     { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up"] },
     { title: "Shipped", detail: order?.shiprocket_awb ? `Tracking ID (AWB): ${order.shiprocket_awb}` : "Tracking appears after dispatch", icon: "lucide:truck", matches: ["shipped", "in transit"] },
     { title: "Out for delivery", detail: "Courier will attempt delivery at your address", icon: "lucide:navigation", matches: ["out for delivery"] },
-    { title: "Delivered", detail: order?.delivered_at ? formatDate(order.delivered_at) : "Final delivery scan pending", icon: "lucide:badge-check", matches: ["delivered"] },
+    { title: "Delivered", detail: deliveredDetail, icon: "lucide:badge-check", matches: ["delivered"] },
   ];
 
   const rtoSteps = [
