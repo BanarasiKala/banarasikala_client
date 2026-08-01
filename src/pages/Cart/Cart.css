@@ -243,13 +243,13 @@
   width: 100%;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #800020, #4b060d);
-  color: #fff;
+  background: #f5cf72;
+  color: #800020;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 900;
   letter-spacing: 0.1em;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(128, 0, 32, 0.18);
+  box-shadow: 0 8px 20px rgba(197, 150, 40, 0.24);
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
@@ -258,6 +258,11 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
+}
+
+.cart-proceed-btn:not(:disabled):hover,
+.cart-stickybar-btn:not(:disabled):hover {
+  filter: brightness(1.05);
 }
 
 .cart-proceed-btn:not(:disabled):hover {
