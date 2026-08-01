@@ -704,6 +704,8 @@
   border-radius: 50%;
   background: rgba(30, 10, 5, 0.38);
   backdrop-filter: blur(6px);
+
+  -webkit-backdrop-filter: blur(6px);
   cursor: pointer;
   transition: transform 0.25s ease, background 0.25s ease;
 }
@@ -749,12 +751,18 @@
 }
 
 /* ── Fullscreen overlay ── */
+/* Near-opaque, and NO backdrop-filter.
+   This overlay used to be 50%-white over a 10px backdrop blur. On iOS Safari a full-viewport
+   fixed element with backdrop-filter samples its backdrop unreliably — it promotes a
+   compositing layer and then paints a stale slice of whatever was behind it, which showed up
+   as a solid maroon band across the middle of the photo (the page header, smeared). The blur
+   was only ever decoration on a viewer whose whole job is to show one image full size, so it
+   is gone rather than prefixed-and-hoped-for. */
 .bk-fs-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 250, 242, 0.97);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2929,6 +2937,8 @@
   padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   background: rgba(36, 16, 10, 0.52);
   backdrop-filter: blur(4px);
+
+  -webkit-backdrop-filter: blur(4px);
   overscroll-behavior: contain;
 }
 
@@ -3265,6 +3275,8 @@
   overflow: auto;
   background: rgba(45, 27, 14, 0.42);
   backdrop-filter: blur(7px);
+
+  -webkit-backdrop-filter: blur(7px);
 }
 
 .buy-now-address-modal-card {
@@ -4149,6 +4161,8 @@
   padding: 16px;
   background: rgba(45, 27, 14, 0.42);
   backdrop-filter: blur(7px);
+
+  -webkit-backdrop-filter: blur(7px);
 }
 
 .buy-now-coupon-modal-card {
@@ -4687,6 +4701,8 @@
     background: rgba(255, 250, 241, 0.97);
     border-top: 1px solid rgba(128, 0, 32, 0.16);
     backdrop-filter: blur(8px);
+
+    -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 -4px 18px rgba(88, 39, 13, 0.14);
   }
 
