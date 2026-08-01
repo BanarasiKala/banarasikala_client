@@ -115,7 +115,7 @@ const ProductChip = ({ product, onView, onAdd, full = false }) => {
 };
 
 // ─── A single full-screen reel ───────────────────────────────────────────────
-const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onSilenced, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
+const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onSilenced, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
   const videoRef = useRef(null);
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -155,6 +155,10 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
     const v = videoRef.current;
     if (!v) return;
     if (isActive) {
+      // The viewer paused the feed. A reel scrolled into view under that intent stays
+      // paused — carrying the decision forward is the whole point of holding it here
+      // rather than per reel.
+      if (!playing) { v.pause(); setPaused(true); return; }
       /**
        * A reel scrolled into view always ends up PLAYING, never sitting on a play badge.
        *
@@ -178,12 +182,11 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
     } else {
       v.pause();
       v.currentTime = 0;
-      // A manual pause belongs to the moment, not to the reel. Without this, pausing one and
-      // scrolling on left it frozen — and scrolling back to it showed the play badge again
-      // even though the effect above had restarted it.
-      setPaused(false);
+      // Mirrors the feed-wide intent rather than whatever this element last did, so an
+      // off-screen reel is already in the right state when it scrolls back into view.
+      setPaused(!playing);
     }
-  }, [isActive, onSilenced]);
+  }, [isActive, playing, onSilenced]);
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted;
@@ -240,14 +243,11 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) {
-      v.play().then(() => setPaused(false)).catch(() => {});
-      flashIcon("play");
-    } else {
-      v.pause();
-      setPaused(true);
-      flashIcon("pause");
-    }
+    // Only the intent is set here. The activation effect owns the element, so calling
+    // play() here as well would issue it twice for a single tap.
+    const next = v.paused;
+    onPlayingChange?.(next);
+    flashIcon(next ? "play" : "pause");
   };
 
   const products = reel.products || [];
@@ -386,6 +386,10 @@ export default function Reels() {
   // the other means the store genuinely has no reels. They must not look the same.
   const [feedError, setFeedError] = useState(false);
   const [muted, setMuted] = useState(false); // audio on by default
+  // Play/pause belongs to the FEED, not to one reel: pausing and scrolling on keeps the next
+  // one paused, and pressing play carries forward the same way. Held here so it survives the
+  // reel components mounting and unmounting as the list scrolls.
+  const [playing, setPlaying] = useState(true);
   // One shoppable-card preference for the whole feed: hiding on any reel hides it on all of
   // them. It lives here (not per reel and not persisted), so it resets to "shown" whenever the
   // viewer leaves the page and comes back, since that unmounts and remounts this component.
@@ -901,6 +905,8 @@ export default function Reels() {
             showProducts={showProducts}
             onToggleProducts={() => setShowProducts((v) => !v)}
             onActivate={handleActivate}
+            playing={playing}
+            onPlayingChange={setPlaying}
             onToggleMute={() => setMuted((m) => !m)}
             // The browser refused unmuted autoplay and the reel fell back to silent. Set
             // rather than toggle: several reels can report this while scrolling fast, and a
