@@ -1,10 +1,14 @@
+/* Occupies the slot the chat bubble used to: same corner, same size, same offsets. Several
+   things measure themselves against that footprint — the floating reel preview clears
+   "bottom 28 + 46px", and the back-to-top button lifts it — so a drop-in replacement is the
+   only kind that does not break them. */
 .bk-reels-fab {
   position: fixed;
-  left: 24px;
+  right: 24px;
   bottom: 28px;
-  z-index: 999;
-  width: 54px;
-  height: 54px;
+  z-index: 1000;
+  width: 46px;
+  height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12,13 +16,18 @@
   background: linear-gradient(135deg, #800020 0%, #a83258 55%, #d4af37 130%);
   box-shadow: 0 10px 26px rgba(128, 0, 32, 0.4);
   text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.28s ease;
 }
 .bk-reels-fab:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 32px rgba(128, 0, 32, 0.5);
 }
 .bk-reels-fab:active { transform: scale(0.96); }
+
+/* Lifted when the back-to-top button appears, exactly as .bk-chat-fab was. */
+body.btt-visible .bk-reels-fab {
+  bottom: 84px;
+}
 
 .bk-reels-fab-icon {
   position: relative;
@@ -43,10 +52,10 @@
 
 @media (max-width: 640px) {
   .bk-reels-fab {
-    left: 16px;
+    right: 16px;
     bottom: 20px;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
   }
 }
 
