@@ -948,13 +948,14 @@
 }
 
 .orders-error,
+/* Mirrors .cart-empty-wrap. */
 .orders-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 350px;
-  padding: 30px 18px;
+  min-height: 60vh;
+  padding: 40px 24px;
   text-align: center;
 }
 
@@ -964,20 +965,21 @@
 }
 
 .orders-error h3,
+/* Mirrors .cart-empty-title. */
 .orders-empty h3 {
-  margin: 10px 0 0;
-  color: #35170f;
-  font-family: "Cinzel", serif;
-  font-size: clamp(24px, 6vw, 30px);
-  line-height: 1.18;
+  margin: 0 0 8px;
+  color: #5a160f;
+  font-family: "Poppins", serif;
+  font-size: 20px;
   font-weight: 600;
 }
 
 .orders-error p,
+/* Mirrors .cart-empty-sub. */
 .orders-empty p {
-  margin: 8px 0 0;
-  color: rgba(50, 21, 15, 0.62);
-  font-size: 14px;
+  margin: 0 0 24px;
+  color: rgba(78, 45, 27, 0.6);
+  font-size: 13px;
 }
 
 .orders-error button,
@@ -2604,3 +2606,28 @@
   }
 }
 
+
+/* ── "No Orders Yet" button, matched to .cart-empty-btn ───────────────────────────────
+   Scoped to .orders-empty on purpose: .shop-now-btn shares its base rule with
+   .order-action-btn and .orders-error button, and restyling it unscoped would drag the
+   per-order actions and the retry button along with it.
+
+   Two classes deep, so it beats both the shared base rule and the flat .shop-now-btn one
+   below it — including the pill radius and the border those set, which this design has
+   neither of. */
+.orders-empty .shop-now-btn {
+  margin-top: 0;
+  min-height: auto;
+  padding: 12px 28px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6e0016, #9b001f);
+  color: #fdfdfd;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(128, 0, 32, 0.2);
+}
