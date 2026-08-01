@@ -52,6 +52,7 @@ const Header = () => {
   const [referralCode, setReferralCode] = useState(user?.referral_code || "");
   const [referModalOpen, setReferModalOpen] = useState(false);
   const [referCopied, setReferCopied] = useState(false);
+  const [referCodeCopied, setReferCodeCopied] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const sareeMenuRef = useRef(null);
@@ -316,19 +317,34 @@ const Header = () => {
   const openReferModal = () => {
     closeMenus();
     setReferCopied(false);
+    setReferCodeCopied(false);
     setReferModalOpen(true);
   };
 
-  const copyReferralLink = async () => {
-    if (!referralLink) return;
+  /**
+   * Copy the code or the link, each with its own confirmation.
+   *
+   * Two separate targets because they are used for different things: the LINK goes into a
+   * WhatsApp message, the CODE gets typed into the signup form by someone who was told it out
+   * loud. One "Copy" button covering both meant the code could only be selected by hand.
+   *
+   * `navigator.clipboard` is undefined on an insecure origin, so it is checked rather than
+   * called blind — reading .writeText off undefined throws a TypeError that the catch would
+   * silently swallow, leaving a button that looks like it did nothing.
+   */
+  const copyReferValue = async (value, mark) => {
+    if (!value || !navigator.clipboard?.writeText) return;
     try {
-      await navigator.clipboard.writeText(referralLink);
-      setReferCopied(true);
-      window.setTimeout(() => setReferCopied(false), 1300);
+      await navigator.clipboard.writeText(value);
+      mark(true);
+      window.setTimeout(() => mark(false), 1300);
     } catch {
-      setReferCopied(false);
+      mark(false);
     }
   };
+
+  const copyReferralLink = () => copyReferValue(referralLink, setReferCopied);
+  const copyReferralCode = () => copyReferValue(referralCode, setReferCodeCopied);
 
   const shareReferralLink = async () => {
     if (!referralLink) return;
@@ -1189,21 +1205,48 @@ const Header = () => {
             <h2 id="bk-refer-title">Invite friends, earn wallet rewards</h2>
             <p>Share your referral link. Your friend can sign up from this link and rewards will be added as per the active offer.</p>
 
-            <div className="bk-refer-code">
-              <span>Your code</span>
-              <strong>{referralCode || "Not available"}</strong>
+            {/* Code and link get a copy button each. They are used differently — the link is
+                pasted into a WhatsApp message, the code is typed into the signup form by
+                someone who was told it out loud — so one shared button left the code
+                selectable only by hand. */}
+            <div className="bk-refer-field">
+              <span className="bk-refer-field-label">Your referral code</span>
+              <div className="bk-refer-field-row">
+                <code className="bk-refer-code-value">{referralCode || "Not available"}</code>
+                {/* Icon only — the word "Copy" beside a code this short doubled the width of the
+                    row for no added meaning. The tick still confirms it landed, and the
+                    aria-label carries the name for anyone not seeing the glyph. */}
+                <button
+                  type="button"
+                  className={`bk-refer-copy is-icon${referCodeCopied ? " is-done" : ""}`}
+                  onClick={copyReferralCode}
+                  disabled={!referralCode}
+                  aria-label={referCodeCopied ? "Code copied" : "Copy referral code"}
+                  title={referCodeCopied ? "Copied" : "Copy code"}
+                >
+                  <Icon icon={referCodeCopied ? "lucide:check" : "lucide:copy"} />
+                </button>
+              </div>
             </div>
 
-            <label className="bk-refer-link">
-              <span>Referral link</span>
-              <input value={referralLink || "Referral link not available"} readOnly />
-            </label>
+            <div className="bk-refer-field">
+              <span className="bk-refer-field-label">Referral link</span>
+              <div className="bk-refer-field-row is-link">
+                {/* The whole URL, wrapped over as many lines as it needs. It used to sit in a
+                    readonly <input>, which clipped it at the field width — so the one thing
+                    the modal exists to hand over could not actually be read.
+                    No inline copy button here: the link is copied from the pair at the bottom. */}
+                <span className="bk-refer-link-value">{referralLink || "Referral link not available"}</span>
+              </div>
+            </div>
 
             <div className="bk-refer-actions">
-              <button type="button" onClick={copyReferralLink} disabled={!referralLink}>
+              <button type="button" className={referCopied ? "is-done" : undefined} onClick={copyReferralLink} disabled={!referralLink}>
+                <Icon icon={referCopied ? "lucide:check" : "lucide:copy"} />
                 {referCopied ? "Copied" : "Copy Link"}
               </button>
               <button type="button" className="primary" onClick={shareReferralLink} disabled={!referralLink}>
+                <Icon icon="lucide:share-2" />
                 Share
               </button>
             </div>

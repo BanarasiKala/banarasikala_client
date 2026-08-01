@@ -1237,41 +1237,107 @@ body.menu-open {
   line-height: 1.5;
 }
 
-.bk-refer-code,
-.bk-refer-link {
+/* ── Refer & Earn: code and link, each independently copyable ─────────────────────────
+   Two identical fields rather than one styled block and one bare input, so the code and the
+   link read as the same kind of thing — something to take away. */
+.bk-refer-field {
   display: grid;
-  gap: 7px;
+  gap: 6px;
 }
 
-.bk-refer-code {
-  padding: 12px;
-  background: #fff6ea;
-  border: 1px solid rgba(128, 0, 32, 0.1);
-  border-radius: 8px;
-}
-
-.bk-refer-code span,
-.bk-refer-link span {
-  color: rgba(45, 27, 14, 0.58);
-  font-size: 11px;
+.bk-refer-field-label {
+  color: rgba(45, 27, 14, 0.55);
+  font-size: 10.5px;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.bk-refer-code strong {
+.bk-refer-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  background: #fff6ea;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 10px;
+}
+
+/* No button in this row — the link is copied from the actions below — so it is just the URL
+   with even padding on all sides. */
+.bk-refer-field-row.is-link {
+  padding: 11px 12px;
+}
+
+.bk-refer-code-value {
+  flex: 1;
+  min-width: 0;
   color: #800020;
-  font-size: 20px;
-  letter-spacing: 0.04em;
+  font-family: "Poppins", monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
-.bk-refer-link input {
-  width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
+/* overflow-wrap: anywhere is what actually shows the whole URL — a referral link has no
+   spaces in it, so without a break opportunity it would either overflow the card or be
+   clipped, which is the problem the readonly input had. */
+.bk-refer-link-value {
+  flex: 1;
+  min-width: 0;
   color: #3d2817;
-  background: #fffdf8;
-  border: 1px solid rgba(128, 0, 32, 0.14);
-  border-radius: 8px;
   font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.bk-refer-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 11px;
+  color: #800020;
+  background: #fffdf8;
+  border: 1px solid rgba(128, 0, 32, 0.2);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.bk-refer-copy svg {
+  font-size: 13px;
+}
+
+.bk-refer-copy.is-icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.bk-refer-copy.is-icon svg {
+  font-size: 15px;
+}
+
+.bk-refer-copy:hover:not(:disabled) {
+  background: #fff3e4;
+}
+
+/* Confirmation carried by colour as well as the word, so it registers without being read. */
+.bk-refer-copy.is-done {
+  color: #107a46;
+  background: rgba(16, 122, 70, 0.08);
+  border-color: rgba(16, 122, 70, 0.3);
+}
+
+.bk-refer-copy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .bk-refer-actions {
@@ -1281,6 +1347,12 @@ body.menu-open {
 }
 
 .bk-refer-actions button {
+  /* Both now carry an icon beside the label, so the button has to lay them out — without
+     this the glyph and the text stack as two block lines. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   min-height: 42px;
   color: #800020;
   background: #fff8ed;
@@ -1770,4 +1842,13 @@ body.menu-open {
   font-weight: 700;
   line-height: 1;
   vertical-align: middle;
+}
+
+/* Same green confirmation the code button uses, so both copies feel like one thing.
+   Driven by a class, not by sniffing the icon: Iconify renders its svg with class
+   "iconify iconify--lucide", which carries no trace of which glyph is inside. */
+.bk-refer-actions button.is-done {
+  color: #107a46;
+  background: rgba(16, 122, 70, 0.08);
+  border-color: rgba(16, 122, 70, 0.3);
 }
