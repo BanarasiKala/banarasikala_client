@@ -1351,6 +1351,16 @@ body.menu-open {
     gap: 0;
   }
 
+  /* Contact Us lives in the mobile panel under Help from here down, so the copy in the
+     profile dropdown would be the same link twice in one header.
+
+     Scoped through .bk-profile-panel deliberately: that rule sets display: flex on every
+     button in the panel at (0,1,1), so a bare .bk-profile-contact at (0,1,0) lost to it and
+     the row kept showing. */
+  .bk-profile-panel .bk-profile-contact {
+    display: none;
+  }
+
   .bk-nav,
   .bk-search-desktop,
   .bk-icon-link > span:last-child {

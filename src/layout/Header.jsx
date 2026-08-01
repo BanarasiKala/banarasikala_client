@@ -882,8 +882,12 @@ const Header = () => {
                     {/* Moved here from the desktop nav bar, where it was making that column wide
                         enough to push the logo off centre. This is the right home for it anyway:
                         /contact is a protected route, and this panel only ever renders for a
-                        signed-in customer. Sits beside Feedback — both are ways of writing to us. */}
-                    <button type="button" role="menuitem" onClick={() => goProtected("/contact")}>
+                        signed-in customer. Sits beside Feedback — both are ways of writing to us.
+
+                        Desktop only. Below 1190px the hamburger takes over and the mobile panel
+                        already lists Contact Us under Help, so showing it here as well put the
+                        same link twice in one header. */}
+                    <button type="button" role="menuitem" className="bk-profile-contact" onClick={() => goProtected("/contact")}>
                       <span>Contact Us</span>
                     </button>
                     {/* The one that earns the customer something sits apart and highlighted,
