@@ -76,6 +76,22 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
   const currentStatus = shipmentTrack?.current_status || statusLabel || "";
 
   /**
+   * "Keep the OTP handy" — shown only while the parcel is actually out for delivery.
+   *
+   * Stands in for the delivery agent's phone number, which several couriers simply do not
+   * provide: Amazon Shipping returns `courier_agent_details: null` because it runs its own
+   * network and hands the driver no callback line. What it DOES tell us is `pod_status: "OTP
+   * Based delivery"`, and that is the actionable half — someone expecting to be asked for a
+   * code answers the door ready, whereas someone waiting for a phone call does not.
+   *
+   * Gated on both conditions. The flag is present on the shipment from booking onwards, so
+   * without the status check it would be advice sitting on the sheet for three days before it
+   * meant anything, and for weeks afterwards.
+   */
+  const showOtpNote = /otp/i.test(shipmentTrack?.pod_status || "")
+    && /out.?for.?delivery/i.test(currentStatus);
+
+  /**
    * The courier's scans, newest first (which is the order ShipRocket returns them in).
    *
    * Nothing is collapsed here. `normalizeScans` merges consecutive scans that share a friendly
@@ -197,6 +213,16 @@ export default function OrderTrackModal({ order, statusLabel, tracking: supplied
               </div>
             )}
           </dl>
+        )}
+
+        {showOtpNote && (
+          <div className="track-otp-note">
+            <Icon icon="lucide:shield-check" />
+            <span>
+              <strong>Out for delivery today.</strong> {courierName || "The courier"} will ask for a
+              one-time password at the door — you&rsquo;ll get it by SMS on the delivery attempt.
+            </span>
+          </div>
         )}
 
         <div className="track-modal-timeline">

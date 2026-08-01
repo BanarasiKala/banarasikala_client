@@ -337,3 +337,34 @@
 
 .track-modal-retry:hover { background: #fff3e4; }
 .track-modal-retry svg { font-size: 14px; }
+
+/* ── OTP delivery note ────────────────────────────────────────────────────────────────
+   Sits between the shipment band and the scan feed, only while the parcel is out for
+   delivery. Blue-grey rather than the sheet's maroon, matching .track-sr-summary above it —
+   everything in that region is the courier's information, not ours. */
+.track-otp-note {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 10px -22px 0;
+  padding: 11px 22px;
+  background: #eef7ee;
+  border-top: 1px solid rgba(22, 163, 74, 0.16);
+  border-bottom: 1px solid rgba(22, 163, 74, 0.16);
+  color: #1f4636;
+  font-size: 12.5px;
+  font-weight: 450;
+  line-height: 1.45;
+}
+
+.track-otp-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 16px;
+  color: #16a34a;
+}
+
+.track-otp-note strong {
+  font-weight: 650;
+}
