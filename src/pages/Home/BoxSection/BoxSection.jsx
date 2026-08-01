@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
@@ -19,15 +20,29 @@ const STORY_TEXT =
   "Orders above ₹5,000 come in our premium luxury box. A keepsake box made to hold more than just your saree.";
 const STORY_CLOSER = "Feel the premium. Feel the luxury.";
 
-// One admin entry → a full WhatsApp-style story: media auto-advances with a
-// segmented progress bar, and the shopper can tap/click the left or right side
-// to step back or forward. Hardcoded copy is overlaid; nothing is cropped.
-const BoxStory = ({ entry }) => {
-  const media = useMemo(() => [
-    ...(Array.isArray(entry.videos) ? entry.videos.filter(Boolean).map((url) => ({ type: "video", url })) : []),
-    ...(Array.isArray(entry.images) ? entry.images.filter(Boolean).map((url) => ({ type: "image", url })) : []),
-  ], [entry]);
-  const [active, setActive] = useState(0);
+/**
+ * The story itself — segmented bar, media, tap zones, auto-advance.
+ *
+ * Rendered twice over a story's life: once inline in the section, and once inside the
+ * fullscreen overlay. Both go through this so the two can never drift — the bar, the
+ * timings and the tap behaviour are defined once, and `fullscreen` only changes the frame
+ * around them.
+ *
+ * `frozen` stands the whole thing down: timers stop and the video pauses. The inline copy is
+ * frozen while the overlay is open, so two elements are never decoding the same video and
+ * the story does not advance twice per tick behind the viewer's back.
+ */
+const StoryStage = ({
+  entry,
+  media,
+  fullscreen = false,
+  frozen = false,
+  startIndex = 0,
+  onIndexChange,
+  onExpand,
+  onClose,
+}) => {
+  const [active, setActive] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   // Has the current slide loaded enough to be worth showing? False on every change and
   // until the media says otherwise, which is what holds the story in place.
@@ -41,8 +56,24 @@ const BoxStory = ({ entry }) => {
 
   // Nothing advances while the slide is still loading or has stalled. Without this the
   // timers below ran on wall-clock time, so a slow video was replaced by the next slide
-  // before a single frame of it had been seen.
-  const holding = !ready || buffering;
+  // before a single frame of it had been seen. `frozen` joins it: a backgrounded copy must
+  // not tick along on its own.
+  const stillLoading = !ready || buffering;
+  // The spinner tracks `stillLoading` alone. `holding` also covers being frozen, which stops
+  // the timers without claiming to the viewer that anything is downloading.
+  const holding = stillLoading || frozen;
+
+  // Reported up so the other copy can open on the slide this one was showing — tapping
+  // expand on slide 3 and landing back on slide 1 would lose the viewer's place.
+  useEffect(() => { onIndexChange?.(active); }, [active, onIndexChange]);
+
+  // Seeding useState above only covers the first render, so the inline copy — which stays
+  // mounted the whole time the overlay is up — would ignore where full view got to and carry
+  // on from wherever it was frozen. Remounting it instead would re-download the slide.
+  useEffect(() => {
+    setActive(startIndex);
+    setProgress(0);
+  }, [startIndex]);
 
   const step = useCallback((dir) => {
     setProgress(0);
@@ -105,7 +136,10 @@ const BoxStory = ({ entry }) => {
     el.addEventListener("canplay", rolling);
     el.addEventListener("playing", rolling);
     el.addEventListener("error", rolling);
-    el.play().catch(() => {});
+    // The inline copy is frozen while the overlay is up: leaving it playing would decode the
+    // same video twice and, on a phone, play its audio track a second time.
+    if (frozen) el.pause();
+    else el.play().catch(() => {});
 
     return () => {
       el.removeEventListener("waiting", stalled);
@@ -114,7 +148,7 @@ const BoxStory = ({ entry }) => {
       el.removeEventListener("playing", rolling);
       el.removeEventListener("error", rolling);
     };
-  }, [active, media]);
+  }, [active, media, frozen]);
 
   // Safety-net cap for the current video only: advances the story if playback
   // stalls and `onEnded` never fires. Rescheduled on every timeupdate so a
@@ -146,8 +180,7 @@ const BoxStory = ({ entry }) => {
   const current = media[active];
 
   return (
-    <div className="bk-box-item">
-      <div className="bk-box-story">
+    <div className={`bk-box-story${fullscreen ? " bk-box-story--fs" : ""}`}>
       {/* Story-style segmented progress across the top. */}
       <div className="bk-box-segments" aria-hidden="true">
         {media.map((item, index) => {
@@ -212,7 +245,7 @@ const BoxStory = ({ entry }) => {
       {/* Centred over the story while the slide is loading or has stalled. Above the
           scrim so it stays legible, below the tap zones so a shopper can still skip a
           slide that is taking too long. */}
-      {holding && (
+      {stillLoading && (
         <span className="bk-box-loader" aria-label="Loading">
           <i />
         </span>
@@ -224,6 +257,17 @@ const BoxStory = ({ entry }) => {
         Banarasi Kala
       </span>
 
+      {/* Above the tap zones in the stacking order, so the corner they sit in belongs to
+          them — the zones cover the whole card and would otherwise swallow the tap. */}
+      <button
+        type="button"
+        className={`bk-box-corner bk-box-corner--${fullscreen ? "close" : "expand"}`}
+        onClick={fullscreen ? onClose : onExpand}
+        aria-label={fullscreen ? "Close full view" : "Open full view"}
+      >
+        <Icon icon={fullscreen ? "lucide:x" : "lucide:maximize-2"} />
+      </button>
+
       {/* WhatsApp-style tap zones: left = previous, right = next. */}
       {!single && (
         <>
@@ -231,7 +275,81 @@ const BoxStory = ({ entry }) => {
           <button type="button" className="bk-box-tap bk-box-tap--next" onClick={next} aria-label="Next" />
         </>
       )}
-      </div>
+    </div>
+  );
+};
+
+// One admin entry → a full WhatsApp-style story with hardcoded copy beneath it, plus the
+// Instagram-style full view the card expands into.
+const BoxStory = ({ entry }) => {
+  const media = useMemo(() => [
+    ...(Array.isArray(entry.videos) ? entry.videos.filter(Boolean).map((url) => ({ type: "video", url })) : []),
+    ...(Array.isArray(entry.images) ? entry.images.filter(Boolean).map((url) => ({ type: "image", url })) : []),
+  ], [entry]);
+
+  const [expanded, setExpanded] = useState(false);
+  // Where each copy had got to, so opening and closing resumes on the same slide instead of
+  // snapping back to the first one.
+  const inlineIndex = useRef(0);
+  const fsIndex = useRef(0);
+  const [resumeAt, setResumeAt] = useState(0);
+  // State, not the ref, because it is read during render to seed the overlay — and it is
+  // only ever written from the click that opens it, so there is nothing to keep in sync.
+  const [fsStart, setFsStart] = useState(0);
+
+  const openFull = useCallback(() => {
+    fsIndex.current = inlineIndex.current;
+    setFsStart(inlineIndex.current);
+    setExpanded(true);
+  }, []);
+
+  const closeFull = useCallback(() => {
+    setResumeAt(fsIndex.current);
+    setExpanded(false);
+  }, []);
+
+  // Memoised: StoryStage reports its slide from an effect that depends on this, so an inline
+  // arrow would re-fire it on every render of this component.
+  const trackInline = useCallback((index) => { inlineIndex.current = index; }, []);
+  const trackFullscreen = useCallback((index) => { fsIndex.current = index; }, []);
+
+  /**
+   * While the overlay is up: Escape closes it, and the page behind does not scroll.
+   *
+   * `overflow: hidden` on <body> is the lock every other panel on this site uses — the
+   * lightbox, the invoice viewer, the bottom sheets. Pinning the body with `position: fixed`
+   * holds iOS more firmly, but it also has to restore the scroll offset on release, and
+   * ScrollToTop is written around the overflow pattern specifically (it re-asserts its scroll
+   * over the following frames because a releasing lock hands back an offset). A second kind
+   * of lock it does not know about would fight it.
+   */
+  useEffect(() => {
+    if (!expanded) return undefined;
+
+    const onKey = (event) => { if (event.key === "Escape") closeFull(); };
+    document.addEventListener("keydown", onKey);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [expanded, closeFull]);
+
+  if (!media.length) return null;
+
+  return (
+    <div className="bk-box-item">
+      <StoryStage
+        entry={entry}
+        media={media}
+        frozen={expanded}
+        startIndex={resumeAt}
+        onIndexChange={trackInline}
+        onExpand={openFull}
+      />
 
       {/* Copy sits below the story card, out of the media view. */}
       <div className="bk-box-caption">
@@ -239,6 +357,23 @@ const BoxStory = ({ entry }) => {
         <p>{STORY_TEXT}</p>
         <strong className="bk-box-closer">{STORY_CLOSER}</strong>
       </div>
+
+      {/* Portalled to <body>: nested inside the section it would inherit the page's stacking
+          context and sit under the sticky header, and the section's own transforms would
+          make `position: fixed` resolve against the section instead of the viewport. */}
+      {expanded && createPortal(
+        <div className="bk-box-fs" role="dialog" aria-modal="true" aria-label={STORY_TITLE}>
+          <StoryStage
+            entry={entry}
+            media={media}
+            fullscreen
+            startIndex={fsStart}
+            onIndexChange={trackFullscreen}
+            onClose={closeFull}
+          />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 };

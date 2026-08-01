@@ -447,15 +447,13 @@
   align-items: flex-start;
 }
 
+/* No `perspective` here, and no preserve-3d frame inside it: the pointer-tilt those existed
+   for is gone. Worth keeping gone — `transform-style: preserve-3d` promotes the frame to its
+   own compositing layer, which is what iOS Safari mishandles when a full-viewport
+   backdrop-filter samples across it. */
 .product-main-media {
   flex: 1;
   min-width: 0;
-  perspective: 1800px;
-}
-
-.product-3d-frame {
-  transition: transform 0.12s ease-out;
-  transform-style: preserve-3d;
 }
 
 .product-image-frame {
@@ -4741,8 +4739,12 @@
     display: none;
   }
 
+  /* The gallery goes full-bleed on mobile, so this bar has no container padding of its own to
+     inherit — at 6px the wishlist and share buttons sat hard against the screen edge, close
+     enough that a thumb reaching for share caught Safari's back-swipe gutter instead. Lined
+     up with the page's own 16px gutter so they read as part of the content. */
   .product-media-bar {
-    padding: 0 6px;
+    padding: 0 16px;
   }
 
   /* Full-bleed carousel — shell has no horizontal padding so gallery is naturally full-width */

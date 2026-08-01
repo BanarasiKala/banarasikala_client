@@ -169,6 +169,32 @@ const ImageSlide = memo(({ url, alt }) => {
 });
 ImageSlide.displayName = "ImageSlide";
 
+/**
+ * Start the player, falling back to muted when the browser refuses sound.
+ *
+ * PLYR_OPTIONS asks for `muted: true`, but that is only a default — Plyr persists the
+ * viewer's volume and mute choice in localStorage and restores it over the option. So a
+ * shopper who unmuted one product video has every later one trying to autoplay WITH SOUND,
+ * which browsers refuse outright. The rejection was swallowed by a bare `.catch(() => {})`,
+ * leaving the slide on a black frame at 00:00 with no indication anything had gone wrong.
+ *
+ * Muted playback is always permitted, so that is the fallback: the video runs, and the mute
+ * control in the bar is right there to turn sound back on by hand — which counts as the
+ * interaction the browser was waiting for anyway.
+ */
+const playMutedIfRefused = (player) => {
+  if (!player) return;
+  let attempt;
+  try { attempt = player.play(); } catch { return; }
+  if (!attempt || typeof attempt.catch !== "function") return;
+  attempt.catch(() => {
+    try {
+      player.muted = true;
+      player.play()?.catch(() => {});
+    } catch { /* player torn down mid-attempt */ }
+  });
+};
+
 const VideoSlide = memo(({ src, isActive, activePlayerRef }) => {
   const plyrRef = useRef(null);
   const containerRef = useRef(null);
@@ -182,7 +208,7 @@ const VideoSlide = memo(({ src, isActive, activePlayerRef }) => {
     if (!player || typeof player.ready !== "boolean") return;
     if (isActive) {
       if (activePlayerRef) activePlayerRef.current = player;
-      player.play().catch(() => {});
+      playMutedIfRefused(player);
     } else {
       if (activePlayerRef && activePlayerRef.current === player) activePlayerRef.current = null;
       try { player.pause(); player.currentTime = 0; } catch {}
@@ -211,7 +237,7 @@ const VideoSlide = memo(({ src, isActive, activePlayerRef }) => {
     const player = e.currentTarget.plyr ?? plyrRef.current?.plyr;
     if (player) {
       if (activePlayerRef) activePlayerRef.current = player;
-      player.play().catch(() => {});
+      playMutedIfRefused(player);
     }
   }, [activePlayerRef]);
 
@@ -583,7 +609,6 @@ const ProductDetail = () => {
   const [couponCelebration, setCouponCelebration] = useState(null);
 
   const frameRef = useRef(null);
-  const perspectiveRef = useRef(null);
   const isMountedRef = useRef(true);
   const rootRef = useRef(null);
   const removingFromBagRef = useRef(false);
@@ -687,36 +712,13 @@ const ProductDetail = () => {
     return () => controller.abort();
   }, [product?.id]);
 
-  useEffect(() => {
-    const frame = frameRef.current;
-    const perspective = perspectiveRef.current;
-
-    const handleMouseMove = (event) => {
-      if (!perspective || !frame) return;
-      const rect = perspective.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -6;
-      const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 6;
-      frame.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    };
-
-    const handleMouseLeave = () => {
-      if (frame) frame.style.transform = "rotateX(0deg) rotateY(0deg)";
-    };
-
-    if (perspective) {
-      perspective.addEventListener("mousemove", handleMouseMove);
-      perspective.addEventListener("mouseleave", handleMouseLeave);
-    }
-
-    return () => {
-      if (perspective) {
-        perspective.removeEventListener("mousemove", handleMouseMove);
-        perspective.removeEventListener("mouseleave", handleMouseLeave);
-      }
-    };
-  }, [loading]);
+  /* The gallery's 3D pointer-tilt effect has been removed.
+     It rotated the image frame up to 6° toward the cursor on mousemove and unwound on
+     mouseleave. On a touchscreen that reads badly: a tap emits a synthetic mousemove, so
+     tapping anything over the frame — the share and wishlist buttons especially — tilted it,
+     and no mouseleave ever follows a tap, so it STAYED tilted until the next interaction.
+     It also wrote frameRef.style.transform directly, the one property the carousel's zoom and
+     pan would need if that ever moved onto the same element. */
 
   const visibleImages = useMemo(() => {
     if (!selectedColorId) return getSortedImages(product);
@@ -1006,32 +1008,11 @@ const ProductDetail = () => {
     return () => window.clearTimeout(timer);
   }, [couponCelebration]);
 
-  /**
-   * Is the serverless /product/:slug route already serving rendered OG meta?
-   *
-   * Checked HERE, once the product has loaded, rather than inside the share handler. The check
-   * itself is worth keeping — it stops a link scraper being handed a half-ready page — but it
-   * costs a network round trip, and doing that between the tap and navigator.share() burns the
-   * transient user activation the share API requires.
-   *
-   * null = not checked yet. The handler treats that as "go ahead": a share that works is worth
-   * more than a preview that is certainly ready, and by the time a shopper has read far enough
-   * to want to share, this has long since resolved.
-   */
-  const ogReadyRef = useRef(null);
-  useEffect(() => {
-    if (!product?.slug) return undefined;
-    ogReadyRef.current = null;
-    let live = true;
-    const controller = new AbortController();
-    fetch(window.location.href, { cache: "no-store", signal: controller.signal })
-      .then((response) => (response.ok ? response.text() : ""))
-      .then((html) => { if (live) ogReadyRef.current = html.includes('property="og:image"'); })
-      // A failed warm-up must not block sharing — leaving it null means "go ahead", which is
-      // the right call when the only thing we failed to learn is whether the preview is pretty.
-      .catch(() => { if (live) ogReadyRef.current = null; });
-    return () => { live = false; controller.abort(); };
-  }, [product?.slug, selectedColorId]);
+  /* The og:image warm-up that used to live here has been removed along with the guard in
+     handleShare that read it. It re-downloaded this page's entire HTML on every product view
+     and on every colour change, to check for a meta tag that is hardcoded in index.html and
+     therefore always present — and the only thing it could actually do with the answer was
+     refuse to share. */
 
   useEffect(() => {
     if (!buyNowOpen) return undefined;
@@ -1531,17 +1512,15 @@ const ProductDetail = () => {
   const handleShare = async () => {
     const url = window.location.href;
 
-    // The OG check is read from the warm-up effect rather than performed here. Awaiting a full
-    // HTML fetch of this page between the tap and navigator.share() routinely spent the
-    // transient user activation the share API needs; the browser then rejected the share with
-    // NotAllowedError, which the old catch-all reported as "Share cancelled" even though the
-    // shopper had done nothing but tap the button. That is the "sometimes" — it tracked how
-    // long the fetch took, so it struck on a slow connection and never on a fast one.
-    if (ogReadyRef.current === false) {
-      showNotification("Share preview is still preparing — try again in a moment.", "info");
-      return;
-    }
-
+    // Nothing is awaited before shareOrCopy: navigator.share() needs the transient user
+    // activation from the tap, and anything awaited in between can spend it.
+    //
+    // A guard used to sit here that refused the share unless a warm-up fetch had confirmed
+    // og:image in this page's HTML, telling the shopper to "try again in a moment". It was
+    // wrong on both counts. The OG tags are static in index.html — they are either there or
+    // they never will be, so there was nothing to wait for — and the flag went false for any
+    // reason the fetch came back empty (a non-200, an abort on a colour change, a flaky
+    // connection), which swallowed the tap and made the button need two or three goes.
     try {
       const outcome = await shareOrCopy({ title: productName, url });
       // "shared" and "dismissed" both say nothing: one is self-evident, and the other is the
@@ -1994,13 +1973,12 @@ const ProductDetail = () => {
               </div>
             )}
             <div
-              className="product-main-media product-3d-perspective"
-              ref={perspectiveRef}
+              className="product-main-media"
               onMouseEnter={() => setIsGalleryHovering(true)}
               onMouseLeave={() => setIsGalleryHovering(false)}
             >
               <div
-                className="product-3d-frame product-image-frame"
+                className="product-image-frame"
                 ref={frameRef}
                 onMouseDown={handleFrameMouseDown}
                 onMouseMove={handleFrameMouseMove}

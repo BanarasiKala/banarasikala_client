@@ -373,3 +373,107 @@
 @media (prefers-reduced-motion: reduce) {
   .bk-box-loader i { animation-duration: 2s; }
 }
+
+/* ── Full view ──────────────────────────────────────────────────────────────
+   The card expands into an Instagram-style story: the same segmented bar and the
+   same tap zones, given the whole screen. Shares ImageLightbox's z-index band so
+   the site's two fullscreen viewers sit at the same depth. */
+.bk-box-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  background: #060203;
+  animation: bk-box-fs-in 0.2s ease both;
+}
+
+@keyframes bk-box-fs-in {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Height first, width derived: portrait media should use the full screen on a phone and a
+   sensible story-shaped panel on a desktop, rather than a 2000px-wide letterbox. The 9/16
+   cap resolves larger than the viewport on a phone, so `min` picks 100vw there and the story
+   goes edge to edge. Nothing is cropped either way — .bk-box-front is object-fit: contain. */
+.bk-box-story--fs {
+  width: min(100vw, calc(100vh * 9 / 16));
+  height: 100vh;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@supports (height: 100dvh) {
+  /* Mobile browser chrome: 100vh is the tall viewport, so the bottom of the story sits
+     behind Safari's toolbar until the page is scrolled. dvh tracks the visible box. */
+  .bk-box-story--fs {
+    width: min(100vw, calc(100dvh * 9 / 16));
+    height: 100dvh;
+  }
+}
+
+/* The bar clears the notch/Dynamic Island in full view — at the card's 12px it was under the
+   status bar on an iPhone. The brand chip follows it down by the same amount. */
+.bk-box-story--fs .bk-box-segments {
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 14px;
+  right: 14px;
+  gap: 6px;
+}
+
+.bk-box-story--fs .bk-box-segment {
+  height: 3.5px;
+}
+
+.bk-box-story--fs .bk-box-brand {
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
+  left: 16px;
+  font-size: 12.5px;
+}
+
+/* ── Expand / close ── */
+/* z-index 4 puts it over the tap zones (3), which span the whole card and would otherwise
+   take the tap for themselves. */
+.bk-box-corner {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(10, 4, 5, 0.42);
+  color: #fff3dd;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.bk-box-corner:hover {
+  background: rgba(10, 4, 5, 0.68);
+  transform: scale(1.06);
+}
+
+/* Expand sits bottom-right, out of the way of the segmented bar and the brand chip, and in
+   the darkest part of the scrim so the glyph stays legible over pale media. */
+.bk-box-corner--expand {
+  right: 12px;
+  bottom: 12px;
+}
+
+/* Close stays top-right: it is the standard place to dismiss a full-screen layer, and in
+   full view the bottom-right corner is where a thumb rests while tapping through slides. */
+.bk-box-corner--close {
+  top: calc(env(safe-area-inset-top, 0px) + 26px);
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
