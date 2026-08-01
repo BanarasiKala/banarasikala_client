@@ -66,9 +66,9 @@ const payments = [
  * here without a deploy, and this array cannot drift out of step with the pages.
  */
 const FALLBACK_MARKETPLACES = [
-  { slug: "amazon",   name: "Amazon",   icon: "simple-icons:amazon",   accent_color: "#FF9900" },
-  { slug: "flipkart", name: "Flipkart", icon: "simple-icons:flipkart", accent_color: "#2874F0" },
-  { slug: "myntra",   name: "Myntra",   icon: "/image.png",            accent_color: "#FF3F6C" },
+  { slug: "amazon",   name: "Amazon",   icon: "simple-icons:amazon",   accent_color: "#FF9900", status: "live" },
+  { slug: "flipkart", name: "Flipkart", icon: "simple-icons:flipkart", accent_color: "#2874F0", status: "live" },
+  { slug: "myntra",   name: "Myntra",   icon: "/image.png",            accent_color: "#FF3F6C", status: "coming_soon" },
 ];
 
 // The mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png"):
@@ -458,6 +458,7 @@ const Footer = () => {
                   : <Icon icon={market.icon || "lucide:store"} style={{ color: market.accent_color }} />
                 }
                 <span>{market.name}</span>
+                {market.status === "coming_soon" && <em className="bk-footer-market-soon">Soon</em>}
               </Link>
             ))}
           </div>

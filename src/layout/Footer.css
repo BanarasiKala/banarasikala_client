@@ -531,3 +531,23 @@
   }
 }
 
+
+/* "Soon" beside a channel we are not selling on yet — the listing is an announcement, and
+   without this it reads as a storefront you can visit today.
+
+   Warm brown on gold, NOT the pale tones the rest of this footer uses: the badge it sits in
+   is a white card (.bk-footer-market-badge, rgba(255,255,255,.82) with #1c1c1c text), so the
+   light type this started out as vanished into it completely. */
+.bk-footer-market-soon {
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.28);
+  color: #8a5a18;
+  font-size: 8.5px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
