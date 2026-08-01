@@ -115,7 +115,7 @@ const ProductChip = ({ product, onView, onAdd, full = false }) => {
 };
 
 // ─── A single full-screen reel ───────────────────────────────────────────────
-const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
+const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onSilenced, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
   const videoRef = useRef(null);
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -155,14 +155,35 @@ const ReelItem = ({ reel, muted, isActive, inter, showProducts, onToggleProducts
     const v = videoRef.current;
     if (!v) return;
     if (isActive) {
-      // Try to autoplay with sound; if the browser blocks it, show the play
-      // overlay so a tap starts playback (with audio) rather than a stuck frame.
-      v.play().then(() => setPaused(false)).catch(() => setPaused(true));
+      /**
+       * A reel scrolled into view always ends up PLAYING, never sitting on a play badge.
+       *
+       * The feed defaults to sound on (muted = false), and a browser refuses unmuted autoplay
+       * until it decides the visitor has engaged enough with the site. That rejection used to
+       * land straight on setPaused(true), so scrolling through the feed produced frozen frames
+       * with a play button — the reader had to tap every single reel.
+       *
+       * A MUTED play is always permitted, so that is the fallback. The feed keeps moving and
+       * the mute control is right there. onSilenced tells the parent, so the speaker icon shows
+       * muted rather than claiming sound that is not playing.
+       */
+      const attempt = v.play();
+      if (attempt && typeof attempt.catch === "function") {
+        attempt.then(() => setPaused(false)).catch(() => {
+          v.muted = true;
+          onSilenced?.();
+          v.play().then(() => setPaused(false)).catch(() => setPaused(true));
+        });
+      }
     } else {
       v.pause();
       v.currentTime = 0;
+      // A manual pause belongs to the moment, not to the reel. Without this, pausing one and
+      // scrolling on left it frozen — and scrolling back to it showed the play badge again
+      // even though the effect above had restarted it.
+      setPaused(false);
     }
-  }, [isActive]);
+  }, [isActive, onSilenced]);
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted;
@@ -881,6 +902,10 @@ export default function Reels() {
             onToggleProducts={() => setShowProducts((v) => !v)}
             onActivate={handleActivate}
             onToggleMute={() => setMuted((m) => !m)}
+            // The browser refused unmuted autoplay and the reel fell back to silent. Set
+            // rather than toggle: several reels can report this while scrolling fast, and a
+            // toggle would flip the sound back on for the next one.
+            onSilenced={() => setMuted(true)}
             onLike={handleLike}
             onComments={openComments}
             onShare={openShare}
