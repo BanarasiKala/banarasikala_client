@@ -98,9 +98,9 @@ const Wishlist = () => {
     const result = await addToCart(item, 1, item.colorId);
     setDirectAddingId(null);
     if (result?.success) {
-      showNotification("Added to bag!");
+      showNotification("Added to cart!");
     } else {
-      showNotification(result?.message || "Failed to add to bag", "error");
+      showNotification(result?.message || "Failed to add to cart", "error");
     }
   };
 
@@ -121,11 +121,11 @@ const Wishlist = () => {
     setAddingToBag(false);
 
     if (result?.success) {
-      showNotification("Added to bag!");
+      showNotification("Added to cart!");
       setColorModalProduct(null);
       setSelectedColorId(null);
     } else {
-      showNotification(result?.message || "Failed to add to bag", "error");
+      showNotification(result?.message || "Failed to add to cart", "error");
     }
   };
 
@@ -144,7 +144,7 @@ const Wishlist = () => {
       setSelectedColorId(null);
       navigate("/checkout");
     } else {
-      showNotification(result?.message || "Failed to add to bag", "error");
+      showNotification(result?.message || "Failed to add to cart", "error");
     }
   };
 
@@ -300,7 +300,7 @@ const Wishlist = () => {
                 actionBtn = hasAnyInStockColor ? (
                   <button type="button" onClick={() => handleDirectAddToBag({ ...item, colorId: null })} disabled={isDirect}>
                     <Icon icon="lucide:shopping-bag" />
-                    {isDirect ? "Adding..." : "Add to Bag"}
+                    {isDirect ? "Adding..." : "Add to Cart"}
                   </button>
                 ) : (
                   <button type="button" className="wishlist-notify-btn" onClick={() => notify(item, item.colorId || null)}>
@@ -312,7 +312,7 @@ const Wishlist = () => {
                 actionBtn = hasAnyInStockColor ? (
                   <button type="button" onClick={() => openColorModal(item)}>
                     <Icon icon="lucide:shopping-bag" />
-                    Add to Bag
+                    Add to Cart
                   </button>
                 ) : (
                   <button type="button" className="wishlist-notify-btn" onClick={() => notify(item, item.colorId || null)}>
@@ -325,7 +325,7 @@ const Wishlist = () => {
               actionBtn = (
                 <button type="button" onClick={() => handleDirectAddToBag(item)} disabled={isDirect}>
                   <Icon icon="lucide:shopping-bag" />
-                  {isDirect ? "Adding..." : "Add to Bag"}
+                  {isDirect ? "Adding..." : "Add to Cart"}
                 </button>
               );
             } else if (hasOtherInStockColor) {
@@ -482,7 +482,7 @@ const Wishlist = () => {
               <div>
                 <span>Choose Color</span>
                 <h2 id="wishlist-color-title">{colorModalProduct.name}</h2>
-                <p>Select an available color before adding this saree to your bag.</p>
+                <p>Select an available color before adding this saree to your cart.</p>
               </div>
             </div>
 
@@ -515,7 +515,7 @@ const Wishlist = () => {
               disabled={addingToBag}
             >
               <Icon icon="lucide:shopping-bag" />
-              {addingToBag ? "Adding..." : "Add to Bag"}
+              {addingToBag ? "Adding..." : "Add to Cart"}
             </button>
             <button
               type="button"

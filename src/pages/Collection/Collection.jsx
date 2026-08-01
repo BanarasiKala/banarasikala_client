@@ -565,12 +565,12 @@ const Collection = () => {
       return;
     }
     const result = await addToCart(product, 1, colorId || null);
-    if (result?.success) showNotification("Added to bag!", "success");
-    else showNotification(result?.message || "Could not add to bag.", "error");
+    if (result?.success) showNotification("Added to cart!", "success");
+    else showNotification(result?.message || "Could not add to cart.", "error");
   };
 
   // Stands in for renderProductCard below, line for line: the 3/4 media box, a two-line
-  // name, description, rating, price over MRP, delivery estimate and the add-to-bag
+  // name, description, rating, price over MRP, delivery estimate and the add-to-cart
   // button. Built on the real .product-card / .card-details so the grid tracks are
   // already the right height and nothing jumps when the products arrive.
   const renderProductCardSkeleton = (key) => (

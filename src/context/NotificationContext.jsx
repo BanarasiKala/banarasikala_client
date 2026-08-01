@@ -78,7 +78,7 @@ const getToastOptions = (type, options = {}) => {
  * Identity for a toast, so the same message cannot stack.
  *
  * react-hot-toast treats `id` as identity: firing one whose id is already on screen
- * updates that toast instead of adding a second. Tapping "Add to bag" five times, or a
+ * updates that toast instead of adding a second. Tapping "Add to cart" five times, or a
  * component re-rendering into the same error, therefore shows one toast rather than a
  * column of identical ones.
  *
@@ -86,7 +86,7 @@ const getToastOptions = (type, options = {}) => {
  * are still two different things, and never collapse into each other.
  *
  * Deliberately NOT a timed suppression window. That would keep swallowing the message
- * after the toast had faded, so a deliberate second action — add to bag, look away, add
+ * after the toast had faded, so a deliberate second action — add to cart, look away, add
  * again — would give no feedback at all and read as a broken button. This only collapses
  * duplicates while one is actually visible, which is the case worth fixing.
  */

@@ -274,7 +274,7 @@ const Cart = () => {
     ? Math.min(100, (selectedSubtotal / progressCoupon.minPurchase) * 100)
     : 0;
 
-  // Custom centered toast once per best coupon when the bag crosses its minimum.
+  // Custom centered toast once per best coupon when the cart crosses its minimum.
   useEffect(() => {
     const code = bestUnlockedCoupon?.code || null;
     if (!code || toastedUnlockRef.current === code) return;
@@ -324,7 +324,7 @@ const Cart = () => {
 
   const handleRemove = (item) => {
     removeFromCart(item.id, item.colorId);
-    showNotification(`${item.name} removed from bag`, "success");
+    showNotification(`${item.name} removed from cart`, "success");
   };
 
   const handlePinSubmit = (e) => {
@@ -373,11 +373,11 @@ const Cart = () => {
       <div className="cart-page min-h-screen">
         <div className="cart-empty-wrap">
           <EmptyStateIcon variant="cart" className="cart-empty-icon" />
-          <h3 className="cart-empty-title">Login to view your bag</h3>
+          <h3 className="cart-empty-title">Login to view your cart</h3>
           <p className="cart-empty-sub">Sign in to add items and place your order.</p>
-          <Link to="/login" state={{ from: { pathname: "/cart" } }} className="cart-empty-btn cart-empty-btn--bag">
+          <Link to="/login" state={{ from: { pathname: "/cart" } }} className="cart-empty-btn cart-empty-btn--cart">
             <Icon icon="lucide:shopping-bag" />
-            Login to View Bag
+            Login to View Cart
           </Link>
         </div>
       </div>
@@ -388,13 +388,13 @@ const Cart = () => {
     return (
       <div className="cart-page min-h-screen">
         {/* Mirrors the loaded page block for block — summary card, select-all row, then the
-            item cards — so nothing below shifts when the bag arrives. The pincode block is
+            item cards — so nothing below shifts when the cart arrives. The pincode block is
             left out on purpose: it only renders when no pincode is saved, and reserving a
             row that usually is not there would move the list down as often as it helped. */}
-        <div className="cart-body" aria-label="Loading your bag" aria-busy="true">
+        <div className="cart-body" aria-label="Loading your cart" aria-busy="true">
           <div className="cart-summary cart-sk-summary" aria-hidden="true">
             <div className="cart-summary-top">
-              <span className="bk-sk cart-sk-bag" />
+              <span className="bk-sk cart-sk-cart" />
               <div className="cart-summary-info">
                 <span className="bk-sk cart-sk-line cart-sk-line--count" />
                 <span className="bk-sk cart-sk-line cart-sk-line--delivery" />
@@ -440,7 +440,7 @@ const Cart = () => {
       <div className="cart-page min-h-screen">
         <div className="cart-empty-wrap">
           <EmptyStateIcon variant="cart" className="cart-empty-icon" />
-          <h3 className="cart-empty-title">Your bag is currently empty</h3>
+          <h3 className="cart-empty-title">Your cart is currently empty</h3>
           <p className="cart-empty-sub">Explore our heritage collection to add items.</p>
           <Link to="/collection" className="cart-empty-btn">Shop Collections</Link>
         </div>
@@ -455,8 +455,8 @@ const Cart = () => {
         {/* ── Summary card ── */}
         <div className="cart-summary">
           <div className="cart-summary-top">
-            <div className="cart-summary-bag">
-              <svg className="cart-summary-bag-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <div className="cart-summary-cart">
+              <svg className="cart-summary-cart-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M7.25 8.35h9.5c.86 0 1.59.65 1.69 1.51l.92 8.2A2.15 2.15 0 0 1 17.22 20.45H6.78a2.15 2.15 0 0 1-2.14-2.39l.92-8.2c.1-.86.83-1.51 1.69-1.51Z" />
                 <path d="M8.9 8.35V6.9a3.1 3.1 0 0 1 6.2 0v1.45" />
                 <path d="M9.45 11.35h.01" />
@@ -464,7 +464,7 @@ const Cart = () => {
               </svg>
             </div>
             <div className="cart-summary-info">
-              <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your bag</strong>
+              <strong>{totalUnits} Item{totalUnits === 1 ? "" : "s"} in your cart</strong>
               {pincode && !editingPin && (
                 <span className={`cart-summary-freedelivery${pincodeUndeliverable ? " is-undeliverable" : ""}`}>
                   <Icon icon={pincodeUndeliverable ? "lucide:alert-triangle" : "lucide:truck"} />
@@ -739,7 +739,7 @@ const Cart = () => {
           <span className="cart-unlock-toast-icon"><Icon icon="lucide:sparkles" /></span>
           <span className="cart-unlock-toast-copy">
             <strong>{unlockToast.code} unlocked</strong>
-            <small>Best coupon for your bag. Apply it at checkout.</small>
+            <small>Best coupon for your cart. Apply it at checkout.</small>
           </span>
         </div>
       )}

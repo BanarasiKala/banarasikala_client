@@ -1479,7 +1479,7 @@ export default function OrderConfirmation() {
   }, [orderId]);
 
   // COD RTO → "Shop again with prepaid": drop this order's items back into the
-  // bag and send the customer to the cart (their COD is now blocked, so they'll
+  // cart and send the customer to the cart (their COD is now blocked, so they'll
   // check out prepaid).
   const handleReorderPrepaid = async () => {
     const items = (order?.OrderItems || []).filter(
@@ -1508,13 +1508,13 @@ export default function OrderConfirmation() {
       }
       showNotification(
         failed > 0
-          ? `${added} item${added > 1 ? "s" : ""} added to your bag. ${failed} could not be added.`
-          : "Items added to your bag.",
+          ? `${added} item${added > 1 ? "s" : ""} added to your cart. ${failed} could not be added.`
+          : "Items added to your cart.",
         failed > 0 ? "warning" : "success",
       );
       navigate("/cart");
     } catch {
-      showNotification("Unable to add these items to your bag right now.", "error");
+      showNotification("Unable to add these items to your cart right now.", "error");
       setRtoLoading("");
     }
   };
@@ -1773,7 +1773,7 @@ export default function OrderConfirmation() {
                 onClick={handleReorderPrepaid}
                 disabled={Boolean(rtoLoading)}
               >
-                {rtoLoading === "reorder" ? "Adding to bag…" : "Shop again with prepaid"}
+                {rtoLoading === "reorder" ? "Adding to cart…" : "Shop again with prepaid"}
               </button>
             </section>
           )}

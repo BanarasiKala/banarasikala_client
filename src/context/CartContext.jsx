@@ -22,7 +22,7 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Coupon States shared across Bag and Checkout
+  // Coupon States shared across Cart and Checkout
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
 
@@ -75,7 +75,7 @@ export const CartProvider = ({ children }) => {
   }, [fetchAndSetCart]);
 
   const addToCart = async (product, quantity = 1, colorId = null) => {
-    if (!user) return { success: false, message: "Please login to add items to bag." };
+    if (!user) return { success: false, message: "Please login to add items to cart." };
     if (!product) return { success: false, message: "Product not found." };
 
     const snapshot = cart;
@@ -115,7 +115,7 @@ export const CartProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       setCart(snapshot);
-      return { success: false, message: error.response?.data?.message || "Failed to add to bag" };
+      return { success: false, message: error.response?.data?.message || "Failed to add to cart" };
     }
   };
 
@@ -238,7 +238,7 @@ export const CartProvider = ({ children }) => {
     }
 
     if (applicableSubtotal === 0 && hasRestrictions) {
-      showNotification("This coupon is not valid for the items in your bag.", "warning");
+      showNotification("This coupon is not valid for the items in your cart.", "warning");
       return false;
     }
 

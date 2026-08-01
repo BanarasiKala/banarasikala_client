@@ -24,7 +24,7 @@ const sections = [
     heading: "Product Information and Availability",
     body: [
       "Length, weight, fabric, pattern and whether a blouse piece is included are published per saree and are as accurate as we can state them. Expect small variation given hand weaving. Where a specification is not shown, we have not recorded it for that piece — ask and we will measure it.",
-      "Stock is tracked per colour, so a saree can be available in one colour and sold out in another, and a colour can sell out between adding it to your bag and checking out. Where that happens we contact you and refund in full rather than substituting anything.",
+      "Stock is tracked per colour, so a saree can be available in one colour and sold out in another, and a colour can sell out between adding it to your cart and checking out. Where that happens we contact you and refund in full rather than substituting anything.",
     ],
   },
   {

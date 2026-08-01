@@ -156,8 +156,8 @@ const PopularSarees = () => {
       return;
     }
     const result = await addToCart(product, 1, colorId || null);
-    if (result?.success) showNotification("Added to bag!", "success");
-    else showNotification(result?.message || "Could not add to bag.", "error");
+    if (result?.success) showNotification("Added to cart!", "success");
+    else showNotification(result?.message || "Could not add to cart.", "error");
   };
 
   return (

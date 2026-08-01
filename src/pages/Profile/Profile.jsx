@@ -957,7 +957,7 @@ export default function Profile() {
             <button type="button" className="profile-quick-card" onClick={() => navigate("/cart")}>
               <span className="profile-quick-icon"><Icon icon="lucide:shopping-bag" /></span>
               <span className="profile-quick-copy">
-                <strong>Shopping Bag</strong>
+                <strong>Shopping Cart</strong>
                 <span>Continue checkout</span>
               </span>
               <Icon className="profile-quick-arrow" icon="lucide:chevron-right" />

@@ -107,7 +107,7 @@ const ProductChip = ({ product, onView, onAdd, full = false }) => {
           <ExternalLink size={14} /> View Detail
         </button>
         <button type="button" className="bk-reel-add-btn" disabled={out} onClick={() => onAdd(product)}>
-          <ShoppingBag size={14} /> {out ? "Sold out" : "Add to Bag"}
+          <ShoppingBag size={14} /> {out ? "Sold out" : "Add to Cart"}
         </button>
       </div>
     </div>
@@ -787,13 +787,13 @@ export default function Reels() {
         quantity: 1,
         colorId: colorId || null,
       }));
-      showNotification("Please log in to add items to your bag.", "info");
+      showNotification("Please log in to add items to your cart.", "info");
       navigate("/login");
       return;
     }
     const result = await addToCart(product, 1, colorId);
-    if (result?.success) showNotification("Added to bag!", "success");
-    else showNotification(result?.message || "Could not add to bag.", "error");
+    if (result?.success) showNotification("Added to cart!", "success");
+    else showNotification(result?.message || "Could not add to cart.", "error");
   };
 
   if (loading) {

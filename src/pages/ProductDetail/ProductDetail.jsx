@@ -1066,9 +1066,9 @@ const ProductDetail = () => {
     const result = await addToCart(product, quantity, selectedColorId);
     setAddingToBag(false);
     if (result?.success) {
-      showNotification(`Added to bag! Qty: ${quantity}`, "success");
+      showNotification(`Added to cart! Qty: ${quantity}`, "success");
     } else {
-      showNotification(result?.message || "Could not add to bag. Try again.", "error");
+      showNotification(result?.message || "Could not add to cart. Try again.", "error");
     }
   };
 
@@ -1101,7 +1101,7 @@ const ProductDetail = () => {
     if (removingFromBagRef.current) return;
     removingFromBagRef.current = true;
     removeFromCart(product.id, selectedColorId);
-    showNotification(`${product.name} removed from bag`, "success");
+    showNotification(`${product.name} removed from cart`, "success");
   };
 
   const resetBuyNowForm = () => {
@@ -1626,9 +1626,9 @@ const ProductDetail = () => {
     }
     const result = await addToCart(relatedItem, 1, relatedItem.selected_color_id || getDefaultColorId(relatedItem));
     if (result?.success) {
-      showNotification("Added to bag!", "success");
+      showNotification("Added to cart!", "success");
     } else {
-      showNotification(result?.message || "Could not add to bag.", "error");
+      showNotification(result?.message || "Could not add to cart.", "error");
     }
   };
 
@@ -2257,7 +2257,7 @@ const ProductDetail = () => {
                         type="button"
                         onClick={existingBagQuantity > 0 && quantity <= 1 ? handleRemoveFromBag : decrementQty}
                         disabled={existingBagQuantity === 0 && quantity <= 1}
-                        aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from bag" : "Decrease quantity"}
+                        aria-label={existingBagQuantity > 0 && quantity <= 1 ? "Remove from cart" : "Decrease quantity"}
                         className={existingBagQuantity > 0 && quantity <= 1 ? "is-trash" : ""}
                       >
                         <Icon icon={existingBagQuantity > 0 && quantity <= 1 ? "lucide:trash-2" : "lucide:minus"} />
@@ -2291,17 +2291,17 @@ const ProductDetail = () => {
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className={`product-add-btn${existingBagQuantity > 0 ? " in-bag" : ""}`}
+                    className={`product-add-btn${existingBagQuantity > 0 ? " in-cart" : ""}`}
                     disabled={existingBagQuantity > 0 || !canAddToBag || addingToBag}
                   >
                     {existingBagQuantity > 0 ? (
-                      <><Icon icon="lucide:check" /> In Bag</>
+                      <><Icon icon="lucide:check" /> In Cart</>
                     ) : addingToBag ? (
                       <>Adding...</>
                     ) : isChangingColor ? (
                       <>Loading...</>
                     ) : (
-                      <><Icon icon="lucide:shopping-bag" /> ADD TO BAG</>
+                      <><Icon icon="lucide:shopping-bag" /> ADD TO CART</>
                     )}
                   </button>
                   {/* Copy left, accepted payment methods right — the methods are the reason to

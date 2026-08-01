@@ -389,7 +389,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     const match = cartCoupons.find((c) => !c.exhausted && String(c.code).toUpperCase() === clean);
     if (!match) {
       const used = cartCoupons.some((c) => c.exhausted && String(c.code).toUpperCase() === clean);
-      showNotification(used ? "You have already used this coupon." : "Coupon not found or not eligible for your bag.", "warning");
+      showNotification(used ? "You have already used this coupon." : "Coupon not found or not eligible for your cart.", "warning");
       return;
     }
     if (cartApplyCoupon(match)) setCouponInput("");

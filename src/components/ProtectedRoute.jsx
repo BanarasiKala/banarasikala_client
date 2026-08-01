@@ -13,9 +13,9 @@ const protectedCopy = {
     variant: "wishlist",
   },
   "/cart": {
-    title: "Your shopping bag is light",
+    title: "Your shopping cart is light",
     message: "Login to add selected weaves and continue checkout.",
-    action: "Login to View Bag",
+    action: "Login to View Cart",
     actionIcon: "lucide:shopping-bag",
     variant: "cart",
   },
@@ -82,7 +82,7 @@ const ProtectedRoute = ({ children }) => {
           <Link
             to={`/login?refresh=${encodeURIComponent(location.pathname)}`}
             state={{ from: location }}
-            className={`auth-required-action${copy.actionIcon ? " auth-required-action--bag" : ""}`}
+            className={`auth-required-action${copy.actionIcon ? " auth-required-action--cart" : ""}`}
           >
             {copy.actionIcon && <Icon icon={copy.actionIcon} />}
             {copy.action}
