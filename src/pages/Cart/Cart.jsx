@@ -13,12 +13,19 @@ import { getEstimatedDeliveryDate } from "../../utils/deliveryDate";
 import api from "../../utils/api";
 import { API_ENDPOINTS } from "../../config/api";
 import { unwrapApiData } from "../../utils/error";
+import { numberEnv } from "../../utils/env";
+// Same artwork the Buy Now button uses, so the two entry points into checkout make the
+// same promise about what is accepted.
+import logosPayment from "../../assets/logosPayment-trimmed.png";
 import "./Cart.css";
 
 const calcDiscount = (mrp, sell) => {
   if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
+
+// The real configured saving, not a rounded claim — the same constant checkout applies.
+const PREPAID_DISCOUNT_AMOUNT = numberEnv("VITE_PREPAID_DISCOUNT_AMOUNT");
 
 const formatMoney = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -36,6 +43,29 @@ const couponDiscountText = (coupon) => {
   if (Number(coupon.discount_percent) > 0) return `${coupon.discount_percent}% OFF`;
   return "Extra Off";
 };
+
+/**
+ * The inside of a "Proceed to buy" button — label, the prepaid saving, and the accepted
+ * payment marks.
+ *
+ * One component for both buttons on this page (the one in the summary card and the one in the
+ * sticky bar). They are the same action and were already drifting apart in wording; written
+ * twice they would drift again the next time either is touched.
+ */
+const ProceedContent = ({ label }) => (
+  <>
+    <span className="cart-proceed-copy">
+      <strong>{label}</strong>
+      {PREPAID_DISCOUNT_AMOUNT > 0 && (
+        <small>{formatMoney(PREPAID_DISCOUNT_AMOUNT)} off on prepaid</small>
+      )}
+    </span>
+    <span className="cart-proceed-pays" aria-hidden="true">
+      <img src={logosPayment} alt="" />
+      <Icon icon="lucide:arrow-right" />
+    </span>
+  </>
+);
 
 const getCouponEstimatedDiscount = (coupon, subtotal) => {
   if (!coupon || subtotal <= 0) return 0;
@@ -490,8 +520,11 @@ const Cart = () => {
           )}
 
           <button ref={topProceedRef} type="button" className="cart-proceed-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode || pincodeUndeliverable}>
-            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : `PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`}
-            <Icon icon="lucide:arrow-right" />
+            {/* Undeliverable keeps the plain label: there is nothing to promise about
+                payment methods for an order that cannot be placed. */}
+            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : (
+              <ProceedContent label={`PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
+            )}
           </button>
         </div>
 
@@ -724,8 +757,11 @@ const Cart = () => {
             </div>
           )}
           <button type="button" className="cart-stickybar-btn" onClick={handleProceed} disabled={selectedItems.length === 0 || !pincode || pincodeUndeliverable}>
-            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : `PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`}
-            <Icon icon="lucide:arrow-right" />
+            {/* Undeliverable keeps the plain label: there is nothing to promise about
+                payment methods for an order that cannot be placed. */}
+            {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : (
+              <ProceedContent label={`PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
+            )}
           </button>
         </div>
         {selectedSavings > 0 && (

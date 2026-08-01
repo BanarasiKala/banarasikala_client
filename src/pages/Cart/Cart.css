@@ -2034,3 +2034,71 @@
   filter: grayscale(0.6);
   cursor: not-allowed;
 }
+
+/* ── Proceed button contents ──────────────────────────────────────────────────────────
+   Label + prepaid saving on the left, accepted payment marks and the arrow on the right —
+   the same shape as Buy Now on a product page, so both routes into checkout say the same
+   thing. Applies to the summary-card button and the sticky-bar one alike. */
+.cart-proceed-btn,
+.cart-stickybar-btn {
+  justify-content: center;
+  gap: 12px;
+  padding-inline: 12px;
+}
+
+.cart-proceed-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  text-align: center;
+}
+
+.cart-proceed-copy strong {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: 1.2;
+}
+
+/* Lower-case and untracked against the spaced, uppercase label above it, so the two lines
+   read as heading and note rather than one run-on shout. */
+.cart-proceed-copy small {
+  font-family: "Poppins", sans-serif;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.82;
+  white-space: nowrap;
+}
+
+.cart-proceed-pays {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Height-capped: the strip is ~1.86:1, so its height is what actually bounds it. max-width
+   still guards a narrow phone, where the item count makes the label long. */
+.cart-proceed-pays img {
+  height: 22px;
+  width: auto;
+  max-width: min(70px, 24vw);
+  object-fit: contain;
+  display: block;
+  /* No plate behind it — the -removebg- export is transparent by design and sits directly on
+     the button, exactly as it does on Buy Now. */
+}
+
+.cart-proceed-pays svg {
+  font-size: 16px;
+}
+
+@media (max-width: 420px) {
+  .cart-proceed-copy small { font-size: 9px; }
+  .cart-proceed-pays img { height: 19px; max-width: 52px; }
+  .cart-proceed-pays svg { font-size: 14px; }
+}
