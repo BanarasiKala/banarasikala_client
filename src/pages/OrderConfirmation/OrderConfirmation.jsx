@@ -645,8 +645,12 @@ const OrderConfirmationSkeleton = () => (
             <SkLine w={140} h={14} />
             <SkLine w={80} h={11} />
           </div>
+          {/* Three steps, not the seven the timeline holds: CollapsibleTimeline opens
+              COLLAPSED to first · "…N more" · current · next, so drawing every step made the
+              placeholder taller than the thing it stands in for and the page jumped upward
+              the moment the order arrived. */}
           <div className="confirmation-timeline">
-            {[1, 2, 3, 4, 5].map((i) => (
+            {[1, 2].map((i) => (
               <div key={i} className="confirmation-step">
                 <div className="oc-sk oc-sk-step-icon" />
                 <div style={{ display: "grid", gap: 6 }}>
@@ -663,26 +667,29 @@ const OrderConfirmationSkeleton = () => (
             <SkLine w={50} h={14} />
             <SkLine w={55} h={11} />
           </div>
+          {/* One row: most orders are a single saree, and a second placeholder card that
+              never materialises is a bigger jolt than a card appearing below the first. */}
           <div className="confirmation-items">
-            {[1, 2].map((i) => (
-              <div key={i} className="oc-sk-item-row">
-                <div className="oc-sk oc-sk-item-img" />
-                <div style={{ display: "grid", gap: 7, flex: 1 }}>
-                  <SkLine w="70%" h={13} />
-                  <SkLine w="45%" h={11} />
-                  <SkLine w={90} h={20} />
-                </div>
-                <SkLine w={65} h={13} />
+            <div className="oc-sk-item-row">
+              <div className="oc-sk oc-sk-item-img" />
+              <div style={{ display: "grid", gap: 7, flex: 1 }}>
+                <SkLine w="70%" h={13} />
+                <SkLine w="45%" h={11} />
+                <SkLine w={90} h={20} />
               </div>
-            ))}
+              <SkLine w={65} h={13} />
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Three money rows and a two-line address, not the full breakdown. A placeholder is a
+          promise that something of this shape is coming; matching the real panel line for
+          line only means more grey bars to read past, and more of them to unbuild. */}
       <aside className="order-confirmation-side">
         <div className="order-panel">
           <SkLine w={130} h={14} mb={14} />
-          {[130, 110, 90, 120, 100, 80].map((w, i) => (
+          {[130, 100, 80].map((w, i) => (
             <div key={i} className="oc-sk-summary-row">
               <SkLine w={w} h={12} />
               <SkLine w={55} h={12} />
@@ -693,11 +700,8 @@ const OrderConfirmationSkeleton = () => (
         <div className="order-panel">
           <SkLine w={130} h={14} mb={12} />
           <SkLine w="80%" h={12} mb={7} />
-          <SkLine w="65%" h={12} mb={7} />
           <SkLine w="55%" h={12} />
         </div>
-
-        <div className="oc-sk oc-sk-btn" />
       </aside>
     </section>
   </main>
