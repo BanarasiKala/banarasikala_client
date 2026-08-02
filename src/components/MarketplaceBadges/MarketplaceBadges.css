@@ -97,7 +97,12 @@
     height: 26px;
   }
 
-  /* Only the glyph fallback scales — the logo keeps filling its tile. */
+  /* Tracks the smaller tile, same 1px border + 2px gap arithmetic as above. */
+  .bk-mkt-badge-chip img {
+    max-width: 26px;
+    max-height: 20px;
+  }
+
   .bk-mkt-badge-chip svg {
     width: 16px;
     height: 16px;
