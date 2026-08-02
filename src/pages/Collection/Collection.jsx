@@ -28,11 +28,55 @@ const calcDiscount = (mrp, sell) => {
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
 
+/**
+ * The star row for a rating bound — five stars with `stars` of them filled.
+ *
+ * Module level, and used by BOTH the Customer Rating filter and its applied-filter chip, so
+ * the chip is the same markup rather than a text imitation of it that drifts. It has to be
+ * declared out here because the chip list is built during render, before the component's own
+ * helpers exist.
+ */
+const RatingStarRow = ({ stars }) => (
+  <span className="filter-stars">
+    {[1, 2, 3, 4, 5].map((position) => (
+      <Icon
+        key={position}
+        icon={position <= stars ? "mdi:star" : "mdi:star-outline"}
+        className={position <= stars ? "is-on" : "is-off"}
+      />
+    ))}
+    <em>&amp; up</em>
+  </span>
+);
+
 const getIdListParam = (params, key) =>
   (params.get(key) || "")
     .split(",")
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value) && value > 0);
+
+// A positive number from the URL, or `fallback` when the key is absent or junk. maxPrice
+// passes null so "no cap" stays distinguishable from "capped at 0".
+const getNumberParam = (params, key, fallback = 0) => {
+  const raw = params.get(key);
+  if (raw === null || raw === "") return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
+// Where the sidebar-only filters are parked across a trip to a product page. See the effect
+// that writes it for why this is storage and not the URL.
+const FILTER_PARK_KEY = "bk_collection_filters";
+
+const readParkedFilters = () => {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(FILTER_PARK_KEY) || "null");
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
 
 // Everything the URL can encode, normalised to the shape the filter state uses. All values are
 // primitives so the effect below can diff them with ===.
@@ -96,19 +140,31 @@ const Collection = () => {
     // Seeded from the URL, including `sortBy` — the sync effect below deliberately no-ops on
     // the first run, so anything not read here would be ignored until the next URL change.
     const url = readUrlFilters(searchParams);
+    const parked = readParkedFilters();
     return {
       variety: getIdListParam(searchParams, "variety"),
       occasion: getIdListParam(searchParams, "occasion"),
-      material: [],
-      color: [],
-      minPrice: 0,
+      // Restored from the parked copy, then overridden by anything the URL states outright —
+      // a hand-written or shared link wins over whatever the last visit left behind. These
+      // used to start empty, which is why opening a saree and pressing Back returned a grid
+      // with the colour, price, rating and discount picks silently dropped.
+      material: getIdListParam(searchParams, "material").length
+        ? getIdListParam(searchParams, "material")
+        : parked?.material || [],
+      color: getIdListParam(searchParams, "color").length
+        ? getIdListParam(searchParams, "color")
+        : parked?.color || [],
+      minPrice: getNumberParam(searchParams, "minPrice") || parked?.minPrice || 0,
       // null = no cap; the slider shows the catalogue ceiling until the shopper drags it down.
-      maxPrice: null,
+      maxPrice: getNumberParam(searchParams, "maxPrice", null) ?? parked?.maxPrice ?? null,
       sortBy: url.sortBy,
       search: url.search,
       // Arrive from the home page's New Arrivals "View Collection" / Exclusive Picks "View All".
       newArrival: url.newArrival,
       specialCollection: url.specialCollection,
+      // Rating and discount lower bounds. 0 = no bound.
+      minRating: getNumberParam(searchParams, "minRating") || parked?.minRating || 0,
+      minDiscount: getNumberParam(searchParams, "minDiscount") || parked?.minDiscount || 0,
     };
   });
 
@@ -229,6 +285,8 @@ const Collection = () => {
       // `newArrival` also carries the merchandiser's manual new_arrival_order arrangement.
       if (filters.newArrival) params.append("newArrival", "true");
       if (filters.specialCollection) params.append("specialCollection", "true");
+      if (Number(filters.minRating) > 0) params.append("minRating", filters.minRating);
+      if (Number(filters.minDiscount) > 0) params.append("minDiscount", filters.minDiscount);
 
       const res = await fetch(`${API_ENDPOINTS.products}?${params.toString()}`);
       const data = await res.json();
@@ -297,6 +355,39 @@ const Collection = () => {
     else next.delete("page");
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
   }, [currentPage, searchParams, setSearchParams]);
+
+  /**
+   * Park the sidebar-only filters so leaving for a saree and coming back returns the grid
+   * you were looking at. Colour, price, rating and discount live only in this component's
+   * state, and navigating to a product unmounts it.
+   *
+   * sessionStorage rather than the URL, which would be the obvious home for them: Layout
+   * renders `<Outlet key={pathname|search|hash} />`, so ANY query-string write remounts this
+   * page from scratch. Mirroring filters into the URL therefore threw away every bit of local
+   * state on each click — most visibly the mobile filter drawer, which closed the instant a
+   * filter was ticked. Storage keeps the round trip working without touching the URL.
+   */
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(FILTER_PARK_KEY, JSON.stringify({
+        material: filters.material,
+        color: filters.color,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        minRating: filters.minRating,
+        minDiscount: filters.minDiscount,
+      }));
+    } catch {
+      // A full or blocked storage costs the restore, nothing else.
+    }
+  }, [
+    filters.material,
+    filters.color,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.minRating,
+    filters.minDiscount,
+  ]);
 
   useEffect(() => {
     if (!mobileFiltersOpen) return undefined;
@@ -479,6 +570,12 @@ const Collection = () => {
       dropUrlKeys(["search"]);
       return;
     }
+    // Single-value bounds: clearing means back to 0, not removing an id from a list — the
+    // taxonomy branch at the end would call .filter() on a number and throw.
+    if (type === "minRating" || type === "minDiscount") {
+      setFilters((prev) => ({ ...prev, [type]: 0 }));
+      return;
+    }
     // The three the dropdown owns. Each clears only itself, but the URL is rewritten as a whole
     // so a legacy `sort=newest` cannot leave the filter it maps to switched back on.
     if (type === "sortBy" || type === "newArrival" || type === "specialCollection") {
@@ -510,6 +607,9 @@ const Collection = () => {
       search: prev.search,
       newArrival: false,
       specialCollection: false,
+      // Rating and discount lower bounds. 0 = no bound.
+      minRating: 0,
+      minDiscount: 0,
     }));
     // `search` is deliberately kept, so its URL key is left alone too.
     dropUrlKeys(["variety", "occasion", "sort", "newArrival", "specialCollection"]);
@@ -528,6 +628,9 @@ const Collection = () => {
       search: "",
       newArrival: false,
       specialCollection: false,
+      // Rating and discount lower bounds. 0 = no bound.
+      minRating: 0,
+      minDiscount: 0,
     });
     navigate("/collection");
   };
@@ -685,7 +788,6 @@ const Collection = () => {
                 </>
               )}
             </div>
-            <MarketplaceBadges productId={product.id} />
             {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
             {isOutOfStock ? (
               <button
@@ -704,6 +806,7 @@ const Collection = () => {
                 Add to Cart
               </button>
             )}
+            <MarketplaceBadges productId={product.id} />
           </div>
         </Link>
       </div>
@@ -813,7 +916,9 @@ const Collection = () => {
     (filters.maxPrice !== null && Number(filters.maxPrice) < priceCeiling) ||
     filters.sortBy !== "" ||
     filters.newArrival ||
-    filters.specialCollection;
+    filters.specialCollection ||
+    Number(filters.minRating) > 0 ||
+    Number(filters.minDiscount) > 0;
 
   const hasResultCriteria = hasActiveFilters || Boolean(filters.search.trim());
 
@@ -872,6 +977,23 @@ const Collection = () => {
 
   const priceLabel = priceChipLabel();
   if (priceLabel) appliedFilters.push({ key: "price", type: "price", label: priceLabel });
+  // Both are single-value bounds, so one chip each rather than one per option.
+  if (Number(filters.minRating) > 0) {
+    appliedFilters.push({
+      key: "minRating",
+      type: "minRating",
+      label: <RatingStarRow stars={filters.minRating} />,
+      // The label is markup, so aria-label/title need a spoken form of their own.
+      text: `${filters.minRating} stars & up`,
+    });
+  }
+  if (Number(filters.minDiscount) > 0) {
+    appliedFilters.push({
+      key: "minDiscount",
+      type: "minDiscount",
+      label: `${filters.minDiscount}% off or more`,
+    });
+  }
   if (filters.sortBy && SORT_LABELS[filters.sortBy]) {
     appliedFilters.push({ key: "sort", type: "sortBy", label: SORT_LABELS[filters.sortBy] });
   }
@@ -928,6 +1050,41 @@ const Collection = () => {
     return () => controller.abort();
   }, [loading, products.length, hasResultCriteria, filters.minPrice, filters.maxPrice, priceCeiling]);
 
+  /**
+   * "4★ & up" / "40% off & up" — radio-style lower bounds, not checkboxes, because the
+   * options are nested: everything matching 4★ also matches 3★, so allowing several at
+   * once would only ever resolve to the loosest one. Clicking the active option clears it.
+   *
+   * Ratings follow the same rule the cards do: a product with no customer reviews is judged
+   * on its seed reviews, and one with neither is excluded from any rating bound at all.
+   */
+  const renderBoundFilter = (filterKey, title, options) => {
+    const active = Number(filters[filterKey]) || 0;
+    return (
+      <div className="filter-section">
+        <h3 className="filter-title">{title}</h3>
+        <div className="filter-list">
+          {options.map((option) => (
+            <label key={option.value} className="filter-item">
+              <input
+                type="checkbox"
+                checked={active === option.value}
+                onChange={() => {
+                  setCurrentPage(1);
+                  setFilters((prev) => ({
+                    ...prev,
+                    [filterKey]: prev[filterKey] === option.value ? 0 : option.value,
+                  }));
+                }}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderFiltersBody = ({ priceFirst = false } = {}) => (
     <>
       {filtersLoading ? (
@@ -941,6 +1098,20 @@ const Collection = () => {
               <circle cx="8" cy="8" r="7.5" fill={col.hex_code || "#cccccc"} />
             </svg>
           ))}
+          {/* The rating is drawn as the row of stars it represents rather than written as
+              "4★" — five stars with that many filled is what the shopper is picking, and
+              it matches the chips on the product cards below. */}
+          {renderBoundFilter("minRating", "Customer Rating", [4, 3, 2].map((stars) => ({
+            value: stars,
+            label: <RatingStarRow stars={stars} />,
+          })))}
+          {renderBoundFilter("minDiscount", "Discount", [
+            { value: 50, label: "50% off or more" },
+            { value: 40, label: "40% off or more" },
+            { value: 30, label: "30% off or more" },
+            { value: 20, label: "20% off or more" },
+            { value: 10, label: "10% off or more" },
+          ])}
           {renderFilterGroup("variety", "Pattern", varieties, "variety")}
           {renderFilterGroup("material", "Fabric", materials, "material")}
           {renderFilterGroup("occasion", "Occasions", occasions, "occasion")}
@@ -997,8 +1168,8 @@ const Collection = () => {
                   type="button"
                   className="applied-filter-chip"
                   onClick={() => removeFilter(chip.type, chip.id)}
-                  aria-label={`Remove filter ${chip.label}`}
-                  title={`Remove ${chip.label}`}
+                  aria-label={`Remove filter ${chip.text || chip.label}`}
+                  title={`Remove ${chip.text || chip.label}`}
                 >
                   {chip.hex && (
                     <span

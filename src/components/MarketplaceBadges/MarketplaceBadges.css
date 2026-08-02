@@ -5,12 +5,28 @@
    are third-party logos in their own brand colours. Any change here should be
    made there too. */
 
+/* Sits below the card's Add to Cart button, separated by a rule: these tiles leave for a
+   third-party site, so they should not read as another row of the card's own content.
+   A top border and margin rather than a full-bleed band, because the host cards each
+   carry their own padding and a negative margin would have to guess at it. */
 .bk-mkt-badges {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
   /* Never inherits the card's line-height, which varies between grids. */
   line-height: 1;
+}
+
+.bk-mkt-badges-label {
+  color: #6a4c3c;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .bk-mkt-badge-chip {
@@ -43,6 +59,9 @@
 }
 
 @media (max-width: 640px) {
+  .bk-mkt-badges { gap: 5px; }
+  .bk-mkt-badges-label { font-size: 8.5px; }
+
   .bk-mkt-badge-chip {
     width: 32px;
     height: 26px;

@@ -438,11 +438,11 @@ const Wishlist = () => {
                             </>
                           )}
                         </div>
-                        <MarketplaceBadges productId={item.product_id || item.id} />
                         {!cardIsOos && <DeliveryBadge processingDays={item.processing_days} />}
                         <div className="wishlist-card-actions">
                           {actionBtn}
                         </div>
+                        <MarketplaceBadges productId={item.product_id || item.id} />
                       </div>
                     </>
                   );

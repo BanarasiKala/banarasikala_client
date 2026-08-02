@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
+import { getProductCoverImage } from "../../../utils/productMedia";
 import brandBanner from "../../../assets/story/banaras-weave.png";
 // The trimmed Amazon mockup, not assets/amazon_phone.PNG: the original is a 198x400
 // device floating in a 450x439 canvas, so sizing it alongside the tightly-cropped
@@ -233,6 +234,9 @@ const MarketplacePresence = () => {
                 {products.map((product) => {
                   const mrp = Number(product.mrp_price || 0);
                   const sell = Number(product.selling_price || 0);
+                  // Read off the images array via the shared helper, not a flat `image` field:
+                  // /showcase returns the same product shape every other card on the site gets.
+                  const cover = getProductCoverImage(product);
                   return (
                     <article className="bk-mktpres-card" key={product.id}>
                       <Link
@@ -240,8 +244,8 @@ const MarketplacePresence = () => {
                         className="bk-mktpres-card-media"
                         aria-label={product.name}
                       >
-                        {product.image ? (
-                          <img src={imgUrl(product.image, 600)} alt={product.name} loading="lazy" />
+                        {cover ? (
+                          <img src={imgUrl(cover, 600)} alt={product.name} loading="lazy" />
                         ) : (
                           <span className="bk-mktpres-card-noimg">
                             <Icon icon="lucide:image-off" />

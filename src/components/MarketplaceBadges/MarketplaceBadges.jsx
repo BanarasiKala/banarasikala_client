@@ -79,6 +79,7 @@ const MarketplaceBadges = ({ productId, className = "" }) => {
 
   return (
     <span className={`bk-mkt-badges ${className}`.trim()}>
+      <span className="bk-mkt-badges-label">Also on</span>
       {links.map((link) => (
         /*
          * A button rather than an anchor: these sit inside cards that are themselves a

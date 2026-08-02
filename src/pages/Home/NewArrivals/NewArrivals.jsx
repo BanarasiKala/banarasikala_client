@@ -275,7 +275,6 @@ const NewArrivals = () => {
                             </>
                           )}
                         </div>
-                        <MarketplaceBadges productId={product.id} />
                         {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
                         {isOutOfStock ? (
                           <button type="button" className="bk-arrival-atc-btn bk-notify-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); notify(product, currentColorId); }}>
@@ -286,6 +285,7 @@ const NewArrivals = () => {
                             Add to Cart
                           </button>
                         )}
+                        <MarketplaceBadges productId={product.id} />
                       </div>
                     </Link>
                   </article>

@@ -207,6 +207,35 @@
     color: var(--primary);
 }
 
+/* The star row in the Customer Rating filter. Filled stars carry the site's gold and the
+   remainder the muted empty tone, so "4 & up" is read off the shape rather than the text —
+   the same two colours the rating chips on the product cards use. */
+.filter-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    line-height: 1;
+}
+
+.filter-stars svg {
+    width: 15px;
+    height: 15px;
+}
+
+.filter-stars .is-on {
+    color: var(--bk-star);
+}
+
+.filter-stars .is-off {
+    color: var(--bk-star-empty);
+}
+
+.filter-stars em {
+    margin-left: 6px;
+    font-size: 13px;
+    font-style: normal;
+}
+
 .filter-item input {
     margin-right: 10px;
     accent-color: var(--primary);

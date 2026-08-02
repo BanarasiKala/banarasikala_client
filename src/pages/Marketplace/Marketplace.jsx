@@ -12,6 +12,7 @@ import { getProductStockInfo } from "../../utils/stockStatus";
 import useStockNotify from "../../hooks/useStockNotify";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
+import MarketplaceBadges from "../../components/MarketplaceBadges/MarketplaceBadges";
 import brandBanner from "../../assets/story/banaras-weave.png";
 // The card here is the home page's New Arrivals card, markup and all, so the two read
 // identically. Its stylesheet is imported rather than copied: those rules land across
@@ -39,17 +40,6 @@ const calcDiscount = (mrp, sell) => {
   if (!mrp || !sell || Number(mrp) <= Number(sell)) return 0;
   return Math.round(((Number(mrp) - Number(sell)) / Number(mrp)) * 100);
 };
-
-// The mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png") —
-// both, because that is what the footer already had. A slash without a colon means a file.
-const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
-
-const Mark = ({ market, className }) =>
-  isImageMark(market.icon) ? (
-    <img src={market.icon} alt="" className={className} />
-  ) : (
-    <Icon icon={market.icon || "lucide:store"} className={className} style={{ color: market.accent_color }} />
-  );
 
 const PAGE_SIZE = 60;
 
@@ -354,30 +344,11 @@ const Marketplace = () => {
                                 Add to Cart
                               </button>
                             )}
+                            {/* The shared strip, not a local copy — this page should not be the
+                                one card on the site whose "Also on" drifts from the rest. */}
+                            <MarketplaceBadges productId={product.id} />
                           </div>
                         </Link>
-
-                        {/* The one thing this card carries that the home card does not: where
-                            else this saree can be bought. Outside the <Link> above, because an
-                            anchor cannot legally nest inside another anchor. */}
-                        {product.links?.length > 0 && (
-                          <div className="bk-mkt-card-links">
-                            <span>Also on</span>
-                            {product.links.map((link) => (
-                              <a
-                                key={link.slug}
-                                href={link.url}
-                                target="_blank"
-                                rel="nofollow sponsored noopener noreferrer"
-                                className="bk-mkt-badge"
-                                title={`Buy on ${link.name}`}
-                                aria-label={`Buy ${product.name} on ${link.name}`}
-                              >
-                                <Mark market={link} className="bk-mkt-badge-mark" />
-                              </a>
-                            ))}
-                          </div>
-                        )}
                       </article>
                     );
                   })}

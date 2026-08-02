@@ -121,51 +121,8 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── "Also on" strip ──
-   The only thing this card carries beyond the home card. Sits under the card's own
-   padding as a separate band so it reads as a footer to the card rather than another
-   row of its copy, and so the tap targets are clearly not part of the product link. */
-.bk-mkt-card-links {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-top: 1px solid rgba(128, 0, 32, 0.1);
-  background: rgba(255, 246, 232, 0.6);
-}
-
-.bk-mkt-card-links > span {
-  color: #6a4c3c;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* One tile per marketplace the saree is on. White tiles so each brand's mark keeps its
-   own colour without the row turning into a colour clash. */
-.bk-mkt-badge {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 30px;
-  border: 1px solid rgba(199, 155, 63, 0.3);
-  border-radius: 8px;
-  background: #fff;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
-}
-
-.bk-mkt-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(88, 39, 13, 0.16);
-}
-
-.bk-mkt-badge-mark {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-  object-fit: contain;
-}
+/* The "Also on" strip is MarketplaceBadges, shared with every other card on the site —
+   its styles live with the component. */
 
 /* ── Brand banner ── */
 .bk-mkt-banner {
@@ -269,24 +226,10 @@
   .bk-mkt-best h1 { font-size: 15px; }
   .bk-mkt-count { font-size: 12px; }
 
-  /* Two columns rather than auto-fill: 190px tracks would drop to one card a row. */
-  .bk-mkt-card-links {
-    gap: 6px;
-    padding: 6px 8px;
-  }
-
-  .bk-mkt-card-links > span { font-size: 9px; }
-  .bk-mkt-badge { width: 32px; height: 26px; }
-  .bk-mkt-badge-mark { width: 16px; height: 16px; font-size: 16px; }
-
   .bk-mkt-banner-copy { padding: 30px 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bk-mkt-badge:hover {
-    transform: none;
-  }
-
   .bk-mkt-spin {
     animation: none;
   }

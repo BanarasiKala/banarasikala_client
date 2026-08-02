@@ -277,7 +277,6 @@ const PopularSarees = () => {
                           </>
                         )}
                       </div>
-                      <MarketplaceBadges productId={product.id} />
                       {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
                       {isOutOfStock ? (
                         <button type="button" className="bk-popular-atc-btn bk-notify-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); notify(product, currentColorId); }}>
@@ -288,6 +287,7 @@ const PopularSarees = () => {
                           Add to Cart
                         </button>
                       )}
+                      <MarketplaceBadges productId={product.id} />
                     </div>
                   </Link>
                 </article>
