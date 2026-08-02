@@ -158,9 +158,21 @@ const ProductReelPreview = ({ productId }) => {
           <button
             type="button"
             className="bk-preel-float-close"
-            // pointerdown, not click: the card captures the pointer on pointerdown for dragging,
-            // so a click on this button never reaches it otherwise.
-            onPointerDown={(e) => { e.stopPropagation(); setDismissed(true); }}
+            /*
+             * The dismissal happens on click, deliberately, and the two pointer handlers exist
+             * only to keep it reachable.
+             *
+             * Dismissing on pointerdown instead unmounted the card mid-gesture: the browser had
+             * not yet chosen a click target, so the click that followed landed on whatever the
+             * card had been covering — a colour swatch, Add to Cart — and fired it. Stopping
+             * propagation here means the card's own onPointerDown never runs, so it never calls
+             * setPointerCapture, which is what used to swallow this button's click and forced
+             * the pointerdown workaround in the first place. By the time onClick runs the event
+             * has already been delivered here, so nothing behind the card can receive it.
+             */
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
             aria-label="Hide reel"
           >
             <X size={13} />
