@@ -2743,7 +2743,6 @@ export default function OrderConfirmation() {
           ? (isFullReturn ? toNumber(totals.gateway_refund) : toNumber(totals.estimated_refund_amount))
           : 0;
         const selectedCount = selectedActionItems.length;
-        const requestId = `RMA${String(orderNumber).replace(/\D/g, "")}`;
 
         const setItemQuantity = (itemId, maxQty, nextQty) => {
           const quantity = Math.min(maxQty, Math.max(1, nextQty));
@@ -3084,20 +3083,6 @@ export default function OrderConfirmation() {
                       <span><Icon icon="lucide:circle-check" /> Refund will be initiated after inspection (5-7 working days)</span>
                     </div>
 
-                    <div className="oc-return-request-id">
-                      <span>
-                        <small>Request ID</small>
-                        <strong>{requestId}</strong>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => navigator.clipboard?.writeText(requestId)}
-                        aria-label="Copy request ID"
-                      >
-                        <Icon icon="lucide:copy" />
-                      </button>
-                    </div>
-
                     {/* Closes the sheet and leaves the customer on this order, which the
                         submit above has already refetched — so the return shows on the
                         item the moment the sheet is gone. It used to push to /my-orders,
@@ -3134,7 +3119,6 @@ export default function OrderConfirmation() {
         };
         const eligibleItems = getEligibleActionItems(order, "exchange");
         const selectedCount = selectedActionItems.length;
-        const requestId = `EXC${String(orderNumber).replace(/\D/g, "")}`;
 
         const wantedQtyOf = (orderItemId) => {
           const item = eligibleItems.find((it) => Number(it.id) === Number(orderItemId));
@@ -3584,20 +3568,6 @@ export default function OrderConfirmation() {
                       <span><Icon icon="lucide:circle-check" /> We&rsquo;ll pick up the item from your address (24-48 hours).</span>
                       <span><Icon icon="lucide:circle-check" /> Item will be inspected at our facility.</span>
                       <span><Icon icon="lucide:circle-check" /> Once approved, your new item will be shipped within 5-7 working days.</span>
-                    </div>
-
-                    <div className="oc-return-request-id">
-                      <span>
-                        <small>Request ID</small>
-                        <strong>{requestId}</strong>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => navigator.clipboard?.writeText(requestId)}
-                        aria-label="Copy request ID"
-                      >
-                        <Icon icon="lucide:copy" />
-                      </button>
                     </div>
 
                     {/* Same as the return sheet: close and stay on this order, which the

@@ -4670,55 +4670,6 @@ span.oc-item-mrp-label {
   font-size: 14px;
 }
 
-.oc-return-request-id {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(128, 0, 32, 0.14);
-  border-radius: 14px;
-  background: #fffdf8;
-  text-align: left;
-}
-
-.oc-return-request-id > span {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.oc-return-request-id small {
-  color: rgba(50, 21, 15, 0.5);
-  font-size: 11.5px;
-}
-
-.oc-return-request-id strong {
-  color: #3d2817;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.oc-return-request-id button {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: rgba(50, 21, 15, 0.45);
-  cursor: pointer;
-  font-size: 15px;
-}
-
-.oc-return-request-id button:hover {
-  background: rgba(128, 0, 32, 0.06);
-  color: #7b001b;
-}
-
 /* ══════════════════════════════════════════════════════════════════════
    Exchange wizard — reuses the return wizard's shell, adds the
    product picker, the swap markers and the summary note.
