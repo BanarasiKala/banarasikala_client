@@ -2077,8 +2077,11 @@
   text-transform: none;
   /* Blue against the gold so the saving reads as its own note rather than more of the
      maroon label above it. A solid colour, not opacity — at 0.82 the blue turned muddy
-     over the gold fill. */
-  color: #0b3fa8;
+     over the gold fill.
+     Lightened from #0b3fa8, which sat almost navy against the gold. This is about as far
+     up as it goes: on #f5cf72 it holds 4.74:1, and small text needs 4.5. Anything brighter
+     starts failing on the one line of the button that quotes a number. */
+  color: #1553bb;
   font-weight: 600;
   white-space: nowrap;
 }

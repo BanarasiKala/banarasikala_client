@@ -1814,8 +1814,10 @@
   letter-spacing: 0;
   text-transform: none;
   /* Blue against the gold fill, matching the same note on the cart's Place Your Order
-     button. A solid colour, not opacity — at 0.78 the blue turned muddy over the gold. */
-  color: #0b3fa8;
+     button. A solid colour, not opacity — at 0.78 the blue turned muddy over the gold.
+     Lightened from #0b3fa8 in step with the cart's copy of this line — see the note there
+     for why it stops at this particular blue. */
+  color: #1553bb;
   white-space: nowrap;
 }
 
