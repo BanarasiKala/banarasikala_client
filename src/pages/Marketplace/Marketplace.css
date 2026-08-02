@@ -82,27 +82,25 @@
   font-size: 13px;
 }
 
-/* A grid, not the home page's rail: this is the page you land on to see everything,
-   so nothing is hidden behind a horizontal scroll. Matches .product-grid on the
-   collection page — same track size, and two columns on a phone. */
-.bk-mkt-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 18px;
+/* The card grid is .bk-arrivals-rail, borrowed wholesale from the home section along
+   with the card — see the stylesheet import in Marketplace.jsx. Only its placement on
+   this page is set here. */
+.bk-mkt-best .bk-arrivals-rail {
   margin-top: 22px;
   text-align: left;
 }
 
-.bk-mkt-card {
+/* Scoped to this page so the home card is untouched: the card gains a second child
+   below the product link, so it has to lay out as a column with the link taking the
+   slack — otherwise the strip and the link fight over the card's height. */
+.bk-mkt-best .bk-arrival-card {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 12px 12px 14px;
-  border: 1px solid rgba(199, 155, 63, 0.26);
-  border-radius: 14px;
-  background: rgba(255, 252, 246, 0.92);
-  box-shadow: 0 12px 26px rgba(88, 39, 13, 0.07);
-  text-align: left;
+}
+
+.bk-mkt-best .bk-arrival-link {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Centred under the grid, so it reads as the end of the list rather than a card. */
@@ -123,76 +121,34 @@
   to { transform: rotate(360deg); }
 }
 
-.bk-mkt-card-media {
-  display: block;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  border-radius: 10px;
-  background:
-    radial-gradient(circle at top, rgba(212, 175, 55, 0.14), transparent 58%),
-    linear-gradient(135deg, #f1d9b6 0%, #fff8ec 48%, #e5c394 100%);
-}
-
-.bk-mkt-card-media img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.bk-mkt-card-noimg {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  color: rgba(53, 23, 15, 0.3);
-  font-size: 26px;
-}
-
-.bk-mkt-card h3 {
-  display: -webkit-box;
-  overflow: hidden;
-  margin: 4px 0 0;
-  color: #3a2318;
-  font-family: "Poppins", sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.bk-mkt-card-price {
+/* ── "Also on" strip ──
+   The only thing this card carries beyond the home card. Sits under the card's own
+   padding as a separate band so it reads as a footer to the card rather than another
+   row of its copy, and so the tap targets are clearly not part of the product link. */
+.bk-mkt-card-links {
   display: flex;
-  align-items: baseline;
-  gap: 7px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(128, 0, 32, 0.1);
+  background: rgba(255, 246, 232, 0.6);
 }
 
-.bk-mkt-card-price strong {
-  color: #1a1a1a;
-  font-size: 14px;
+.bk-mkt-card-links > span {
+  color: #6a4c3c;
+  font-size: 10px;
   font-weight: 600;
-}
-
-.bk-mkt-card-price s {
-  color: rgba(53, 23, 15, 0.42);
-  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* One tile per marketplace the saree is on. White tiles so each brand's mark keeps its
    own colour without the row turning into a colour clash. */
-.bk-mkt-card-badges {
-  display: flex;
-  gap: 8px;
-  margin-top: 2px;
-}
-
 .bk-mkt-badge {
   display: grid;
   place-items: center;
   width: 38px;
-  height: 34px;
+  height: 30px;
   border: 1px solid rgba(199, 155, 63, 0.3);
   border-radius: 8px;
   background: #fff;
@@ -296,12 +252,6 @@
 }
 
 /* ── Loading ── */
-.bk-mkt-card--skeleton { pointer-events: none; }
-.bk-mkt-sk-image { aspect-ratio: 3 / 4; border-radius: 10px; }
-.bk-mkt-sk-name { width: 100%; height: 11px; border-radius: 999px; }
-.bk-mkt-sk-name.short { width: 62%; }
-.bk-mkt-sk-price { width: 78px; height: 14px; border-radius: 999px; }
-
 /* ── Mobile ── */
 @media (max-width: 860px) {
   /* The gradient runs top-to-bottom here: at this width the copy column covers most
@@ -320,10 +270,14 @@
   .bk-mkt-count { font-size: 12px; }
 
   /* Two columns rather than auto-fill: 190px tracks would drop to one card a row. */
-  .bk-mkt-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+  .bk-mkt-card-links {
+    gap: 6px;
+    padding: 6px 8px;
   }
+
+  .bk-mkt-card-links > span { font-size: 9px; }
+  .bk-mkt-badge { width: 32px; height: 26px; }
+  .bk-mkt-badge-mark { width: 16px; height: 16px; font-size: 16px; }
 
   .bk-mkt-banner-copy { padding: 30px 18px; }
 }
