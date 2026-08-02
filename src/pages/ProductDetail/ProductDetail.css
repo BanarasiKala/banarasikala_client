@@ -1733,8 +1733,20 @@
   font-weight: 700;
 }
 
-.product-add-btn.in-bag {
+/* Green once the saree is already in the cart — the button reads "In Cart" and is disabled,
+   so the colour change is what says "done" rather than "unavailable".
+   Named .in-cart to match the class the button actually renders. It was written as .in-bag,
+   which no JSX has ever applied, so this rule never took effect and the button stayed maroon
+   and simply looked greyed out. `disabled` needs overriding too — the base rule dims every
+   disabled state, which would otherwise wash this green out. */
+.product-add-btn.in-cart,
+.product-add-btn.in-cart:disabled {
   background: linear-gradient(135deg, #047857, #065f46) !important;
+  color: #eafff4 !important;
+  opacity: 1 !important;
+  /* The shared :disabled rule greys the fill AND applies grayscale(0.25); both have to be
+     undone or the green comes out muddy. */
+  filter: none !important;
   cursor: default;
 }
 
