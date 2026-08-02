@@ -416,8 +416,8 @@
    which is what made it render at ~9px inside a 22px box. */
 .bk-footer-myntra-img {
   width: auto;
-  height: 26px;
-  max-width: 40px;
+  height: 18px;
+  max-width: 25px;
   object-fit: contain;
   flex-shrink: 0;
 }
