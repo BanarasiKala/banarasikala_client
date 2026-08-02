@@ -13,14 +13,21 @@ export const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon
  * The Iconify glyphs are single flat shapes, so they read as grey blobs at badge size. The
  * real brand logos are shipped in /public instead.
  *
- * Case matters, and the filenames genuinely differ from each other — "Amazon.PNG" against
- * "flipkart.PNG". The origin this is served from is case-sensitive even though Windows is
- * not, so a tidied-up "/amazon.png" would 404 in production while working perfectly in
- * local dev. Each value below matches its file exactly; check before changing one.
+ * These point at the *-mark.png files, NOT the Amazon.PNG / flipkart.PNG they were cut from.
+ * Those originals are 1024x1024 with the logo floating in the middle — Amazon's filled only
+ * 34% of its canvas against Flipkart's 86%, so at badge size, where object-fit fits the
+ * whitespace rather than the artwork, Amazon rendered about two and a half times smaller.
+ *
+ * The marks here are cropped to the logo's exact bounds and kept at their natural aspect
+ * ratio — no square canvas, no margin. The badge tile is what frames them, so any padding
+ * baked in here would show up as a gap the CSS cannot remove. They are also ~40 KB rather
+ * than ~1.2 MB each.
+ *
+ * Re-cutting one means cropping it just as tightly, or it will sit smaller than the other.
  */
 const LOCAL_MARKS = {
-  amazon: "/Amazon.PNG",
-  flipkart: "/flipkart.PNG",
+  amazon: "/amazon-mark.png",
+  flipkart: "/flipkart-mark.png",
 };
 
 /** The icon to render for a marketplace — the local override if there is one, else the row's. */

@@ -30,12 +30,16 @@
 }
 
 .bk-mkt-badge-chip {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   width: 38px;
   height: 30px;
+  /* The inset lives on the image's max size below, not here — see the note there. */
   padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid rgba(199, 155, 63, 0.3);
   border-radius: 8px;
   background: #fff;
@@ -48,14 +52,40 @@
   box-shadow: 0 8px 16px rgba(88, 39, 13, 0.16);
 }
 
-/* Explicit dimensions rather than font-size: Iconify renders <svg width="1em">, and
-   pinning the box keeps every mark identical whatever the card's typography is. */
-.bk-mkt-badge-chip svg,
+/**
+ * Bounded in pixels, NOT with width/height: 100%.
+ *
+ * The tile is a <button>, and a percentage height on its child resolves against the
+ * button's anonymous inner box rather than the button itself. Engines size that box
+ * differently — Chrome gave the tile's height, iOS Safari did not — so the image came out
+ * taller than 30px and `overflow: hidden` sliced its bottom edge off. Flipkart's mark, a
+ * filled square that reaches its own edges, showed the cut plainly; Amazon's wordmark has
+ * enough transparent margin that nothing visible was lost.
+ *
+ * These numbers are the tile minus its 1px border and a 2px breathing gap. The gap is not
+ * decoration: Flipkart's app-icon has its own corner radius, and flush against the tile's
+ * radius the two curves clip each other.
+ *
+ * auto + max-* rather than fixed width/height so the browser scales the artwork down on
+ * its own, preserving aspect — nothing is stretched or cropped.
+ */
 .bk-mkt-badge-chip img {
+  max-width: 32px;
+  max-height: 24px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* The Iconify fallback, for a channel with no logo file, stays inset. These are line
+   glyphs drawn for a text box, and run to the edges they read as clip art rather than a
+   logo. Explicit dimensions because Iconify renders <svg width="1em">, which would
+   otherwise inherit whatever typography the host card happens to have. */
+.bk-mkt-badge-chip svg {
   width: 20px;
   height: 20px;
   font-size: 20px;
-  object-fit: contain;
 }
 
 @media (max-width: 640px) {
@@ -67,8 +97,8 @@
     height: 26px;
   }
 
-  .bk-mkt-badge-chip svg,
-  .bk-mkt-badge-chip img {
+  /* Only the glyph fallback scales — the logo keeps filling its tile. */
+  .bk-mkt-badge-chip svg {
     width: 16px;
     height: 16px;
     font-size: 16px;
