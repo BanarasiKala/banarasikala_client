@@ -23,25 +23,28 @@
 
 .bk-reel-bags {
   position: fixed;
-  bottom: 20px; /* whole assembly floats in the bottom-left corner */
-  /* Negative left pulls the pivot toward the screen edge; the widest swing
-     (bag 3 at ±6°) still stays a few px clear of the edge. */
-  left: -20px;
+  bottom: 20px; /* whole assembly floats in the bottom-right corner */
+  /* Negative right pulls the pivot toward the screen edge; the widest swing
+     (bag 3 at ±6°) still stays a few px clear of the edge. The pivot is the
+     container's own centre (95px of 190px), so mirroring the corner needs
+     nothing but this and the sign of the translate below. */
+  right: -20px;
   z-index: 998;
   width: 190px;
   height: 395px;
   pointer-events: none;
   /* Scroll transformation: as the threads reel in (--bk-bag-ext 1 → 0) the
      whole assembly slides down by --bk-bag-drop, so the gathered stack ends
-     up fixed in the bottom-left corner instead of hovering mid-screen. */
+     up fixed in the bottom-right corner instead of hovering mid-screen. */
   --bk-bag-drop: 245px;
   /* Permanently docked: threads fully reeled in (ext 0 / retract 1). The
-     translate parks the gathered stack at the bottom-left corner, shifted
-     26px right so the ±24° swing never clips past the left screen edge. */
+     translate parks the gathered stack at the bottom-right corner, shifted
+     26px LEFT so the ±24° swing never clips past the right screen edge —
+     the mirror of the leftward original. */
   --bk-bag-ext: 0;
   --bk-bag-retract: calc(1 - var(--bk-bag-ext, 1));
   transform: translate(
-    calc(var(--bk-bag-retract) * 26px),
+    calc(var(--bk-bag-retract) * -26px),
     calc(var(--bk-bag-retract) * var(--bk-bag-drop))
   );
 }
@@ -202,7 +205,7 @@
 }
 
 @media (max-width: 640px) {
-  .bk-reel-bags { bottom: 16px; left: -20px; width: 150px; height: 305px; --bk-bag-drop: 190px; }
+  .bk-reel-bags { bottom: 16px; right: -20px; width: 150px; height: 305px; --bk-bag-drop: 190px; }
   .bk-reel-bag { left: 75px; }
   .bk-reel-bags-pin { left: 75px; width: 11px; height: 11px; }
   .bk-reel-bag-body { width: 58px; height: 88px; }
