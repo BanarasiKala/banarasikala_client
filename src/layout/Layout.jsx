@@ -1,10 +1,10 @@
 import { Icon } from "@iconify/react";
 import Header from "./Header";
 import Footer from "./Footer";
-// Parked, not removed — see the commented render below.
+// Parked, not removed — see the commented renders below.
 import ChatBot from "../components/ChatBot/ChatBot";
 import ReelsFab from "../components/ReelsFab/ReelsFab";
-// import ReelBags from "../components/ReelBags/ReelBags"; // floating reel section — disabled for now
+import ReelBags from "../components/ReelBags/ReelBags";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
@@ -109,15 +109,17 @@ const Layout = () => {
       </div>
       <SignupGiftPopup hidden={hideSignupGift} />
       {!hideFooter && <Footer />}
-      {/* {isHomePage && <ReelBags />} */}{/* floating reel section — disabled for now */}
+      {/* The floating reel section, back in the corner. Home page only, as before. */}
+      {isHomePage && <ReelBags />}
 
-      {/* The floating chat bubble, parked for now — uncomment this line and remove the ReelsFab
-          below to bring it back. The ChatBot component itself is untouched and still works. */}
+      {/* The floating chat bubble, parked — uncomment to bring it back. The ChatBot component
+          itself is untouched and still works. */}
       {/* {!isImmersive && <ChatBot />} */}
 
-      {/* Standing in for it: a shortcut to the reels feed, in the same corner and the same
-          footprint. Hidden on /reels itself, where it would link to the page you are on. */}
-      {!isImmersive && <ReelsFab />}
+      {/* The reels-feed shortcut that stood in this corner, parked in turn now that ReelBags
+          is back — the two would sit on top of each other. Uncomment to restore it, and
+          comment out the ReelBags line above. */}
+      {/* {!isImmersive && <ReelsFab />} */}
     </>
   );
 };

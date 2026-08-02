@@ -19,6 +19,7 @@ import CheckoutFlow from "../../components/CheckoutFlow";
 import "../Checkout/Checkout.css";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
+import MarketplaceBadges from "../../components/MarketplaceBadges/MarketplaceBadges";
 import ProductReelPreview from "../../components/ProductReelPreview/ProductReelPreview";
 import ProductReviews from "../../components/ProductReviews/ProductReviews";
 // One artwork holding every accepted method, rather than three separate marks stitched together
@@ -2605,6 +2606,7 @@ const ProductDetail = () => {
                       >
                         Add to Cart
                       </button>
+                      <MarketplaceBadges productId={item.id} />
                     </div>
                   </Link>
                 );
