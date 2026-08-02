@@ -492,6 +492,8 @@ const TimelineStep = ({ step, showLine, currentLabel }) => {
     <div className="confirmation-step-body">
       <strong>{step.title}</strong>
       <p>{step.detail}</p>
+      {/* Optional second line — currently the courier, under the Shipped step's AWB. */}
+      {step.sub && <p className="confirmation-step-sub">{step.sub}</p>}
     </div>
     {statusLabel && <span className={`confirmation-step-status is-${step.state}`}>{statusLabel}</span>}
   </div>
@@ -983,10 +985,14 @@ export default function OrderConfirmation() {
     || tracking?.tracking?.tracking_data?.etd
     || order?.selected_courier_data?.etd
     || null;
-  const timeline = useMemo(() => buildOrderTimeline(order, { edd: courierEdd }), [order, courierEdd]);
+  // Declared before the timeline, which now names the courier on its Pickup scheduled step.
   const courierName = order?.courier_name
     || tracking?.tracking?.tracking_data?.shipment_track?.[0]?.courier_name
     || "";
+  const timeline = useMemo(
+    () => buildOrderTimeline(order, { edd: courierEdd, courierName }),
+    [order, courierEdd, courierName],
+  );
   const reverseShipments = Array.isArray(tracking?.reverse) ? tracking.reverse : [];
   // A return/exchange was requested but no reverse shipment is booked with the courier yet
   // (trackOrder only returns pickups that have a ShipRocket id/AWB). order.status is the
@@ -2463,18 +2469,13 @@ export default function OrderConfirmation() {
 
               <CollapsibleTimeline steps={timeline} currentLabel={statusLabel} />
 
-              {hasCurrentAwb(order) && (
-                <>
-                  {isTrackable(order) && (
-                    <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
-                      Track on Courier <Icon icon="lucide:chevron-right" />
-                    </button>
-                  )}
-                  <div className="oc-awb-line">
-                    <span>Tracking ID (AWB){courierName ? ` · ${courierName}` : ""}</span>
-                    <strong>{order.shiprocket_awb}</strong>
-                  </div>
-                </>
+              {/* No AWB row here any more: the Shipped step in the timeline above already
+                  prints "Tracking ID (AWB): …", and the courier's name now sits on the
+                  Pickup scheduled step, so this row was repeating both. */}
+              {hasCurrentAwb(order) && isTrackable(order) && (
+                <button type="button" className="oc-track-btn" onClick={() => setTrackModalOpen(true)}>
+                  Track on Courier <Icon icon="lucide:chevron-right" />
+                </button>
               )}
             </section>
 

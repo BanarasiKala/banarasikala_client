@@ -116,7 +116,7 @@ export const buildSteps = (status, steps) => steps.map((step, index) => ({
  *   tracking payload (shipment_track[0].edd). Nothing on the order records one — it only
  *   exists once a shipment is booked — so the caller passes it in when it has it.
  */
-export const buildOrderTimeline = (order, { edd } = {}) => {
+export const buildOrderTimeline = (order, { edd, courierName } = {}) => {
   const status = String(order?.status || "Pending").toLowerCase();
   /**
    * The Delivered step's detail line.
@@ -141,7 +141,17 @@ export const buildOrderTimeline = (order, { edd } = {}) => {
     { title: "Processing", detail: "Seller is preparing your order", icon: "lucide:package-2", matches: ["processing"] },
     { title: "Pickup scheduled", detail: "Courier pickup has been arranged", icon: "lucide:calendar-clock", matches: ["pickup scheduled", "pickup_scheduled", "awb assigned", "awb_assigned", "out for pickup", "out_for_pickup"] },
     { title: "Picked up", detail: "Courier has collected your order", icon: "lucide:package-check", matches: ["picked up", "picked_up"] },
-    { title: "Shipped", detail: order?.shiprocket_awb ? `Tracking ID (AWB): ${order.shiprocket_awb}` : "Tracking appears after dispatch", icon: "lucide:truck", matches: ["shipped", "in transit"] },
+    // `sub` is the courier, printed on its own line beneath the tracking number. It only
+    // appears once there is an AWB to sit under — naming a courier while the detail line
+    // still reads "Tracking appears after dispatch" would be announcing a booking that
+    // has not happened yet.
+    {
+      title: "Shipped",
+      detail: order?.shiprocket_awb ? `Tracking ID (AWB): ${order.shiprocket_awb}` : "Tracking appears after dispatch",
+      sub: order?.shiprocket_awb && courierName ? courierName : null,
+      icon: "lucide:truck",
+      matches: ["shipped", "in transit"],
+    },
     { title: "Out for delivery", detail: "Courier will attempt delivery at your address", icon: "lucide:navigation", matches: ["out for delivery"] },
     { title: "Delivered", detail: deliveredDetail, icon: "lucide:badge-check", matches: ["delivered"] },
   ];
