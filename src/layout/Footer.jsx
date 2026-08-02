@@ -13,6 +13,11 @@ import {
 import logo from "../assets/vertical_logo.png";
 import footerBackground from "../assets/header_backgroung.png";
 import { useStoreContact, formatStoreAddress } from "../hooks/useStoreContact";
+import {
+  storefrontFor,
+  canLeaveForStorefront,
+  STOREFRONT_LINK_PROPS,
+} from "../utils/marketplaceStorefront";
 import "./Footer.css";
 
 // A null path marks the expandable Patterns group rather than a plain link, so the column's
@@ -448,26 +453,45 @@ const Footer = () => {
           <h3>Also Available On</h3>
           <span className="bk-footer-rule" aria-hidden="true" />
           <div className="bk-footer-market-row">
-            {/* Points at our own /store/<slug> page, not straight out to the marketplace.
-                That page is what carries the storefront link, the product list and the
-                case for buying direct — sending people off-site from here would skip
-                all of it. */}
-            {marketplaces.map((market) => (
-              <Link
-                key={market.slug}
-                to={`/marketplace#${market.slug}`}
-                className="bk-footer-market-badge"
-                aria-label={`Banarasi Kala on ${market.name}`}
-                title={`Banarasi Kala on ${market.name}`}
-              >
-                {isImageMark(market.icon)
-                  ? <img src={market.icon} alt="" className="bk-footer-myntra-img" />
-                  : <Icon icon={market.icon || "lucide:store"} style={{ color: market.accent_color }} />
-                }
-                <span>{market.name}</span>
-                {market.status === "coming_soon" && <em className="bk-footer-market-soon">Soon</em>}
-              </Link>
-            ))}
+            {/* A live channel goes straight to its storefront, using the same env → built-in
+                → database resolution the home page's marketplace section uses. A channel that
+                is only announced ("coming soon") has no storefront to open, so it keeps
+                pointing at our own /marketplace page, where its announcement lives. */}
+            {marketplaces.map((market) => {
+              const mark = isImageMark(market.icon)
+                ? <img src={market.icon} alt="" className="bk-footer-myntra-img" />
+                : <Icon icon={market.icon || "lucide:store"} style={{ color: market.accent_color }} />;
+              const inner = (
+                <>
+                  {mark}
+                  <span>{market.name}</span>
+                  {market.status === "coming_soon" && <em className="bk-footer-market-soon">Soon</em>}
+                </>
+              );
+
+              return canLeaveForStorefront(market) ? (
+                <a
+                  key={market.slug}
+                  href={storefrontFor(market)}
+                  className="bk-footer-market-badge"
+                  aria-label={`Shop Banarasi Kala on ${market.name}`}
+                  title={`Shop Banarasi Kala on ${market.name}`}
+                  {...STOREFRONT_LINK_PROPS}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <Link
+                  key={market.slug}
+                  to={`/marketplace#${market.slug}`}
+                  className="bk-footer-market-badge"
+                  aria-label={`Banarasi Kala on ${market.name}`}
+                  title={`Banarasi Kala on ${market.name}`}
+                >
+                  {inner}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

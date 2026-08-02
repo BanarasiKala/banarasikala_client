@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
 import { getProductCoverImage } from "../../../utils/productMedia";
+import { storefrontFor } from "../../../utils/marketplaceStorefront";
 import brandBanner from "../../../assets/story/banaras-weave.png";
 // The trimmed Amazon mockup, not assets/amazon_phone.PNG: the original is a 198x400
 // device floating in a 450x439 canvas, so sizing it alongside the tightly-cropped
@@ -41,20 +42,8 @@ const Mark = ({ market, className }) =>
  * row is still the last resort, which is what keeps a channel added later working
  * before anyone sets an env var for it.
  */
-const STOREFRONT_ENV = {
-  amazon: import.meta.env.VITE_AMAZON_STORE_URL,
-  flipkart: import.meta.env.VITE_FLIPKART_STORE_URL,
-};
-
-const STOREFRONT_FALLBACKS = {
-  amazon: "https://www.amazon.in/s?rh=n%3A1571271031%2Cp_4%3ABanarasi%2BKala&ref=bl_sl_s_ap_web_1571271031",
-  flipkart: "https://dl.flipkart.com/s/XaTOd_NNNN",
-};
-
-const storefrontFor = (market) =>
-  String(STOREFRONT_ENV[market.slug] || "").trim() ||
-  STOREFRONT_FALLBACKS[market.slug] ||
-  market.storefront_url;
+// Moved to utils/marketplaceStorefront so the footer resolves the same link this does —
+// see that file for why env wins over the built-in link, and the built-in over the row.
 
 const CHANNEL_FEATURES = {
   amazon: ["Fast & Reliable Delivery", "100% Original Products", "Easy Returns", "Secure Payments"],
