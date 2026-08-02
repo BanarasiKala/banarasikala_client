@@ -651,6 +651,42 @@
   justify-content: flex-end;
 }
 
+/* Marketplace badges — one per channel this saree is listed on, sitting in the
+   media bar's left slot opposite wishlist and share. White ground rather than the
+   maroon wash the action buttons use, because these are third-party marks in their
+   own brand colours and need a neutral background to read correctly. */
+.product-media-market {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(91, 7, 16, 0.15);
+  box-shadow: 0 2px 8px rgba(91, 7, 16, 0.08);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.product-media-market:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(91, 7, 16, 0.16);
+}
+
+.product-media-market svg,
+.product-media-market img {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-media-market:hover {
+    transform: none;
+  }
+}
+
 .product-media-action-btn {
   width: 36px;
   height: 36px;

@@ -97,6 +97,11 @@ const getAddressLine = (address = {}) =>
     .filter(Boolean)
     .join(", ");
 
+// A marketplace's mark is either an Iconify id ("simple-icons:amazon") or an image
+// path ("/image.png") — both, because that is what the marketplaces table stores. A
+// slash or dot without a colon means it is a file.
+const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
+
 const getSortedImages = (targetProduct) => {
   const unique = Array.from(
     new Map(
@@ -270,6 +275,8 @@ const ProductDetail = () => {
   const { pincode: locationPincode, locationSource, locationLoading: locationDetecting, setPincode: saveLocationPin } = useDeliveryLocation();
 
   const [product, setProduct] = useState(null);
+  // Marketplaces this saree is actually listed on, for the badges under the gallery.
+  const [marketLinks, setMarketLinks] = useState([]);
   const [allColors, setAllColors] = useState([]);
   const [products, setProducts] = useState([]);
   const [productReviews, setProductReviews] = useState([]);
@@ -686,6 +693,29 @@ const ProductDetail = () => {
       .then((res) => setPageCoupons(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, []);
+
+  /**
+   * The channels this saree is listed on. Keyed off product.id rather than the slug
+   * because the endpoint takes an id, so it has to wait for the detail call above.
+   *
+   * A failure clears the badges instead of surfacing an error: this is a secondary
+   * affordance under the gallery, and a product page that still sells the saree is a
+   * better outcome than an error over a row of logos.
+   */
+  useEffect(() => {
+    if (!product?.id) {
+      setMarketLinks([]);
+      return undefined;
+    }
+    const controller = new AbortController();
+    fetch(`${API_ENDPOINTS.marketplaces}/product/${product.id}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : { links: [] }))
+      .then((data) => setMarketLinks(Array.isArray(data?.links) ? data.links : []))
+      .catch((err) => {
+        if (err.name !== "AbortError") setMarketLinks([]);
+      });
+    return () => controller.abort();
+  }, [product?.id]);
 
   useEffect(() => {
     if (!product?.id) {
@@ -2016,9 +2046,31 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* ── Media bar: dots · wishlist · share ── */}
+              {/* ── Media bar: marketplaces · dots · wishlist · share ── */}
               <div className="product-media-bar">
-                <div className="product-media-bar-left" />
+                <div className="product-media-bar-left">
+                  {/* One badge per channel this saree is actually listed on. The
+                      endpoint only returns links on live marketplaces, so a channel
+                      still marked "coming soon" never renders a dead link here. */}
+                  {marketLinks.map((link) => (
+                    <a
+                      key={link.slug}
+                      href={link.url}
+                      target="_blank"
+                      rel="nofollow sponsored noopener noreferrer"
+                      className="product-media-market"
+                      title={`Buy on ${link.name}`}
+                      aria-label={`Buy ${productName} on ${link.name}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {isImageMark(link.icon) ? (
+                        <img src={link.icon} alt="" />
+                      ) : (
+                        <Icon icon={link.icon || "lucide:store"} style={{ color: link.accent_color }} />
+                      )}
+                    </a>
+                  ))}
+                </div>
                 <div className="product-media-bar-dots" aria-hidden="true">
                   {visibleMedia.map((_, index) => (
                     <button
