@@ -1232,6 +1232,20 @@ export default function OrderConfirmation() {
     setExchangeResult(null);
   };
 
+  /**
+   * Step 4's "View Updated Order".
+   *
+   * The sheet is an overlay and this page never locked the background scroll, so closing
+   * it alone drops the customer at whatever offset they were at when they opened it —
+   * typically halfway down, below the summary the button just promised to show. The
+   * order itself was already refetched on submit, so all that is missing is putting it
+   * back in view.
+   */
+  const finishActionFlow = () => {
+    closeActionModal(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // `target` is the replacement product after an exchange ({ product_id, product_name }).
   // Omit it to review the product that was originally ordered.
   const openFeedbackModal = (item, target = null) => {
@@ -3083,12 +3097,16 @@ export default function OrderConfirmation() {
                       </button>
                     </div>
 
+                    {/* Closes the sheet and leaves the customer on this order, which the
+                        submit above has already refetched — so the return shows on the
+                        item the moment the sheet is gone. It used to push to /my-orders,
+                        which dropped them into the full list to find this order again. */}
                     <button
                       type="button"
                       className="oc-return-primary-btn is-solid"
-                      onClick={() => { closeActionModal(true); navigate("/my-orders"); }}
+                      onClick={finishActionFlow}
                     >
-                      View Return Requests
+                      View Updated Order
                     </button>
                     <button
                       type="button"
@@ -3575,12 +3593,14 @@ export default function OrderConfirmation() {
                       </button>
                     </div>
 
+                    {/* Same as the return sheet: close and stay on this order, which the
+                        submit has already refetched, rather than pushing to /my-orders. */}
                     <button
                       type="button"
                       className="oc-return-primary-btn is-solid"
-                      onClick={() => { closeActionModal(true); navigate("/my-orders"); }}
+                      onClick={finishActionFlow}
                     >
-                      View My Exchanges
+                      View Updated Order
                     </button>
                     <button
                       type="button"
