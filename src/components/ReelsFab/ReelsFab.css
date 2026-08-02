@@ -1,42 +1,166 @@
-/* Occupies the slot the chat bubble used to: same corner, same size, same offsets. Several
-   things measure themselves against that footprint — the floating reel preview clears
-   "bottom 28 + 46px", and the back-to-top button lifts it — so a drop-in replacement is the
-   only kind that does not break them. */
+/* ── Reels shortcut ──────────────────────────────────────────────────────────────────
+   A miniature reel, shaped like one: a 2:3 portrait card playing the newest reel behind a
+   rotating gold ring, in the bottom-right corner.
+
+   It replaced the chat bubble's slot, and two things still measure themselves against this
+   footprint — ProductReelPreview clears it, and the back-to-top button lifts it. Both were
+   written for the 46px circle that used to be here, so CHANGING THE HEIGHT BELOW MEANS
+   UPDATING ProductReelPreview.css to match, or the mini-player lands on top of this. */
+
 .bk-reels-fab {
   position: fixed;
   right: 24px;
   bottom: 28px;
   z-index: 1000;
-  width: 46px;
-  height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #800020 0%, #a83258 55%, #d4af37 130%);
-  box-shadow: 0 10px 26px rgba(128, 0, 32, 0.4);
+  width: 48px;
+  height: 72px;
+  display: block;
+  /* The ring is painted by this gradient; the card inside insets to reveal it as a rim. */
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  /* Still a gold rim, but a fixed one. It used to be a conic gradient rotating on a loop,
+     which drew the eye away from the reel playing inside it — the video is the thing worth
+     looking at, so the frame around it holds still. */
+  background: linear-gradient(150deg, #f6e3a1 0%, #d4af37 40%, #a83258 100%);
   text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.28s ease;
 }
+
+/* ── Ambient glow ──
+   A soft bloom pooling under the card, breathing slowly. Sits behind everything and never
+   takes a click. Cheap on purpose: the honest version of this effect is a second, blurred
+   copy of the video, and decoding the same reel twice for a 48px button is not worth it. */
+.bk-reels-fab::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 20px;
+  background: radial-gradient(60% 60% at 50% 55%, rgba(212, 175, 55, 0.55), rgba(168, 50, 88, 0.28) 55%, transparent 78%);
+  filter: blur(9px);
+  pointer-events: none;
+  animation: bk-reels-fab-ambient 4.2s ease-in-out infinite;
+}
+
+@keyframes bk-reels-fab-ambient {
+  0%, 100% { opacity: 0.55; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
 .bk-reels-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(128, 0, 32, 0.5);
+  box-shadow: 0 14px 32px rgba(128, 0, 32, 0.55);
 }
+
 .bk-reels-fab:active { transform: scale(0.96); }
 
-/* Lifted when the back-to-top button appears, exactly as .bk-chat-fab was. */
+/* Lifted when the back-to-top button appears, exactly as the circle was. */
 body.btt-visible .bk-reels-fab {
   bottom: 84px;
 }
 
-.bk-reels-fab-icon {
+/* The card itself — everything the reader actually sees sits in here.
+   `display: block` is load-bearing, not tidiness: this is a <span>, and width/height are
+   ignored on an inline box. Without it the card collapses to zero, and the video inside —
+   absolutely positioned against it — has no dimensions to fill and never appears. */
+.bk-reels-fab-card {
+  display: block;
   position: relative;
-  z-index: 1;
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 11px;
+  background: linear-gradient(160deg, #5a0016 0%, #800020 55%, #a83258 100%);
+}
+
+.bk-reels-fab-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Held back until it is genuinely playing, so a blocked autoplay or a slow first frame
+     leaves the drawn film mark rather than a black card. */
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.bk-reels-fab-video.is-rolling { opacity: 1; }
+
+/* Keeps the play head and the LIVE dot legible over a reel of any brightness. */
+.bk-reels-fab-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(35, 4, 12, 0.42) 0%, rgba(35, 4, 12, 0.05) 45%, rgba(35, 4, 12, 0.55) 100%);
+  pointer-events: none;
+}
+
+.bk-reels-fab-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #800020;
+  pointer-events: none;
+}
+
+.bk-reels-fab-play svg {
+  width: 11px;
+  height: 11px;
+  margin-left: 1px; /* optical centring: a triangle's mass sits left of its box */
+}
+
+/* The one piece of chrome that says this is live rather than a thumbnail. */
+.bk-reels-fab-live {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   color: #fff;
-  /* Everything inside is drawn in currentColor, so the whole mark tracks the link's colour
-     rather than each part carrying its own white. */
+  font-family: "Poppins", sans-serif;
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.bk-reels-fab-live i {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: bk-reels-fab-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes bk-reels-fab-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ── The drawn fallback ──
+   Shown until the video is rolling, and left in place permanently if there is no reel or a
+   browser refuses to autoplay. A film frame whose sprockets travel, so the button still
+   reads as a reel running even with no video behind it. */
+.bk-reels-fab-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  color: #ffe29c;
   fill: currentColor;
   stroke: currentColor;
 }
@@ -46,10 +170,8 @@ body.btt-visible .bk-reels-fab {
   fill: none;
 }
 
-/* The sprocket holes are punched through the film, so they are the button's gradient
-   showing through rather than white marks sitting on top. */
 .bk-reels-fab-strip rect {
-  fill: rgba(255, 255, 255, 0.92);
+  fill: currentColor;
   stroke: none;
 }
 
@@ -65,33 +187,9 @@ body.btt-visible .bk-reels-fab {
   to { transform: translateY(4px); }
 }
 
-.bk-reels-fab-play {
+.bk-reels-fab-mark {
   fill: currentColor;
   stroke: none;
-  /* A slow breath on the play head, so the button still reads as "playing" in the moment
-     before the eye picks up the strip moving. */
-  transform-origin: 12px 12px;
-  animation: bk-reels-fab-beat 1.15s ease-in-out infinite;
-}
-
-@keyframes bk-reels-fab-beat {
-  0%, 100% { transform: scale(1); opacity: 0.95; }
-  50% { transform: scale(1.12); opacity: 1; }
-}
-
-/* Attention pulse behind the icon */
-.bk-reels-fab-pulse {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(212, 175, 55, 0.55);
-  animation: bk-reels-fab-pulse 2s ease-out infinite;
-  pointer-events: none;
-}
-@keyframes bk-reels-fab-pulse {
-  0% { transform: scale(1); opacity: 0.7; }
-  70% { transform: scale(1.8); opacity: 0; }
-  100% { opacity: 0; }
 }
 
 @media (max-width: 640px) {
@@ -99,17 +197,18 @@ body.btt-visible .bk-reels-fab {
     right: 16px;
     bottom: 20px;
     width: 44px;
-    height: 44px;
+    height: 66px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bk-reels-fab-pulse { animation: none; display: none; }
-
-  /* Stopped, not hidden: the mark still reads as a film frame with a play head on it, which
-     is the whole message. Only the motion goes. */
+  /* Stopped, not hidden: the card still reads as a reel with a play head on it, which is
+     the whole message. Only the motion goes — the glow stays, it just stops breathing. */
+  .bk-reels-fab::before,
   .bk-reels-fab-strip,
-  .bk-reels-fab-play {
+  .bk-reels-fab-live i {
     animation: none;
   }
+
+  .bk-reels-fab::before { opacity: 0.8; }
 }

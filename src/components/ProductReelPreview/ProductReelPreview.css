@@ -2,7 +2,9 @@
 .bk-preel-float {
   position: fixed;
   right: 20px;
-  bottom: 86px; /* sit above the chat bubble (bottom 28 + 46px) */
+  /* Clears the reels shortcut below it: that card sits at bottom 28 and is 72px tall, plus
+     a 12px gap. Was 86px, back when the shortcut was a 46px circle. */
+  bottom: 112px;
   width: 124px;
   height: 216px;
   z-index: 190;
@@ -40,10 +42,10 @@ body.btt-visible .bk-preel-float.is-free {
   bottom: auto;
 }
 
-/* At the footer the back-to-top button appears (bottom 28) and the chat bubble
-   slides up to bottom 84 — so lift the mini-player above BOTH. */
+/* At the footer the back-to-top button appears (bottom 28) and the reels shortcut slides up
+   to bottom 84 — so lift the mini-player above BOTH: 84 + its 72px height + a 12px gap. */
 body.btt-visible .bk-preel-float {
-  bottom: 142px;
+  bottom: 168px;
 }
 @keyframes bk-preel-in {
   from { opacity: 0; transform: translateY(24px) scale(0.9); }
@@ -126,7 +128,9 @@ body.btt-visible .bk-preel-float {
 @media (max-width: 640px) {
   .bk-preel-float {
     right: 14px;
-    bottom: 86px;
+    /* Same arithmetic as the desktop rule: the reels shortcut is 66px tall at bottom 20
+       here, plus a 12px gap. */
+    bottom: 98px;
     width: 100px;
     height: 176px;
   }
