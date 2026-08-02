@@ -97,6 +97,64 @@ const getAddressLine = (address = {}) =>
     .filter(Boolean)
     .join(", ");
 
+const ONE_HOUR = 60 * 60 * 1000;
+const ONE_DAY = 24 * ONE_HOUR;
+// Below this, the offer stops being a date and becomes a countdown.
+const URGENT_WINDOW = 7 * ONE_DAY;
+
+const formatTimeLeft = (ms) => {
+  const days = Math.floor(ms / ONE_DAY);
+  const hours = Math.floor((ms % ONE_DAY) / ONE_HOUR);
+  const minutes = Math.floor((ms % ONE_HOUR) / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m ${seconds}s`;
+};
+
+/**
+ * How long a coupon has left.
+ *
+ * A date for anything far off and a live countdown once it is inside a week, because "valid
+ * till 31 Dec" tells a shopper nothing in August but "ends in 4h 12m" is the whole reason to
+ * use the code now. Coupons with no end date show nothing rather than an empty row.
+ *
+ * The clock only ticks inside that week — a second-by-second re-render for an offer five
+ * months out would be pure waste — and it steps up from once a minute to once a second in
+ * the final day, where the seconds are the point.
+ */
+const CouponExpiry = ({ validUntil }) => {
+  const end = validUntil ? new Date(validUntil).getTime() : NaN;
+  const [now, setNow] = useState(() => Date.now());
+  const left = end - now;
+  const counting = Number.isFinite(end) && left > 0 && left <= URGENT_WINDOW;
+  const finalDay = counting && left <= ONE_DAY;
+
+  useEffect(() => {
+    if (!counting) return undefined;
+    const id = window.setInterval(() => setNow(Date.now()), finalDay ? 1000 : 60000);
+    return () => window.clearInterval(id);
+  }, [counting, finalDay]);
+
+  if (!Number.isFinite(end) || left <= 0) return null;
+
+  if (counting) {
+    return (
+      <span className={`product-offer-expiry is-urgent${finalDay ? " is-final" : ""}`}>
+        <Icon icon="lucide:clock" />
+        Ends in {formatTimeLeft(left)}
+      </span>
+    );
+  }
+
+  return (
+    <span className="product-offer-expiry">
+      <Icon icon="lucide:calendar" />
+      Valid till {new Date(end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+    </span>
+  );
+};
+
 // A marketplace's mark is either an Iconify id ("simple-icons:amazon") or an image
 // path ("/image.png") — both, because that is what the marketplaces table stores. A
 // slash or dot without a colon means it is a file.
@@ -2366,6 +2424,7 @@ const ProductDetail = () => {
                       <div className="product-offer-card-body">
                         <strong>{coupon.description || coupon.name || coupon.title}</strong>
                         {coupon.code && <span>Code: <em>{coupon.code}</em></span>}
+                        <CouponExpiry validUntil={coupon.valid_until} />
                       </div>
                       {coupon.code && (
                         <button
