@@ -866,6 +866,57 @@ export default function OrderConfirmation() {
   // Exchange is the same idea: Select Item(s) → New Item → Review → Confirm. Same
   // selection state, same exchangeTargets contract, same submit — just stepped.
   const [exchangeStep, setExchangeStep] = useState(1);
+
+  /**
+   * Parks the half-built exchange so opening a saree's page does not throw it away.
+   *
+   * The picked items, quantities and chosen replacements live only in this component's
+   * state, so leaving for /product/... unmounts the page and loses them — the customer
+   * would come back to an empty form. Written to sessionStorage on the way out and read
+   * back on the way in, the flow reopens exactly where it was.
+   *
+   * sessionStorage, not localStorage: this belongs to one tab and one sitting. The
+   * exchange options themselves are not stored — the effect that loads them refires as
+   * soon as the modal is open again.
+   */
+  const RESUME_KEY = "bk_oc_exchange_resume";
+
+  const parkExchangeFlow = () => {
+    try {
+      sessionStorage.setItem(
+        RESUME_KEY,
+        JSON.stringify({ orderId: order?.id ?? null, cancelModal, exchangeStep }),
+      );
+    } catch {
+      // A full or blocked storage only costs the resume, not the navigation.
+    }
+  };
+
+  // Park, then go. The colour is carried through so the product page opens on the same
+  // shade the card was showing.
+  const openExchangeOption = (option, color) => {
+    if (!option?.slug) return;
+    parkExchangeFlow();
+    navigate(`/product/${option.slug}${color?.color_id ? `?color=${color.color_id}` : ""}`);
+  };
+
+  // Reopens a parked flow once the order is back. Consumed on read, so it only ever
+  // restores the return trip from a product page — a later visit starts clean.
+  useEffect(() => {
+    if (!order?.id) return;
+    let parked = null;
+    try {
+      const raw = sessionStorage.getItem(RESUME_KEY);
+      if (raw) parked = JSON.parse(raw);
+      sessionStorage.removeItem(RESUME_KEY);
+    } catch {
+      parked = null;
+    }
+    if (!parked || Number(parked.orderId) !== Number(order.id)) return;
+    if (!parked.cancelModal?.isOpen) return;
+    setCancelModal(parked.cancelModal);
+    setExchangeStep(Number(parked.exchangeStep) || 1);
+  }, [order?.id]);
   const [exchangeResult, setExchangeResult] = useState(null);
   const [cancelForm, setCancelForm] = useState({
     reason: "Incorrect item/size selected",
@@ -3307,7 +3358,35 @@ export default function OrderConfirmation() {
                                     <span className="oc-exchange-option-check">
                                       {isChosen && <Icon icon="lucide:check" />}
                                     </span>
-                                    <span className="oc-exchange-option-media">
+                                    {/*
+                                      The photo opens that saree's own page, so the customer
+                                      can read the description before committing to an
+                                      exchange they cannot undo. Same tab, with the flow
+                                      parked first so Back returns to this step with the
+                                      selections intact.
+
+                                      A span rather than a link because this sits inside the
+                                      option <button>, where a nested <a> is invalid markup
+                                      that browsers recover from by splitting the element.
+                                    */}
+                                    <span
+                                      className="oc-exchange-option-media"
+                                      role="link"
+                                      tabIndex={0}
+                                      title={`View ${option.name}`}
+                                      aria-label={`View ${option.name} details`}
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openExchangeOption(option, color);
+                                      }}
+                                      onKeyDown={(event) => {
+                                        if (event.key !== "Enter" && event.key !== " ") return;
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openExchangeOption(option, color);
+                                      }}
+                                    >
                                       {thumb ? <img src={imgUrl(thumb, 200)} alt={option.name} /> : <Icon icon="lucide:image-off" />}
                                     </span>
                                     <span className="oc-exchange-option-name">{option.name}</span>
