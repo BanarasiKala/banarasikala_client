@@ -9,6 +9,7 @@ import "./Home.css";
 
 const WhyChooseUs = lazy(() => import("./WhyChooseUs/WhyChooseUs"));
 const BanarasRoyale = lazy(() => import("./BanarasRoyale/BanarasRoyale"));
+const MarketplacePresence = lazy(() => import("./MarketplacePresence/MarketplacePresence"));
 const BanarasInMotion = lazy(() => import("./BanarasInMotion/BanarasInMotion"));
 const BoxSection = lazy(() => import("./BoxSection/BoxSection"));
 const PopularSarees = lazy(() => import("./PopularSarees/PopularSarees"));
@@ -117,6 +118,7 @@ const Home = () => {
 
         <HomeSection variant="why"><WhyChooseUs /></HomeSection>
         <HomeSection variant="royale"><BanarasRoyale /></HomeSection>
+        <HomeSection variant="marketplace"><MarketplacePresence /></HomeSection>
         <HomeSection variant="occasion"><OccasionCollections /></HomeSection>
         <HomeSection id="new-arrivals" variant="arrivals"><NewArrivals /></HomeSection>
         <HomeSection variant="motion"><BanarasInMotion /></HomeSection>

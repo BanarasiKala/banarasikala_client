@@ -90,6 +90,10 @@
   --home-deferred-min-height: 620px;
 }
 
+.home-deferred-section--marketplace {
+  --home-deferred-min-height: 420px;
+}
+
 .home-deferred-section--motion {
   --home-deferred-min-height: 520px;
 }
@@ -236,6 +240,10 @@
 
   .home-deferred-section--royale {
     --home-deferred-min-height: 540px;
+  }
+
+  .home-deferred-section--marketplace {
+    --home-deferred-min-height: 700px;
   }
 
   .home-deferred-section--motion {

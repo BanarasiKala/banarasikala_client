@@ -256,9 +256,16 @@
   filter: grayscale(0.5) opacity(0.75);
 }
 
-/* ── Bestsellers ── */
+/* ── Bestsellers ──
+   Arrow / rail / arrow, four cards across, at every width. The shape is held and
+   only ever scales, so the section reads the same on a phone as on a desktop —
+   every measurement below is a clamp against the desktop value, and the card
+   width is a share of the rail rather than a breakpoint's fixed basis. */
 .bk-mkt-best {
-  margin-top: 42px;
+  --mkt-rail-gap: clamp(5px, 1.6vw, 18px);
+  --mkt-arrow-size: clamp(18px, 3.3vw, 38px);
+  --mkt-card-pad: clamp(4px, 1.1vw, 12px);
+  margin-top: clamp(22px, 3.6vw, 42px);
   text-align: center;
 }
 
@@ -266,7 +273,7 @@
   margin: 0;
   color: #5a160f;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: 18px;
+  font-size: clamp(11px, 1.6vw, 18px);
   font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
@@ -274,22 +281,23 @@
 
 .bk-mkt-rail-wrap {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  grid-template-columns: var(--mkt-arrow-size) minmax(0, 1fr) var(--mkt-arrow-size);
   align-items: center;
-  gap: 10px;
-  margin-top: 22px;
+  gap: clamp(3px, 0.9vw, 10px);
+  margin-top: clamp(12px, 1.9vw, 22px);
 }
 
 .bk-mkt-arrow {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--mkt-arrow-size);
+  height: var(--mkt-arrow-size);
+  padding: 0;
   border: 1px solid rgba(199, 155, 63, 0.5);
   border-radius: 50%;
   background: rgba(255, 250, 241, 0.9);
   color: #8a4c22;
-  font-size: 17px;
+  font-size: clamp(9px, 1.5vw, 17px);
   cursor: pointer;
   transition: background 0.16s ease, color 0.16s ease;
 }
@@ -303,7 +311,7 @@
    stays swipeable on a phone without any of that being a separate mobile layout. */
 .bk-mkt-rail {
   display: flex;
-  gap: 18px;
+  gap: var(--mkt-rail-gap);
   overflow-x: auto;
   padding: 4px 2px 10px;
   scroll-snap-type: x mandatory;
@@ -313,15 +321,17 @@
 
 .bk-mkt-rail::-webkit-scrollbar { display: none; }
 
+/* A share of the rail, not a fixed basis: four cards sit across it whatever the
+   rail measures, capped so a wide screen does not inflate them past the design. */
 .bk-mkt-card {
-  flex: 0 0 clamp(190px, 22vw, 236px);
+  flex: 0 0 min(236px, calc((100% - 3 * var(--mkt-rail-gap)) / 4));
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 12px 12px 14px;
+  gap: clamp(3px, 0.6vw, 7px);
+  padding: var(--mkt-card-pad) var(--mkt-card-pad) calc(var(--mkt-card-pad) + 2px);
   scroll-snap-align: start;
   border: 1px solid rgba(199, 155, 63, 0.26);
-  border-radius: 14px;
+  border-radius: clamp(7px, 1.2vw, 14px);
   background: rgba(255, 252, 246, 0.92);
   box-shadow: 0 12px 26px rgba(88, 39, 13, 0.07);
   text-align: left;
@@ -331,7 +341,7 @@
   display: block;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: clamp(5px, 0.85vw, 10px);
   background:
     radial-gradient(circle at top, rgba(212, 175, 55, 0.14), transparent 58%),
     linear-gradient(135deg, #f1d9b6 0%, #fff8ec 48%, #e5c394 100%);
@@ -350,16 +360,16 @@
   width: 100%;
   height: 100%;
   color: rgba(53, 23, 15, 0.3);
-  font-size: 26px;
+  font-size: clamp(13px, 2.2vw, 26px);
 }
 
 .bk-mkt-card h3 {
   display: -webkit-box;
   overflow: hidden;
-  margin: 4px 0 0;
+  margin: clamp(2px, 0.35vw, 4px) 0 0;
   color: #3a2318;
   font-family: "Poppins", sans-serif;
-  font-size: 12px;
+  font-size: clamp(8px, 1.05vw, 12px);
   font-weight: 500;
   line-height: 1.4;
   -webkit-box-orient: vertical;
@@ -367,38 +377,41 @@
   line-clamp: 2;
 }
 
+/* Wraps rather than overflows: on the narrowest card a five-figure price beside its
+   struck-through MRP is wider than the card, and neither can shrink below its digits. */
 .bk-mkt-card-price {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 7px;
+  gap: clamp(3px, 0.6vw, 7px);
 }
 
 .bk-mkt-card-price strong {
   color: #1a1a1a;
-  font-size: 14px;
+  font-size: clamp(9px, 1.2vw, 14px);
   font-weight: 600;
 }
 
 .bk-mkt-card-price s {
   color: rgba(53, 23, 15, 0.42);
-  font-size: 11.5px;
+  font-size: clamp(7.5px, 1vw, 11.5px);
 }
 
 /* One tile per marketplace the saree is on. White tiles so each brand's mark keeps its
    own colour without the row turning into a colour clash. */
 .bk-mkt-card-badges {
   display: flex;
-  gap: 8px;
+  gap: clamp(3px, 0.7vw, 8px);
   margin-top: 2px;
 }
 
 .bk-mkt-badge {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 34px;
+  width: clamp(17px, 3.2vw, 38px);
+  height: clamp(15px, 2.9vw, 34px);
   border: 1px solid rgba(199, 155, 63, 0.3);
-  border-radius: 8px;
+  border-radius: clamp(4px, 0.7vw, 8px);
   background: #fff;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
 }
@@ -409,18 +422,21 @@
 }
 
 .bk-mkt-badge-mark {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+  width: clamp(9px, 1.7vw, 20px);
+  height: clamp(9px, 1.7vw, 20px);
+  font-size: clamp(9px, 1.7vw, 20px);
   object-fit: contain;
 }
 
-/* ── Brand banner ── */
+/* ── Brand banner ──
+   Copy on the maroon at the left, the weave showing through at the right, at every
+   width. The copy column is a share of the banner rather than a fixed 520px, so the
+   gradient still clears the fabric on a phone instead of the text running under it. */
 .bk-mkt-banner {
   position: relative;
   overflow: hidden;
-  margin: 44px 0 0;
-  border-radius: 18px 18px 0 0;
+  margin: clamp(24px, 3.7vw, 44px) 0 0;
+  border-radius: clamp(9px, 1.5vw, 18px) clamp(9px, 1.5vw, 18px) 0 0;
   background:
     linear-gradient(100deg, #4a0512 0%, rgba(74, 5, 18, 0.94) 42%, rgba(74, 5, 18, 0.35) 72%, transparent 100%),
     var(--mkt-banner) right center / cover no-repeat,
@@ -428,35 +444,56 @@
 }
 
 .bk-mkt-banner-copy {
-  max-width: 520px;
-  padding: 40px clamp(20px, 4vw, 46px);
+  max-width: min(520px, 62%);
+  padding: clamp(16px, 3.4vw, 40px) clamp(14px, 4vw, 46px);
   color: #fff3dd;
 }
 
 .bk-mkt-banner-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(3px, 0.7vw, 8px);
   color: #e7b64f;
-  font-size: 11px;
+  font-size: clamp(7px, 0.95vw, 11px);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
+.bk-mkt-banner-kicker svg {
+  flex: 0 0 auto;
+  width: clamp(9px, 1.2vw, 14px);
+  height: clamp(9px, 1.2vw, 14px);
+}
+
 .bk-mkt-banner h2 {
-  margin: 10px 0 6px;
+  margin: clamp(5px, 0.85vw, 10px) 0 clamp(3px, 0.5vw, 6px);
   color: #fff3dd;
   font-family: "Cinzel", Georgia, "Times New Roman", serif;
-  font-size: clamp(24px, 3.4vw, 34px);
+  font-size: clamp(15px, 3vw, 34px);
   font-weight: 600;
   line-height: 1.1;
 }
 
 .bk-mkt-banner p {
-  margin: 0 0 20px;
+  margin: 0 0 clamp(9px, 1.7vw, 20px);
   color: rgba(255, 243, 221, 0.86);
-  font-size: 13.5px;
+  font-size: clamp(8px, 1.15vw, 13.5px);
+}
+
+/* Scoped to the banner: the channel cards above keep their full-size buttons. */
+.bk-mkt-banner .bk-mkt-btn {
+  gap: clamp(4px, 0.85vw, 10px);
+  min-height: clamp(24px, 3.6vw, 42px);
+  padding: 0 clamp(9px, 1.9vw, 22px);
+  border-radius: clamp(5px, 0.7vw, 8px);
+  font-size: clamp(8px, 1.1vw, 13px);
+}
+
+.bk-mkt-banner .bk-mkt-btn svg {
+  flex: 0 0 auto;
+  width: clamp(10px, 1.3vw, 16px);
+  height: clamp(10px, 1.3vw, 16px);
 }
 
 /* ── Empty / error ── */
@@ -510,10 +547,11 @@
 .bk-mkt-sk-btn { width: 170px; height: 42px; margin-top: 6px; border-radius: 8px; }
 
 .bk-mkt-card--skeleton { pointer-events: none; }
-.bk-mkt-sk-image { aspect-ratio: 3 / 4; border-radius: 10px; }
-.bk-mkt-sk-name { width: 100%; height: 11px; border-radius: 999px; }
+.bk-mkt-sk-image { aspect-ratio: 3 / 4; border-radius: clamp(5px, 0.85vw, 10px); }
+.bk-mkt-sk-name { width: 100%; height: clamp(6px, 0.95vw, 11px); border-radius: 999px; }
 .bk-mkt-sk-name.short { width: 62%; }
-.bk-mkt-sk-price { width: 78px; height: 14px; border-radius: 999px; }
+/* A share of the card, not 78px — the card is narrower than that on a phone. */
+.bk-mkt-sk-price { width: 55%; height: clamp(8px, 1.2vw, 14px); border-radius: 999px; }
 
 /* ── Mobile ── */
 @media (max-width: 860px) {
@@ -533,23 +571,12 @@
     width: min(190px, 52vw);
     margin-right: 0;
   }
-
-  .bk-mkt-banner {
-    background:
-      linear-gradient(180deg, rgba(74, 5, 18, 0.95) 0%, rgba(74, 5, 18, 0.82) 62%, rgba(74, 5, 18, 0.6) 100%),
-      var(--mkt-banner) center / cover no-repeat,
-      #4a0512;
-  }
 }
 
+/* The bestsellers rail and the banner are deliberately absent here: both hold their
+   desktop shape and scale into it, so they need no narrow-width layout of their own. */
 @media (max-width: 640px) {
   .bk-mkt-page { padding: 24px 14px 0; }
-  .bk-mkt-best h2 { font-size: 15px; }
-  .bk-mkt-rail-wrap { grid-template-columns: 1fr; }
-  /* The rail is swipeable; the arrows are a desktop affordance and only take room here. */
-  .bk-mkt-arrow { display: none; }
-  .bk-mkt-card { flex-basis: 62vw; }
-  .bk-mkt-banner-copy { padding: 30px 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
