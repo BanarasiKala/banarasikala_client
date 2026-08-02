@@ -523,7 +523,7 @@ const Cart = () => {
             {/* Undeliverable keeps the plain label: there is nothing to promise about
                 payment methods for an order that cannot be placed. */}
             {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : (
-              <ProceedContent label={`PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
+              <ProceedContent label={`PLACE YOUR ORDER (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
             )}
           </button>
         </div>
@@ -760,7 +760,7 @@ const Cart = () => {
             {/* Undeliverable keeps the plain label: there is nothing to promise about
                 payment methods for an order that cannot be placed. */}
             {pincodeUndeliverable ? "DELIVERY UNAVAILABLE" : (
-              <ProceedContent label={`PROCEED TO BUY (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
+              <ProceedContent label={`PLACE YOUR ORDER (${selectedUnits} ITEM${selectedUnits === 1 ? "" : "S"})`} />
             )}
           </button>
         </div>

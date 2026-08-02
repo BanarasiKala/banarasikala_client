@@ -2075,7 +2075,11 @@
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  opacity: 0.82;
+  /* Blue against the gold so the saving reads as its own note rather than more of the
+     maroon label above it. A solid colour, not opacity — at 0.82 the blue turned muddy
+     over the gold fill. */
+  color: #0b3fa8;
+  font-weight: 600;
   white-space: nowrap;
 }
 
