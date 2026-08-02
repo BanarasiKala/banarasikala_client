@@ -2069,10 +2069,11 @@
 
 /* Lower-case and untracked against the spaced, uppercase label above it, so the two lines
    read as heading and note rather than one run-on shout. */
+/* Type matched to the same note on the product page's Buy Now button — 11px / 600 / #1553bb
+   — so the two routes into checkout state the saving identically. */
 .cart-proceed-copy small {
   font-family: "Poppins", sans-serif;
-  font-size: 9.5px;
-  font-weight: 400;
+  font-size: 11px;
   letter-spacing: 0;
   text-transform: none;
   /* Blue against the gold so the saving reads as its own note rather than more of the
@@ -2082,7 +2083,7 @@
      up as it goes: on #f5cf72 it holds 4.74:1, and small text needs 4.5. Anything brighter
      starts failing on the one line of the button that quotes a number. */
   color: #1553bb;
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -2094,11 +2095,12 @@
 }
 
 /* Height-capped: the strip is ~1.86:1, so its height is what actually bounds it. max-width
-   still guards a narrow phone, where the item count makes the label long. */
+   still guards a narrow phone — it has more room now that the label no longer carries an
+   item count, but the strip must still never crowd the wording out. */
 .cart-proceed-pays img {
-  height: 22px;
+  height: 30px;
   width: auto;
-  max-width: min(70px, 24vw);
+  max-width: min(92px, 30vw);
   object-fit: contain;
   display: block;
   /* No plate behind it — the -removebg- export is transparent by design and sits directly on
@@ -2110,7 +2112,7 @@
 }
 
 @media (max-width: 420px) {
-  .cart-proceed-copy small { font-size: 9px; }
-  .cart-proceed-pays img { height: 19px; max-width: 52px; }
+  .cart-proceed-copy small { font-size: 10px; }
+  .cart-proceed-pays img { height: 26px; max-width: 72px; }
   .cart-proceed-pays svg { font-size: 14px; }
 }

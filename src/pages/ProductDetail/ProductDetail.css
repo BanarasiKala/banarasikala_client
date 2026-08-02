@@ -1821,7 +1821,7 @@
    lines read as heading and note rather than as one run-on shout. */
 .product-buy-copy small {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
   /* Blue against the gold fill, matching the same note on the cart's Place Your Order
