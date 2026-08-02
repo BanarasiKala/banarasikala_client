@@ -1260,7 +1260,10 @@ body.menu-open {
   flex: 1;
   min-width: 0;
   color: #800020;
-  font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Single-word family names only. Quoted multi-word names ("SF Mono", "Liberation Mono")
+     came out of the minifier unquoted, which invalidated the declaration — the browser
+     dropped just that line and the code fell back to inheriting Poppins. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.06em;
