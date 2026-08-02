@@ -619,10 +619,11 @@ const SkLine = ({ w, h = 12, mb = 0 }) => (
 const OrderConfirmationSkeleton = () => (
   <main className="order-confirmation-page">
     <section className="oc-thanks">
+      {/* The mark, the headline and one action — enough to say "a confirmation is loading"
+          without redrawing the whole thank-you block in grey. */}
       <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
         <SkLine w={240} h={44} />
         <SkLine w={170} h={18} />
-        <SkLine w="min(320px, 80%)" h={11} />
         <SkLine w={150} h={44} />
       </div>
     </section>
