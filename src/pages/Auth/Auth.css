@@ -478,7 +478,10 @@
   padding: 11px 14px;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 600;
+  /* Regular, not 600. These are sentences — often two lines of guidance rather than a
+     label — and at semibold the whole block read as a shout in a tinted box. The colour
+     and the box already carry the emphasis. */
+  font-weight: 400;
   line-height: 1.4;
 }
 
