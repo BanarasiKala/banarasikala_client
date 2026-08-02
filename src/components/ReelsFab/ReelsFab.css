@@ -32,7 +32,51 @@ body.btt-visible .bk-reels-fab {
 .bk-reels-fab-icon {
   position: relative;
   z-index: 1;
+  width: 24px;
+  height: 24px;
   color: #fff;
+  /* Everything inside is drawn in currentColor, so the whole mark tracks the link's colour
+     rather than each part carrying its own white. */
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.bk-reels-fab-body {
+  stroke: currentColor;
+  fill: none;
+}
+
+/* The sprocket holes are punched through the film, so they are the button's gradient
+   showing through rather than white marks sitting on top. */
+.bk-reels-fab-strip rect {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: none;
+}
+
+/* Travels exactly one hole's spacing — 4 user units, matching SPROCKET_ROWS in the
+   component — so at the end of a cycle every hole sits where its neighbour began and the
+   restart is invisible. Linear, because film does not ease. */
+.bk-reels-fab-strip {
+  animation: bk-reels-fab-roll 1.15s linear infinite;
+}
+
+@keyframes bk-reels-fab-roll {
+  from { transform: translateY(0); }
+  to { transform: translateY(4px); }
+}
+
+.bk-reels-fab-play {
+  fill: currentColor;
+  stroke: none;
+  /* A slow breath on the play head, so the button still reads as "playing" in the moment
+     before the eye picks up the strip moving. */
+  transform-origin: 12px 12px;
+  animation: bk-reels-fab-beat 1.15s ease-in-out infinite;
+}
+
+@keyframes bk-reels-fab-beat {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.12); opacity: 1; }
 }
 
 /* Attention pulse behind the icon */
@@ -61,4 +105,11 @@ body.btt-visible .bk-reels-fab {
 
 @media (prefers-reduced-motion: reduce) {
   .bk-reels-fab-pulse { animation: none; display: none; }
+
+  /* Stopped, not hidden: the mark still reads as a film frame with a play head on it, which
+     is the whole message. Only the motion goes. */
+  .bk-reels-fab-strip,
+  .bk-reels-fab-play {
+    animation: none;
+  }
 }

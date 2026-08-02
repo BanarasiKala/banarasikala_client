@@ -799,7 +799,7 @@ const Header = () => {
                     <UserAvatar
                       name={firstName}
                       src={user?.avatar_url}
-                      size={38}
+                      size={32}
                       className="bk-profile-avatar"
                     />
                     <span className="bk-profile-head-copy">
