@@ -11,6 +11,7 @@ import api from "../../utils/api";
 import { getProductCoverImage, getProductImages, getDefaultColorId } from "../../utils/productMedia";
 import { varietyNames, materialNames, varietyLabel, materialLabel } from "../../utils/productAttributes";
 import { getProductStockInfo } from "../../utils/stockStatus";
+import { isImageMark, markFor } from "../../utils/marketplaceMark";
 import { LocationPickerModal } from "../Profile/Profile";
 import CheckoutReviewSummary from "../../components/CheckoutReviewSummary";
 import CheckoutOrderPanel from "../../components/CheckoutOrderPanel";
@@ -154,11 +155,6 @@ const CouponExpiry = ({ validUntil }) => {
     </span>
   );
 };
-
-// A marketplace's mark is either an Iconify id ("simple-icons:amazon") or an image
-// path ("/image.png") — both, because that is what the marketplaces table stores. A
-// slash or dot without a colon means it is a file.
-const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
 
 const getSortedImages = (targetProduct) => {
   const unique = Array.from(
@@ -2121,10 +2117,10 @@ const ProductDetail = () => {
                       aria-label={`Buy ${productName} on ${link.name}`}
                       onClick={(event) => event.stopPropagation()}
                     >
-                      {isImageMark(link.icon) ? (
-                        <img src={link.icon} alt="" />
+                      {isImageMark(markFor(link)) ? (
+                        <img src={markFor(link)} alt="" />
                       ) : (
-                        <Icon icon={link.icon || "lucide:store"} style={{ color: link.accent_color }} />
+                        <Icon icon={markFor(link) || "lucide:store"} style={{ color: link.accent_color }} />
                       )}
                     </a>
                   ))}

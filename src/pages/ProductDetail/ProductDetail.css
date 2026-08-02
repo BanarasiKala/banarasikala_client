@@ -673,12 +673,23 @@
   box-shadow: 0 6px 14px rgba(91, 7, 16, 0.16);
 }
 
-.product-media-market svg,
+/* Bounded in pixels rather than at 100%: this is a 34px circle, and the logo has to clear
+   the curve on every side, so it gets the inscribed square rather than the full box. */
 .product-media-market img {
+  max-width: 24px;
+  max-height: 24px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* The Iconify fallback, for a channel with no logo file, stays smaller — these are line
+   glyphs drawn for a text box and do not carry their own padding the way a logo does. */
+.product-media-market svg {
   width: 18px;
   height: 18px;
   font-size: 18px;
-  object-fit: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {
