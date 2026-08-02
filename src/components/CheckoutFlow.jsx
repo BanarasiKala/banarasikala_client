@@ -1216,13 +1216,6 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
             </button>
 
 
-            {PREPAID_DISCOUNT_AMOUNT > 0 && (
-              <div className="ckw-pay-offer-banner">
-                <Icon icon="lucide:badge-percent" />
-                <span>Pay online &amp; save <strong>{money(PREPAID_DISCOUNT_AMOUNT)}</strong> on this order</span>
-              </div>
-            )}
-
             <div className="ckw-pay-group">
               <button
                 type="button"
