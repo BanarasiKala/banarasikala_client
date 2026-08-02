@@ -23,6 +23,21 @@ const Mark = ({ market, className }) =>
     <Icon icon={market.icon || "lucide:store"} className={className} style={{ color: market.accent_color }} />
   );
 
+/**
+ * Per-channel storefront links from the environment, which win over the
+ * storefront_url on the marketplaces row.
+ *
+ * Read directly rather than through requiredEnv: these are optional overrides, so
+ * a missing one has to fall back to the database instead of throwing and taking
+ * the whole section down with it.
+ */
+const STOREFRONT_OVERRIDES = {
+  amazon: import.meta.env.VITE_AMAZON_STORE_URL,
+  flipkart: import.meta.env.VITE_FLIPKART_STORE_URL,
+};
+const storefrontFor = (market) =>
+  String(STOREFRONT_OVERRIDES[market.slug] || "").trim() || market.storefront_url;
+
 const CHANNEL_FEATURES = {
   amazon: ["Fast & Reliable Delivery", "100% Original Products", "Easy Returns", "Secure Payments"],
   flipkart: ["Quick Delivery", "Genuine Quality", "Hassle-free Returns", "Secure Payments"],
@@ -31,7 +46,10 @@ const FEATURE_ICONS = ["lucide:truck", "lucide:badge-check", "lucide:refresh-cw"
 const featuresFor = (slug) =>
   CHANNEL_FEATURES[slug] || ["Fast Delivery", "Genuine Products", "Easy Returns", "Secure Payments"];
 
-const Channel = ({ market }) => (
+const Channel = ({ market }) => {
+  const storefront = storefrontFor(market);
+
+  return (
   <div className="bk-mktpres-channel" style={{ "--mktpres-accent": market.accent_color || "#800020" }}>
     <header className="bk-mktpres-channel-head">
       <span className="bk-mktpres-channel-logo">
@@ -52,10 +70,10 @@ const Channel = ({ market }) => (
       ))}
     </ul>
 
-    {market.storefront_url ? (
+    {storefront ? (
       <a
         className="bk-mktpres-btn"
-        href={market.storefront_url}
+        href={storefront}
         target="_blank"
         rel="nofollow sponsored noopener noreferrer"
       >
@@ -63,10 +81,13 @@ const Channel = ({ market }) => (
         <Icon icon="lucide:arrow-right" />
       </a>
     ) : (
-      <span className="bk-mktpres-btn bk-mktpres-btn--muted">Browse {market.name} listings soon</span>
+      // Kept short deliberately: a longer label wraps to two lines in the centre
+      // column on a phone, which pushes the stack taller than the mockups.
+      <span className="bk-mktpres-btn bk-mktpres-btn--muted">Listings coming soon</span>
     )}
   </div>
-);
+  );
+};
 
 const MarketplacePresence = () => {
   const [marketplaces, setMarketplaces] = useState([]);

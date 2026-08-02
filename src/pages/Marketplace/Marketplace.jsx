@@ -92,18 +92,14 @@ const Marketplace = () => {
     return () => controller.abort();
   }, [load]);
 
-  // Scrolls by one card. Both the card width and the gap are measured off the rail rather
-  // than hardcoded, because both scale continuously with the viewport.
+  // Scrolls by one card, measured from the rail rather than hardcoded, so the arrows keep
+  // working as the card width changes across breakpoints.
   const nudge = (direction) => {
     const rail = railRef.current;
     if (!rail) return;
     const card = rail.querySelector(".bk-mkt-card");
-    if (!card) {
-      rail.scrollBy({ left: direction * rail.clientWidth * 0.8, behavior: "smooth" });
-      return;
-    }
-    const gap = parseFloat(getComputedStyle(rail).columnGap) || 0;
-    rail.scrollBy({ left: direction * (card.getBoundingClientRect().width + gap), behavior: "smooth" });
+    const step = card ? card.getBoundingClientRect().width + 18 : rail.clientWidth * 0.8;
+    rail.scrollBy({ left: direction * step, behavior: "smooth" });
   };
 
   const marketplaces = data?.marketplaces || [];

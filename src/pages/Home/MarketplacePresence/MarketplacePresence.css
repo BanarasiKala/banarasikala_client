@@ -400,12 +400,60 @@
   }
 }
 
-@media (max-width: 420px) {
+/* Phone widths. The devices take a larger share of the row and the copy is
+   stepped down with them, so the two channel blocks come as close as legible
+   type allows to sitting inside the mockups' height. Nothing is cropped. */
+@media (max-width: 480px) {
   .bk-mktpres-heading {
     margin-bottom: 18px;
   }
 
   .bk-mktpres-panel {
-    gap: 3px;
+    gap: 4px;
+    padding: 12px 6px;
+  }
+
+  .bk-mktpres-phone img {
+    width: clamp(84px, 26vw, 132px);
+    height: clamp(168px, 52vw, 264px);
+  }
+
+  .bk-mktpres-channel-logo {
+    width: 26px;
+    height: 26px;
+  }
+
+  .bk-mktpres-channel-mark {
+    width: 15px;
+    height: 15px;
+    font-size: 15px;
+  }
+
+  .bk-mktpres-channel-head {
+    gap: 6px;
+  }
+
+  .bk-mktpres-channel-title small { font-size: 8px; }
+  .bk-mktpres-channel-title strong { font-size: 13px; }
+
+  .bk-mktpres-features li {
+    font-size: 9.5px;
+    gap: 5px;
+  }
+
+  .bk-mktpres-features svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .bk-mktpres-btn {
+    min-height: 24px;
+    padding: 0 9px;
+    font-size: 9px;
+  }
+
+  .bk-mktpres-btn svg {
+    width: 10px;
+    height: 10px;
   }
 }
