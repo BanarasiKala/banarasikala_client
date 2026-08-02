@@ -907,7 +907,12 @@ export default function MyOrders() {
         comment: feedbackForm.comment.trim(),
         images: uploadedImages,
       });
-      const msg = response.data?.message?.toLowerCase().includes("updated") ? "Review updated" : "Review submitted";
+      // Thanks first, then when to look for it. Moderation is real, but "after admin
+      // approval" tells the reviewer whose queue they are in rather than the one thing
+      // they actually want to know, which is how long before it shows up.
+      const msg = response.data?.message?.toLowerCase().includes("updated")
+        ? "Thank you! Your updated review may take up to 24 hours to appear."
+        : "Thank you for your review! It may take up to 24 hours to appear.";
       showNotification(msg, "success");
       closeFeedbackModal();
       fetchOrders();
