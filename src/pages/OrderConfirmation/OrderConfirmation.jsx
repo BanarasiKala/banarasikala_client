@@ -2039,31 +2039,40 @@ export default function OrderConfirmation() {
               </strong>
             </div>
             {breakdown.giftCharge > 0 && (
-              <div className="summary-row">
-                <span className="oc-gift-label">
-                  Gift wrap &amp; message
-                  {/* Only offered when a message was actually written — the gift charge can be
-                      paid for the wrapping alone, and an (i) that opens nothing is worse than
-                      no (i). Hover reveals it; the click toggle is what makes it work on touch,
-                      matching the gift tooltip on the checkout wizard. */}
-                  {giftMessage && (
-                    <button
-                      type="button"
-                      className={`oc-gift-info${giftMessageOpen ? " is-open" : ""}`}
-                      onClick={() => setGiftMessageOpen((open) => !open)}
-                      aria-expanded={giftMessageOpen}
-                      aria-label="View gift message"
-                    >
-                      <Icon icon="lucide:info" aria-hidden="true" />
-                      <span className="oc-gift-tip" role="tooltip">
-                        <em>Your gift message</em>
-                        {giftMessage}
-                      </span>
-                    </button>
-                  )}
-                </span>
-                <strong>{formatPrice(breakdown.giftCharge)}</strong>
-              </div>
+              <>
+                <div className="summary-row">
+                  <span className="oc-gift-label">
+                    Gift wrap &amp; message
+                    {/* Only offered when a message was actually written — the gift charge can
+                        be paid for the wrapping alone. A show/hide toggle rather than a
+                        tooltip on an (i): the message runs to several lines, and a floating
+                        bubble that long covered the rest of the price summary behind it. */}
+                    {giftMessage && (
+                      <button
+                        type="button"
+                        className="oc-gift-toggle"
+                        onClick={() => setGiftMessageOpen((open) => !open)}
+                        aria-expanded={giftMessageOpen}
+                        aria-controls="oc-gift-message"
+                        aria-label={giftMessageOpen ? "Hide gift message" : "View gift message"}
+                      >
+                        {giftMessageOpen ? "Hide" : "View"}
+                        <Icon
+                          icon={giftMessageOpen ? "lucide:chevron-up" : "lucide:chevron-down"}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )}
+                  </span>
+                  <strong>{formatPrice(breakdown.giftCharge)}</strong>
+                </div>
+                {giftMessage && giftMessageOpen && (
+                  <div className="oc-gift-message" id="oc-gift-message">
+                    <em>Your gift message</em>
+                    <p>{giftMessage}</p>
+                  </div>
+                )}
+              </>
             )}
             {breakdown.paymentDiscount > 0 && <div className="summary-row is-saving"><span>Payment discount</span><strong>-{formatPrice(breakdown.paymentDiscount)}</strong></div>}
             {breakdown.codFee > 0 && <div className="summary-row is-cod"><span>COD charge</span><strong>{formatPrice(breakdown.codFee)}</strong></div>}
