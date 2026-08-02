@@ -39,12 +39,13 @@
   --bk-bag-drop: 245px;
   /* Permanently docked: threads fully reeled in (ext 0 / retract 1). The
      translate parks the gathered stack at the bottom-right corner, shifted
-     26px LEFT so the ±24° swing never clips past the right screen edge —
-     the mirror of the leftward original. */
+     LEFT so the ±24° swing never clips past the right screen edge. Eased back
+     from 26px to 12px to sit the assembly nearer the corner — the swing still
+     clears, since `right: -20px` already holds the pivot outside the edge. */
   --bk-bag-ext: 0;
   --bk-bag-retract: calc(1 - var(--bk-bag-ext, 1));
   transform: translate(
-    calc(var(--bk-bag-retract) * -26px),
+    calc(var(--bk-bag-retract) * -12px),
     calc(var(--bk-bag-retract) * var(--bk-bag-drop))
   );
 }

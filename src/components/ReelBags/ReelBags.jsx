@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play } from "lucide-react";
 import { API_ENDPOINTS } from "../../config/api";
 import "./ReelBags.css";
 
@@ -95,9 +94,6 @@ const ReelBags = () => {
                   e.currentTarget.style.display = "none";
                 }}
               />
-              <span className="bk-reel-bag-play">
-                <Play size={11} fill="currentColor" strokeWidth={0} />
-              </span>
             </span>
           </span>
         </button>
