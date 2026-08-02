@@ -383,6 +383,9 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
   const orderNumber = getOrderDisplayNumber(order);
   const items = order.OrderItems || [];
   const activeItems = useMemo(() => items.filter(item => String(item.status || "").toLowerCase() !== "cancelled"), [items]);
+  // What the card's "Items" stat shows — see the note at that stat for why a fully
+  // cancelled order falls back to the order's own count instead of showing zero.
+  const itemCount = activeItems.length || items.length;
   const placedAt = new Date(order.createdAt);
   const hasPlacedAt = !Number.isNaN(placedAt.getTime());
   const orderDate = hasPlacedAt
@@ -582,8 +585,13 @@ const OrderCard = ({ order, onFeedback, onContact, onNotify }) => {
           <div className="order-stat">
             <span className="order-stat-icon"><Icon icon="lucide:package" /></span>
             <span className="order-stat-copy">
-              <strong>{activeItems.length}</strong>
-              <small>{activeItems.length === 1 ? "Item" : "Items"}</small>
+              {/* Active items, except when every one has been cancelled — then the order's
+                  own count, because "0 Items" directly above a product card that is right
+                  there on screen reads as the order having lost its contents. A partial
+                  cancellation still counts what is actually coming (3 ordered, 1 cancelled
+                  → "2 Items"), which is the number that matters while the order is live. */}
+              <strong>{itemCount}</strong>
+              <small>{itemCount === 1 ? "Item" : "Items"}</small>
             </span>
           </div>
           <div className="order-stat">
