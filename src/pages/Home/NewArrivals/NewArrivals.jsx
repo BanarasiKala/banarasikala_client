@@ -12,6 +12,7 @@ import { varietyLabel, materialLabel } from "../../../utils/productAttributes";
 import { getProductStockInfo } from "../../../utils/stockStatus";
 import useStockNotify from "../../../hooks/useStockNotify";
 import ProductRating from "../../../components/ProductRating";
+import MarketplaceBadges from "../../../components/MarketplaceBadges/MarketplaceBadges";
 import DeliveryBadge from "../../../components/DeliveryBadge";
 import "./NewArrivals.css";
 
@@ -274,6 +275,7 @@ const NewArrivals = () => {
                             </>
                           )}
                         </div>
+                        <MarketplaceBadges productId={product.id} />
                         {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
                         {isOutOfStock ? (
                           <button type="button" className="bk-arrival-atc-btn bk-notify-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); notify(product, currentColorId); }}>

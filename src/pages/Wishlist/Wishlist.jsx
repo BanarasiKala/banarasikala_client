@@ -14,6 +14,7 @@ import { varietyLabel, materialLabel } from "../../utils/productAttributes";
 import EmptyStateIcon from "../../components/EmptyStateIcon";
 import { getProductStockInfo } from "../../utils/stockStatus";
 import ProductRating from "../../components/ProductRating";
+import MarketplaceBadges from "../../components/MarketplaceBadges/MarketplaceBadges";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import "./Wishlist.css";
 
@@ -437,6 +438,7 @@ const Wishlist = () => {
                             </>
                           )}
                         </div>
+                        <MarketplaceBadges productId={item.product_id || item.id} />
                         {!cardIsOos && <DeliveryBadge processingDays={item.processing_days} />}
                         <div className="wishlist-card-actions">
                           {actionBtn}

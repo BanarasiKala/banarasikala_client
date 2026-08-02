@@ -13,6 +13,7 @@ import { getProductStockInfo } from "../../utils/stockStatus";
 import useStockNotify from "../../hooks/useStockNotify";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
+import MarketplaceBadges from "../../components/MarketplaceBadges/MarketplaceBadges";
 import "./Collection.css";
 
 const PAGE_SIZE = 20;
@@ -684,6 +685,7 @@ const Collection = () => {
                 </>
               )}
             </div>
+            <MarketplaceBadges productId={product.id} />
             {!isOutOfStock && <DeliveryBadge processingDays={product.processing_days} />}
             {isOutOfStock ? (
               <button
