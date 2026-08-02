@@ -733,7 +733,6 @@ const RefundBreakdown = ({ bd }) => {
         <div>
           <span>
             Return pickup charge
-            {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
           </span>
           <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
         </div>
@@ -778,7 +777,6 @@ const RefundBreakdown = ({ bd }) => {
         <div>
           <span>
             Return pickup charge
-            {toNumber(bd.return_shipping_weight_kg) > 0 ? ` (${bd.return_shipping_weight_kg} kg)` : ""}
           </span>
           <strong>-{formatPrice(bd.return_shipping_charge)}</strong>
         </div>
@@ -2962,9 +2960,6 @@ export default function OrderConfirmation() {
                         <div>
                           <span>
                             Return Pickup Charge
-                            {toNumber(totals.return_shipping_weight_kg) > 0
-                              ? ` (${totals.return_shipping_weight_kg} kg)`
-                              : ""}
                           </span>
                           <strong>-{formatPrice(totals.return_shipping_charge)}</strong>
                         </div>
@@ -3923,9 +3918,6 @@ export default function OrderConfirmation() {
                         <div>
                           <span>
                             Return pickup charge
-                            {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
-                              ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
-                              : ""}
                           </span>
                           <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                         </div>
@@ -3959,9 +3951,6 @@ export default function OrderConfirmation() {
                           <div>
                             <span>
                               Return pickup charge
-                              {toNumber(actionEstimate.totals.return_shipping_weight_kg) > 0
-                                ? ` (${actionEstimate.totals.return_shipping_weight_kg} kg)`
-                                : ""}
                             </span>
                             <strong>-{formatPrice(actionEstimate.totals.return_shipping_charge)}</strong>
                           </div>
