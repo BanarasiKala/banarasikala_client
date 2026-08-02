@@ -5256,37 +5256,3 @@
   to   { transform: rotate(360deg); }
 }
 
-.product-delivery-detected {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 13px;
-  color: #3d2817;
-}
-
-.product-delivery-detected svg {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  color: #800020;
-}
-
-.product-delivery-detected strong {
-  color: #800020;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.product-delivery-change-btn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  padding: 0;
-  color: #800020;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-  line-height: 1;
-}

@@ -635,7 +635,6 @@ const ProductDetail = () => {
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
   const [deliveryQuote, setDeliveryQuote] = useState(null);
-  const [showPincodeInput, setShowPincodeInput] = useState(false);
   const [orderCountdown, setOrderCountdown] = useState(() => getOrderCutoff());
   const autoCheckedRef = useRef("");
   const [addingToBag, setAddingToBag] = useState(false);
@@ -1776,7 +1775,6 @@ const ProductDetail = () => {
     if (autoCheckedRef.current === key) return undefined;
     autoCheckedRef.current = key;
     setDeliveryPincode(locationPincode);
-    if (locationSource === "gps") setShowPincodeInput(false);
     setDeliveryQuote(null);
     const timer = setTimeout(() => { checkDelivery(locationPincode); }, 200);
     return () => clearTimeout(timer);
@@ -2232,23 +2230,12 @@ const ProductDetail = () => {
                     <Icon icon="lucide:loader" className="product-delivery-spinner" />
                     <span>Finding your pincode for delivery estimate…</span>
                   </div>
-                ) : !showPincodeInput && locationSource === "gps" && locationPincode ? (
-                  <div className="product-delivery-detected">
-                    <Icon icon="lucide:map-pin" className="bk-map-icon" />
-                    <span>Delivering to <strong>{locationPincode}</strong></span>
-                    <button
-                      type="button"
-                      className="product-delivery-change-btn"
-                      onClick={() => {
-                        setShowPincodeInput(true);
-                        setDeliveryPincode(locationPincode);
-                        setDeliveryQuote(null);
-                      }}
-                    >
-                      Change
-                    </button>
-                  </div>
                 ) : (
+                  /* Always the input, never a collapsed "Delivering to … Change" row. A
+                     detected pincode is seeded into this field by the effect above and its
+                     estimate fetched straight away, so the reader sees the same control
+                     whether the pincode came from GPS or their own typing — and can edit it
+                     without first hunting for a Change button. */
                   <div className="product-delivery-input-row">
                     <input
                       type="text"
