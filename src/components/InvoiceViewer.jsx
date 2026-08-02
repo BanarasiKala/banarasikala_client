@@ -118,7 +118,14 @@ export default function InvoiceViewer({ html, orderNumber, onClose }) {
         </div>
 
         {url ? (
-          <div className="invoice-frame-wrap" ref={wrapRef}>
+          <div
+            className="invoice-frame-wrap"
+            ref={wrapRef}
+            /* Until onLoad reports the document's size there is no spacer to give this
+               height, and the frame inside is absolutely positioned — so without a floor
+               here the region collapses and the invoice is invisible for that first beat. */
+            style={docSize.h ? undefined : { minHeight: "60dvh" }}
+          >
             <iframe
               ref={frameRef}
               className="invoice-frame"
