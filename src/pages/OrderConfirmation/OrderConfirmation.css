@@ -3573,41 +3573,46 @@ span.oc-item-attr-value {
   box-shadow: 0 0 0 1px rgba(116, 40, 19, 0.18);
 }
 
-/* ── Tighter spacing pass: the Order Summary / Payment Summary / Delivery
-   Address column had grown padding-heavy across the card, the gaps between
-   cards, and the rows inside them. Trims all of it down together. ── */
+/* ── Spacing pass for the Order Summary / Payment Summary / Delivery Address
+   column. This once trimmed the cards to 5px padding and 3px gaps, which read as
+   one continuous sheet — no card looked separate from the one under it. Loosened
+   so each card has room inside and daylight between it and its neighbour, while
+   staying tighter than the original padding-heavy layout. ── */
 .order-confirmation-page {
   padding: 14px max(14px, calc((100vw - 1040px) / 2)) 30px;
 }
 
 .order-panel {
-  padding: 5px;
+  padding: 14px;
 }
 
 .order-panel-head {
-  margin-bottom: 3px;
+  margin-bottom: 10px;
 }
 
+/* The gap between one card and the next. */
 .order-confirmation-main,
 .order-confirmation-side {
-  gap: 3px;
+  gap: 12px;
 }
 
 .order-confirmation-side {
-  margin-top: 3px;
+  margin-top: 12px;
 }
 
+/* Sub-cards: the product rows inside a panel get their own separation too, so a
+   card holding three items does not read as one block of text. */
 .confirmation-items {
-  gap: 3px;
+  gap: 8px;
 }
 
 .confirmation-item {
-  padding: 4px;
+  padding: 10px;
 }
 
-/* 3px cleared 9px text; at 12px the rows would sit on their separators. */
+/* Breathing room either side of each figure, without the rows drifting apart. */
 .summary-row {
-  padding: 5px 0;
+  padding: 7px 0;
 }
 
 .summary-row.is-final {
