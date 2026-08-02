@@ -1199,13 +1199,18 @@ body.menu-open {
   text-transform: uppercase;
 }
 
+/* Poppins, not Cinzel. Cinzel renders lowercase as small capitals, so this sentence came
+   out as a wall of caps — display type for a saree showcase, not for a two-line
+   instruction inside a utility dialog. The body copy below it is already Poppins. */
 .bk-refer-card h2 {
   max-width: 320px;
   margin: 0;
   color: #4a160f;
-  font-family: "Cinzel", Georgia, serif;
-  font-size: 22px;
-  line-height: 1.18;
+  font-family: "Poppins", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.28;
 }
 
 .bk-refer-card p {
@@ -1247,14 +1252,18 @@ body.menu-open {
   padding: 11px 12px;
 }
 
+/* A real monospace stack. "Poppins, monospace" never reached the fallback — Poppins is
+   loaded, so the code rendered in a proportional face at 700 with wide tracking, where
+   the 0 and O and the 1 and I are the same shapes as body text and the spacing looked
+   like a display heading rather than a value to be read out or typed in. */
 .bk-refer-code-value {
   flex: 1;
   min-width: 0;
   color: #800020;
-  font-family: "Poppins", monospace;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 /* overflow-wrap: anywhere is what actually shows the whole URL — a referral link has no

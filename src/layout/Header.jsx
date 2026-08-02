@@ -1155,7 +1155,9 @@ const Header = () => {
                 {referCopied ? "Copied" : "Copy Link"}
               </button>
               <button type="button" className="primary" onClick={shareReferralLink} disabled={!referralLink}>
-                <Icon icon="lucide:share-2" />
+                {/* Send, matching the share buttons on the product page, the reels rail and
+                    Banaras in Motion — one share glyph everywhere. */}
+                <Icon icon="lucide:send" />
                 Share
               </button>
             </div>
