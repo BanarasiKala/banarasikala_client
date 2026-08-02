@@ -4596,6 +4596,25 @@
   font-size: 11px;
   color: rgba(53, 23, 15, 0.6);
 }
+/* Expiry line under the code. Inherits the muted 11px of its sibling spans while an offer
+   is far off, then takes amber inside its last week and red on the final day — the two
+   class selectors outrank `.product-offer-card-body span`, which would otherwise hold it
+   at the muted brown. */
+.product-offer-expiry svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+}
+
+.product-offer-card-body .product-offer-expiry.is-urgent {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.product-offer-card-body .product-offer-expiry.is-final {
+  color: #b42318;
+}
+
 .product-offer-card-body em {
   max-width: 126px;
   overflow: hidden;
