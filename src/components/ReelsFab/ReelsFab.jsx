@@ -88,6 +88,10 @@ const ReelsFab = () => {
 
   return (
     <Link to="/reels" className="bk-reels-fab" aria-label="Watch shoppable reels">
+      {/* Before the card in the DOM so it paints behind it — both are positioned, so order
+          is what decides, and neither needs a z-index. */}
+      <span className="bk-reels-fab-pulse" aria-hidden="true" />
+
       <span className="bk-reels-fab-card">
         {reel && (
           <video

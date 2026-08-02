@@ -27,25 +27,40 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.28s ease;
 }
 
-/* ── Ambient glow ──
-   A soft bloom pooling under the card, breathing slowly. Sits behind everything and never
-   takes a click. Cheap on purpose: the honest version of this effect is a second, blurred
-   copy of the video, and decoding the same reel twice for a 48px button is not worth it. */
+/* ── Ambient bloom ──
+   A soft, STILL pool of gold under the card. The movement in this corner comes from the
+   pulse below and the reel itself; a third thing breathing made it restless. Cheap on
+   purpose: the honest version is a second, blurred copy of the video, and decoding the same
+   reel twice for a 48px button is not worth the battery. */
 .bk-reels-fab::before {
   content: "";
   position: absolute;
   inset: -8px;
   z-index: -1;
   border-radius: 20px;
-  background: radial-gradient(60% 60% at 50% 55%, rgba(212, 175, 55, 0.55), rgba(168, 50, 88, 0.28) 55%, transparent 78%);
+  background: radial-gradient(60% 60% at 50% 55%, rgba(212, 175, 55, 0.5), rgba(168, 50, 88, 0.26) 55%, transparent 78%);
   filter: blur(9px);
   pointer-events: none;
-  animation: bk-reels-fab-ambient 4.2s ease-in-out infinite;
 }
 
-@keyframes bk-reels-fab-ambient {
-  0%, 100% { opacity: 0.55; transform: scale(0.94); }
-  50% { opacity: 1; transform: scale(1.06); }
+/* ── Splash ──
+   The attention pulse the icon version had: a gold shape swelling out of the card and
+   fading, on a loop. Rounded to the card's own corners rather than the old circle, and
+   scaled less far — a 2:3 rectangle grown to 1.8x threw a much bigger shadow across the
+   corner than a 46px disc did. Behind the card because the card comes later in the DOM. */
+.bk-reels-fab-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: rgba(212, 175, 55, 0.5);
+  animation: bk-reels-fab-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes bk-reels-fab-pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  70% { transform: scale(1.42); opacity: 0; }
+  100% { opacity: 0; }
 }
 
 .bk-reels-fab:hover {
@@ -204,11 +219,13 @@ body.btt-visible .bk-reels-fab {
 @media (prefers-reduced-motion: reduce) {
   /* Stopped, not hidden: the card still reads as a reel with a play head on it, which is
      the whole message. Only the motion goes — the glow stays, it just stops breathing. */
-  .bk-reels-fab::before,
+  .bk-reels-fab-pulse,
   .bk-reels-fab-strip,
   .bk-reels-fab-live i {
     animation: none;
   }
 
-  .bk-reels-fab::before { opacity: 0.8; }
+  /* The swelling splash goes entirely — held still it is just a gold slab behind the card.
+     The bloom stays, since it never moved in the first place. */
+  .bk-reels-fab-pulse { display: none; }
 }
