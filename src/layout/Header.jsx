@@ -9,6 +9,7 @@ import { API_ENDPOINTS } from "../config/api";
 import api from "../utils/api";
 import { getProductCoverImage } from "../utils/productMedia";
 import { useSupport } from "../context/SupportRealtimeContext";
+import UserAvatar from "../components/UserAvatar";
 import verticalLogo from "../assets/vertical_logo.png";
 import headerBackground from "../assets/header_backgroung.png";
 import "./Header.css";
@@ -791,9 +792,16 @@ const Header = () => {
               {profileOpen && user && (
                 <div className="bk-profile-panel" role="menu">
                   <div className="bk-profile-head">
-                    <span className="bk-profile-avatar" aria-hidden="true">
-                      {firstName?.trim()?.[0]?.toUpperCase() || "U"}
-                    </span>
+                    {/* The customer's own photo when they have one — uploaded on the profile
+                        page, or carried over from Google on first sign-in. UserAvatar falls
+                        back to this initial on its own, and also falls back if the image
+                        fails to load, which Google URLs eventually do. */}
+                    <UserAvatar
+                      name={firstName}
+                      src={user?.avatar_url}
+                      size={38}
+                      className="bk-profile-avatar"
+                    />
                     <span className="bk-profile-head-copy">
                       <p>Hello {firstName}</p>
                       <span>{userPhone}</span>

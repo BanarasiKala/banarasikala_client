@@ -18,6 +18,32 @@ const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
 const authToken = () =>
   localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
 
+/**
+ * The viewer's own sound choice, remembered across reloads.
+ *
+ * Only ever written from the speaker button. The silent fallback a browser forces on a cold
+ * load is NOT stored — that is the autoplay policy talking, and persisting it would leave the
+ * feed permanently muted after one visit that happened to start without engagement.
+ *
+ * Absent means sound on, which is the feed's default. Wrapped because storage throws in
+ * private mode on some browsers, and losing a preference must not take the page down.
+ */
+const MUTE_PREF_KEY = "bk_reels_muted";
+const readMutePreference = () => {
+  try {
+    return localStorage.getItem(MUTE_PREF_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const writeMutePreference = (isMuted) => {
+  try {
+    localStorage.setItem(MUTE_PREF_KEY, isMuted ? "1" : "0");
+  } catch {
+    /* preference simply does not persist */
+  }
+};
+
 let keySeq = 0;
 const asInstance = (reel) => ({ ...reel, _key: `${reel.id}-${keySeq++}` });
 const shuffle = (arr) => {
@@ -420,7 +446,12 @@ export default function Reels() {
   // Separate from "feed is empty": one means the request failed and is worth retrying,
   // the other means the store genuinely has no reels. They must not look the same.
   const [feedError, setFeedError] = useState(false);
-  const [muted, setMuted] = useState(false); // audio on by default
+  // Seeded from the viewer's last explicit choice, so sound does not reset to the browser's
+  // silent fallback on every reload. Absent (a first visit) means sound on.
+  const [muted, setMuted] = useState(readMutePreference);
+  // True only while the AUTOPLAY POLICY is what silenced us, never when the viewer chose it.
+  // That distinction is what lets the first tap restore sound without overriding a real mute.
+  const [autoSilenced, setAutoSilenced] = useState(false);
   // Play/pause belongs to the FEED, not to one reel: pausing and scrolling on keeps the next
   // one paused, and pressing play carries forward the same way. Held here so it survives the
   // reel components mounting and unmounting as the list scrolls.
@@ -515,7 +546,48 @@ export default function Reels() {
   // toggle: several reels can report this while scrolling fast, and a toggle would flip the
   // sound back on for the next one. Memoised because ReelItem's playback effect depends on
   // it — an inline arrow here re-ran that effect on every render of this page.
-  const handleSilenced = useCallback(() => setMuted(true), []);
+  //
+  // Flagged as auto-silenced so the effect below can undo it. Not persisted: this is the
+  // browser's decision, not the viewer's, and writing it down would teach the feed to stay
+  // muted forever after one cold load.
+  const handleSilenced = useCallback(() => {
+    setAutoSilenced(true);
+    setMuted(true);
+  }, []);
+
+  // The viewer's own choice, which IS remembered.
+  const handleToggleMute = useCallback(() => {
+    setAutoSilenced(false);
+    setMuted((current) => {
+      const next = !current;
+      writeMutePreference(next);
+      return next;
+    });
+  }, []);
+
+  /**
+   * Restores sound on the first interaction after the autoplay policy took it away.
+   *
+   * A browser only permits unmuted playback once it considers the visitor engaged, so a cold
+   * load of the feed is always silenced — and it stayed silenced until the viewer found the
+   * speaker button, on every single reload. The first gesture is exactly the engagement the
+   * policy was waiting for, so it is also the first moment unmuting is allowed to succeed.
+   *
+   * Only ever runs against `autoSilenced`. A viewer who genuinely muted the feed is left
+   * alone, and their stored preference is re-checked here in case they set it in this session.
+   */
+  useEffect(() => {
+    if (!autoSilenced) return undefined;
+
+    const restore = () => {
+      setAutoSilenced(false);
+      if (!readMutePreference()) setMuted(false);
+    };
+
+    const events = ["pointerdown", "touchstart", "keydown"];
+    events.forEach((name) => window.addEventListener(name, restore, { once: true, passive: true }));
+    return () => events.forEach((name) => window.removeEventListener(name, restore));
+  }, [autoSilenced]);
 
   const handleActivate = useCallback((key, id) => {
     setActiveKey(key);
@@ -948,7 +1020,7 @@ export default function Reels() {
             onActivate={handleActivate}
             playing={playing}
             onPlayingChange={setPlaying}
-            onToggleMute={() => setMuted((m) => !m)}
+            onToggleMute={handleToggleMute}
             onSilenced={handleSilenced}
             onLike={handleLike}
             onComments={openComments}
