@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
+import { imgUrl } from "../../../utils/cloudinary";
+import brandBanner from "../../../assets/story/banaras-weave.png";
 // The trimmed Amazon mockup, not assets/amazon_phone.PNG: the original is a 198x400
 // device floating in a 450x439 canvas, so sizing it alongside the tightly-cropped
 // Flipkart shot rendered it about half the size. Trimmed to the device, the two match.
@@ -24,19 +27,33 @@ const Mark = ({ market, className }) =>
   );
 
 /**
- * Per-channel storefront links from the environment, which win over the
- * storefront_url on the marketplaces row.
+ * Where each channel's button sends people, resolved in three steps:
+ * environment override, then the built-in link, then the marketplaces row.
  *
- * Read directly rather than through requiredEnv: these are optional overrides, so
- * a missing one has to fall back to the database instead of throwing and taking
- * the whole section down with it.
+ * The env vars are read directly rather than through requiredEnv because they are
+ * optional — a missing one has to fall through to the next step instead of
+ * throwing and taking the whole section down with it.
+ *
+ * The built-in links are the deep links to our own storefront on each channel. They
+ * sit in front of the database because the marketplaces row still holds the generic
+ * amazon.in homepage, and a button landing there is worse than no button at all. The
+ * row is still the last resort, which is what keeps a channel added later working
+ * before anyone sets an env var for it.
  */
-const STOREFRONT_OVERRIDES = {
+const STOREFRONT_ENV = {
   amazon: import.meta.env.VITE_AMAZON_STORE_URL,
   flipkart: import.meta.env.VITE_FLIPKART_STORE_URL,
 };
+
+const STOREFRONT_FALLBACKS = {
+  amazon: "https://www.amazon.in/s?rh=n%3A1571271031%2Cp_4%3ABanarasi%2BKala&ref=bl_sl_s_ap_web_1571271031",
+  flipkart: "https://dl.flipkart.com/s/XaTOd_NNNN",
+};
+
 const storefrontFor = (market) =>
-  String(STOREFRONT_OVERRIDES[market.slug] || "").trim() || market.storefront_url;
+  String(STOREFRONT_ENV[market.slug] || "").trim() ||
+  STOREFRONT_FALLBACKS[market.slug] ||
+  market.storefront_url;
 
 const CHANNEL_FEATURES = {
   amazon: ["Fast & Reliable Delivery", "100% Original Products", "Easy Returns", "Secure Payments"],
@@ -45,6 +62,12 @@ const CHANNEL_FEATURES = {
 const FEATURE_ICONS = ["lucide:truck", "lucide:badge-check", "lucide:refresh-cw", "lucide:shield-check"];
 const featuresFor = (slug) =>
   CHANNEL_FEATURES[slug] || ["Fast Delivery", "Genuine Products", "Easy Returns", "Secure Payments"];
+
+const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+
+// Enough to fill the rail and give it something to scroll, without pulling the full
+// /marketplace catalogue into the home page payload.
+const RAIL_LIMIT = 12;
 
 const Channel = ({ market }) => {
   const storefront = storefrontFor(market);
@@ -91,20 +114,38 @@ const Channel = ({ market }) => {
 
 const MarketplacePresence = () => {
   const [marketplaces, setMarketplaces] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const railRef = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    // limit=1 — only the channel list is needed here, not the bestseller rail.
-    fetch(`${API_ENDPOINTS.marketplaces}/showcase?limit=1`, { signal: controller.signal })
+    fetch(`${API_ENDPOINTS.marketplaces}/showcase?limit=${RAIL_LIMIT}`, { signal: controller.signal })
       .then((res) => res.json())
-      .then((data) => setMarketplaces((data?.marketplaces || []).filter((m) => m.status === "live")))
+      .then((data) => {
+        setMarketplaces((data?.marketplaces || []).filter((m) => m.status === "live"));
+        setProducts(data?.products || []);
+      })
       .catch((err) => {
-        if (err.name !== "AbortError") setMarketplaces([]);
+        if (err.name !== "AbortError") {
+          setMarketplaces([]);
+          setProducts([]);
+        }
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
+
+  // Scrolls by exactly one card. Both the card width and the gap are measured off the
+  // rail rather than hardcoded, because both scale continuously with the viewport.
+  const nudge = (direction) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const card = rail.querySelector(".bk-mktpres-card");
+    if (!card) return;
+    const gap = parseFloat(getComputedStyle(rail).columnGap) || 0;
+    rail.scrollBy({ left: direction * (card.getBoundingClientRect().width + gap), behavior: "smooth" });
+  };
 
   const channelNames = marketplaces.map((m) => m.name);
   const heading =
@@ -129,9 +170,6 @@ const MarketplacePresence = () => {
           <h2>
             Shop Banarasi Kala on <em>{heading}</em>
           </h2>
-          <div className="bk-mktpres-divider" aria-hidden="true">
-            <i /><span>&#9670;</span><i />
-          </div>
           <p>
             We are proudly listed on India&apos;s leading marketplaces.
             <br />
@@ -175,6 +213,98 @@ const MarketplacePresence = () => {
             )}
           </div>
         )}
+
+        {/* ── Bestsellers, each badged with the channels it is on ── */}
+        {!loading && products.length > 0 && (
+          <div className="bk-mktpres-best">
+            <h3>Our Bestsellers on Marketplaces</h3>
+
+            <div className="bk-mktpres-rail-wrap">
+              <button
+                type="button"
+                className="bk-mktpres-arrow"
+                onClick={() => nudge(-1)}
+                aria-label="Previous products"
+              >
+                <Icon icon="lucide:arrow-left" />
+              </button>
+
+              <div className="bk-mktpres-rail" ref={railRef}>
+                {products.map((product) => {
+                  const mrp = Number(product.mrp_price || 0);
+                  const sell = Number(product.selling_price || 0);
+                  return (
+                    <article className="bk-mktpres-card" key={product.id}>
+                      <Link
+                        to={`/product/${product.slug}`}
+                        className="bk-mktpres-card-media"
+                        aria-label={product.name}
+                      >
+                        {product.image ? (
+                          <img src={imgUrl(product.image, 600)} alt={product.name} loading="lazy" />
+                        ) : (
+                          <span className="bk-mktpres-card-noimg">
+                            <Icon icon="lucide:image-off" />
+                          </span>
+                        )}
+                      </Link>
+                      <h4>{product.name}</h4>
+                      <div className="bk-mktpres-card-price">
+                        <strong>{formatMoney(sell)}</strong>
+                        {mrp > sell && <s>{formatMoney(mrp)}</s>}
+                      </div>
+                      {/* One tile per marketplace this saree is actually listed on, so the
+                          reader sees at a glance where they can buy it. */}
+                      <div className="bk-mktpres-card-badges">
+                        {(product.links || []).map((link) => (
+                          <a
+                            key={link.slug}
+                            href={link.url}
+                            target="_blank"
+                            rel="nofollow sponsored noopener noreferrer"
+                            className="bk-mktpres-badge"
+                            title={`Buy on ${link.name}`}
+                            aria-label={`Buy ${product.name} on ${link.name}`}
+                          >
+                            <Mark market={link} className="bk-mktpres-badge-mark" />
+                          </a>
+                        ))}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="bk-mktpres-arrow"
+                onClick={() => nudge(1)}
+                aria-label="Next products"
+              >
+                <Icon icon="lucide:arrow-right" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Brand banner ── */}
+        <div className="bk-mktpres-banner" style={{ "--mktpres-banner": `url(${brandBanner})` }}>
+          <div className="bk-mktpres-banner-copy">
+            <span className="bk-mktpres-banner-kicker">
+              <Icon icon="lucide:sparkle" /> One Brand. Everywhere.
+            </span>
+            <h3>
+              Banarasi <em>Kala</em>
+            </h3>
+            <p>Trusted quality. Loved by thousands.</p>
+            {/* /marketplace, not /collection: this banner sits under the marketplace
+                rail, so "all products" means every saree listed on a channel. */}
+            <Link to="/marketplace" className="bk-mktpres-banner-btn">
+              Explore All Products
+              <Icon icon="lucide:arrow-right" />
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

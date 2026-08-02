@@ -9,7 +9,6 @@
    desktop. */
 
 .bk-mktpres-section {
-  position: relative;
   width: 100%;
   padding: 22px 0 30px;
   overflow: hidden;
@@ -21,29 +20,7 @@
   background-position: center;
 }
 
-/* Mandala motifs flanking the heading, drawn from the shared asset as a mask so
-   they take the section's gold rather than the file's own stroke colour. Clipped
-   by the section, so they bleed off both edges the way the artwork does. */
-.bk-mktpres-section::before,
-.bk-mktpres-section::after {
-  content: "";
-  position: absolute;
-  top: clamp(8px, 2.6vw, 44px);
-  z-index: 0;
-  width: clamp(84px, 13vw, 190px);
-  aspect-ratio: 1;
-  background: rgba(199, 155, 63, 0.3);
-  -webkit-mask: url("../../../assets/mandala.svg") center / contain no-repeat;
-  mask: url("../../../assets/mandala.svg") center / contain no-repeat;
-  pointer-events: none;
-}
-
-.bk-mktpres-section::before { left: clamp(-46px, -2.4vw, 8px); }
-.bk-mktpres-section::after { right: clamp(-46px, -2.4vw, 8px); }
-
 .bk-mktpres-shell {
-  position: relative;
-  z-index: 1;
   width: min(100%, var(--bk-page-max));
   margin: 0 auto;
   padding: 0 var(--bk-page-pad);
@@ -81,26 +58,6 @@
 .bk-mktpres-heading h2 em {
   display: block;
   font-style: normal;
-}
-
-.bk-mktpres-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: min(240px, 60%);
-  margin: 12px auto 0;
-  color: #c79b3f;
-}
-
-.bk-mktpres-divider i {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(199, 155, 63, 0.7), transparent);
-}
-
-.bk-mktpres-divider span {
-  font-size: 9px;
 }
 
 .bk-mktpres-heading p {
@@ -455,5 +412,280 @@
   .bk-mktpres-btn svg {
     width: 10px;
     height: 10px;
+  }
+}
+
+/* ── Bestsellers rail ──────────────────────────────────────────────────────────
+   Arrow / rail / arrow with four cards across, aligned to the panel above and held
+   at every width — the same rule the rest of this section follows. Every value is a
+   clamp against its desktop measure and the card is a share of the rail, so there is
+   no separate narrow-width layout to drift out of sync. */
+.bk-mktpres-best {
+  --mktpres-rail-gap: clamp(5px, 1.6vw, 18px);
+  --mktpres-arrow: clamp(18px, 3.3vw, 38px);
+  --mktpres-card-pad: clamp(4px, 1.1vw, 12px);
+  max-width: 1040px;
+  margin: clamp(20px, 3.4vw, 42px) auto 0;
+  text-align: center;
+}
+
+.bk-mktpres-best h3 {
+  margin: 0;
+  color: #5a160f;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(14px, 2.8vw, 30px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.bk-mktpres-rail-wrap {
+  display: grid;
+  grid-template-columns: var(--mktpres-arrow) minmax(0, 1fr) var(--mktpres-arrow);
+  align-items: center;
+  gap: clamp(3px, 0.9vw, 10px);
+  margin-top: clamp(10px, 1.8vw, 22px);
+}
+
+.bk-mktpres-arrow {
+  display: grid;
+  place-items: center;
+  width: var(--mktpres-arrow);
+  height: var(--mktpres-arrow);
+  padding: 0;
+  border: 1px solid rgba(199, 155, 63, 0.5);
+  border-radius: 50%;
+  background: rgba(255, 250, 241, 0.9);
+  color: #8a4c22;
+  font-size: clamp(9px, 1.5vw, 17px);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.bk-mktpres-arrow:hover {
+  background: #fff3e4;
+  color: #800020;
+}
+
+/* Scroll-snapping rather than a grid: the arrows nudge it by exactly one card and it
+   stays swipeable on a phone without that being a separate mobile layout. */
+.bk-mktpres-rail {
+  display: flex;
+  gap: var(--mktpres-rail-gap);
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bk-mktpres-rail::-webkit-scrollbar { display: none; }
+
+/* A share of the rail, not a fixed basis: four cards sit across it whatever the rail
+   measures, so the row reads the same on a phone as on a desktop. */
+.bk-mktpres-card {
+  flex: 0 0 calc((100% - 3 * var(--mktpres-rail-gap)) / 4);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3px, 0.6vw, 7px);
+  padding: var(--mktpres-card-pad);
+  scroll-snap-align: start;
+  border: 1px solid rgba(199, 155, 63, 0.26);
+  border-radius: clamp(7px, 1.2vw, 14px);
+  background: rgba(255, 252, 246, 0.92);
+  box-shadow: 0 12px 26px rgba(88, 39, 13, 0.07);
+  text-align: left;
+}
+
+.bk-mktpres-card-media {
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: clamp(5px, 0.85vw, 10px);
+  background:
+    radial-gradient(circle at top, rgba(212, 175, 55, 0.14), transparent 58%),
+    linear-gradient(135deg, #f1d9b6 0%, #fff8ec 48%, #e5c394 100%);
+}
+
+.bk-mktpres-card-media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.bk-mktpres-card-noimg {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(53, 23, 15, 0.3);
+  font-size: clamp(13px, 2.2vw, 26px);
+}
+
+.bk-mktpres-card h4 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: clamp(2px, 0.35vw, 4px) 0 0;
+  color: #3a2318;
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(8px, 1.05vw, 12px);
+  font-weight: 500;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Wraps rather than overflows: on the narrowest card a price beside its struck-through
+   MRP is close to the card's width, and neither can shrink below its own digits. */
+.bk-mktpres-card-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: clamp(3px, 0.6vw, 7px);
+}
+
+.bk-mktpres-card-price strong {
+  color: #1a1a1a;
+  font-size: clamp(9px, 1.2vw, 14px);
+  font-weight: 600;
+}
+
+.bk-mktpres-card-price s {
+  color: rgba(53, 23, 15, 0.42);
+  font-size: clamp(7.5px, 1vw, 11.5px);
+}
+
+/* White tiles so each channel's mark keeps its own brand colour without the row
+   turning into a colour clash. */
+.bk-mktpres-card-badges {
+  display: flex;
+  gap: clamp(3px, 0.7vw, 8px);
+  margin-top: 2px;
+}
+
+.bk-mktpres-badge {
+  display: grid;
+  place-items: center;
+  width: clamp(17px, 3.2vw, 38px);
+  height: clamp(15px, 2.9vw, 34px);
+  border: 1px solid rgba(199, 155, 63, 0.3);
+  border-radius: clamp(4px, 0.7vw, 8px);
+  background: #fff;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.bk-mktpres-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(88, 39, 13, 0.16);
+}
+
+.bk-mktpres-badge-mark {
+  width: clamp(9px, 1.7vw, 20px);
+  height: clamp(9px, 1.7vw, 20px);
+  font-size: clamp(9px, 1.7vw, 20px);
+  object-fit: contain;
+}
+
+/* ── Brand banner ──
+   Copy on the maroon at the left, the weave showing through at the right, at every
+   width. The copy column is a share of the banner rather than a fixed 520px, so the
+   gradient still clears the fabric on a phone instead of the text running over it. */
+.bk-mktpres-banner {
+  position: relative;
+  overflow: hidden;
+  max-width: 1040px;
+  margin: clamp(18px, 3vw, 40px) auto 0;
+  border-radius: clamp(9px, 1.5vw, 18px);
+  background:
+    linear-gradient(100deg, #4a0512 0%, rgba(74, 5, 18, 0.94) 42%, rgba(74, 5, 18, 0.35) 72%, transparent 100%),
+    var(--mktpres-banner) right center / cover no-repeat,
+    #4a0512;
+}
+
+.bk-mktpres-banner-copy {
+  max-width: min(520px, 62%);
+  padding: clamp(14px, 3.2vw, 40px) clamp(12px, 3.6vw, 44px);
+  color: #fff3dd;
+}
+
+.bk-mktpres-banner-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(3px, 0.7vw, 8px);
+  color: #e7b64f;
+  font-size: clamp(6.5px, 0.95vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.bk-mktpres-banner-kicker svg {
+  flex: 0 0 auto;
+  width: clamp(8px, 1.2vw, 14px);
+  height: clamp(8px, 1.2vw, 14px);
+}
+
+.bk-mktpres-banner h3 {
+  margin: clamp(4px, 0.85vw, 10px) 0 clamp(2px, 0.5vw, 6px);
+  color: #fff3dd;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: clamp(15px, 3vw, 34px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* The house pairing: the name in cream, the word that carries it in gold. */
+.bk-mktpres-banner h3 em {
+  color: #e7b64f;
+  font-style: normal;
+}
+
+.bk-mktpres-banner p {
+  margin: 0 0 clamp(8px, 1.6vw, 20px);
+  color: rgba(255, 243, 221, 0.86);
+  font-size: clamp(7.5px, 1.15vw, 13.5px);
+}
+
+.bk-mktpres-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.85vw, 10px);
+  min-height: clamp(22px, 3.5vw, 42px);
+  padding: 0 clamp(8px, 1.8vw, 22px);
+  border: 1px solid rgba(255, 226, 156, 0.5);
+  border-radius: clamp(5px, 0.7vw, 8px);
+  background: transparent;
+  color: #ffe29c;
+  font-family: inherit;
+  font-size: clamp(7.5px, 1.1vw, 13px);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.16s ease;
+}
+
+.bk-mktpres-banner-btn:hover {
+  background: rgba(255, 226, 156, 0.12);
+}
+
+.bk-mktpres-banner-btn svg {
+  flex: 0 0 auto;
+  width: clamp(9px, 1.3vw, 16px);
+  height: clamp(9px, 1.3vw, 16px);
+}
+
+/* Three across on a phone rather than four. Four is the desktop row, but at phone
+   widths a quarter of the rail leaves the card too narrow for the name and the two
+   channel tiles to stay legible — the rail still scrolls to the rest. */
+@media (max-width: 480px) {
+  .bk-mktpres-card {
+    flex-basis: calc((100% - 2 * var(--mktpres-rail-gap)) / 3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-mktpres-badge:hover {
+    transform: none;
   }
 }

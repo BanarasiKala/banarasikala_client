@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../config/api";
@@ -7,35 +7,17 @@ import brandBanner from "../../assets/story/banaras-weave.png";
 import "./Marketplace.css";
 
 /**
- * "Our marketplace presence" — one page for every channel we sell on.
+ * Our marketplace listings — every saree we sell on another channel, on one page.
  *
  * There used to be a page per marketplace (/store/amazon, /store/flipkart …). One page
  * instead, because a product listed on two channels was otherwise a card on two separate
  * pages; here it appears once, carrying a badge per marketplace it is on.
  *
- * Everything is data: the channel cards, their feature lists and the badges under each
- * product all come from the marketplaces table, so adding one is still an admin row.
+ * Everything is data: the products and the badges under each of them come from the
+ * marketplaces table, so adding a channel is still just an admin row.
  */
 
 const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
-
-/**
- * Phone mockups, matched to a channel by slug — assets/<slug>_phone.PNG.
- *
- * Loaded through import.meta.glob rather than a static import so a channel without a
- * mockup simply renders without one, instead of failing the build. Adding Myntra means
- * dropping myntra_phone.png in beside these two.
- */
-const PHONE_SHOTS = import.meta.glob("../../assets/*_phone.{png,PNG,jpg,jpeg,webp}", {
-  eager: true,
-  import: "default",
-});
-const phoneFor = (slug) => {
-  const hit = Object.entries(PHONE_SHOTS).find(([path]) =>
-    path.toLowerCase().includes(`/${slug.toLowerCase()}_phone.`)
-  );
-  return hit?.[1] || null;
-};
 
 // The mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png") —
 // both, because that is what the footer already had. A slash without a colon means a file.
@@ -48,28 +30,17 @@ const Mark = ({ market, className }) =>
     <Icon icon={market.icon || "lucide:store"} className={className} style={{ color: market.accent_color }} />
   );
 
-/**
- * The four reassurances under each channel card.
- *
- * Per-channel because the promises differ — Prime is Amazon's, not Flipkart's — and
- * generic for anything added later, so a new marketplace still renders a complete card
- * before anyone writes copy for it.
- */
-const CHANNEL_FEATURES = {
-  amazon: ["Fast & Reliable Delivery", "100% Original Products", "Easy Returns", "Secure Payments"],
-  flipkart: ["Quick Delivery", "Genuine Quality", "Hassle-free Returns", "Secure Payments"],
-};
-const FEATURE_ICONS = ["lucide:truck", "lucide:badge-check", "lucide:refresh-cw", "lucide:shield-check"];
-const featuresFor = (slug) =>
-  CHANNEL_FEATURES[slug] || ["Fast Delivery", "Genuine Products", "Easy Returns", "Secure Payments"];
-
 const PAGE_SIZE = 60;
 
 const Marketplace = () => {
   const [data, setData] = useState(null);
+  // Products are held apart from `data` because paging appends to them while the
+  // channel list stays whatever the first response returned.
+  const [products, setProducts] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const railRef = useRef(null);
 
   const load = useCallback(async (signal) => {
     setLoading(true);
@@ -77,7 +48,10 @@ const Marketplace = () => {
     try {
       const res = await fetch(`${API_ENDPOINTS.marketplaces}/showcase?limit=${PAGE_SIZE}`, { signal });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      setData(await res.json());
+      const json = await res.json();
+      setData(json);
+      setProducts(json.products || []);
+      setHasMore(Boolean(json.hasMore));
     } catch (err) {
       if (err?.name === "AbortError") return;
       setError(true);
@@ -92,19 +66,29 @@ const Marketplace = () => {
     return () => controller.abort();
   }, [load]);
 
-  // Scrolls by one card, measured from the rail rather than hardcoded, so the arrows keep
-  // working as the card width changes across breakpoints.
-  const nudge = (direction) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const card = rail.querySelector(".bk-mkt-card");
-    const step = card ? card.getBoundingClientRect().width + 18 : rail.clientWidth * 0.8;
-    rail.scrollBy({ left: direction * step, behavior: "smooth" });
+  // Appends the next page. The offset is the number of cards already held rather than a
+  // page counter, so a failed-and-retried request cannot skip or duplicate a row.
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `${API_ENDPOINTS.marketplaces}/showcase?limit=${PAGE_SIZE}&offset=${products.length}`
+      );
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const json = await res.json();
+      setProducts((prev) => [...prev, ...(json.products || [])]);
+      setHasMore(Boolean(json.hasMore));
+    } catch {
+      // hasMore is left alone so the button stays and the reader can try again.
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const marketplaces = data?.marketplaces || [];
   const liveChannels = marketplaces.filter((m) => m.status === "live");
-  const products = data?.products || [];
+  const total = data?.total || 0;
   // "Amazon & Flipkart" in the heading, built from whatever is live.
   const channelNames = liveChannels.map((m) => m.name);
   const heading =
@@ -114,25 +98,10 @@ const Marketplace = () => {
 
   return (
     <main className="bk-mkt-page">
-      {/* ── Hero ── */}
-      <section className="bk-mkt-hero">
-        <span className="bk-mkt-eyebrow">Our Marketplace Presence</span>
-        <h1>
-          Shop Banarasi Kala on
-          <em>{heading}</em>
-        </h1>
-        <div className="bk-mkt-divider" aria-hidden="true"><i /><span>◆</span><i /></div>
-        <p className="bk-mkt-sub">
-          We are proudly listed on India&apos;s leading marketplaces.
-          <br />
-          Discover our exclusive Banarasi sarees on {heading}.
-        </p>
-      </section>
-
       {error ? (
         <section className="bk-mkt-empty">
           <Icon icon="lucide:wifi-off" />
-          <h2>Could not load this page</h2>
+          <h1>Could not load this page</h1>
           <p>Check your connection and try again.</p>
           <button type="button" className="bk-mkt-btn" onClick={() => load()}>
             <Icon icon="lucide:rotate-cw" /> Try again
@@ -140,84 +109,18 @@ const Marketplace = () => {
         </section>
       ) : (
         <>
-          {/* ── One card per channel ── */}
-          <section className="bk-mkt-channels">
-            {(loading ? [{ id: "s1" }, { id: "s2" }] : marketplaces).map((market) =>
-              loading ? (
-                <article className="bk-mkt-channel bk-mkt-channel--skeleton" key={market.id} aria-hidden="true">
-                  <span className="bk-sk bk-mkt-sk-logo" />
-                  <span className="bk-sk bk-mkt-sk-title" />
-                  <span className="bk-sk bk-mkt-sk-line" />
-                  <span className="bk-sk bk-mkt-sk-line" />
-                  <span className="bk-sk bk-mkt-sk-line" />
-                  <span className="bk-sk bk-mkt-sk-btn" />
-                </article>
-              ) : (
-                <article
-                  className={`bk-mkt-channel${market.status === "coming_soon" ? " is-soon" : ""}`}
-                  key={market.slug}
-                  id={market.slug}
-                  style={{ "--mkt-accent": market.accent_color || "#800020" }}
-                >
-                  <div className="bk-mkt-channel-body">
-                    <header className="bk-mkt-channel-head">
-                      <span className="bk-mkt-channel-logo">
-                        <Mark market={market} className="bk-mkt-channel-mark" />
-                      </span>
-                      <span className="bk-mkt-channel-title">
-                        <small>{market.status === "coming_soon" ? "Coming soon to" : "Available on"}</small>
-                        <strong>{market.name}</strong>
-                      </span>
-                    </header>
-
-                    <ul className="bk-mkt-features">
-                      {featuresFor(market.slug).map((feature, i) => (
-                        <li key={feature}>
-                          <Icon icon={FEATURE_ICONS[i % FEATURE_ICONS.length]} />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* Only where there is a real storefront to send people to. A button
-                        landing on a marketplace's generic homepage is worse than none. */}
-                    {market.status === "live" && market.storefront_url ? (
-                      <a
-                        className="bk-mkt-btn bk-mkt-btn--solid"
-                        href={market.storefront_url}
-                        target="_blank"
-                        rel="nofollow sponsored noopener noreferrer"
-                      >
-                        Shop on {market.name}
-                        <Icon icon="lucide:arrow-right" />
-                      </a>
-                    ) : (
-                      <span className="bk-mkt-btn bk-mkt-btn--muted">
-                        {market.status === "coming_soon" ? "Launching soon" : `Browse ${market.name} listings below`}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Renders only when assets/<slug>_phone.PNG exists, so a channel
-                      without artwork keeps a complete card. */}
-                  {phoneFor(market.slug) && (
-                    <div className="bk-mkt-phone" aria-hidden="true">
-                      <img src={phoneFor(market.slug)} alt="" loading="lazy" />
-                    </div>
-                  )}
-                </article>
-              )
-            )}
-          </section>
-
-          {/* ── Products, each badged with the channels it is on ── */}
+          {/* ── Every listing, each badged with the channels it is on ── */}
           <section className="bk-mkt-best">
-            <h2>Our Bestsellers on Marketplaces</h2>
+            {/* The page's h1 now that the hero is gone — it must keep one. */}
+            <h1>All Our Marketplace Listings</h1>
             <div className="bk-mkt-divider" aria-hidden="true"><i /><span>◆</span><i /></div>
+            {!loading && total > 0 && (
+              <p className="bk-mkt-count">Sarees listed on {heading}</p>
+            )}
 
             {loading ? (
-              <div className="bk-mkt-rail">
-                {Array.from({ length: 4 }).map((_, i) => (
+              <div className="bk-mkt-grid">
+                {Array.from({ length: 10 }).map((_, i) => (
                   <article className="bk-mkt-card bk-mkt-card--skeleton" key={i} aria-hidden="true">
                     <div className="bk-sk bk-mkt-sk-image" />
                     <span className="bk-sk bk-mkt-sk-name" />
@@ -234,12 +137,8 @@ const Marketplace = () => {
                 <Link to="/collection" className="bk-mkt-btn">Shop the collection</Link>
               </div>
             ) : (
-              <div className="bk-mkt-rail-wrap">
-                <button type="button" className="bk-mkt-arrow" onClick={() => nudge(-1)} aria-label="Previous products">
-                  <Icon icon="lucide:arrow-left" />
-                </button>
-
-                <div className="bk-mkt-rail" ref={railRef}>
+              <>
+                <div className="bk-mkt-grid">
                   {products.map((product) => {
                     const mrp = Number(product.mrp_price || 0);
                     const sell = Number(product.selling_price || 0);
@@ -280,27 +179,40 @@ const Marketplace = () => {
                   })}
                 </div>
 
-                <button type="button" className="bk-mkt-arrow" onClick={() => nudge(1)} aria-label="Next products">
-                  <Icon icon="lucide:arrow-right" />
-                </button>
-              </div>
+                {hasMore && (
+                  <button
+                    type="button"
+                    className="bk-mkt-btn bk-mkt-more"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <Icon icon="lucide:loader-2" className="bk-mkt-spin" /> Loading…
+                      </>
+                    ) : (
+                      <>
+                        Show more listings <Icon icon="lucide:chevron-down" />
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
             )}
           </section>
         </>
       )}
 
-      {/* ── Brand banner ── */}
+      {/* ── Brand banner ──
+          Deliberately worded away from the home page's copy of this banner, and without
+          its button: the reader is already on the page that button leads to. */}
       <section className="bk-mkt-banner" style={{ "--mkt-banner": `url(${brandBanner})` }}>
         <div className="bk-mkt-banner-copy">
           <span className="bk-mkt-banner-kicker">
-            <Icon icon="lucide:sparkle" /> One Brand. Everywhere.
+            <Icon icon="lucide:sparkle" /> Woven in Banaras. Sold everywhere.
           </span>
           <h2>Banarasi Kala</h2>
-          <p>Trusted quality. Loved by thousands.</p>
-          <Link to="/collection" className="bk-mkt-btn bk-mkt-btn--gold">
-            Explore All Products
-            <Icon icon="lucide:arrow-right" />
-          </Link>
+          <p>Every listing here comes off our own looms — the same weave, whichever channel you shop from.</p>
         </div>
       </section>
     </main>
