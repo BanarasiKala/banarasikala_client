@@ -4820,8 +4820,26 @@ span.oc-item-mrp-label {
   overflow: hidden;
   background: #f1dfbf;
   color: #94663e;
-  /* Its own affordance — the tile opens the saree's page, the rest of the card selects it. */
+}
+
+/* The written details, wrapped so they can carry their own click — they open the saree's
+   page while the photo and tick above select it. Re-declares the column layout the card
+   used to give these three children directly. */
+.oc-exchange-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
   cursor: pointer;
+}
+
+/* Underlining only the title on hover marks this half as the link without turning the
+   colour and price into link text too. */
+.oc-exchange-option-info:hover .oc-exchange-option-name,
+.oc-exchange-option-info:focus-visible .oc-exchange-option-name {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .oc-exchange-option-media img {

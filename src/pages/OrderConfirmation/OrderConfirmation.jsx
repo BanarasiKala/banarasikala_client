@@ -3377,19 +3377,26 @@ export default function OrderConfirmation() {
                                     <span className="oc-exchange-option-check">
                                       {isChosen && <Icon icon="lucide:check" />}
                                     </span>
+                                    {/* Photo and tick both belong to the card's own click, so
+                                        tapping the saree picks it — the two things that look
+                                        like a selection control now behave like one. */}
+                                    <span className="oc-exchange-option-media">
+                                      {thumb ? <img src={imgUrl(thumb, 200)} alt={option.name} /> : <Icon icon="lucide:image-off" />}
+                                    </span>
+
                                     {/*
-                                      The photo opens that saree's own page, so the customer
-                                      can read the description before committing to an
-                                      exchange they cannot undo. Same tab, with the flow
-                                      parked first so Back returns to this step with the
-                                      selections intact.
+                                      The written details open that saree's own page instead,
+                                      so the customer can read the description before
+                                      committing to an exchange they cannot undo. Same tab,
+                                      with the flow parked first so Back returns to this step
+                                      with the selections intact.
 
                                       A span rather than a link because this sits inside the
                                       option <button>, where a nested <a> is invalid markup
                                       that browsers recover from by splitting the element.
                                     */}
                                     <span
-                                      className="oc-exchange-option-media"
+                                      className="oc-exchange-option-info"
                                       role="link"
                                       tabIndex={0}
                                       title={`View ${option.name}`}
@@ -3406,11 +3413,10 @@ export default function OrderConfirmation() {
                                         openExchangeOption(option, color);
                                       }}
                                     >
-                                      {thumb ? <img src={imgUrl(thumb, 200)} alt={option.name} /> : <Icon icon="lucide:image-off" />}
+                                      <span className="oc-exchange-option-name">{option.name}</span>
+                                      <small>{color.name}</small>
+                                      <span className="oc-exchange-option-price">{formatPrice(variant.paidPrice)}</span>
                                     </span>
-                                    <span className="oc-exchange-option-name">{option.name}</span>
-                                    <small>{color.name}</small>
-                                    <span className="oc-exchange-option-price">{formatPrice(variant.paidPrice)}</span>
                                   </button>
                                 );
                               }))}
