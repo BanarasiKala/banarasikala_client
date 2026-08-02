@@ -3923,8 +3923,15 @@ strong.oc-item-price {
 /* ── MRP struck through, next to the actual price — item rows and the
    Payment Summary subtotal both use this. ── */
 /* "MRP:" label stays plain text; only the value inside gets struck through. */
-.oc-item-mrp-label {
+/* Tag-qualified deliberately. `.confirmation-item span` further up sets 9px, and as a
+   class plus an element it outranks a bare `.oc-item-mrp-label` — so this struck MRP
+   rendered at caption size beside a 13px selling price, which is bare text inside the
+   <strong> and so never picked that rule up. Matching that specificity (and sitting
+   later in the file) lets this win, so the MRP is the size of the price it is struck
+   against, and identical to the Payment Summary's copy of the same label. */
+span.oc-item-mrp-label {
   margin-right: 4px;
+  font-size: 13px;
   /* Same muted brown as .summary-strike, so both crossed-out originals in the breakdown match. */
   color: #9a8678;
   font-weight: 400;
