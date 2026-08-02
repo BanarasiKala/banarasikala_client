@@ -4606,13 +4606,50 @@
   height: 12px;
 }
 
-.product-offer-card-body .product-offer-expiry.is-urgent {
-  color: #b45309;
+/* Every expiry is a tinted pill that flashes, so the date is noticed rather than read as
+   another grey caption. The tint, the speed and the colour all escalate with how close the
+   deadline is — a date months away breathes slowly in gold, the final day beats in red — so
+   urgency is legible from the animation alone, before the words are read.
+   `--flash` is the peak tint each state fades up to; the keyframes are shared. */
+.product-offer-card-body .product-offer-expiry {
+  --flash: rgba(180, 134, 42, 0.26);
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(180, 134, 42, 0.12);
+  color: #8a6414;
   font-weight: 600;
+  animation: bk-offer-flash 2.4s ease-in-out infinite;
 }
 
+/* Final week. */
+.product-offer-card-body .product-offer-expiry.is-urgent {
+  --flash: rgba(180, 83, 9, 0.3);
+  background: rgba(180, 83, 9, 0.12);
+  color: #b45309;
+  animation-duration: 1.5s;
+}
+
+/* Final day — the fastest beat and the only red one. */
 .product-offer-card-body .product-offer-expiry.is-final {
+  --flash: rgba(180, 35, 24, 0.34);
+  background: rgba(180, 35, 24, 0.13);
   color: #b42318;
+  animation-duration: 0.9s;
+}
+
+@keyframes bk-offer-flash {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: var(--flash); }
+}
+
+/* The date and the countdown still read without it — the flash is emphasis, not information. */
+@media (prefers-reduced-motion: reduce) {
+  .product-offer-card-body .product-offer-expiry {
+    animation: none;
+  }
 }
 
 .product-offer-card-body em {

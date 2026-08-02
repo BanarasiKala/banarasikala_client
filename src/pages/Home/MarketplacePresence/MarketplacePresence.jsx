@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from "../../../config/api";
 import { imgUrl } from "../../../utils/cloudinary";
 import { getProductCoverImage } from "../../../utils/productMedia";
 import { storefrontFor } from "../../../utils/marketplaceStorefront";
+import { isImageMark, markFor } from "../../../utils/marketplaceMark";
 import brandBanner from "../../../assets/story/banaras-weave.png";
 // The trimmed Amazon mockup, not assets/amazon_phone.PNG: the original is a 198x400
 // device floating in a 450x439 canvas, so sizing it alongside the tightly-cropped
@@ -17,16 +18,14 @@ import "./MarketplacePresence.css";
 // assets/<slug>_phone.PNG, just static-imported here since only these two exist today.
 const PHONE_SHOTS = { amazon: amazonPhone, flipkart: flipkartPhone };
 
-// The mark is either an Iconify id ("simple-icons:amazon") or an image path — both,
-// because that is what the marketplaces table already stores.
-const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
-
-const Mark = ({ market, className }) =>
-  isImageMark(market.icon) ? (
-    <img src={market.icon} alt="" className={className} />
+const Mark = ({ market, className }) => {
+  const icon = markFor(market);
+  return isImageMark(icon) ? (
+    <img src={icon} alt="" className={className} />
   ) : (
-    <Icon icon={market.icon || "lucide:store"} className={className} style={{ color: market.accent_color }} />
+    <Icon icon={icon || "lucide:store"} className={className} style={{ color: market.accent_color }} />
   );
+};
 
 /**
  * Where each channel's button sends people, resolved in three steps:

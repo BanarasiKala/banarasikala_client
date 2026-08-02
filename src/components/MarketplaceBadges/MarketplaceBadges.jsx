@@ -15,10 +15,7 @@ import "./MarketplaceBadges.css";
  * so it is safe to place unconditionally in a card's markup.
  */
 
-// A mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png") —
-// both, because that is what the marketplaces table stores. A slash or dot without a
-// colon means it is a file.
-const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
+import { isImageMark, markFor } from "../../utils/marketplaceMark";
 
 const cache = new Map(); // productId -> links[]
 const waiting = new Map(); // productId -> Set<setState>
@@ -99,10 +96,10 @@ const MarketplaceBadges = ({ productId, className = "" }) => {
             window.open(link.url, "_blank", "noopener,noreferrer");
           }}
         >
-          {isImageMark(link.icon) ? (
-            <img src={link.icon} alt="" />
+          {isImageMark(markFor(link)) ? (
+            <img src={markFor(link)} alt="" />
           ) : (
-            <Icon icon={link.icon || "lucide:store"} style={{ color: link.accent_color }} />
+            <Icon icon={markFor(link) || "lucide:store"} style={{ color: link.accent_color }} />
           )}
         </button>
       ))}

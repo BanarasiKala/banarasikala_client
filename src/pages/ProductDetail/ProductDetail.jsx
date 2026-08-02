@@ -2424,7 +2424,10 @@ const ProductDetail = () => {
                       <div className="product-offer-card-body">
                         <strong>{coupon.description || coupon.name || coupon.title}</strong>
                         {coupon.code && <span>Code: <em>{coupon.code}</em></span>}
-                        <CouponExpiry validUntil={coupon.valid_until} />
+                        {/* Only when the admin ticked "Show Expiry To Customers" on this
+                            coupon — a date the storefront prints is a promise, so it is
+                            opted into per coupon rather than shown wherever one exists. */}
+                        {coupon.show_validity && <CouponExpiry validUntil={coupon.valid_until} />}
                       </div>
                       {coupon.code && (
                         <button

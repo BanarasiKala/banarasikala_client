@@ -18,6 +18,7 @@ import {
   canLeaveForStorefront,
   STOREFRONT_LINK_PROPS,
 } from "../utils/marketplaceStorefront";
+import { isImageMark, markFor } from "../utils/marketplaceMark";
 import "./Footer.css";
 
 // A null path marks the expandable Patterns group rather than a plain link, so the column's
@@ -76,11 +77,6 @@ const FALLBACK_MARKETPLACES = [
   { slug: "flipkart", name: "Flipkart", icon: "simple-icons:flipkart", accent_color: "#2874F0", status: "live" },
   { slug: "myntra",   name: "Myntra",   icon: "/image.png",            accent_color: "#FF3F6C", status: "coming_soon" },
 ];
-
-// The mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png"):
-// Amazon and Flipkart have Iconify marks and Myntra does not. A slash or dot without a
-// colon means it is a file.
-const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon.includes(":");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -458,9 +454,10 @@ const Footer = () => {
                 is only announced ("coming soon") has no storefront to open, so it keeps
                 pointing at our own /marketplace page, where its announcement lives. */}
             {marketplaces.map((market) => {
-              const mark = isImageMark(market.icon)
-                ? <img src={market.icon} alt="" className="bk-footer-myntra-img" />
-                : <Icon icon={market.icon || "lucide:store"} style={{ color: market.accent_color }} />;
+              const icon = markFor(market);
+              const mark = isImageMark(icon)
+                ? <img src={icon} alt="" className="bk-footer-myntra-img" />
+                : <Icon icon={icon || "lucide:store"} style={{ color: market.accent_color }} />;
               const inner = (
                 <>
                   {mark}
