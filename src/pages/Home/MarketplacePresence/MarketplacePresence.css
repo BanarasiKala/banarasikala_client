@@ -116,8 +116,13 @@
 /* Height is deliberately pinned at 2x the width — shorter than either device
    needs — so height, not width, is the constraining dimension for both. That is
    what makes the two mockups render at exactly the same height despite their
-   different aspect ratios. */
-.bk-mktpres-phone img {
+   different aspect ratios.
+
+   The loading placeholder is sized by this same rule, so it occupies exactly the box the
+   mockup will. Listed here rather than carrying its own width/height, which is how the two
+   drifted apart in the first place. */
+.bk-mktpres-phone img,
+.bk-mktpres-phone .bk-mktpres-sk-phone {
   width: clamp(84px, 24vw, 260px);
   height: clamp(168px, 48vw, 520px);
   object-fit: contain;
@@ -303,13 +308,30 @@
   animation: bk-mktpres-shimmer var(--bk-loader-duration) ease-in-out infinite;
 }
 
+/* Size comes from the .bk-mktpres-phone img rule above, which this now shares. Only the
+   corner radius is its own — the mockup is a cut-out PNG, the placeholder a filled block.
+   The grid-row/column placement lives on the .bk-mktpres-phone wrapper it sits inside. */
 .bk-mktpres-sk-phone {
-  grid-row: 1 / -1;
-  align-self: center;
-  width: clamp(84px, 24vw, 260px);
-  height: clamp(168px, 48vw, 520px);
   border-radius: clamp(10px, 1.4vw, 18px);
 }
+
+/* Rail placeholder. The card media borrows the real card's 3/4 aspect rather than a fixed
+   height, so it tracks the column width at every breakpoint exactly as the photo does. */
+.bk-mktpres-sk-railhead {
+  display: block;
+  width: min(280px, 62%);
+  height: clamp(14px, 2.8vw, 30px);
+  margin: 0 auto clamp(10px, 1.6vw, 22px);
+}
+
+.bk-mktpres-sk-cardmedia {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: clamp(5px, 0.85vw, 10px);
+}
+
+.bk-mktpres-sk-cardline { width: 88%; height: clamp(8px, 1.1vw, 12px); }
+.bk-mktpres-sk-cardprice { width: 46%; height: clamp(9px, 1.2vw, 14px); }
 
 .bk-mktpres-sk-title { width: min(190px, 60%); height: clamp(18px, 2.6vw, 26px); margin: 0 auto; }
 .bk-mktpres-sk-line { width: min(150px, 46%); height: clamp(8px, 1.2vw, 12px); margin: 0 auto; }
@@ -370,7 +392,8 @@
     padding: 12px 6px;
   }
 
-  .bk-mktpres-phone img {
+  .bk-mktpres-phone img,
+  .bk-mktpres-phone .bk-mktpres-sk-phone {
     width: clamp(84px, 26vw, 132px);
     height: clamp(168px, 52vw, 264px);
   }

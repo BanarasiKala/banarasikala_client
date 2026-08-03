@@ -167,19 +167,32 @@ const MarketplacePresence = () => {
         </div>
 
         {loading ? (
+          /* The placeholder reuses the real panel's own wrappers — .bk-mktpres-phone--left /
+             --right and .bk-mktpres-stack — rather than standing bare spans in the grid.
+             Those wrappers carry the explicit grid-column assignments; without them the
+             row-spanning phones fell to auto-placement, landed in the wrong columns and blew
+             the panel out to 936px against the real 585px. Sharing the wrappers means the two
+             states cannot drift apart again.
+             Four feature lines, not two, because that is what a Channel actually renders. */
           <div className="bk-mktpres-panel bk-mktpres-panel--skeleton" aria-hidden="true">
-            <span className="bk-mktpres-sk bk-mktpres-sk-phone" />
+            <div className="bk-mktpres-phone bk-mktpres-phone--left">
+              <span className="bk-mktpres-sk bk-mktpres-sk-phone" />
+            </div>
             <div className="bk-mktpres-stack">
               {[0, 1].map((i) => (
                 <div className="bk-mktpres-channel" key={i}>
                   <span className="bk-mktpres-sk bk-mktpres-sk-title" />
                   <span className="bk-mktpres-sk bk-mktpres-sk-line" />
                   <span className="bk-mktpres-sk bk-mktpres-sk-line" />
+                  <span className="bk-mktpres-sk bk-mktpres-sk-line" />
+                  <span className="bk-mktpres-sk bk-mktpres-sk-line" />
                   <span className="bk-mktpres-sk bk-mktpres-sk-btn" />
                 </div>
               ))}
             </div>
-            <span className="bk-mktpres-sk bk-mktpres-sk-phone" />
+            <div className="bk-mktpres-phone bk-mktpres-phone--right">
+              <span className="bk-mktpres-sk bk-mktpres-sk-phone" />
+            </div>
           </div>
         ) : (
           <div className="bk-mktpres-panel">
@@ -200,6 +213,24 @@ const MarketplacePresence = () => {
                 <img src={PHONE_SHOTS[rightPhone.slug]} alt="" loading="lazy" />
               </div>
             )}
+          </div>
+        )}
+
+        {/* The rail had no placeholder at all, so a 474px block of product cards appeared
+            out of nothing once the request landed and shoved the brand banner down the page.
+            Four cards is what fits the rail before it scrolls. */}
+        {loading && (
+          <div className="bk-mktpres-best bk-mktpres-best--skeleton" aria-hidden="true">
+            <span className="bk-mktpres-sk bk-mktpres-sk-railhead" />
+            <div className="bk-mktpres-rail">
+              {[0, 1, 2, 3].map((i) => (
+                <article className="bk-mktpres-card" key={i}>
+                  <span className="bk-mktpres-sk bk-mktpres-sk-cardmedia" />
+                  <span className="bk-mktpres-sk bk-mktpres-sk-cardline" />
+                  <span className="bk-mktpres-sk bk-mktpres-sk-cardprice" />
+                </article>
+              ))}
+            </div>
           </div>
         )}
 
