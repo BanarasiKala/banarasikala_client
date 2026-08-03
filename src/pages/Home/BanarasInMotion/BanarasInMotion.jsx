@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../../config/api";
+import { useLazyVideoSrc } from "../../../hooks/useLazyVideoSrc";
 import "./BanarasInMotion.css";
 
 const MAX_REELS = 8;
@@ -25,6 +26,10 @@ const forcePlay = (video) => {
 const BanarasInMotion = () => {
   const [reels, setReels] = useState(null); // null → loading skeleton
   const railRef = useRef(null);
+
+  // Downloads follow visibility. Playback is governed separately, further down: a card can be
+  // on screen and paused (decoder budget, backgrounded tab) without that undoing the fetch.
+  useLazyVideoSrc(railRef, [reels]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,7 +169,9 @@ const BanarasInMotion = () => {
                       )}
                       <video
                         className="bk-motion-video"
-                        src={reel.video_url}
+                        /* Attached by useLazyVideoSrc once the card nears the viewport —
+                           see the hook for why `preload` cannot do this job here. */
+                        data-src={reel.video_url}
                         poster={reel.thumbnail_url || undefined}
                         autoPlay
                         muted

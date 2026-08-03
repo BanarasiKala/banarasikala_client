@@ -70,7 +70,11 @@ const ReelBags = () => {
               )}
               <video
                 className="bk-reel-bag-video"
-                src={reel.video_url}
+                /* The tile is 79x97 px. `preview_url` is a variant encoded for exactly that,
+                   and the reason it exists: three bags streaming the full masters pulled
+                   39 MB before the visitor scrolled. Falls back to the master for any reel
+                   the pipeline has not produced a preview for yet. */
+                src={reel.preview_url || reel.video_url}
                 poster={reel.thumbnail_url || undefined}
                 muted
                 loop

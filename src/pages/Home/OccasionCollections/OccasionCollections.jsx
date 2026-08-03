@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { imgUrl } from "../../../utils/cloudinary";
 import { API_ENDPOINTS } from "../../../config/api";
+import { useLazyVideoSrc } from "../../../hooks/useLazyVideoSrc";
 import "./OccasionCollections.css";
 
 const OccasionCollections = () => {
   const navigate = useNavigate();
   const [occasions, setOccasions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const rowRef = useRef(null);
+
+  // Four autoplaying cards, each of which would otherwise download in full the moment it
+  // mounts, whatever `preload` says.
+  useLazyVideoSrc(rowRef, [occasions]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -47,7 +53,7 @@ const OccasionCollections = () => {
             Occasion collections will appear here soon.
           </div>
         ) : (
-          <div className="bk-occasion-row">
+          <div className="bk-occasion-row" ref={rowRef}>
             {occasions.map((occasion, index) => (
               <button
                 type="button"
@@ -62,7 +68,7 @@ const OccasionCollections = () => {
                         full, uncropped one — no empty letterbox bars. */}
                     <video
                       className="bk-occasion-video-blur"
-                      src={occasion.video}
+                      data-src={occasion.video}
                       autoPlay
                       muted
                       loop
@@ -72,7 +78,7 @@ const OccasionCollections = () => {
                       tabIndex={-1}
                     />
                     <video
-                      src={occasion.video}
+                      data-src={occasion.video}
                       autoPlay
                       muted
                       loop
