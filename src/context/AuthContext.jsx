@@ -14,7 +14,7 @@ const clearStoredAuth = () => {
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
   });
-};
+}; 
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
