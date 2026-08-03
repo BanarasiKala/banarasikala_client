@@ -82,7 +82,11 @@ const ProtectedRoute = ({ children }) => {
           <Link
             to={`/login?refresh=${encodeURIComponent(location.pathname)}`}
             state={{ from: location }}
-            className={`auth-required-action${copy.actionIcon ? " auth-required-action--cart" : ""}`}
+            // --bag, not --cart. The modifier that turns this into the solid maroon pill is
+            // called `--bag` in ProtectedRoute.css; `--cart` matched no rule at all, so cart
+            // and wishlist quietly fell back to the plain outlined base button while the
+            // pill sat in the stylesheet unused.
+            className={`auth-required-action${copy.actionIcon ? " auth-required-action--bag" : ""}`}
           >
             {copy.actionIcon && <Icon icon={copy.actionIcon} />}
             {copy.action}

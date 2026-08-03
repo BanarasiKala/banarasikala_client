@@ -73,9 +73,12 @@
   transform: translateY(-1px);
 }
 
+/* The solid maroon pill. Deliberately identical to .feedback-login-link — same gradient,
+   radius, type scale, tracking and shadow — so the logged-out prompt reads as one component
+   wherever it appears rather than three near-misses. */
 .auth-required-action--bag {
   min-height: 44px;
-  gap: 9px;
+  gap: 8px;
   padding: 0 18px;
   border: 0;
   border-radius: 10px;
@@ -90,6 +93,9 @@
   transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
+/* Cancels the base button's hover, which inverts to a maroon fill with gold text — on a
+   button that is ALREADY maroon that read as the label changing colour for no reason. The
+   lift comes from the base rule's transform, which is left to apply. */
 .auth-required-action--bag:hover {
   background: linear-gradient(135deg, #800020, #4b070d);
   color: #fff;
