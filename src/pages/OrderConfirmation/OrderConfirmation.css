@@ -13,7 +13,7 @@
      The flat colour underneath is only a fallback for the image failing to load. */
   --oc-page-bg:
     linear-gradient(rgba(255, 250, 241, 0.16), rgba(255, 250, 241, 0.16)),
-    url("../../assets/header_backgroung.png"),
+    url("../../assets/header_backgroung.webp"),
     #fffdf8;
 
   min-height: calc(100vh - 120px);

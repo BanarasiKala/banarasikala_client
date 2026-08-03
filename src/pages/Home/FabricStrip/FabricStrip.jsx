@@ -1,12 +1,12 @@
 import { useState } from "react";
-import chiffonImg from "../../../assets/fabric/chiffon.png";
-import cottonSilkImg from "../../../assets/fabric/cotton_silk.png";
-import georgetteImg from "../../../assets/fabric/georgette.png";
-import katanSilkImg from "../../../assets/fabric/katan_silk.png";
-import khaddiImg from "../../../assets/fabric/khaddi.png";
-import organzaImg from "../../../assets/fabric/organza.png";
-import satinSilkImg from "../../../assets/fabric/satan_silk.png";
-import tissueImg from "../../../assets/fabric/tissue.png";
+import chiffonImg from "../../../assets/fabric/chiffon.webp";
+import cottonSilkImg from "../../../assets/fabric/cotton_silk.webp";
+import georgetteImg from "../../../assets/fabric/georgette.webp";
+import katanSilkImg from "../../../assets/fabric/katan_silk.webp";
+import khaddiImg from "../../../assets/fabric/khaddi.webp";
+import organzaImg from "../../../assets/fabric/organza.webp";
+import satinSilkImg from "../../../assets/fabric/satan_silk.webp";
+import tissueImg from "../../../assets/fabric/tissue.webp";
 import "./FabricStrip.css";
 
 const FABRICS = [

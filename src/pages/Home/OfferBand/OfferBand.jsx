@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import flatOfferBackground from "../../../assets/flat/image.png";
+import flatOfferBackground from "../../../assets/flat/image.webp";
 import { API_ENDPOINTS } from "../../../config/api";
 import "./OfferBand.css";
 

@@ -1,11 +1,11 @@
 import "./About.css";
-import heroImage from "../../assets/aboutus/hero-about.png";
-import introImage from "../../assets/aboutus/intro-saree.png";
-import loomImage from "../../assets/aboutus/loom-process.png";
-import whyImage from "../../assets/aboutus/why-choose.png";
-import qualityImage from "../../assets/aboutus/quality-sarees.png";
-import founderImage from "../../assets/aboutus/founder-message.png";
-import ghatImage from "../../assets/aboutus/ghat.png";
+import heroImage from "../../assets/aboutus/hero-about.webp";
+import introImage from "../../assets/aboutus/intro-saree.webp";
+import loomImage from "../../assets/aboutus/loom-process.webp";
+import whyImage from "../../assets/aboutus/why-choose.webp";
+import qualityImage from "../../assets/aboutus/quality-sarees.webp";
+import founderImage from "../../assets/aboutus/founder-message.webp";
+import ghatImage from "../../assets/aboutus/ghat.webp";
 import CraftSection from "../Home/CraftSection/CraftSection";
 
 const curationChecks = [

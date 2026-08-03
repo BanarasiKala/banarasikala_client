@@ -25,7 +25,7 @@ import ProductReviews from "../../components/ProductReviews/ProductReviews";
 // One artwork holding every accepted method, rather than three separate marks stitched together
 // on the button — the spacing between them is then the designer's, not a CSS gap's. The
 // -removebg- export, so it sits on the button's own background instead of a white plate.
-import logosPayment from "../../assets/logosPayment-trimmed.png";
+import logosPayment from "../../assets/logosPayment-trimmed.webp";
 import { shareOrCopy } from "../../utils/share";
 import ProductSocialProof from "../../components/ProductSocialProof/ProductSocialProof";
 import { formatEstimatedDeliveryDate, getEstimatedDeliveryDate } from "../../utils/deliveryDate";

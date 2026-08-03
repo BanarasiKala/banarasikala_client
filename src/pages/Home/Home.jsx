@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
 import { getSavedScroll } from "../../utils/scrollRestore";
-import headerBackground from "../../assets/header_backgroung.png";
+import headerBackground from "../../assets/header_backgroung.webp";
 import FabricStrip from "./FabricStrip/FabricStrip";
 import HeroSlider from "./HeroSlider/HeroSlider";
 import OfferBand from "./OfferBand/OfferBand";

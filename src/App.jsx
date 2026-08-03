@@ -14,7 +14,7 @@ import { LocationProvider } from "./context/LocationContext";
 import { SupportRealtimeProvider } from "./context/SupportRealtimeContext";
 import RouteFallback from "./components/RouteFallback/RouteFallback";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
-import headerBackground from "./assets/header_backgroung.png";
+import headerBackground from "./assets/header_backgroung.webp";
 import "./App.css";
 
 const Home = lazy(() => import("./pages/Home/Home"));

@@ -5,7 +5,7 @@ import UserAvatar from "../../../components/UserAvatar";
 import "./ReviewsStory.css";
 
 const storySectionImages = import.meta.glob(
-  "../../../assets/story/*.{png,jpg,jpeg,webp}",
+  "../../../assets/story/*.webp",
   { eager: true, import: "default" },
 );
 

@@ -6,12 +6,12 @@ import { imgUrl } from "../../../utils/cloudinary";
 import { getProductCoverImage } from "../../../utils/productMedia";
 import { storefrontFor } from "../../../utils/marketplaceStorefront";
 import { isImageMark, markFor } from "../../../utils/marketplaceMark";
-import brandBanner from "../../../assets/story/banaras-weave.png";
-// The trimmed Amazon mockup, not assets/amazon_phone.PNG: the original is a 198x400
+import brandBanner from "../../../assets/story/banaras-weave.webp";
+// The trimmed Amazon mockup, not assets/amazon_phone.webp: the original is a 198x400
 // device floating in a 450x439 canvas, so sizing it alongside the tightly-cropped
 // Flipkart shot rendered it about half the size. Trimmed to the device, the two match.
-import amazonPhone from "../../../assets/amazon_phone_trimmed.PNG";
-import flipkartPhone from "../../../assets/flipkart_phone.PNG";
+import amazonPhone from "../../../assets/amazon_phone_trimmed.webp";
+import flipkartPhone from "../../../assets/flipkart_phone.webp";
 import "./MarketplacePresence.css";
 
 // Matched to a channel by slug — same convention as the full Marketplace page's

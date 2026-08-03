@@ -12,7 +12,7 @@
   padding: 0 6px;
   background:
     linear-gradient(180deg, rgba(253, 246, 236, 0.68), rgba(253, 246, 236, 0.82)),
-    url("../assets/img.jpg"),
+    url("../assets/img.webp"),
     #fdf6ec;
   background-size: 100% 100%, cover, 100% 100%;
   background-position: center top;

@@ -1,7 +1,7 @@
 /**
  * The logo to draw for a marketplace, and how to draw it.
  *
- * A mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.png") —
+ * A mark is either an Iconify id ("simple-icons:amazon") or an image path ("/image.webp") —
  * both, because that is what the marketplaces table stores. A slash or dot without a colon
  * means it is a file.
  */
@@ -13,7 +13,7 @@ export const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon
  * The Iconify glyphs are single flat shapes, so they read as grey blobs at badge size. The
  * real brand logos are shipped in /public instead.
  *
- * These point at the *-mark.png files, NOT the Amazon.PNG / flipkart.PNG they were cut from.
+ * These point at the *-mark.png files, NOT the Amazon.webp / flipkart.webp they were cut from.
  * Those originals are 1024x1024 with the logo floating in the middle — Amazon's filled only
  * 34% of its canvas against Flipkart's 86%, so at badge size, where object-fit fits the
  * whitespace rather than the artwork, Amazon rendered about two and a half times smaller.
@@ -26,8 +26,8 @@ export const isImageMark = (icon) => Boolean(icon) && /[/.]/.test(icon) && !icon
  * Re-cutting one means cropping it just as tightly, or it will sit smaller than the other.
  */
 const LOCAL_MARKS = {
-  amazon: "/amazon-mark.png",
-  flipkart: "/flipkart-mark.png",
+  amazon: "/amazon-mark.webp",
+  flipkart: "/flipkart-mark.webp",
 };
 
 /** The icon to render for a marketplace — the local override if there is one, else the row's. */

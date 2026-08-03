@@ -4,16 +4,18 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "./HeroSlider.css";
 
+// .webp, and deliberately not "slide*.{png,webp}": the .png originals are still on disk, so a
+// both-formats glob would match each slide twice and ship the heavy one.
 const heroDesktopSlides = import.meta.glob(
-  "../../../assets/hero/desktop/slide*.png",
+  "../../../assets/hero/desktop/slide*.webp",
   { eager: true, import: "default" },
 );
 const heroPhoneSlides = import.meta.glob(
-  "../../../assets/hero/phone/slide*.png",
+  "../../../assets/hero/phone/slide*.webp",
   { eager: true, import: "default" },
 );
 
-const getSlideNumber = (path) => Number(path.match(/slide(\d+)\.png$/)?.[1]);
+const getSlideNumber = (path) => Number(path.match(/slide(\d+)\.webp$/)?.[1]);
 const getSlideMap = (slides) =>
   Object.fromEntries(
     Object.entries(slides)

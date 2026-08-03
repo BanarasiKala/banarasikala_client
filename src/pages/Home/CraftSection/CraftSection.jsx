@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import "./CraftSection.css";
 
 const craftSectionImages = import.meta.glob(
-  "../../../assets/craft/*.{png,jpg,jpeg,webp}",
+  "../../../assets/craft/*.webp",
   { eager: true, import: "default" },
 );
 

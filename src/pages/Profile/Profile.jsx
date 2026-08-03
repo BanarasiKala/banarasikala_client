@@ -12,7 +12,7 @@ import SupportChatSheet from "../../components/SupportChat/SupportChatSheet";
 // checkerboard back out only imperfectly (grey fringe left under the box). This one is a
 // clean cutout. Note it is portrait (438x570) where the others were landscape — the art
 // sizing in Profile.css caps height, not width, because of that.
-import comingSoonGift from "../../assets/comesoon-removebg-preview.png";
+import comingSoonGift from "../../assets/comesoon-removebg-preview.webp";
 import "./Profile.css";
 
 const SUPPORT_ERROR_MESSAGE = "Something went wrong. Please contact support or try again later.";

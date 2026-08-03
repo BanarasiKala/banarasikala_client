@@ -4,9 +4,9 @@ import axios from "axios";
 import { Icon } from "@iconify/react";
 import { API_ENDPOINTS } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
-import verticalLogo from "../../assets/vertical_logo.png";
-import headerBackground from "../../assets/header_backgroung.png";
-import mobileBackground from "../../assets/img.jpg";
+import verticalLogo from "../../assets/vertical_logo.webp";
+import headerBackground from "../../assets/header_backgroung.webp";
+import mobileBackground from "../../assets/img.webp";
 import "./VerifyEmail.css";
 
 // One source for the welcome credit. It was written as a literal in the JSX below, which is

@@ -13,7 +13,7 @@ import useStockNotify from "../../hooks/useStockNotify";
 import ProductRating from "../../components/ProductRating";
 import DeliveryBadge from "../../components/DeliveryBadge";
 import MarketplaceBadges from "../../components/MarketplaceBadges/MarketplaceBadges";
-import brandBanner from "../../assets/story/banaras-weave.png";
+import brandBanner from "../../assets/story/banaras-weave.webp";
 // The card here is the home page's New Arrivals card, markup and all, so the two read
 // identically. Its stylesheet is imported rather than copied: those rules land across
 // two cascading blocks and four media queries, and a transcription of them under new

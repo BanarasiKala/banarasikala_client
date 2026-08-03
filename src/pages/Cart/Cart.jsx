@@ -16,7 +16,7 @@ import { unwrapApiData } from "../../utils/error";
 import { numberEnv } from "../../utils/env";
 // Same artwork the Buy Now button uses, so the two entry points into checkout make the
 // same promise about what is accepted.
-import logosPayment from "../../assets/logosPayment-trimmed.png";
+import logosPayment from "../../assets/logosPayment-trimmed.webp";
 import "./Cart.css";
 
 const calcDiscount = (mrp, sell) => {

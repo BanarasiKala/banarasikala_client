@@ -1,5 +1,5 @@
-import headerBackground from "../../assets/header_backgroung.png";
-import verticalLogo from "../../assets/vertical_logo.png";
+import headerBackground from "../../assets/header_backgroung.webp";
+import verticalLogo from "../../assets/vertical_logo.webp";
 import "./PreLoader.css";
 
 const PreLoader = () => {

@@ -10,8 +10,8 @@ import {
   Send,
   Phone,
 } from "lucide-react";
-import logo from "../assets/vertical_logo.png";
-import footerBackground from "../assets/header_backgroung.png";
+import logo from "../assets/vertical_logo.webp";
+import footerBackground from "../assets/header_backgroung.webp";
 import { useStoreContact, formatStoreAddress } from "../hooks/useStoreContact";
 import {
   storefrontFor,
@@ -75,7 +75,7 @@ const payments = [
 const FALLBACK_MARKETPLACES = [
   { slug: "amazon",   name: "Amazon",   icon: "simple-icons:amazon",   accent_color: "#FF9900", status: "live" },
   { slug: "flipkart", name: "Flipkart", icon: "simple-icons:flipkart", accent_color: "#2874F0", status: "live" },
-  { slug: "myntra",   name: "Myntra",   icon: "/image.png",            accent_color: "#FF3F6C", status: "coming_soon" },
+  { slug: "myntra",   name: "Myntra",   icon: "/image.webp",            accent_color: "#FF3F6C", status: "coming_soon" },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

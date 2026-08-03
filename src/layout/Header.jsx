@@ -10,8 +10,8 @@ import api from "../utils/api";
 import { getProductCoverImage } from "../utils/productMedia";
 import { useSupport } from "../context/SupportRealtimeContext";
 import UserAvatar from "../components/UserAvatar";
-import verticalLogo from "../assets/vertical_logo.png";
-import headerBackground from "../assets/header_backgroung.png";
+import verticalLogo from "../assets/vertical_logo.webp";
+import headerBackground from "../assets/header_backgroung.webp";
 import "./Header.css";
 
 const SIGNUP_BONUS_AMOUNT = Number(import.meta.env.VITE_SIGNUP_BONUS_AMOUNT) || 50;
