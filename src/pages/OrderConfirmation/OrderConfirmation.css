@@ -555,6 +555,30 @@
   line-height: 1.55;
 }
 
+/* The "sent to someone else" note under the delivery address. Set apart from the address
+   itself by a rule rather than a colour block — it is a footnote to that address, not a
+   second address. */
+.oc-address-receiver {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(128, 0, 32, 0.12);
+  font-size: 13px;
+  color: #6b0f17;
+}
+
+.oc-address-receiver > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 15px;
+}
+
+.oc-address-receiver strong {
+  word-break: break-all;
+}
+
 /* Collapsed-timeline "…" row: a button styled like a step that expands the
    full timeline on tap. Vertical dots stand in for the hidden steps. */
 .confirmation-step-more {

@@ -1455,13 +1455,78 @@
 
 }
 
-/* Google Places Autocomplete dropdown must sit above the full-screen map modal. */
+/* Google's own `.pac-container` dropdown is no longer used — see LocationPickerModal for
+   why it could not be positioned inside a fixed modal. Kept hidden rather than deleted
+   because the Places library still injects the node on load, and an unstyled copy of the
+   list appearing at the bottom of the document would be worse than no list at all. */
 .pac-container {
-  z-index: 100001 !important;
+  display: none !important;
+}
+
+/* Our own predictions list. Anchored to .profile-map-search-area, which is position:
+   relative — so it follows the input under ordinary layout rules and cannot be flung down
+   the page by a scroll offset the way the portalled one was. */
+.profile-map-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 258px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fffdf8;
+  border: 1px solid rgba(128, 0, 32, 0.14);
   border-radius: 10px;
-  border: 1px solid rgba(128, 0, 32, 0.12);
   box-shadow: 0 16px 36px rgba(88, 39, 13, 0.18);
-  font-family: "Poppins", sans-serif;
+}
+
+.profile-map-suggestions button {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #2b1710;
+}
+
+.profile-map-suggestions button:hover,
+.profile-map-suggestions button.is-active {
+  background: rgba(128, 0, 32, 0.07);
+}
+
+.profile-map-suggestions button > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 16px;
+  color: #800020;
+}
+
+.profile-map-suggestions span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-map-suggestions strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.profile-map-suggestions small {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #7a6558;
 }
 
 /* account page redesign */

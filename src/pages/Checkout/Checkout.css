@@ -1143,6 +1143,18 @@
     font-weight: 600;
 }
 
+/* Sits where the error would, and is replaced by it. Quieter than the error and quieter
+   than the label, so it explains the field without competing with it. */
+.buy-now-field-hint {
+    display: block;
+    margin-top: 3px;
+    color: #7a6558;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.45;
+}
+
 .buy-now-phone-input {
     display: flex;
     align-items: center;

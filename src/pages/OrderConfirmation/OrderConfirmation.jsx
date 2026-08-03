@@ -2288,6 +2288,30 @@ export default function OrderConfirmation() {
               <h2><Icon icon="lucide:map-pin" className="bk-map-icon" /> Delivery Address</h2>
             </div>
             <p className="address-copy"><strong>{order.customer_name}</strong><br />{order.address}<br />{order.city}, {order.state} - {order.pincode}<br />Phone: {order.phone}</p>
+            {/* Only present when the order was billed somewhere other than where it shipped.
+                The API returns null when the two are the same place, so an ordinary order
+                still shows one address rather than the same lines under two headings. */}
+            {order.billing_address && (
+              <>
+                <div className="order-panel-head-row">
+                  <h2><Icon icon="lucide:receipt" /> Billed To</h2>
+                </div>
+                <p className="address-copy">
+                  <strong>{order.billing_address.name}</strong><br />
+                  {order.billing_address.line}<br />
+                  {order.billing_address.city}, {order.billing_address.state} - {order.billing_address.pincode}
+                  {order.billing_address.phone ? <><br />Phone: {order.billing_address.phone}</> : null}
+                </p>
+              </>
+            )}
+            {/* Only set when the parcel is going to someone other than the buyer — the API
+                blanks it out otherwise, so this never tells you that you are being emailed. */}
+            {order.receiver_email && (
+              <p className="address-copy oc-address-receiver">
+                <Icon icon="lucide:gift" /> You ordered this for someone else. Every update goes to{" "}
+                <strong>{order.receiver_email}</strong> as well as to you.
+              </p>
+            )}
           </section>
 
           {needsCodBankDetails && (

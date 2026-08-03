@@ -148,17 +148,124 @@ const parseGoogleComponents = (place) => {
   };
 };
 
+/**
+ * Pick a delivery location on a map.
+ *
+ * ── Why the search list is ours and not Google's ────────────────────────────────────────
+ * This used `google.maps.places.Autocomplete`, the widget that attaches itself to an input
+ * and renders its own `.pac-container` dropdown. That container is appended to
+ * `document.body` as `position: absolute`, and Google computes its `top` from the input's
+ * bounding rect PLUS the page scroll offset.
+ *
+ * That arithmetic is only correct for an input that scrolls with the document. This modal is
+ * `position: fixed` over a page that is usually scrolled a long way down — checkout opens it
+ * from the middle of a tall page — so `rect.top` is already viewport-relative and adding the
+ * scroll offset pushed the dropdown that far below the fold. The predictions arrived, the
+ * list rendered, and it was drawn off-screen every time. No z-index reaches it; the existing
+ * `.pac-container { z-index: 100001 }` was already winning that fight and losing this one.
+ *
+ * So we call `AutocompleteService` ourselves and render the results inside the modal, where
+ * ordinary layout applies. It also gets us off a widget Google deprecated in March 2025 and
+ * no longer offers to new customers, which this code would have hit sooner or later anyway.
+ *
+ * The chosen prediction is resolved through the GEOCODER rather than `PlacesService`: it is
+ * already wired up here for map clicks, it returns the same `address_components` shape
+ * `parseGoogleComponents` expects, and it is one less API surface to depend on.
+ */
 export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) {
   const mapNodeRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const geocoderRef = useRef(null);
-  const autocompleteRef = useRef(null);
+  const autocompleteServiceRef = useRef(null);
+  // Groups the keystrokes of one search with the pick that ends it, so Google bills the
+  // session once instead of per request. Replaced after every selection.
+  const sessionTokenRef = useRef(null);
+  const searchTimerRef = useRef(null);
   const searchInputRef = useRef(null);
   const [selected, setSelected] = useState(null);
+  const [predictions, setPredictions] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [searching, setSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [status, setStatus] = useState("");
   const canConfirmLocation = Boolean(selected?.center && selected?.displayName);
+
+  const clearPredictions = () => {
+    setPredictions([]);
+    setActiveIndex(-1);
+  };
+
+  const runSearch = (input) => {
+    const query = String(input || "").trim();
+    // Under three characters every query matches half of India — noise, and a billed request
+    // per keystroke for it.
+    if (!autocompleteServiceRef.current || query.length < 3) {
+      setSearching(false);
+      clearPredictions();
+      return;
+    }
+    setSearching(true);
+    autocompleteServiceRef.current.getPlacePredictions(
+      {
+        input: query,
+        componentRestrictions: { country: "in" },
+        sessionToken: sessionTokenRef.current,
+      },
+      (results, gStatus) => {
+        setSearching(false);
+        const ok = gStatus === window.google?.maps?.places?.PlacesServiceStatus?.OK;
+        // Five is what fits above the map without the list covering it.
+        setPredictions(ok && Array.isArray(results) ? results.slice(0, 5) : []);
+        setActiveIndex(-1);
+      },
+    );
+  };
+
+  const handleSearchChange = (event) => {
+    const { value } = event.target;
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => runSearch(value), 250);
+  };
+
+  const choosePrediction = (prediction) => {
+    if (!prediction?.place_id || !geocoderRef.current) return;
+    clearPredictions();
+    if (searchInputRef.current) searchInputRef.current.value = prediction.description || "";
+    geocoderRef.current.geocode({ placeId: prediction.place_id }, (results, gStatus) => {
+      if (gStatus === "OK" && results?.[0]?.geometry?.location) {
+        const location = results[0].geometry.location;
+        applyPlace(results[0], [location.lng(), location.lat()]);
+        mapRef.current?.setZoom(16);
+      } else {
+        setStatus(getMapFriendlyError());
+      }
+      // The session ends when a place is picked; the next keystroke opens a new one.
+      if (window.google?.maps?.places) {
+        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+      }
+    });
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "Escape" && predictions.length) {
+      clearPredictions();
+      return;
+    }
+    if (!predictions.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % predictions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => (index <= 0 ? predictions.length - 1 : index - 1));
+    } else if (event.key === "Enter") {
+      // Enter with nothing highlighted takes the top hit, which is what the old widget did
+      // and what anyone typing an address expects.
+      event.preventDefault();
+      choosePrediction(predictions[activeIndex] || predictions[0]);
+    }
+  };
 
   // center is stored as [lng, lat] to match the rest of the address form.
   const applyPlace = (place, center) => {
@@ -241,18 +348,9 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
 
         if (searchInputRef.current) {
           searchInputRef.current.value = initialQuery || "";
-          autocompleteRef.current = new google.maps.places.Autocomplete(searchInputRef.current, {
-            componentRestrictions: { country: "in" },
-            fields: ["address_components", "geometry", "formatted_address", "name", "place_id"],
-          });
-          autocompleteRef.current.addListener("place_changed", () => {
-            const place = autocompleteRef.current.getPlace();
-            const location = place?.geometry?.location;
-            if (!location) return;
-            applyPlace(place, [location.lng(), location.lat()]);
-            mapRef.current?.setZoom(16);
-          });
         }
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
         // Location permission is requested only when the user taps
         // "Use current location" — not automatically on open.
       } catch (err) {
@@ -268,10 +366,14 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
 
     return () => {
       cancelled = true;
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-      }
-      autocompleteRef.current = null;
+      // A pending debounce would otherwise fire a search against a torn-down service and
+      // setState on an unmounted modal.
+      clearTimeout(searchTimerRef.current);
+      setPredictions([]);
+      setActiveIndex(-1);
+      setSearching(false);
+      autocompleteServiceRef.current = null;
+      sessionTokenRef.current = null;
       mapRef.current = null;
       markerRef.current = null;
       geocoderRef.current = null;
@@ -298,8 +400,41 @@ export function LocationPickerModal({ open, initialQuery, onClose, onConfirm }) 
                 defaultValue={initialQuery || ""}
                 placeholder="Search area, street or landmark"
                 autoFocus
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                // The browser's own history dropdown would otherwise cover ours.
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={predictions.length > 0}
+                aria-controls="bk-place-suggestions"
+                aria-autocomplete="list"
               />
+              {searching && <Icon icon="lucide:loader-circle" className="profile-spin" />}
             </div>
+            {predictions.length > 0 && (
+              <ul className="profile-map-suggestions" id="bk-place-suggestions" role="listbox">
+                {predictions.map((prediction, index) => (
+                  <li key={prediction.place_id} role="option" aria-selected={index === activeIndex}>
+                    <button
+                      type="button"
+                      className={index === activeIndex ? "is-active" : ""}
+                      // mousedown fires before blur; without this the list would unmount
+                      // out from under the click and the tap would land on the map.
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => choosePrediction(prediction)}
+                    >
+                      <Icon icon="lucide:map-pin" className="bk-map-icon" />
+                      <span>
+                        <strong>{prediction.structured_formatting?.main_text || prediction.description}</strong>
+                        {prediction.structured_formatting?.secondary_text && (
+                          <small>{prediction.structured_formatting.secondary_text}</small>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <button type="button" className="profile-current-location" onClick={handleCurrentLocation} disabled={isLocating}>

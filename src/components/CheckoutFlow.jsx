@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import { API_ENDPOINTS } from "../config/api";
 import api from "../utils/api";
-import { validateCheckoutForm } from "../utils/validation";
+import { validateCheckoutForm, validateEmail } from "../utils/validation";
 import { unwrapApiData } from "../utils/error";
 import { LocationPickerModal } from "../pages/Profile/Profile";
 import { getProductStockInfo } from "../utils/stockStatus";
@@ -48,6 +48,9 @@ const EMPTY_CHECKOUT_ADDRESS = {
   label: "Home",
   name: "",
   phone: "",
+  // Where order updates for THIS address go. Pre-filled with the shopper's own account
+  // email and editable, so an order placed for someone else can keep them informed too.
+  email: "",
   alternate_phone: "",
   country: "India",
   state: "Uttar Pradesh",
@@ -67,14 +70,26 @@ const getEmptyCheckoutAddress = (user) => ({
   ...EMPTY_CHECKOUT_ADDRESS,
   name: user?.name || "",
   phone: user?.phone || "",
+  email: user?.email || "",
 });
 
 const cleanCheckoutAddress = (address = {}) => ({
   ...EMPTY_CHECKOUT_ADDRESS,
   ...address,
   phone: String(address.phone || "").replace(/[^\d+]/g, ""),
+  // Coalesced rather than spread through: addresses saved before this field existed come
+  // back with email: null, and React logs a controlled/uncontrolled input warning on null.
+  email: address.email || "",
   pincode: String(address.pincode || "").replace(/\D/g, "").slice(0, 6),
 });
+
+/**
+ * Who this address's order updates go to, with the account holder as the fallback.
+ *
+ * Every address saved before the field existed has no email of its own, and dropping those
+ * shoppers out of their own order notifications would be a straightforward regression.
+ */
+const getReceiverEmail = (address, user) => String(address?.email || user?.email || "").trim();
 
 const getCheckoutAddressLine = (address = {}) =>
   [address.house_building, address.area_street, address.landmark, address.city, address.state, address.pincode]
@@ -236,7 +251,12 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
 
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
+    // The buyer — who the order belongs to, and who Razorpay is prefilled with. Always the
+    // account email; it is not the receiver's, which travels separately below.
     email: user?.email || "",
+    // The delivery address's own email. Same as `email` for an ordinary order; the person
+    // being sent to when the shopper is ordering for someone else.
+    receiverEmail: user?.email || "",
     address: "",
     city: "",
     pincode: "",
@@ -339,6 +359,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
             ...current,
             fullName: defaultAddress.name || user?.name || current.fullName,
             email: user?.email || current.email,
+            receiverEmail: getReceiverEmail(defaultAddress, user),
             address: getCheckoutAddressLine(defaultAddress),
             city: defaultAddress.city || current.city,
             pincode: String(defaultAddress.pincode || current.pincode || ""),
@@ -431,6 +452,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       ...current,
       fullName: address.name || user?.name || current.fullName,
       email: user?.email || current.email,
+      receiverEmail: getReceiverEmail(address, user),
       address: getCheckoutAddressLine(address),
       city: address.city || current.city,
       pincode: String(address.pincode || current.pincode || ""),
@@ -513,7 +535,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     }
     if (address) {
       setEditingAddressId(address.id);
-      setAddressForm(cleanCheckoutAddress(address));
+      // Addresses saved before the receiver-email field existed open with the account
+      // email in it, the same default a new address gets — rather than an empty required
+      // field the shopper is blocked on for no reason they can see.
+      setAddressForm({ ...cleanCheckoutAddress(address), email: getReceiverEmail(address, user) });
     } else {
       resetAddressForm();
     }
@@ -599,8 +624,11 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
   const saveCheckoutAddress = async () => {
     const form = cleanCheckoutAddress(addressForm);
     const phone = normalizePhone(form.phone);
+    const email = String(form.email || "").trim().toLowerCase();
     const errors = {};
     if (!form.name.trim()) errors.name = "Receiver name is required.";
+    if (!email) errors.email = "Receiver email is required.";
+    else if (!validateEmail(email)) errors.email = "Enter a valid email address.";
     if (!form.house_building.trim()) errors.house_building = "Address is required.";
     if (!form.city.trim()) errors.city = "City is required.";
     if (!form.state.trim()) errors.state = "State is required.";
@@ -619,6 +647,7 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
         ...form,
         name: form.name.trim(),
         phone,
+        email,
       };
       const response = editingAddressId
         ? await api.put(`/api/addresses/${editingAddressId}`, payload)
@@ -814,6 +843,9 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
       const finalOrderData = {
         customer_name: formData.fullName,
         customer_email: formData.email,
+        // Snapshotted onto the order's address so every notification about it can reach the
+        // person it is being delivered to, not only the account that paid.
+        receiver_email: formData.receiverEmail || formData.email,
         address: formData.address,
         city: formData.city,
         pincode: formData.pincode,
@@ -999,6 +1031,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
     </>
   );
   const confirmAddressLine = selectedAddress ? getCheckoutAddressLine(selectedAddress) : formData.address;
+  // The order is going to someone else's inbox as well as the shopper's — worth saying out
+  // loud on the last screen before they pay, because it is the last chance to correct it.
+  const isOrderingForSomeoneElse = Boolean(formData.receiverEmail)
+    && formData.receiverEmail.trim().toLowerCase() !== String(formData.email || "").trim().toLowerCase();
 
   const payInlineSummary = (
     <div className="ckw-pay-inline-summary">
@@ -1093,8 +1129,25 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                   </button>
                 </div>
 
+                {/* Stated once, above the list, rather than repeated on every card. Two
+                    sentences: what the default address is for, and what to do instead when
+                    the order is a gift. */}
+                <p className="ckw-addr-billing-note">
+                  <Icon icon="lucide:receipt" />
+                  <span>
+                    Your <strong>default</strong> address is used as the billing address.
+                    Sending this order to someone else? Add their address with their own name
+                    and email, and we'll keep you both updated.
+                  </span>
+                </p>
+
                 {addresses.map((address) => {
                   const isSel = String(selectedAddressId) === String(address.id);
+                  // Only worth a line on the card when it is somebody else's inbox — on an
+                  // ordinary order it is the shopper's own address and says nothing.
+                  const cardReceiverEmail = getReceiverEmail(address, user);
+                  const cardIsForSomeoneElse = cardReceiverEmail
+                    && cardReceiverEmail.toLowerCase() !== String(user?.email || "").trim().toLowerCase();
                   return (
                     <div
                       key={address.id}
@@ -1104,7 +1157,10 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                       <div className="ckw-addr-main">
                         <div className="ckw-addr-name-row">
                           <span className="ckw-addr-name">{address.name || user?.name}</span>
-                          {address.is_default && <span className="ckw-default-badge">Default</span>}
+                          {/* The default address doubles as the billing address — saying so
+                              here is what makes the other cards read as "somewhere I send
+                              things" rather than "another one of my addresses". */}
+                          {address.is_default && <span className="ckw-default-badge">Default · Billing</span>}
                           <button
                             type="button"
                             className="ckw-addr-menu"
@@ -1117,6 +1173,11 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                         </div>
                         <p className="ckw-addr-text">{getCheckoutAddressLine(address)}</p>
                         <span className="ckw-addr-phone">Phone: {address.phone || user?.phone}</span>
+                        {cardIsForSomeoneElse && (
+                          <span className="ckw-addr-receiver">
+                            <Icon icon="lucide:gift" /> Ordering for someone else — updates go to {cardReceiverEmail} and to you
+                          </span>
+                        )}
 
                         <button
                           type="button"
@@ -1584,6 +1645,16 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                 </span>
                 <em className="ckw-confirm-change">Change</em>
               </button>
+              {isOrderingForSomeoneElse && (
+                <button type="button" className="ckw-confirm-subrow ckw-confirm-subrow--receiver" onClick={goToAddressStep}>
+                  <Icon icon="lucide:gift" />
+                  <span>
+                    Sending to someone else — we'll email every update to{" "}
+                    <strong>{formData.receiverEmail}</strong> and to you
+                  </span>
+                  <Icon icon="lucide:chevron-right" />
+                </button>
+              )}
               <button type="button" className="ckw-confirm-subrow" onClick={goToAddressStep}>
                 <Icon icon="lucide:clipboard-list" />
                 <span>{deliveryInstructions ? deliveryInstructions : "Add delivery instructions (optional)"}</span>
@@ -1737,6 +1808,27 @@ const CheckoutFlow = ({ selectedItems, redirectOnEmpty = false, onExit, couponOv
                     <input name="phone" inputMode="tel" maxLength={10} placeholder="10-digit mobile number" value={addressForm.phone} onChange={handleAddressFormChange} />
                   </div>
                   {addrFormErrors.phone && <em className="buy-now-field-error">{addrFormErrors.phone}</em>}
+                </label>
+                <label>
+                  <span>Receiver email *</span>
+                  <input
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={addressForm.email}
+                    onChange={handleAddressFormChange}
+                    placeholder="name@example.com"
+                  />
+                  {addrFormErrors.email
+                    ? <em className="buy-now-field-error">{addrFormErrors.email}</em>
+                    : (
+                      <em className="buy-now-field-hint">
+                        {String(addressForm.email || "").trim().toLowerCase() === String(user?.email || "").trim().toLowerCase()
+                          ? "Your own email. Change it if you're ordering for someone else."
+                          : "Not your account email — every order update will go to both you and this address."}
+                      </em>
+                    )}
                 </label>
                 <label>
                   <span>Flat, House no., Building *</span>

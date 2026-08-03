@@ -373,6 +373,35 @@
   color: #8a1f2b;
   font-size: 10px;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+/* One line above the address list explaining what the default address is for. Sits outside
+   the cards so it reads as a rule about the list, not a property of any one address. */
+.ckw-addr-billing-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 0, 32, 0.12);
+  border-radius: 9px;
+  background: rgba(128, 0, 32, 0.035);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #5d4435;
+}
+
+.ckw-addr-billing-note > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 15px;
+  color: #8a1f2b;
+}
+
+.ckw-addr-billing-note strong {
+  font-weight: 700;
+  color: #6b0f17;
 }
 
 .ckw-addr-menu {
@@ -395,6 +424,25 @@
 .ckw-addr-phone {
   font-size: 12px;
   color: #4a3a30;
+}
+
+/* Shown only when the address carries somebody else's email, so it is never noise on an
+   ordinary order — it appears precisely when there is something unusual to notice. */
+.ckw-addr-receiver {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #6b0f17;
+  word-break: break-word;
+}
+
+.ckw-addr-receiver > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 13px;
 }
 
 .ckw-deliver-btn {
@@ -1569,6 +1617,21 @@
   font-size: 16px;
   color: #8a5a18;
   flex-shrink: 0;
+}
+
+/* The "sending to someone else" row. The base row truncates to one line, which is right for
+   a delivery note but not for an email address — the tail is exactly the part you check. */
+.ckw-confirm-subrow--receiver span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.45;
+}
+
+.ckw-confirm-subrow--receiver strong {
+  font-weight: 600;
+  color: #6b0f17;
+  word-break: break-all;
 }
 
 /* Wallet toggle row */
