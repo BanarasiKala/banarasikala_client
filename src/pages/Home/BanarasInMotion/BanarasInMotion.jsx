@@ -169,9 +169,14 @@ const BanarasInMotion = () => {
                       )}
                       <video
                         className="bk-motion-video"
-                        /* Attached by useLazyVideoSrc once the card nears the viewport —
-                           see the hook for why `preload` cannot do this job here. */
-                        data-src={reel.video_url}
+                        /* `card_url` is a 540x960 variant sized for this rail. The card is
+                           158x284 CSS — 474x852 device pixels at 3x — so the 1080x1920 master
+                           was about five times the pixels it can show. Falls back to the
+                           master for any reel the pipeline has not re-run yet.
+
+                           Attached by useLazyVideoSrc once the card nears the viewport; see
+                           the hook for why `preload` cannot do this job here. */
+                        data-src={reel.card_url || reel.video_url}
                         poster={reel.thumbnail_url || undefined}
                         autoPlay
                         muted

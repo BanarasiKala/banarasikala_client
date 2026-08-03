@@ -7,7 +7,12 @@
          to a favicon far longer than they hold the page, so without it the old icon survives a
          deploy. The PNG stays as the fallback for anything that cannot render an SVG icon. -->
     <link rel="icon" type="image/svg+xml" href="/favicon-header.svg?v=2" />
-    <link rel="alternate icon" type="image/png" href="/logo_transparent_2.png" />
+    <!-- 32x32, which is all a tab ever renders. This used to point at logo_transparent_2.png —
+         the 1024x1024, 990 KB master — so every first visit downloaded a megabyte to draw a
+         favicon. That file still exists and is still needed: the OG-image fallback in
+         api/reel.js and api/product/[slug].js points at it, and social scrapers want a large
+         image. It just has no business being a favicon. -->
+    <link rel="alternate icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
     <link rel="apple-touch-icon" href="/header.jpeg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Banarasi Kala</title>
