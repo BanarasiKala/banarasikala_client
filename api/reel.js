@@ -10,7 +10,7 @@ const truncateText = (value, maxLength = 180) => {
   const text = stripHtml(value);
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 3).trim()}...`;
-};  
+};   
 const escapeHtml = (value) => String(value || "")
   .replace(/&/g, "&amp;")
   .replace(/</g, "&lt;")
