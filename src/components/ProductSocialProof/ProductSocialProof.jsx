@@ -16,9 +16,16 @@ const getSessionId = () => {
 // today — take turns in the same spot with a slide-in. Out-of-stock products
 // show only the live-viewers line (an "ordered today" claim reads false when
 // the item cannot be bought).
+//
+// The "orders placed today" line is currently switched off; everything needed to
+// bring it back is commented in place below and marked ORDERS-TODAY. `outOfStock`
+// is kept in the signature because callers still pass it and it is only used by
+// that line.
+// eslint-disable-next-line no-unused-vars -- outOfStock is only read by the commented-out line
 const ProductSocialProof = ({ productId, outOfStock = false }) => {
   const [viewers, setViewers] = useState(0);
-  const [ordersRecent, setOrdersRecent] = useState(0);
+  // ORDERS-TODAY
+  // const [ordersRecent, setOrdersRecent] = useState(0);
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -35,7 +42,8 @@ const ProductSocialProof = ({ productId, outOfStock = false }) => {
         const data = await res.json();
         if (ignore) return;
         setViewers(Number(data.viewers) || 0);
-        setOrdersRecent(Number(data.ordersToday ?? data.ordersRecent) || 0);
+        // ORDERS-TODAY
+        // setOrdersRecent(Number(data.ordersToday ?? data.ordersRecent) || 0);
       } catch {
         /* non-critical */
       }
@@ -55,15 +63,16 @@ const ProductSocialProof = ({ productId, outOfStock = false }) => {
       label: "people viewing this right now",
     });
   }
-  if (ordersRecent > 0 && !outOfStock) {
-    messages.push({
-      key: "orders",
-      cls: "is-orders",
-      emoji: "🔥",
-      value: ordersRecent,
-      label: "orders placed today",
-    });
-  }
+  // ORDERS-TODAY
+  // if (ordersRecent > 0 && !outOfStock) {
+  //   messages.push({
+  //     key: "orders",
+  //     cls: "is-orders",
+  //     emoji: "🔥",
+  //     value: ordersRecent,
+  //     label: "orders placed today",
+  //   });
+  // }
   const count = messages.length;
 
   // Rotate lines every 3.5 seconds.
