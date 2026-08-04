@@ -1112,11 +1112,25 @@
   color: rgba(61, 40, 23, 0.6);
 }
 
+/* Stacked, not inline: the struck MRP and the payable amount side by side made this block
+   as wide as both numbers together, and every pixel of it came out of the button next to it.
+   Stacking narrows the block to its widest single number and hands the rest to the button. */
 .cart-stickybar-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-size: 16px;
   font-weight: 500;
   color: #46130d;
   line-height: 1.1;
+}
+
+/* The inline gap the struck price needed beside the total is dead weight once it is above it,
+   and would push the block wider again. Scoped to the sticky bar — the same class is still
+   inline in the price-details panel and in the top proceed block. */
+.cart-stickybar-amount .cart-subtotal-mrp {
+  margin-right: 0;
+  line-height: 1.25;
 }
 
 .cart-stickybar-save {

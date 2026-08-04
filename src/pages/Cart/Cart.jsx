@@ -750,9 +750,13 @@ const Cart = () => {
           {selectedItems.length > 0 && (
             <div className="cart-stickybar-left">
               <span className="cart-stickybar-label">SUBTOTAL ({selectedUnits} Item{selectedUnits === 1 ? "" : "s"})</span>
+              {/* Struck MRP sits ABOVE the payable amount rather than beside it, so this
+                  block is only as wide as its widest number. The width that frees up goes
+                  to the button, which is flex:1. The payable figure is wrapped so it is a
+                  real element to stack, not an anonymous flex item. */}
               <strong className="cart-stickybar-amount">
                 {selectedSavings > 0 && <s className="cart-subtotal-mrp">{formatMoney(selectedMrpTotal)}</s>}
-                {formatMoney(selectedSubtotal)}
+                <span className="cart-stickybar-payable">{formatMoney(selectedSubtotal)}</span>
               </strong>
             </div>
           )}
