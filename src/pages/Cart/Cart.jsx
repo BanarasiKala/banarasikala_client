@@ -86,6 +86,7 @@ const Cart = () => {
     updateQuantity,
     refreshCart,
     loading,
+    lastKnownCount,
   } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { showNotification } = useNotification();
@@ -384,6 +385,29 @@ const Cart = () => {
     );
   }
 
+  /**
+   * An empty cart does not load into a list — it loads into a centred panel. Drawing item-card
+   * skeletons for it and then replacing them with that panel is not a slow load, it looks like
+   * the page changing its mind.
+   *
+   * `lastKnownCount` is what this device saw last time; null on a first-ever visit, where the
+   * item skeleton stays the default because someone opening the cart usually has one.
+   */
+  if (loading && lastKnownCount === 0) {
+    return (
+      <div className="cart-page min-h-screen">
+        {/* Same wrapper as the real empty state, so the icon, both lines and the button land
+            in exactly the spots their placeholders occupied. */}
+        <div className="cart-empty-wrap" aria-label="Loading your cart" aria-busy="true">
+          <span className="bk-sk cart-sk-empty-icon" />
+          <span className="bk-sk cart-sk-line cart-sk-empty-title" />
+          <span className="bk-sk cart-sk-line cart-sk-empty-sub" />
+          <span className="bk-sk cart-sk-empty-btn" />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="cart-page min-h-screen">
@@ -413,7 +437,10 @@ const Cart = () => {
           </div>
 
           <div className="cart-items" aria-hidden="true">
-            {[1, 2].map((i) => (
+            {/* As many cards as the cart held last time, capped at three — beyond that the
+                extra rows are below the fold and only add shimmer. Two when there is nothing
+                to go on. */}
+            {Array.from({ length: Math.min(Math.max(lastKnownCount ?? 2, 1), 3) }, (_, i) => i).map((i) => (
               <div key={i} className="cart-card cart-sk-card">
                 <span className="bk-sk cart-sk-check" />
                 <div className="bk-sk cart-sk-image" />

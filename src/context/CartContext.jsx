@@ -8,6 +8,39 @@ import { unwrapApiData } from '../utils/error';
 
 const CartContext = createContext();
 
+/**
+ * How many items the cart held the last time it loaded on this device.
+ *
+ * The cart page has two completely different layouts — a list of item cards, and a centred
+ * "your cart is empty" panel — and while the fetch is in flight it has no way to know which
+ * one is coming. Guessing "list" every time means an empty cart shows a skeleton of two item
+ * cards and then throws them away for a centred panel, which reads as the page breaking.
+ *
+ * Remembering the count turns that guess into an informed one. It is a hint, not truth: it can
+ * be stale, so nothing depends on it being right — a wrong guess costs the same jump that
+ * happens unconditionally today.
+ */
+const LAST_COUNT_KEY = "bk_cart_last_count";
+
+const readLastCount = () => {
+  try {
+    const raw = localStorage.getItem(LAST_COUNT_KEY);
+    if (raw === null) return null; // never loaded here — no basis for a guess
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  } catch {
+    return null; // private mode / storage disabled
+  }
+};
+
+const writeLastCount = (n) => {
+  try {
+    localStorage.setItem(LAST_COUNT_KEY, String(n));
+  } catch {
+    /* non-critical */
+  }
+};
+
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -21,6 +54,9 @@ export const CartProvider = ({ children }) => {
   const { showNotification } = useNotification();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Read once, at mount, before any fetch can overwrite it — this is what the loading state
+  // needs and it is only meaningful before the real cart arrives.
+  const [lastKnownCount] = useState(readLastCount);
 
   // Coupon States shared across Cart and Checkout
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -51,6 +87,9 @@ export const CartProvider = ({ children }) => {
       };
     }).filter(Boolean);
     setCart(formatted);
+    // Recorded on every load, including the empty one — an empty cart is exactly the case
+    // the next visit's skeleton most needs to know about.
+    writeLastCount(formatted.length);
     return formatted;
   }, [user]);
 
@@ -67,6 +106,9 @@ export const CartProvider = ({ children }) => {
       setAppliedCoupon(null);
       setDiscountAmount(0);
       setLoading(false);
+      // Signing out ends the basis for the hint: the next person on this device has their
+      // own cart, and inheriting a stale count would mis-shape their first loading state.
+      try { localStorage.removeItem(LAST_COUNT_KEY); } catch { /* non-critical */ }
     }
   }, [user, authLoading, fetchAndSetCart]);
 
@@ -283,7 +325,8 @@ export const CartProvider = ({ children }) => {
       discountAmount,
       applyCoupon,
       removeCoupon,
-      loading
+      loading,
+      lastKnownCount
     }}>
       {children}
     </CartContext.Provider>

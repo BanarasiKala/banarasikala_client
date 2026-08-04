@@ -1189,6 +1189,37 @@
   height: 13px;
 }
 
+/* ── Empty-cart skeleton ──────────────────────────────────────────────
+   Placeholders for the empty state, not for a list. Each one matches the size and the bottom
+   margin of the real element it stands in for, so when the panel arrives nothing moves:
+   icon 100px + 16px, title 20px/600 + 8px, sub 13px + 24px, then the button. */
+.cart-sk-empty-icon {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+}
+
+.cart-sk-empty-title {
+  width: min(240px, 62vw);
+  height: 22px;
+  margin-bottom: 8px;
+}
+
+.cart-sk-empty-sub {
+  width: min(253px, 66vw);
+  height: 15px;
+  margin-bottom: 24px;
+}
+
+/* The real button measures 206x39 with an 8px radius — a pill here would read as a different
+   control appearing and then changing shape. */
+.cart-sk-empty-btn {
+  width: 206px;
+  height: 39px;
+  border-radius: 8px;
+}
+
 /* .cart-summary-bag icon box */
 .cart-sk-bag {
   flex-shrink: 0;
