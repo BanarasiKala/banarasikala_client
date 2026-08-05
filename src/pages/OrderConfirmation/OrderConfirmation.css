@@ -1373,12 +1373,11 @@
 /* Anchors the ⓘ tooltip. The row is already flex/space-between, so the button lands at the
    card's right edge on its own — and pinning the panel to the row's two edges makes it exactly
    the card's width, so it can never run off screen. */
+/* Never wraps. An earlier version allowed it, and on a narrow card the button dropped onto its
+   own line — the heading gives up width instead, which keeps the row intact at every size. */
 .oc-bank-head {
   position: relative;
-  /* Wraps only when the row genuinely cannot hold both; on any normal width the heading and
-     the button stay on one line. */
-  flex-wrap: wrap;
-  row-gap: 10px;
+  flex-wrap: nowrap;
 }
 
 /* Icon, title and ⓘ on one line. Tailwind's preflight sets `svg { display: block }` globally,
@@ -1388,7 +1387,18 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* Shrinkable, and min-width:0 so it actually can — a flex item defaults to min-content and
+     would otherwise push the button out of the row rather than give anything up. */
+  flex: 0 1 auto;
   min-width: 0;
+}
+
+/* The one part that yields. Truncating the title on a very narrow phone costs a few letters
+   of a heading the ⓘ beside it already explains; wrapping cost the whole layout. */
+.oc-bank-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Scoped to the direct child so it cannot reach the ⓘ's own glyph, which is sized by
@@ -1553,6 +1563,13 @@
   letter-spacing: 0;
 }
 
+/* The required marker. Red and unbolded — it is a mark, not an emphasis, and a bold red
+   asterisk on every label makes a five-field form look like it is already failing. */
+.oc-bank-field > span b {
+  color: #b42318;
+  font-weight: 400;
+}
+
 .oc-bank-field input {
   min-height: 46px;
   border: 1px solid rgba(128, 0, 32, 0.16);
@@ -1576,6 +1593,35 @@
   color: #9a7b5e;
 }
 
+/* Sits in the hint's place rather than below it, so a field does not grow taller the moment
+   it goes wrong and shove the rest of the form down under the typing finger. */
+.oc-bank-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.45;
+  color: #b42318;
+}
+
+.oc-bank-error svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.oc-bank-field.has-error input {
+  border-color: #b42318;
+  background: #fff8f7;
+}
+
+.oc-bank-field.has-error input:focus {
+  border-color: #b42318;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.1);
+}
+
 .oc-bank-mono {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
@@ -1593,23 +1639,20 @@
   }
 }
 
+/* The hero's "Track your order" button, stretched. It inherits the colour, radius, shadow and
+   hover from .oc-thanks-btn-primary and only overrides the width — a sheet's confirm action
+   spans the sheet, but there is no reason for it to be a different-looking button. */
 .oc-bank-submit {
+  width: 100%;
   min-height: 48px;
-  border: 0;
-  border-radius: 8px;
-  background: #800020;
-  color: #f5c94d;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   cursor: pointer;
 }
 
 .oc-bank-submit:disabled {
   opacity: 0.65;
   cursor: default;
+  /* The shared .oc-thanks-btn-primary:hover lifts on hover — a disabled button must not. */
+  transform: none;
 }
 
 .oc-bank-secure {

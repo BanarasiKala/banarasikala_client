@@ -85,6 +85,63 @@ const getInspectionCut = (r) => {
    there is no gateway record for them to look up. */
 const getEvidenceImages = (value) => (Array.isArray(value) ? value : []).filter((image) => image?.url);
 
+/* ── Refund account validation ─────────────────────────────────────────────────────────────
+   The same rules saveRefundBankDetails enforces, checked again here. The duplication is
+   deliberate: the server must still be the authority — a client can be bypassed — but nobody
+   should need a round trip to be told an IFSC is one character short, and the server can only
+   ever report the first thing it finds wrong. These report all of them at once.
+
+   Each returns "" when the value is acceptable, or the sentence to show beneath the field. */
+const BANK_FIELD_RULES = {
+  upi_id: (value) => {
+    const id = value.trim();
+    if (!id) return "Enter your UPI ID.";
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9.\-_]{1,255}@[a-zA-Z]{2,64}$/.test(id)) {
+      return "That doesn't look like a UPI ID — it should read like name@bank.";
+    }
+    return "";
+  },
+  account_holder_name: (value) => {
+    const name = value.trim();
+    if (!name) return "Enter the account holder's name.";
+    if (name.length < 3) return "Enter the full name as printed on the account.";
+    return "";
+  },
+  account_number: (value) => {
+    const number = value.replace(/\s+/g, "");
+    if (!number) return "Enter your account number.";
+    if (!/^\d{6,18}$/.test(number)) return "An account number is 6 to 18 digits, with no letters.";
+    return "";
+  },
+  ifsc_code: (value) => {
+    const code = value.trim().toUpperCase();
+    if (!code) return "Enter the IFSC code.";
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(code)) return "An IFSC is 11 characters, like HDFC0001234.";
+    return "";
+  },
+  bank_name: (value) => {
+    if (!value.trim()) return "Enter the bank name.";
+    if (value.trim().length < 2) return "Enter the full bank name.";
+    return "";
+  },
+};
+
+// Which fields the chosen method actually requires. Branch is absent from both: it is the one
+// optional field on the form, and marking it required would be a lie the server does not tell.
+const BANK_REQUIRED_FIELDS = {
+  upi: ["upi_id"],
+  bank: ["account_holder_name", "account_number", "ifsc_code", "bank_name"],
+};
+
+const validateBankForm = (form) => {
+  const fields = BANK_REQUIRED_FIELDS[form.method === "upi" ? "upi" : "bank"];
+  return fields.reduce((errors, field) => {
+    const message = BANK_FIELD_RULES[field](String(form[field] || ""));
+    if (message) errors[field] = message;
+    return errors;
+  }, {});
+};
+
 const getItemImage = (item) => item.image_url || item.product_image_url || "";
 const getItemColor = (item) => item.color_name || item.Color?.name || "Selected color";
 
@@ -984,6 +1041,10 @@ export default function OrderConfirmation() {
   });
   const [bankSaving, setBankSaving] = useState(false);
   const [bankSheetOpen, setBankSheetOpen] = useState(false);
+  // { field: message } for whatever is currently wrong. Empty until a field is left or the
+  // form is submitted — flagging an empty box the moment the sheet opens scolds someone for
+  // not having typed yet.
+  const [bankErrors, setBankErrors] = useState({});
   // { images, index } while a transfer screenshot is open full-screen.
   const [proofLightbox, setProofLightbox] = useState(null);
   const [tracking, setTracking] = useState(null);
@@ -1510,11 +1571,56 @@ export default function OrderConfirmation() {
       bank_name: saved?.bank_name || "",
       branch_name: saved?.branch_name || "",
     });
+    setBankErrors({});
     setBankSheetOpen(true);
+  };
+
+  /**
+   * Typing clears an error, but never raises one.
+   *
+   * Validating on every keystroke marks "HDFC000" wrong four characters before it can
+   * possibly be right, so the message appears on blur (below) or on submit. Once it IS
+   * showing, though, it has to clear the moment the value becomes acceptable — an error that
+   * outlives the fix reads as "still wrong" and sends people hunting for a second mistake.
+   */
+  const setBankField = (field, value) => {
+    setBankForm((current) => ({ ...current, [field]: value }));
+    setBankErrors((current) => {
+      if (!current[field]) return current;
+      if (BANK_FIELD_RULES[field]?.(String(value || ""))) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const blurBankField = (field) => {
+    const message = BANK_FIELD_RULES[field]?.(String(bankForm[field] || "")) || "";
+    setBankErrors((current) => {
+      const next = { ...current };
+      if (message) next[field] = message;
+      else delete next[field];
+      return next;
+    });
+  };
+
+  // The two methods have different fields, so anything flagged under one is meaningless
+  // under the other.
+  const setBankMethod = (method) => {
+    setBankForm((current) => ({ ...current, method }));
+    setBankErrors({});
   };
 
   const submitBankDetails = async (event) => {
     event.preventDefault();
+    // Every problem at once, rather than the server's first-one-wins. Nothing is sent until
+    // the form is clean, so a typo costs no round trip.
+    const errors = validateBankForm(bankForm);
+    if (Object.keys(errors).length > 0) {
+      setBankErrors(errors);
+      return;
+    }
+    setBankErrors({});
     setBankSaving(true);
     try {
       const response = await api.post(`/api/orders/${orderId}/refund-bank-details`, bankForm);
@@ -2433,7 +2539,7 @@ export default function OrderConfirmation() {
                     row's only other child, so space-between puts it at the right on its own. */}
                 <h2>
                   <Icon icon="lucide:landmark" />
-                  Refund account
+                  <span className="oc-bank-title">Refund account</span>
                   <span className="refund-info-wrap">
                     <button
                       type="button"
@@ -4377,7 +4483,9 @@ export default function OrderConfirmation() {
               <p>Where should we send the refund for order <strong>{orderNumber}</strong>?</p>
             </div>
 
-            <form className="cancel-modal-form oc-bank-form" onSubmit={submitBankDetails}>
+            {/* noValidate: the browser's own bubble fires first and swallows the submit, so the
+                red lines below would never get their turn. Ours are the only messages. */}
+            <form className="cancel-modal-form oc-bank-form" onSubmit={submitBankDetails} noValidate>
               {/* UPI leads because it is one field against five, and it is how most COD
                   customers would rather be paid. The bank account stays a peer, not a
                   fallback — plenty of people still do not use UPI at all. */}
@@ -4392,7 +4500,7 @@ export default function OrderConfirmation() {
                     role="radio"
                     aria-checked={bankForm.method === option.key}
                     className={`oc-bank-method${bankForm.method === option.key ? " is-active" : ""}`}
-                    onClick={() => setBankForm((current) => ({ ...current, method: option.key }))}
+                    onClick={() => setBankMethod(option.key)}
                   >
                     <Icon icon={option.icon} />
                     {option.label}
@@ -4401,69 +4509,87 @@ export default function OrderConfirmation() {
               </div>
 
               {bankForm.method === "upi" ? (
-                <label className="oc-bank-field">
-                  <span>UPI ID</span>
+                <label className={`oc-bank-field${bankErrors.upi_id ? " has-error" : ""}`}>
+                  <span>UPI ID <b aria-hidden="true">*</b></span>
                   <input
-                    required
                     autoFocus
                     autoComplete="off"
                     autoCapitalize="none"
                     spellCheck="false"
                     className="oc-bank-mono"
+                    aria-invalid={Boolean(bankErrors.upi_id)}
                     value={bankForm.upi_id}
-                    onChange={(event) => setBankForm((current) => ({ ...current, upi_id: event.target.value.trim() }))}
+                    onChange={(event) => setBankField("upi_id", event.target.value.trim())}
+                    onBlur={() => blurBankField("upi_id")}
                     placeholder="yourname@bank"
                   />
-                  <small>The ID you receive money on — from GPay, PhonePe, Paytm or your bank app.</small>
+                  {bankErrors.upi_id
+                    ? <em className="oc-bank-error"><Icon icon="lucide:alert-circle" />{bankErrors.upi_id}</em>
+                    : <small>The ID you receive money on — from GPay, PhonePe, Paytm or your bank app.</small>}
                 </label>
               ) : (
                 <>
-                  <label className="oc-bank-field">
-                    <span>Account holder name</span>
+                  <label className={`oc-bank-field${bankErrors.account_holder_name ? " has-error" : ""}`}>
+                    <span>Account holder name <b aria-hidden="true">*</b></span>
                     <input
-                      required
                       autoFocus
+                      aria-invalid={Boolean(bankErrors.account_holder_name)}
                       value={bankForm.account_holder_name}
-                      onChange={(event) => setBankForm((current) => ({ ...current, account_holder_name: event.target.value }))}
+                      onChange={(event) => setBankField("account_holder_name", event.target.value)}
+                      onBlur={() => blurBankField("account_holder_name")}
                       placeholder="As printed on the account"
                     />
+                    {bankErrors.account_holder_name && (
+                      <em className="oc-bank-error"><Icon icon="lucide:alert-circle" />{bankErrors.account_holder_name}</em>
+                    )}
                   </label>
 
-                  <label className="oc-bank-field">
-                    <span>Account number</span>
+                  <label className={`oc-bank-field${bankErrors.account_number ? " has-error" : ""}`}>
+                    <span>Account number <b aria-hidden="true">*</b></span>
                     <input
-                      required
                       inputMode="numeric"
                       autoComplete="off"
+                      aria-invalid={Boolean(bankErrors.account_number)}
                       value={bankForm.account_number}
-                      onChange={(event) => setBankForm((current) => ({ ...current, account_number: event.target.value }))}
+                      onChange={(event) => setBankField("account_number", event.target.value)}
+                      onBlur={() => blurBankField("account_number")}
                       placeholder="Account number"
                     />
+                    {bankErrors.account_number && (
+                      <em className="oc-bank-error"><Icon icon="lucide:alert-circle" />{bankErrors.account_number}</em>
+                    )}
                   </label>
 
                   <div className="oc-bank-grid">
-                    <label className="oc-bank-field">
-                      <span>IFSC code</span>
+                    <label className={`oc-bank-field${bankErrors.ifsc_code ? " has-error" : ""}`}>
+                      <span>IFSC code <b aria-hidden="true">*</b></span>
                       <input
-                        required
                         maxLength={11}
                         autoCapitalize="characters"
                         className="oc-bank-mono"
+                        aria-invalid={Boolean(bankErrors.ifsc_code)}
                         value={bankForm.ifsc_code}
-                        onChange={(event) => setBankForm((current) => ({ ...current, ifsc_code: event.target.value.toUpperCase() }))}
+                        onChange={(event) => setBankField("ifsc_code", event.target.value.toUpperCase())}
+                        onBlur={() => blurBankField("ifsc_code")}
                         placeholder="HDFC0001234"
                       />
-                      <small>11 characters, on your cheque book or passbook.</small>
+                      {bankErrors.ifsc_code
+                        ? <em className="oc-bank-error"><Icon icon="lucide:alert-circle" />{bankErrors.ifsc_code}</em>
+                        : <small>11 characters, on your cheque book or passbook.</small>}
                     </label>
 
-                    <label className="oc-bank-field">
-                      <span>Bank name</span>
+                    <label className={`oc-bank-field${bankErrors.bank_name ? " has-error" : ""}`}>
+                      <span>Bank name <b aria-hidden="true">*</b></span>
                       <input
-                        required
+                        aria-invalid={Boolean(bankErrors.bank_name)}
                         value={bankForm.bank_name}
-                        onChange={(event) => setBankForm((current) => ({ ...current, bank_name: event.target.value }))}
+                        onChange={(event) => setBankField("bank_name", event.target.value)}
+                        onBlur={() => blurBankField("bank_name")}
                         placeholder="Bank name"
                       />
+                      {bankErrors.bank_name && (
+                        <em className="oc-bank-error"><Icon icon="lucide:alert-circle" />{bankErrors.bank_name}</em>
+                      )}
                     </label>
                   </div>
 
@@ -4471,15 +4597,20 @@ export default function OrderConfirmation() {
                     <span>Branch <em>optional</em></span>
                     <input
                       value={bankForm.branch_name}
-                      onChange={(event) => setBankForm((current) => ({ ...current, branch_name: event.target.value }))}
+                      onChange={(event) => setBankField("branch_name", event.target.value)}
                       placeholder="Branch name"
                     />
                   </label>
                 </>
               )}
 
-              <button type="submit" className="oc-bank-submit" disabled={bankSaving}>
+              <button
+                type="submit"
+                className="oc-thanks-btn oc-thanks-btn-primary oc-bank-submit"
+                disabled={bankSaving}
+              >
                 {bankSaving ? "Saving…" : "Save refund details"}
+                <Icon icon="lucide:arrow-right" />
               </button>
 
               <p className="oc-bank-secure">
