@@ -1,5 +1,6 @@
 ﻿import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { imgUrl } from "../../utils/cloudinary";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../utils/api";
@@ -15,6 +16,7 @@ import OrderTrackModal from "../../components/OrderTrackModal";
 import SupportChatSheet from "../../components/SupportChat/SupportChatSheet";
 import supportOrderContext from "../../utils/supportOrderContext";
 import ReviewImagePicker from "../../components/ReviewImagePicker";
+import ImageLightbox from "../../components/ImageLightbox";
 import InvoiceViewer from "../../components/InvoiceViewer";
 import useBottomSheet from "../../hooks/useBottomSheet";
 import "./OrderConfirmation.css";
@@ -57,6 +59,31 @@ const formatRefundStatus = (status) => {
 };
 
 const isRefundSettled = (status) => /complete|processed|success|refunded/i.test(String(status || ""));
+
+/* ── Post-inspection figures ──────────────────────────────────────────────────────────────
+   `amount` is what was QUOTED when the return was raised and is never rewritten. When the
+   parcel comes back and is opened, an admin can write `inspected_amount` alongside it — lower
+   only, with a reason meant for this page — and the ledger then settles at that figure. Null
+   means nothing was adjusted, so the quote stands. */
+const getRefundQuoted = (r) => toNumber(r?.amount);
+
+const getRefundInspected = (r) => (
+  r?.inspected_amount === null || r?.inspected_amount === undefined ? null : toNumber(r.inspected_amount)
+);
+
+// What the inspection took off. The server refuses to raise a refund above its quote, so a
+// recorded inspection can only ever leave this at zero or above.
+const getInspectionCut = (r) => {
+  const inspected = getRefundInspected(r);
+  return inspected === null ? 0 : Math.max(0, getRefundQuoted(r) - inspected);
+};
+
+/* Evidence photos on a refund, as {url} — the same shape review images use, so the existing
+   lightbox opens them. Two separate sets: `inspection_images` is what the inspection found
+   when the parcel was opened, `proof_images` is the receipt for the transfer afterwards. On a
+   COD refund that receipt is the only evidence the customer has that the money was sent —
+   there is no gateway record for them to look up. */
+const getEvidenceImages = (value) => (Array.isArray(value) ? value : []).filter((image) => image?.url);
 
 const getItemImage = (item) => item.image_url || item.product_image_url || "";
 const getItemColor = (item) => item.color_name || item.Color?.name || "Selected color";
@@ -945,7 +972,10 @@ export default function OrderConfirmation() {
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: "", images: [] });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitLabel, setFeedbackSubmitLabel] = useState("");
+  // `method` decides which half of this is sent — "upi" needs only upi_id, "bank" the rest.
   const [bankForm, setBankForm] = useState({
+    method: "upi",
+    upi_id: "",
     account_holder_name: "",
     account_number: "",
     ifsc_code: "",
@@ -953,6 +983,9 @@ export default function OrderConfirmation() {
     branch_name: "",
   });
   const [bankSaving, setBankSaving] = useState(false);
+  const [bankSheetOpen, setBankSheetOpen] = useState(false);
+  // { images, index } while a transfer screenshot is open full-screen.
+  const [proofLightbox, setProofLightbox] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   // RTO resolution: "" | "redispatch" | "refund" (in-flight), and the refund
@@ -1019,16 +1052,28 @@ export default function OrderConfirmation() {
   // into the column total (it would make the deduction lines fail to add up).
   const refundToPaymentMethod = (r) => {
     const bd = r?.breakdown || null;
-    return (bd?.is_full_return && bd?.gateway_refund !== undefined && bd?.gateway_refund !== null)
+    const quotedToMethod = (bd?.is_full_return && bd?.gateway_refund !== undefined && bd?.gateway_refund !== null)
       ? toNumber(bd.gateway_refund)
       : toNumber(r?.amount);
+    // An inspection lowers what is paid out, and the wallet credit is returned in full, so the
+    // shortfall lands on the money going back to the payment method rather than on the wallet
+    // line below. On an order with no wallet spend the two are the same figure anyway.
+    return Math.max(0, quotedToMethod - getInspectionCut(r));
   };
   const totalRefunded = refunds
     .filter((r) => isRefundSettled(r.status))
     .reduce((sum, r) => sum + refundToPaymentMethod(r), 0);
+  // The wallet credit on the breakdown was sized against the QUOTE. The server caps the wallet
+  // share at what is actually payable, so a reduction deep enough to fall below that credit
+  // eats into it as well — cap the same way here rather than promise wallet money the refund
+  // is no longer worth.
+  const walletReturnOf = (r) => Math.min(
+    toNumber(r?.breakdown?.wallet_return),
+    getRefundInspected(r) ?? getRefundQuoted(r),
+  );
   const totalWalletReturned = refunds
     .filter((r) => isRefundSettled(r.status))
-    .reduce((sum, r) => sum + toNumber(r?.breakdown?.wallet_return), 0);
+    .reduce((sum, r) => sum + walletReturnOf(r), 0);
   const orderActions = useMemo(() => getOrderActions(order), [order]);
   // RTO (order returned to seller). Prepaid parcels wait for the customer to
   // choose "pay to re-dispatch" or "refund"; COD parcels are terminal (the
@@ -1445,6 +1490,29 @@ export default function OrderConfirmation() {
     };
   }, [cancelModal.isOpen, cancelModal.orderId, cancelModal.type, selectedActionItems]);
 
+  /**
+   * Opening the sheet pre-fills from whatever is already saved.
+   *
+   * The form is also the "change account" path, and a customer correcting one wrong digit of
+   * an IFSC should not have to retype the other four fields from memory.
+   */
+  const openBankSheet = () => {
+    const saved = order?.refund_bank_details || null;
+    setBankForm({
+      // UPI first for a new entry — it is one field against five. A saved record reopens on
+      // whichever method it was given with. Records predating UPI carry no `method` and are
+      // bank records, which is what the fallback resolves to.
+      method: saved ? (saved.method === "upi" ? "upi" : "bank") : "upi",
+      upi_id: saved?.upi_id || "",
+      account_holder_name: saved?.account_holder_name || "",
+      account_number: saved?.account_number || "",
+      ifsc_code: saved?.ifsc_code || "",
+      bank_name: saved?.bank_name || "",
+      branch_name: saved?.branch_name || "",
+    });
+    setBankSheetOpen(true);
+  };
+
   const submitBankDetails = async (event) => {
     event.preventDefault();
     setBankSaving(true);
@@ -1453,7 +1521,10 @@ export default function OrderConfirmation() {
       showNotification(response.data?.message || "Bank details saved.", "success");
       const updated = await api.get(`/api/orders/${orderId}`);
       setOrder(updated.data);
+      setBankSheetOpen(false);
       setBankForm({
+        method: "upi",
+        upi_id: "",
         account_holder_name: "",
         account_number: "",
         ifsc_code: "",
@@ -2186,7 +2257,10 @@ export default function OrderConfirmation() {
             </div>
             {(() => {
               const refundStatus = String(order.refund_status || "").toLowerCase();
-              const refundAmt = toNumber(order.refund_amount);
+              // refund_payable_amount is the server's own resolution of quote-vs-inspection —
+              // it must be preferred over refund_amount, which is only ever the quote and would
+              // promise money an inspection has already decided not to pay.
+              const refundAmt = toNumber(order.refund_payable_amount ?? order.refund_amount);
               const isPartial = String(order.status || "").toLowerCase().includes("partial");
               if (!refundStatus.includes("pending") && !refundStatus.includes("refund")) return null;
               return (
@@ -2242,6 +2316,11 @@ export default function OrderConfirmation() {
                 {refunds.map((r, i) => {
                   // The breakdown is no longer read here — it renders inside the ⓘ tooltip
                   // on the head above.
+                  const quoted = getRefundQuoted(r);
+                  const inspected = getRefundInspected(r);
+                  const wasReduced = inspected !== null && inspected < quoted;
+                  const damage = getEvidenceImages(r.inspection_images);
+                  const proof = getEvidenceImages(r.proof_images);
                   return (
                     <div key={r.id || `${r.refund_type}-${i}`} className="refund-ledger-entry">
                       <div className="refund-ledger-row">
@@ -2258,6 +2337,67 @@ export default function OrderConfirmation() {
                             than it was. Wallet is called out separately underneath. */}
                         <strong>{formatPrice(refundToPaymentMethod(r))}</strong>
                       </div>
+
+                      {/* The parcel came back short of what was promised. Both figures and the
+                          reason sit together on purpose: a refund that lands lighter than the
+                          quote with nothing to explain it is a support message every time, and
+                          the reason was written by the admin for this spot. */}
+                      {wasReduced && (
+                        <div className="refund-inspection">
+                          <span className="refund-inspection-head">
+                            <Icon icon="lucide:search-check" />
+                            Reduced after inspection
+                          </span>
+                          <span className="refund-inspection-figures">
+                            <s>{formatPrice(quoted)}</s>
+                            <Icon icon="lucide:arrow-right" aria-hidden="true" />
+                            <strong>{formatPrice(inspected)}</strong>
+                          </span>
+                          {r.inspection_note && (
+                            <p className="refund-inspection-note">{r.inspection_note}</p>
+                          )}
+                          {damage.length > 0 && (
+                            <span className="refund-proof-row">
+                              {damage.map((image, imageIndex) => (
+                                <button
+                                  type="button"
+                                  className="refund-proof-thumb"
+                                  key={`${image.url}-${imageIndex}`}
+                                  onClick={() => setProofLightbox({ images: damage, index: imageIndex })}
+                                  aria-label={`Open inspection photo ${imageIndex + 1} of ${damage.length}`}
+                                >
+                                  <img src={imgUrl(image.url, 220)} alt="" loading="lazy" />
+                                </button>
+                              ))}
+                            </span>
+                          )}
+                          {r.inspected_at && (
+                            <span className="refund-inspection-meta">Checked on {formatDate(r.inspected_at)}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {proof.length > 0 && (
+                        <div className="refund-proof">
+                          <span className="refund-proof-head">
+                            <Icon icon="lucide:receipt" />
+                            Payment proof
+                          </span>
+                          <span className="refund-proof-row">
+                            {proof.map((image, imageIndex) => (
+                              <button
+                                type="button"
+                                className="refund-proof-thumb"
+                                key={`${image.url}-${imageIndex}`}
+                                onClick={() => setProofLightbox({ images: proof, index: imageIndex })}
+                                aria-label={`Open payment proof ${imageIndex + 1} of ${proof.length}`}
+                              >
+                                <img src={imgUrl(image.url, 220)} alt="" loading="lazy" />
+                              </button>
+                            ))}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2276,6 +2416,100 @@ export default function OrderConfirmation() {
               </div>
             )}
           </section>
+
+          {/* Directly under the refund figures and above the address, because it belongs to the
+              money, not to the delivery. Below the address it sat under a heading about where
+              the parcel went, which is the one place a customer looking for "where does my
+              refund go" would never think to scroll. */}
+          {needsCodBankDetails && (
+            <section className="order-panel oc-bank-card">
+              {/* The "why" lives behind the ⓘ, same hover/focus tooltip the Refunds ledger
+                  uses — a tap focuses the button, tapping elsewhere blurs and dismisses it.
+                  The reason a COD refund needs an account is worth one read, not permanent
+                  residence above the button that acts on it. */}
+              <div className="order-panel-head-row oc-bank-head">
+                {/* Icon, title and ⓘ are one unit — the ⓘ explains THIS heading, so it travels
+                    with it rather than drifting to the far edge of the row. The button is the
+                    row's only other child, so space-between puts it at the right on its own. */}
+                <h2>
+                  <Icon icon="lucide:landmark" />
+                  Refund account
+                  <span className="refund-info-wrap">
+                    <button
+                      type="button"
+                      className="refund-ledger-info"
+                      aria-label="Why we need your refund account"
+                    >
+                      <Icon icon="lucide:info" />
+                    </button>
+                    <span className="refund-ledger-tip oc-bank-tip" role="tooltip">
+                      {order.refund_bank_details
+                        ? "You paid cash on delivery, so there is no card or online payment for us to reverse — the refund is sent to the account below instead."
+                        : "You paid cash on delivery, so there is no card or online payment for us to reverse. Tell us where to send the money — a UPI ID or a bank account — and we cannot send it until you do."}
+                    </span>
+                  </span>
+                </h2>
+
+                {/* Hidden once the money has gone: by then there is nothing left to change. */}
+                {(!order.refund_bank_details || !order.refund_processed_at) && (
+                  <button
+                    type="button"
+                    className={`oc-thanks-btn ${order.refund_bank_details ? "oc-thanks-btn-ghost" : "oc-thanks-btn-primary"}`}
+                    onClick={openBankSheet}
+                  >
+                    {order.refund_bank_details ? "Change" : "Add refund details"}
+                    <Icon icon="lucide:arrow-right" />
+                  </button>
+                )}
+              </div>
+
+              {order.refund_bank_details && (
+                <>
+                  <div className="oc-bank-saved">
+                    <span className="oc-bank-badge">
+                      <Icon icon="lucide:check" /> Details received
+                    </span>
+                    {order.refund_bank_details.method === "upi" ? (
+                      <dl className="oc-bank-rows">
+                        <div>
+                          <dt>UPI ID</dt>
+                          <dd className="oc-bank-mono-value">{order.refund_bank_details.upi_id}</dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <dl className="oc-bank-rows">
+                        <div>
+                          <dt>Account holder</dt>
+                          <dd>{order.refund_bank_details.account_holder_name}</dd>
+                        </div>
+                        <div>
+                          <dt>Account</dt>
+                          {/* Only the last four are echoed back. The full number is on file, but
+                              reprinting it on a page a customer may open in public buys nothing. */}
+                          <dd>&bull;&bull;&bull;&bull; {order.refund_bank_details.account_number_last4}</dd>
+                        </div>
+                        <div>
+                          <dt>IFSC</dt>
+                          <dd>{order.refund_bank_details.ifsc_code}</dd>
+                        </div>
+                        <div>
+                          <dt>Bank</dt>
+                          <dd>
+                            {order.refund_bank_details.bank_name}
+                            {order.refund_bank_details.branch_name ? ` · ${order.refund_bank_details.branch_name}` : ""}
+                          </dd>
+                        </div>
+                      </dl>
+                    )}
+                  </div>
+                  <p className="oc-bank-note">
+                    Your refund will be sent here. The receipt appears under{" "}
+                    <strong>Refunds</strong> above once it has gone out.
+                  </p>
+                </>
+              )}
+            </section>
+          )}
 
           <section className="order-panel oc-summary-card oc-address-card">
             <div className="order-panel-head oc-summary-head">
@@ -2313,53 +2547,6 @@ export default function OrderConfirmation() {
               </p>
             )}
           </section>
-
-          {needsCodBankDetails && (
-            <section className="order-panel">
-              <h2>Refund bank details</h2>
-              {order.refund_bank_details ? (
-                <div className="refund-bank-saved">
-                  <strong>{order.refund_bank_details.account_holder_name}</strong>
-                  <span>{order.refund_bank_details.bank_name} - {order.refund_bank_details.ifsc_code}</span>
-                  <span>Account ending {order.refund_bank_details.account_number_last4}</span>
-                </div>
-              ) : (
-                <form className="refund-bank-form" onSubmit={submitBankDetails}>
-                  <input
-                    required
-                    value={bankForm.account_holder_name}
-                    onChange={(event) => setBankForm((current) => ({ ...current, account_holder_name: event.target.value }))}
-                    placeholder="Account holder name"
-                  />
-                  <input
-                    required
-                    inputMode="numeric"
-                    value={bankForm.account_number}
-                    onChange={(event) => setBankForm((current) => ({ ...current, account_number: event.target.value }))}
-                    placeholder="Account number"
-                  />
-                  <input
-                    required
-                    value={bankForm.ifsc_code}
-                    onChange={(event) => setBankForm((current) => ({ ...current, ifsc_code: event.target.value.toUpperCase() }))}
-                    placeholder="IFSC code"
-                  />
-                  <input
-                    required
-                    value={bankForm.bank_name}
-                    onChange={(event) => setBankForm((current) => ({ ...current, bank_name: event.target.value }))}
-                    placeholder="Bank name"
-                  />
-                  <input
-                    value={bankForm.branch_name}
-                    onChange={(event) => setBankForm((current) => ({ ...current, branch_name: event.target.value }))}
-                    placeholder="Branch name (optional)"
-                  />
-                  <button type="submit" disabled={bankSaving}>{bankSaving ? "Saving..." : "Save bank details"}</button>
-                </form>
-              )}
-            </section>
-          )}
 
           {orderActions.canReturnExchange && (() => {
             const actionLabel = canSelectReturnItems && canSelectExchangeItems
@@ -4159,6 +4346,160 @@ export default function OrderConfirmation() {
           orderNumber={orderNumber}
           onClose={() => setInvoiceHtml(null)}
         />
+      )}
+
+      {/* Bank details are collected in a sheet rather than inline on the card: five fields
+          unfolding in the middle of the page pushed the address and the return button out of
+          reach mid-typing, and a keyboard opening over an inline form on a phone hid the very
+          field being filled. Same sheet mechanics as the feedback and return sheets. */}
+      {bankSheetOpen && (
+        <div className="cancel-modal-overlay oc-sheet-overlay" onClick={() => !bankSaving && setBankSheetOpen(false)}>
+          <div
+            className="cancel-modal-container oc-sheet-container oc-bank-sheet"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Refund bank details"
+          >
+            <span className="oc-sheet-handle" aria-hidden="true" />
+            <button
+              type="button"
+              className="cancel-modal-close"
+              onClick={() => setBankSheetOpen(false)}
+              disabled={bankSaving}
+              aria-label="Close"
+            >
+              <Icon icon="lucide:x" />
+            </button>
+
+            <div className="cancel-modal-header">
+              <h3>Refund account</h3>
+              <p>Where should we send the refund for order <strong>{orderNumber}</strong>?</p>
+            </div>
+
+            <form className="cancel-modal-form oc-bank-form" onSubmit={submitBankDetails}>
+              {/* UPI leads because it is one field against five, and it is how most COD
+                  customers would rather be paid. The bank account stays a peer, not a
+                  fallback — plenty of people still do not use UPI at all. */}
+              <div className="oc-bank-methods" role="radiogroup" aria-label="How to send the refund">
+                {[
+                  { key: "upi", label: "UPI ID", icon: "lucide:smartphone" },
+                  { key: "bank", label: "Bank account", icon: "lucide:landmark" },
+                ].map((option) => (
+                  <button
+                    type="button"
+                    key={option.key}
+                    role="radio"
+                    aria-checked={bankForm.method === option.key}
+                    className={`oc-bank-method${bankForm.method === option.key ? " is-active" : ""}`}
+                    onClick={() => setBankForm((current) => ({ ...current, method: option.key }))}
+                  >
+                    <Icon icon={option.icon} />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {bankForm.method === "upi" ? (
+                <label className="oc-bank-field">
+                  <span>UPI ID</span>
+                  <input
+                    required
+                    autoFocus
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    className="oc-bank-mono"
+                    value={bankForm.upi_id}
+                    onChange={(event) => setBankForm((current) => ({ ...current, upi_id: event.target.value.trim() }))}
+                    placeholder="yourname@bank"
+                  />
+                  <small>The ID you receive money on — from GPay, PhonePe, Paytm or your bank app.</small>
+                </label>
+              ) : (
+                <>
+                  <label className="oc-bank-field">
+                    <span>Account holder name</span>
+                    <input
+                      required
+                      autoFocus
+                      value={bankForm.account_holder_name}
+                      onChange={(event) => setBankForm((current) => ({ ...current, account_holder_name: event.target.value }))}
+                      placeholder="As printed on the account"
+                    />
+                  </label>
+
+                  <label className="oc-bank-field">
+                    <span>Account number</span>
+                    <input
+                      required
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={bankForm.account_number}
+                      onChange={(event) => setBankForm((current) => ({ ...current, account_number: event.target.value }))}
+                      placeholder="Account number"
+                    />
+                  </label>
+
+                  <div className="oc-bank-grid">
+                    <label className="oc-bank-field">
+                      <span>IFSC code</span>
+                      <input
+                        required
+                        maxLength={11}
+                        autoCapitalize="characters"
+                        className="oc-bank-mono"
+                        value={bankForm.ifsc_code}
+                        onChange={(event) => setBankForm((current) => ({ ...current, ifsc_code: event.target.value.toUpperCase() }))}
+                        placeholder="HDFC0001234"
+                      />
+                      <small>11 characters, on your cheque book or passbook.</small>
+                    </label>
+
+                    <label className="oc-bank-field">
+                      <span>Bank name</span>
+                      <input
+                        required
+                        value={bankForm.bank_name}
+                        onChange={(event) => setBankForm((current) => ({ ...current, bank_name: event.target.value }))}
+                        placeholder="Bank name"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="oc-bank-field">
+                    <span>Branch <em>optional</em></span>
+                    <input
+                      value={bankForm.branch_name}
+                      onChange={(event) => setBankForm((current) => ({ ...current, branch_name: event.target.value }))}
+                      placeholder="Branch name"
+                    />
+                  </label>
+                </>
+              )}
+
+              <button type="submit" className="oc-bank-submit" disabled={bankSaving}>
+                {bankSaving ? "Saving…" : "Save refund details"}
+              </button>
+
+              <p className="oc-bank-secure">
+                <Icon icon="lucide:lock" /> Used only to send this refund. Please check it
+                carefully — a transfer to the wrong {bankForm.method === "upi" ? "UPI ID" : "account"} cannot be reversed.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Portaled to the body: the thumbnail lives inside the summary card, whose own
+          stacking context would otherwise trap the full-screen viewer behind the page. */}
+      {proofLightbox && createPortal(
+        <ImageLightbox
+          images={proofLightbox.images}
+          startIndex={proofLightbox.index}
+          onClose={() => setProofLightbox(null)}
+        />,
+        document.body,
       )}
     </main>
   );

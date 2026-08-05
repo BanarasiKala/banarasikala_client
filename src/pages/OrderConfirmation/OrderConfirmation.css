@@ -1027,6 +1027,127 @@
   color: #087a46;
 }
 
+/* ── Post-inspection reduction ────────────────────────────────────────────────────────────
+   Sits under its refund row when the returned parcel was found short of what was quoted.
+   Amber rather than the card's maroon: this is the one line on the page that says the
+   customer is getting less than they were promised, and it should not be skimmed past. */
+.refund-inspection {
+  margin: 2px 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 2px solid #d99a2b;
+  background: rgba(217, 154, 43, 0.08);
+  display: grid;
+  gap: 4px;
+}
+
+.refund-inspection-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #9a6200;
+}
+
+.refund-inspection-head svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.refund-inspection-figures {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #6b574a;
+}
+
+.refund-inspection-figures s {
+  color: #9a7b5e;
+}
+
+.refund-inspection-figures svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: #9a7b5e;
+}
+
+.refund-inspection-figures strong {
+  color: #34170f;
+  white-space: nowrap;
+}
+
+/* Written by an admin for the customer to read, so it keeps the author's line breaks
+   and wraps rather than truncating — the reason is the whole point of the block. */
+.refund-inspection-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #6b574a;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.refund-inspection-meta {
+  font-size: 10.5px;
+  color: #9a7b5e;
+}
+
+/* ── Transfer proof ───────────────────────────────────────────────────────────────────── */
+.refund-proof {
+  margin: 2px 0 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.refund-proof-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #6b574a;
+}
+
+.refund-proof-head svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: #800020;
+}
+
+.refund-proof-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.refund-proof-thumb {
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid rgba(128, 0, 32, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.refund-proof-thumb:hover,
+.refund-proof-thumb:focus-visible {
+  border-color: #800020;
+  transform: translateY(-1px);
+}
+
+.refund-proof-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .confirmation-items {
   display: grid;
   gap: 12px;
@@ -1240,31 +1361,272 @@
   font-weight: 400;
 }
 
-.refund-bank-form {
+/* ── Refund bank details (COD) ─────────────────────────────────────────────────────────────
+   Sits between the refund figures and the delivery address. Until an account is on file the
+   refund cannot move at all, so the unfilled state is styled as the one outstanding task on
+   the page rather than as another block of order information. */
+.oc-bank-card {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
-.refund-bank-form input {
-  min-height: 42px;
-  border: 1px solid rgba(128, 0, 32, 0.14);
+/* Anchors the ⓘ tooltip. The row is already flex/space-between, so the button lands at the
+   card's right edge on its own — and pinning the panel to the row's two edges makes it exactly
+   the card's width, so it can never run off screen. */
+.oc-bank-head {
+  position: relative;
+  /* Wraps only when the row genuinely cannot hold both; on any normal width the heading and
+     the button stay on one line. */
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+/* Icon, title and ⓘ on one line. Tailwind's preflight sets `svg { display: block }` globally,
+   which is what dropped the icon onto its own line above the text; laying the heading out as
+   a flex row settles it regardless of what the reset does to svg. */
+.oc-bank-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Scoped to the direct child so it cannot reach the ⓘ's own glyph, which is sized by
+   .refund-ledger-info and is deliberately smaller than the heading icon. */
+.oc-bank-head h2 > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #800020;
+}
+
+/* Plain sentence rather than the ledger's grid of figures. */
+.oc-bank-tip {
+  display: block;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* No arrow. The panel spans the card while the ⓘ sits wherever the heading's text ends, so a
+   pointer at any fixed offset would aim at the wrong place — and one aimed at nothing is worse
+   than none at all. */
+.oc-bank-tip::before {
+  display: none;
+}
+
+.oc-bank-card .oc-thanks-btn {
+  cursor: pointer;
+  /* The row can be tight on a small phone: the button keeps its text on one line and gives up
+     padding instead, and only wraps to its own line when even that is not enough. */
+  flex-shrink: 0;
+}
+
+.oc-bank-saved {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(8, 122, 70, 0.18);
+  background: rgba(8, 122, 70, 0.05);
+}
+
+.oc-bank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #087a46;
+}
+
+.oc-bank-badge svg {
+  width: 13px;
+  height: 13px;
+}
+
+.oc-bank-rows {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.oc-bank-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oc-bank-rows dt {
+  font-size: 11.5px;
+  color: #9a7b5e;
+}
+
+.oc-bank-rows dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: #34170f;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.oc-bank-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #6b574a;
+}
+
+.oc-bank-note strong {
+  color: #34170f;
+}
+
+.oc-bank-mono-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ── The sheet ──────────────────────────────────────────────────────────────────────────── */
+.oc-bank-form {
+  display: grid;
+  gap: 14px;
+}
+
+/* Two peers, not a choice and a fallback — a segmented pair rather than a dropdown, so both
+   ways of being paid are visible without a tap. */
+.oc-bank-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.oc-bank-method {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 46px;
+  padding: 0 10px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 8px;
+  background: #fff;
+  color: #6b574a;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.oc-bank-method svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.oc-bank-method.is-active {
+  border-color: #800020;
+  background: rgba(128, 0, 32, 0.06);
+  color: #800020;
+  font-weight: 500;
+}
+
+.oc-bank-field {
+  display: grid;
+  gap: 5px;
+}
+
+/* Real labels, not placeholders. A placeholder disappears the moment typing starts, which on
+   a five-field form is exactly when someone looks up to check which box they are in. */
+.oc-bank-field > span {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #6b574a;
+}
+
+.oc-bank-field > span em {
+  font-style: normal;
+  color: #9a7b5e;
+  text-transform: lowercase;
+  letter-spacing: 0;
+}
+
+.oc-bank-field input {
+  min-height: 46px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
   border-radius: 8px;
   background: #fffaf1;
   padding: 0 12px;
   color: #4b160e;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.refund-bank-form button {
-  min-height: 44px;
+.oc-bank-field input:focus {
+  border-color: #800020;
+  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.08);
+}
+
+.oc-bank-field small {
+  font-size: 10.5px;
+  color: #9a7b5e;
+}
+
+.oc-bank-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.oc-bank-grid {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 480px) {
+  .oc-bank-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.oc-bank-submit {
+  min-height: 48px;
   border: 0;
   border-radius: 8px;
   background: #800020;
   color: #f5c94d;
-  font-weight: 400;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
+}
+
+.oc-bank-submit:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.oc-bank-secure {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #9a7b5e;
+}
+
+.oc-bank-secure svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .refund-notice {
@@ -1297,20 +1659,6 @@
   color: #3a6b58;
   font-size: 12px;
   line-height: 1.45;
-}
-
-.refund-bank-saved {
-  display: grid;
-  gap: 5px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #fff6e7;
-  color: #765f52;
-  font-size: 13px;
-}
-
-.refund-bank-saved strong {
-  color: #4b160e;
 }
 
 .cancel-order-btn,
