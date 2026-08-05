@@ -2608,10 +2608,22 @@ export default function OrderConfirmation() {
                       </dl>
                     )}
                   </div>
-                  <p className="oc-bank-note">
-                    Your refund will be sent here. The receipt appears under{" "}
-                    <strong>Refunds</strong> above once it has gone out.
-                  </p>
+                  {/* Past tense once the transfer is made. The future-tense line was still
+                      promising a refund that had already arrived, and it sat directly above
+                      the receipt proving it. */}
+                  {order.refund_processed_at ? (
+                    <p className="oc-bank-note">
+                      <Icon icon="lucide:lock" /> Your refund was sent here on{" "}
+                      {formatDate(order.refund_processed_at)}, so these details are now locked.
+                      The receipt is under <strong>Refunds</strong> above — do write to us if it
+                      has not reached you.
+                    </p>
+                  ) : (
+                    <p className="oc-bank-note">
+                      Your refund will be sent here. The receipt appears under{" "}
+                      <strong>Refunds</strong> above once it has gone out.
+                    </p>
+                  )}
                 </>
               )}
             </section>
