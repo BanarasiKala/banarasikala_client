@@ -49,6 +49,9 @@ const STATUS_CONFIG = {
   // The old saree is back with the seller; the REPLACEMENT has not been delivered (often not
   // even shipped). Deliberately not green/"completed" — the customer is still waiting.
   "Exchange Received": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:package-open", label: "Replacement being prepared" },
+  // The returned saree failed inspection, so no replacement will ship — the customer is
+  // refunded instead. Red rather than green: nothing was exchanged.
+  "Exchange Rejected": { color: "#b42318", bg: "#fff0ed", icon: "lucide:package-x", label: "Exchange not accepted" },
   "Exchange Completed": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Exchange completed" },
 };
 
@@ -83,6 +86,7 @@ const getStatus = (status) => {
   if (normalized.includes("exchange initiated")) return STATUS_CONFIG["Exchange Initiated"];
   if (normalized.includes("exchange pickup scheduled")) return STATUS_CONFIG["Exchange Pickup Scheduled"];
   if (normalized.includes("exchange picked up")) return STATUS_CONFIG["Exchange Picked Up"];
+  if (normalized.includes("exchange rejected")) return STATUS_CONFIG["Exchange Rejected"];
   // Must be checked BEFORE "exchange completed" — both are substring matches, and an
   // exchange sits in Received (replacement pending) far longer than it sits in Completed.
   if (normalized.includes("exchange received")) return STATUS_CONFIG["Exchange Received"];

@@ -440,6 +440,8 @@ const ITEM_STATUS_CONFIG = {
   "Exchange Pickup Scheduled": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:calendar-clock", label: "Exchange pickup scheduled" },
   "Exchange Picked Up": { color: "#6840aa", bg: "#f5f0ff", icon: "lucide:package-check", label: "Exchange picked up" },
   "Exchange Received": { color: "#9a6200", bg: "#fff6dc", icon: "lucide:package-open", label: "Replacement being prepared" },
+  // Failed inspection — no replacement ships, a refund is paid instead.
+  "Exchange Rejected": { color: "#b42318", bg: "#fff0ed", icon: "lucide:package-x", label: "Exchange not accepted" },
   "Exchange Completed": { color: "#087a55", bg: "#edfdf5", icon: "lucide:badge-check", label: "Exchange completed" },
 };
 
@@ -472,6 +474,7 @@ const getItemStatusVisual = (status) => {
   if (normalized.includes("exchange initiated")) return ITEM_STATUS_CONFIG["Exchange Initiated"];
   if (normalized.includes("exchange pickup scheduled")) return ITEM_STATUS_CONFIG["Exchange Pickup Scheduled"];
   if (normalized.includes("exchange picked up")) return ITEM_STATUS_CONFIG["Exchange Picked Up"];
+  if (normalized.includes("exchange rejected")) return ITEM_STATUS_CONFIG["Exchange Rejected"];
   if (normalized.includes("exchange received")) return ITEM_STATUS_CONFIG["Exchange Received"];
   if (normalized.includes("exchange completed") || normalized.includes("exchange delivered")) return ITEM_STATUS_CONFIG["Exchange Completed"];
   return ITEM_STATUS_CONFIG[status] || ITEM_STATUS_CONFIG.Pending;
@@ -2427,6 +2430,11 @@ export default function OrderConfirmation() {
                   const wasReduced = inspected !== null && inspected < quoted;
                   const damage = getEvidenceImages(r.inspection_images);
                   const proof = getEvidenceImages(r.proof_images);
+                  /* An exchange only carries an inspection note when it was REFUSED — a
+                     successful one never reaches the inspection form's failure branch, and an
+                     exchange that was never inspected has no note at all. */
+                  const isRefusedExchange = String(r.refund_type || "").toLowerCase() === "exchange"
+                    && Boolean(r.inspection_note);
                   return (
                     <div key={r.id || `${r.refund_type}-${i}`} className="refund-ledger-entry">
                       <div className="refund-ledger-row">
@@ -2444,11 +2452,45 @@ export default function OrderConfirmation() {
                         <strong>{formatPrice(refundToPaymentMethod(r))}</strong>
                       </div>
 
+                      {/* ── An exchange that was refused after inspection ──────────────────
+                          Deliberately NOT folded into the "Reduced after inspection" block
+                          below. That block compares two figures and needs them to differ; a
+                          refusal sets quote and payout to the same number, so it would render
+                          nothing at all — and even if it rendered, "reduced after inspection"
+                          describes an adjusted refund, not a swap that was called off. What
+                          the customer needs here is why no replacement is coming. */}
+                      {isRefusedExchange && (
+                        <div className="refund-inspection">
+                          <span className="refund-inspection-head">
+                            <Icon icon="lucide:package-x" />
+                            Exchange not accepted
+                          </span>
+                          {r.inspection_note && (
+                            <p className="refund-inspection-note">{r.inspection_note}</p>
+                          )}
+                          {damage.length > 0 && (
+                            <span className="refund-proof-row">
+                              {damage.map((image, imageIndex) => (
+                                <button
+                                  type="button"
+                                  className="refund-proof-thumb"
+                                  key={`${image.url}-${imageIndex}`}
+                                  onClick={() => setProofLightbox({ images: damage, index: imageIndex })}
+                                  aria-label={`Open inspection photo ${imageIndex + 1} of ${damage.length}`}
+                                >
+                                  <img src={imgUrl(image.url, 220)} alt="" loading="lazy" />
+                                </button>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {/* The parcel came back short of what was promised. Both figures and the
                           reason sit together on purpose: a refund that lands lighter than the
                           quote with nothing to explain it is a support message every time, and
                           the reason was written by the admin for this spot. */}
-                      {wasReduced && (
+                      {wasReduced && !isRefusedExchange && (
                         <div className="refund-inspection">
                           <span className="refund-inspection-head">
                             <Icon icon="lucide:search-check" />
