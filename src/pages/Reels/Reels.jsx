@@ -141,7 +141,7 @@ const ProductChip = ({ product, onView, onAdd, full = false }) => {
 };
 
 // ─── A single full-screen reel ───────────────────────────────────────────────
-const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onSilenced, onLike, onComments, onShare, onViewProduct, onAddToCart }) => {
+const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, showProducts, onToggleProducts, onActivate, onToggleMute, onSilenced, onLike, onDoubleTapLike, onComments, onShare, onViewProduct, onAddToCart }) => {
   const videoRef = useRef(null);
   const rootRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -153,6 +153,12 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
   // `paused` because it says what just HAPPENED, while `paused` says what the state IS.
   const [flash, setFlash] = useState(null);
   const flashTimer = useRef(0);
+  // The double-tap heart. A counter rather than a boolean, so tapping again while one is
+  // still fading restarts the animation instead of doing nothing (the key changes).
+  const [burst, setBurst] = useState(0);
+  const burstTimer = useRef(0);
+  // Holds the pending single-tap action while we wait to see whether a second tap arrives.
+  const tapTimer = useRef(0);
 
   // "Hidden" means the whole bottom overlay is stood down, not just the product card.
   // Only reachable on a reel that has products, because the Shop pill is the way back.
@@ -286,7 +292,11 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
     };
   }, [syncFromElement, tryPlay]);
 
-  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(flashTimer.current);
+    window.clearTimeout(burstTimer.current);
+    window.clearTimeout(tapTimer.current);
+  }, []);
 
   // Shows the action just taken, then fades. The persistent play badge below covers the
   // resting paused state; this covers the moment of the tap, which is what tells the
@@ -311,12 +321,55 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
     flashIcon(next ? "play" : "pause");
   };
 
+  /**
+   * Double tap/click LIKES — it never unlikes.
+   *
+   * The safe half of the pair: a stray double tap on something already liked costs nothing,
+   * where one that silently REMOVED a like would be destructive and invisible. Taking a
+   * like back stays the heart button's job, where it is deliberate.
+   *
+   * The heart blooms either way, including on an already-liked reel — it is confirmation
+   * the gesture registered, and swallowing it reads as a dead tap.
+   */
+  const doubleTapLike = () => {
+    onDoubleTapLike?.(reel);
+    setBurst((n) => n + 1);
+    window.clearTimeout(burstTimer.current);
+    burstTimer.current = window.setTimeout(() => setBurst(0), 900);
+  };
+
+  /**
+   * One handler for both gestures, because the browser gives us no way to know a second
+   * click is coming.
+   *
+   * `onClick` fires on the FIRST click of a double, so acting on it immediately would pause
+   * the video underneath every like. The single-tap action is therefore held for 240ms and
+   * cancelled if a second click lands inside that window. The cost is a barely perceptible
+   * delay on play/pause; the alternative — letting both clicks through so the two toggles
+   * cancel out — leaves the play/pause badge visibly blinking on every like.
+   *
+   * `onDoubleClick` is not used at all: it arrives AFTER both clicks, too late to stop the
+   * first one, and it does not fire on touch at all.
+   */
+  const handleTap = () => {
+    if (tapTimer.current) {
+      window.clearTimeout(tapTimer.current);
+      tapTimer.current = 0;
+      doubleTapLike();
+      return;
+    }
+    tapTimer.current = window.setTimeout(() => {
+      tapTimer.current = 0;
+      togglePlay();
+    }, 240);
+  };
+
   const products = reel.products || [];
 
   return (
     <section className="bk-reel" ref={rootRef}>
       <div className="bk-reel-stage">
-        <div className="bk-reel-video-wrap" onClick={togglePlay}>
+        <div className="bk-reel-video-wrap" onClick={handleTap}>
           <video
             ref={videoRef}
             className="bk-reel-video"
@@ -346,6 +399,14 @@ const ReelItem = ({ reel, muted, isActive, playing, onPlayingChange, inter, show
           {flash && !buffering && (
             <div className="bk-reel-play-overlay bk-reel-flash" key={flash}>
               {flash === "pause" ? <Pause size={54} fill="#fff" /> : <Play size={54} fill="#fff" />}
+            </div>
+          )}
+
+          {/* Double-tap heart. Keyed on the counter so a second tap mid-fade restarts the
+              animation rather than landing on an element the browser considers unchanged. */}
+          {burst > 0 && (
+            <div className="bk-reel-like-burst" key={burst} aria-hidden="true">
+              <Heart size={96} fill="#ff2d55" strokeWidth={0} />
             </div>
           )}
 
@@ -645,6 +706,18 @@ export default function Reels() {
       setInteractions((s) => ({ ...s, [reel.id]: current })); // rollback
       showNotification("Could not update like.", "error");
     }
+  };
+
+  /**
+   * Double tap. Likes when it is not already liked, and otherwise leaves the state alone so
+   * only the burst plays — see the note on `doubleTapLike` in ReelItem.
+   *
+   * Deliberately NOT `handleLike`, which toggles: routing the gesture through it would make
+   * a second double tap silently remove the like.
+   */
+  const handleDoubleTapLike = (reel) => {
+    if (interOf(reel).liked) return;
+    handleLike(reel);
   };
 
   // Same distinction as the feed: a failed fetch used to leave the sheet saying
@@ -1023,6 +1096,7 @@ export default function Reels() {
             onToggleMute={handleToggleMute}
             onSilenced={handleSilenced}
             onLike={handleLike}
+            onDoubleTapLike={handleDoubleTapLike}
             onComments={openComments}
             onShare={openShare}
             onViewProduct={handleViewProduct}
