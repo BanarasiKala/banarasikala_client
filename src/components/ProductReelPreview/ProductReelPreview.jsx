@@ -11,7 +11,7 @@ const EDGE_GAP_PX = 8;
 
 // If a published reel features this product, show a muted, floating mini-player
 // bottom-right. Tapping it opens the reel full screen with sound; dragging moves it.
-const ProductReelPreview = ({ productId }) => {
+const ProductReelPreview = ({ productId, hidden = false }) => {
   const [reel, setReel] = useState(null);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -67,6 +67,20 @@ const ProductReelPreview = ({ productId }) => {
       y: Math.min(Math.max(EDGE_GAP_PX, y), window.innerHeight - h - EDGE_GAP_PX),
     };
   }, []);
+
+  /**
+   * A hidden card stops playing.
+   *
+   * The fade only makes it invisible — the <video> keeps decoding behind it, which costs the
+   * same battery and bandwidth as a visible one for something nobody can see. Playback
+   * resumes when it slides back in, unless the reader had deliberately paused it.
+   */
+  useEffect(() => {
+    const video = floatVideoRef.current;
+    if (!video || open) return;
+    if (hidden) video.pause();
+    else if (!paused) video.play().catch(() => {});
+  }, [hidden, open, paused]);
 
   useEffect(() => {
     if (!pos) return undefined;
@@ -127,7 +141,8 @@ const ProductReelPreview = ({ productId }) => {
       {!open && (
         <div
           ref={floatRef}
-          className={`bk-preel-float${pos ? " is-free" : ""}${dragging ? " is-dragging" : ""}`}
+          className={`bk-preel-float${pos ? " is-free" : ""}${dragging ? " is-dragging" : ""}${hidden ? " is-hidden" : ""}`}
+          aria-hidden={hidden || undefined}
           // Position comes from state once dragged; `right`/`bottom` are cleared so the CSS
           // corner anchoring stops fighting the coordinates.
           style={pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : undefined}

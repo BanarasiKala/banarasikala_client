@@ -614,6 +614,29 @@ const ProductDetail = () => {
   const [relatedHoverId, setRelatedHoverId] = useState(null);
   const [relatedActiveSlides, setRelatedActiveSlides] = useState({});
   const relatedGridRef = useRef(null);
+  /**
+   * The floating reel steps aside once "More Products" comes into view.
+   *
+   * The card advertises THIS saree. Past the point where the page has moved on to other
+   * products it is pointing at something no longer on screen, and it sits directly over the
+   * cards a reader is now trying to look at. Scrolling back up brings it straight back — it
+   * is hidden, not dismissed, so the ✕ still means something different.
+   */
+  const relatedSectionRef = useRef(null);
+  const [reelHiddenByRelated, setReelHiddenByRelated] = useState(false);
+
+  useEffect(() => {
+    const node = relatedSectionRef.current;
+    if (!node) return undefined;
+    // threshold 0: the moment any part of the section enters the viewport.
+    const observer = new IntersectionObserver(
+      ([entry]) => setReelHiddenByRelated(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+    // Re-observed when the section appears — it renders only once related products arrive.
+  }, [products.length]);
 
   useEffect(() => {
     if (loading || products.length === 0 || !relatedGridRef.current) return undefined;
@@ -2017,7 +2040,7 @@ const ProductDetail = () => {
 
   return (
     <div className="product-detail-page" ref={rootRef}>
-      <ProductReelPreview productId={product?.id} />
+      <ProductReelPreview productId={product?.id} hidden={reelHiddenByRelated} />
       <main className="product-detail-shell">
         <div className="product-mobile-header">
           <div className="product-name-rating-row">
@@ -2500,7 +2523,7 @@ const ProductDetail = () => {
         <ProductReviews reviews={productReviews} summary={reviewSummary} />
 
         {products.length > 0 && (
-          <section className="product-related">
+          <section className="product-related" ref={relatedSectionRef}>
             <div className="product-related-head">
               <h2>More Products</h2>
             </div>

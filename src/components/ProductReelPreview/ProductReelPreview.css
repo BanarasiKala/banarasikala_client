@@ -30,6 +30,29 @@
   transition: none;
 }
 
+/**
+ * Out of the way once "More Products" is in view.
+ *
+ * Faded and slid aside rather than `display: none` — the card is a persistent object on this
+ * page and something that blinks out of existence reads as a bug. `visibility` is what
+ * actually removes it from the tab order and from hit-testing once the fade completes; a
+ * transparent card left interactive would still swallow clicks meant for the product cards
+ * underneath it.
+ */
+.bk-preel-float.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(24px);
+  pointer-events: none;
+  transition: opacity 0.24s ease, transform 0.24s ease, visibility 0s linear 0.24s;
+}
+
+/* `is-free` kills the transition so a drag tracks the pointer exactly — but the hide/show
+   fade should still animate, so it is restored here for that one case. */
+.bk-preel-float.is-free.is-hidden {
+  transition: opacity 0.24s ease, transform 0.24s ease, visibility 0s linear 0.24s;
+}
+
 /* Lifted while in the hand. */
 .bk-preel-float.is-dragging {
   cursor: grabbing;
