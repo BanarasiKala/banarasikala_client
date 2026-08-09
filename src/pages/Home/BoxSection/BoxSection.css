@@ -169,18 +169,17 @@
   to { width: 100%; }
 }
 
-/* ── Press and hold ───────────────────────────────────────────────────────────────────────
+/* ── Paused ───────────────────────────────────────────────────────────────────────────────
    An image's progress bar is a pure CSS animation, so stopping the JS timer is not enough on
-   its own — the bar would keep filling under a held story and then sit full while nothing
+   its own — the bar would keep filling under a paused story and then sit full while nothing
    advanced. `animation-play-state` is what actually freezes it, and it resumes from exactly
-   where it stopped rather than restarting the slide. */
-.bk-box-story.is-held .bk-box-segment-fill {
-  animation-play-state: paused;
-}
+   where it stopped rather than restarting the slide.
 
-/* The Ken Burns drift on images stops with everything else — a "paused" story whose picture
-   is still slowly zooming does not read as paused. */
-.bk-box-story.is-held .bk-box-kenburns {
+   Applied for every reason the story is stopped (held, frozen, still loading), so the bar and
+   the timer always describe the same moment. The Ken Burns drift stops with it — a "paused"
+   story whose picture is still slowly zooming does not read as paused. */
+.bk-box-story.is-paused .bk-box-segment-fill,
+.bk-box-story.is-paused .bk-box-kenburns {
   animation-play-state: paused;
 }
 

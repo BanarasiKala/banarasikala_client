@@ -10,6 +10,10 @@ const IMAGE_DURATION = 4500; // ms an image holds before auto-advancing
 // an ordinary tap-to-advance never trips it, short enough that a deliberate hold feels
 // immediate — the same threshold WhatsApp uses to about a frame.
 const HOLD_DELAY_MS = 180;
+// How long after a hold ends a click is treated as that hold's release rather than a tap.
+// Comfortably longer than the gap between `pointerup` and `click` on every engine, and far
+// shorter than any deliberate second tap.
+const CLICK_SUPPRESS_MS = 350;
 const VIDEO_MAX = 12000; // ms cap so a long video never stalls the story
 
 // Hardcoded, on-brand copy (the admin title/description are intentionally
@@ -100,15 +104,27 @@ const StoryStage = ({
     }, HOLD_DELAY_MS);
   }, [fullscreen]);
 
+  /**
+   * Ending a hold must not let the click that follows advance the story.
+   *
+   * This used to clear `heldRef` on a `setTimeout(0)` so the click could still see it — but
+   * the order of a zero-delay macrotask against the browser's own `click` dispatch is NOT
+   * guaranteed. When the timer won the race the flag was already false, the tap zone fired,
+   * and releasing a hold skipped to the next slide. That is the "sometimes" in the bug.
+   *
+   * A timestamp removes the ordering question entirely: any click landing inside the window
+   * after a hold is the release of that hold, whenever it happens to be dispatched.
+   */
+  const suppressClickUntilRef = useRef(0);
+
   const endHold = useCallback(() => {
     clearHoldTimer();
-    if (heldRef.current) {
-      // Cleared on the next tick, so the click that follows this pointerup still sees it and
-      // can be suppressed. Reset synchronously and the tap zone would advance the story.
-      setTimeout(() => { heldRef.current = false; }, 0);
-    }
+    if (heldRef.current) suppressClickUntilRef.current = Date.now() + CLICK_SUPPRESS_MS;
+    heldRef.current = false;
     setHeld(false);
   }, []);
+
+  const swallowedByHold = () => Date.now() < suppressClickUntilRef.current;
 
   // A hold left running when the overlay closes would freeze the inline copy too.
   useEffect(() => clearHoldTimer, []);
@@ -140,6 +156,19 @@ const StoryStage = ({
   const next = useCallback(() => { if (!single) step(1); }, [single, step]);
   const prev = useCallback(() => { if (!single) step(-1); }, [single, step]);
 
+  /**
+   * How much of the current image's hold has actually been watched.
+   *
+   * The timer is torn down and rebuilt every time the story pauses — held, frozen, or still
+   * loading — and rebuilding it with a fresh IMAGE_DURATION restarted the whole 4.5s from
+   * zero. The progress bar does NOT restart (it is a CSS animation that resumes where
+   * `animation-play-state` stopped it), so after a hold the bar would reach the end and the
+   * slide would then sit there, full, for however long had already elapsed. Carrying the
+   * elapsed time keeps the two describing the same thing.
+   */
+  const elapsedRef = useRef(0);
+  useEffect(() => { elapsedRef.current = 0; }, [active]);
+
   // Images self-advance on a fixed timer; videos advance from their own
   // playback. The segment fill for images is a pure CSS animation (see
   // .bk-box-segment-fill) — driving it from `progress` state on every
@@ -151,8 +180,14 @@ const StoryStage = ({
     // Waits for the image too: its hold is meant to be four and a half seconds of the
     // photo, not of a blank frame while it downloads.
     if (holding) return undefined;
-    const timer = setTimeout(next, IMAGE_DURATION);
-    return () => clearTimeout(timer);
+
+    const startedAt = Date.now();
+    const remaining = Math.max(0, IMAGE_DURATION - elapsedRef.current);
+    const timer = setTimeout(next, remaining);
+    return () => {
+      clearTimeout(timer);
+      elapsedRef.current += Date.now() - startedAt;
+    };
   }, [active, media, next, holding]);
 
   /**
@@ -256,7 +291,20 @@ const StoryStage = ({
 
   return (
     <div
-      className={`bk-box-story${fullscreen ? " bk-box-story--fs" : ""}${held ? " is-held" : ""}`}
+      /**
+       * Two classes, because they answer different questions.
+       *
+       * `is-paused` freezes the progress bar and the Ken Burns drift, and applies for EVERY
+       * reason the story is not running — held, frozen, or still loading. Previously the bar
+       * kept filling through a slow download while the timer waited, so it could reach the
+       * end of a slide that had not started.
+       *
+       * `is-held` is only a finger on the screen, and is what clears the chrome away.
+       */
+      className={
+        `bk-box-story${fullscreen ? " bk-box-story--fs" : ""}`
+        + `${holding ? " is-paused" : ""}${held ? " is-held" : ""}`
+      }
       onPointerDown={startHold}
       onPointerUp={endHold}
       onPointerCancel={endHold}
@@ -352,20 +400,19 @@ const StoryStage = ({
       </button>
 
       {/* WhatsApp-style tap zones: left = previous, right = next.
-          A press that became a HOLD must not also advance — `heldRef` is still true here
-          because `endHold` clears it a tick later, precisely so this check can see it. */}
+          A press that became a HOLD must not also advance — see `swallowedByHold`. */}
       {!single && (
         <>
           <button
             type="button"
             className="bk-box-tap bk-box-tap--prev"
-            onClick={() => { if (!heldRef.current) prev(); }}
+            onClick={() => { if (!swallowedByHold()) prev(); }}
             aria-label="Previous"
           />
           <button
             type="button"
             className="bk-box-tap bk-box-tap--next"
-            onClick={() => { if (!heldRef.current) next(); }}
+            onClick={() => { if (!swallowedByHold()) next(); }}
             aria-label="Next"
           />
         </>
