@@ -169,6 +169,37 @@
   to { width: 100%; }
 }
 
+/* ── Press and hold ───────────────────────────────────────────────────────────────────────
+   An image's progress bar is a pure CSS animation, so stopping the JS timer is not enough on
+   its own — the bar would keep filling under a held story and then sit full while nothing
+   advanced. `animation-play-state` is what actually freezes it, and it resumes from exactly
+   where it stopped rather than restarting the slide. */
+.bk-box-story.is-held .bk-box-segment-fill {
+  animation-play-state: paused;
+}
+
+/* The Ken Burns drift on images stops with everything else — a "paused" story whose picture
+   is still slowly zooming does not read as paused. */
+.bk-box-story.is-held .bk-box-kenburns {
+  animation-play-state: paused;
+}
+
+/* Chrome out of the way while held, as WhatsApp does: the point of holding is to look at the
+   picture, and the segments, brand chip and scrim are all sitting on top of it. Pointer
+   events stay off so nothing here can intercept the release. */
+.bk-box-story.is-held .bk-box-segments,
+.bk-box-story.is-held .bk-box-brand,
+.bk-box-story.is-held .bk-box-corner {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bk-box-segments,
+.bk-box-brand,
+.bk-box-corner {
+  transition: opacity 0.18s ease;
+}
+
 /* Brand chip. */
 .bk-box-brand {
   position: absolute;
@@ -403,6 +434,13 @@
   aspect-ratio: auto;
   border-radius: 0;
   box-shadow: none;
+  /* Press-and-hold only works if the browser's own long-press behaviour is out of the way:
+     without these, holding a story pops the image context menu on iOS and starts a text
+     selection on Android, and the pause never registers. Full view only — the inline card
+     lives in a scrolling page and must keep its native touch handling. */
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @supports (height: 100dvh) {

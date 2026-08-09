@@ -6,6 +6,10 @@ import { imgUrl } from "../../../utils/cloudinary";
 import "./BoxSection.css";
 
 const IMAGE_DURATION = 4500; // ms an image holds before auto-advancing
+// How long a press must last before it counts as a hold rather than a tap. Long enough that
+// an ordinary tap-to-advance never trips it, short enough that a deliberate hold feels
+// immediate — the same threshold WhatsApp uses to about a frame.
+const HOLD_DELAY_MS = 180;
 const VIDEO_MAX = 12000; // ms cap so a long video never stalls the story
 
 // Hardcoded, on-brand copy (the admin title/description are intentionally
@@ -59,9 +63,62 @@ const StoryStage = ({
   // before a single frame of it had been seen. `frozen` joins it: a backgrounded copy must
   // not tick along on its own.
   const stillLoading = !ready || buffering;
-  // The spinner tracks `stillLoading` alone. `holding` also covers being frozen, which stops
-  // the timers without claiming to the viewer that anything is downloading.
-  const holding = stillLoading || frozen;
+
+  /**
+   * Press and hold to pause, as WhatsApp does — full view only.
+   *
+   * ── Why it is gated to full view ────────────────────────────────────────────────────────
+   * The inline card sits in a scrolling page. A finger resting on it is far more often the
+   * start of a scroll than a request to pause, and pausing under every touch would make the
+   * home page feel like it was catching on things.
+   *
+   * ── Why the hold is delayed ─────────────────────────────────────────────────────────────
+   * The card is also covered by tap-to-advance zones. Pausing on `pointerdown` would fire on
+   * every ordinary tap, freezing the story for the instant before it skipped. HOLD_DELAY_MS
+   * is the line between the two: under it a press is a tap, over it it is a hold — and a
+   * press that became a hold swallows the click so it never also advances the slide.
+   */
+  const [held, setHeld] = useState(false);
+  const holdTimerRef = useRef(null);
+  const heldRef = useRef(false);
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const startHold = useCallback((event) => {
+    if (!fullscreen) return;
+    // Ignore right-click and any press that starts on a real control (the close button).
+    if (event.button != null && event.button !== 0) return;
+    clearHoldTimer();
+    holdTimerRef.current = setTimeout(() => {
+      heldRef.current = true;
+      setHeld(true);
+    }, HOLD_DELAY_MS);
+  }, [fullscreen]);
+
+  const endHold = useCallback(() => {
+    clearHoldTimer();
+    if (heldRef.current) {
+      // Cleared on the next tick, so the click that follows this pointerup still sees it and
+      // can be suppressed. Reset synchronously and the tap zone would advance the story.
+      setTimeout(() => { heldRef.current = false; }, 0);
+    }
+    setHeld(false);
+  }, []);
+
+  // A hold left running when the overlay closes would freeze the inline copy too.
+  useEffect(() => clearHoldTimer, []);
+  useEffect(() => {
+    if (!fullscreen) { clearHoldTimer(); heldRef.current = false; setHeld(false); }
+  }, [fullscreen]);
+
+  // The spinner tracks `stillLoading` alone. `holding` also covers being frozen and being
+  // held, which stop the timers without claiming that anything is downloading.
+  const holding = stillLoading || frozen || held;
 
   // Reported up so the other copy can open on the slide this one was showing — tapping
   // expand on slide 3 and landing back on slide 1 would lose the viewer's place.
@@ -176,11 +233,37 @@ const StoryStage = ({
     };
   }, [active, media, single, next, holding]);
 
+  /**
+   * A held story stops the VIDEO too, not just the timers.
+   *
+   * `holding` only gates the advance clocks; without this the picture would keep moving
+   * under a finger that is holding it still — which is the one thing a hold is for. The
+   * backdrop copy is decoration and is left alone; it is blurred past recognition.
+   *
+   * Declared ABOVE the `!media.length` guard: hooks must run in the same order on every
+   * render, and an entry whose media loads late would change that order mid-life.
+   */
+  useEffect(() => {
+    const el = videoElRef.current;
+    if (!el || media[active]?.type !== "video") return;
+    if (held) el.pause();
+    else if (!frozen && !stillLoading) el.play().catch(() => {});
+  }, [held, frozen, stillLoading, active, media]);
+
   if (!media.length) return null;
+
   const current = media[active];
 
   return (
-    <div className={`bk-box-story${fullscreen ? " bk-box-story--fs" : ""}`}>
+    <div
+      className={`bk-box-story${fullscreen ? " bk-box-story--fs" : ""}${held ? " is-held" : ""}`}
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerCancel={endHold}
+      // A pointer that slides off the card ends the hold — otherwise a drag away leaves the
+      // story paused with nothing holding it.
+      onPointerLeave={endHold}
+    >
       {/* Story-style segmented progress across the top. */}
       <div className="bk-box-segments" aria-hidden="true">
         {media.map((item, index) => {
@@ -268,11 +351,23 @@ const StoryStage = ({
         <Icon icon={fullscreen ? "lucide:x" : "lucide:maximize-2"} />
       </button>
 
-      {/* WhatsApp-style tap zones: left = previous, right = next. */}
+      {/* WhatsApp-style tap zones: left = previous, right = next.
+          A press that became a HOLD must not also advance — `heldRef` is still true here
+          because `endHold` clears it a tick later, precisely so this check can see it. */}
       {!single && (
         <>
-          <button type="button" className="bk-box-tap bk-box-tap--prev" onClick={prev} aria-label="Previous" />
-          <button type="button" className="bk-box-tap bk-box-tap--next" onClick={next} aria-label="Next" />
+          <button
+            type="button"
+            className="bk-box-tap bk-box-tap--prev"
+            onClick={() => { if (!heldRef.current) prev(); }}
+            aria-label="Previous"
+          />
+          <button
+            type="button"
+            className="bk-box-tap bk-box-tap--next"
+            onClick={() => { if (!heldRef.current) next(); }}
+            aria-label="Next"
+          />
         </>
       )}
     </div>
