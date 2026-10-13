@@ -28,7 +28,8 @@
       "source": "/product/:slug",
       "destination": "/api/product/:slug"
     },
-    {      "source": "/reels",
+    {
+      "source": "/reels",
       "has": [
         {
           "type": "query",
@@ -37,7 +38,12 @@
       ],
       "destination": "/api/reel"
     },
-    {      "source": "/((?!api/|assets/|.*\\..*).*)",
+    {
+      "source": "/api/:path*",
+      "destination": "http://3.27.9.167/api/:path*"
+    },
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
