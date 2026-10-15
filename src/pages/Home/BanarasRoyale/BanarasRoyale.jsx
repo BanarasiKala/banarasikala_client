@@ -62,19 +62,52 @@ const RoyaleStage = ({ entry }) => {
     const video = videoRef.current;
     if (!video || !entry.video) return undefined;
 
-    const play = () => { const p = video.play(); if (p && typeof p.catch === "function") p.catch(() => {}); };
+    // Mobile / iOS Safari guarantee: ensure native DOM properties and attributes are set
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    const play = () => {
+      if (!video) return;
+      video.muted = true;
+      const p = video.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    };
     play();
+
+    // Fallback: If mobile browser deferred/blocked autoplay (e.g. low-power mode),
+    // trigger playback on the first touch or scroll gesture.
+    const unlock = () => {
+      if (video && video.paused) {
+        play();
+      }
+    };
+    window.addEventListener("touchstart", unlock, { passive: true, once: true });
+    window.addEventListener("scroll", unlock, { passive: true, once: true });
+    window.addEventListener("click", unlock, { passive: true, once: true });
+
+    // IntersectionObserver: ensure playback resumes whenever the section scrolls into view
+    let observer = null;
+    if (typeof IntersectionObserver === "function" && stageRef.current) {
+      observer = new IntersectionObserver(
+        ([targetEntry]) => {
+          if (targetEntry.isIntersecting) {
+            play();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(stageRef.current);
+    }
 
     const onVisible = () => { if (!document.hidden) play(); };
     const onPageShow = () => play();
-    // The browser pausing it for any reason (backgrounding, low-power mode) — resume if we're
-    // actually on-screen. `loop` videos don't fire `pause` when they wrap, so this never fights
-    // the loop.
     const onPause = () => { if (!document.hidden) play(); };
 
-    // HAVE_FUTURE_DATA or better means it can already paint — a cached video never fires
-    // `canplay` again, so reading readyState is what stops the loader hanging over a video that
-    // is in fact ready to go.
+    // HAVE_FUTURE_DATA or better means it can already paint
     setMediaReady(video.readyState >= 3);
     const rolling = () => setMediaReady(true);
     const stalled = () => setMediaReady(false);
@@ -86,10 +119,12 @@ const RoyaleStage = ({ entry }) => {
     video.addEventListener("playing", rolling);
     video.addEventListener("waiting", stalled);
     video.addEventListener("stalled", stalled);
-    // A dead URL clears the loader too. Leaving it spinning forever over a video that is never
-    // going to arrive is the one outcome worse than showing the bare stage.
     video.addEventListener("error", rolling);
     return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("scroll", unlock);
+      window.removeEventListener("click", unlock);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("pageshow", onPageShow);
       video.removeEventListener("pause", onPause);
@@ -262,7 +297,8 @@ const RoyaleStage = ({ entry }) => {
           muted
           loop
           playsInline
-          preload="metadata"
+          webkit-playsinline="true"
+          preload="auto"
           aria-label={entry.title || "Banaras Royale"}
         />
       ) : currentImage ? (
